@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Private files
+private/
+
+# Backup
+reserve/
+
+# Logs
+*.log
+nohup.out
+
+# VS Code
+.vscode/

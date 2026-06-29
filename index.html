@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СоздайСвоюПесню — Создай песню с нейросетью за минуту</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body{background:#09090b;font-family:'Inter',sans-serif}
+        .font-title{font-family:'Space Grotesk',monospace;letter-spacing:-0.02em}
+        .glass-panel{background:rgba(18,18,24,0.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.06);border-radius:2rem}
+        .hero-glow{background:radial-gradient(ellipse at 30% 40%,rgba(234,179,8,0.15),transparent 70%)}
+        .neon-text{text-shadow:0 0 10px rgb(234 179 8),0 0 20px rgb(234 179 8)}
+        .music-wave{display:flex;align-items:flex-end;gap:3px;height:28px}
+        .bar{width:4px;background:#eab308;border-radius:2px;height:20%;animation:wave 1.2s ease infinite}
+        .bar:nth-child(2){animation-delay:100ms}
+        .bar:nth-child(3){animation-delay:200ms}
+        .bar:nth-child(4){animation-delay:150ms}
+        @keyframes wave{0%,100%{height:20%}50%{height:100%}}
+        .genre-chip{transition:all 0.2s;cursor:pointer;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:9999px;padding:0.5rem 1rem;font-size:0.85rem;color:#a1a1aa}
+        .genre-chip:hover{background:rgba(255,255,255,0.1);color:#fff}
+        .genre-chip.active{background:#eab308;color:#09090b;border-color:#eab308;font-weight:600}
+        .bottom-nav a{transition:all 0.2s}
+        .bottom-nav a.active-nav{color:#eab308;background:rgba(234,179,8,0.15);border-radius:2rem}
+        .upgrade-btn{background:linear-gradient(135deg,#eab308,#f59e0b);color:black;font-weight:bold;transition:all 0.2s}
+        .upgrade-btn:hover{transform:scale(1.02);box-shadow:0 0 20px rgba(234,179,8,0.4)}
+        .step-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(234,179,8,0.15);color:#eab308;font-size:12px;font-weight:700;flex-shrink:0;border:1px solid rgba(234,179,8,0.3)}
+        .step-badge.done{background:#eab308;color:#09090b;border-color:#eab308}
+        @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(234,179,8,0.5)}70%{box-shadow:0 0 0 14px rgba(234,179,8,0)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
+        .pulse-logo{animation:pulse-ring 1.4s infinite}
+        .chat-bubble-user{background:rgba(234,179,8,0.12);border-radius:1.2rem 1.2rem 0.2rem 1.2rem}
+        .chat-bubble-ai{background:rgba(255,255,255,0.05);border-radius:1.2rem 1.2rem 1.2rem 0.2rem}
+        .chat-typing span{display:inline-block;width:6px;height:6px;background:#eab308;border-radius:50%;margin:0 2px;animation:tdot 1.2s infinite}
+        .chat-typing span:nth-child(2){animation-delay:0.2s}
+        .chat-typing span:nth-child(3){animation-delay:0.4s}
+        @keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+        .onboard-step{border-left:2px solid rgba(234,179,8,0.2);padding-left:12px}
+        .onboard-step.active{border-left-color:#eab308}
+        .nav-link{transition:all 0.2s;padding:0.6rem 1.2rem;border-radius:9999px;font-size:0.9rem;color:#a1a1aa;cursor:pointer}
+        .nav-link:hover{background:rgba(255,255,255,0.07);color:#fff}
+        .nav-link.active{background:rgba(234,179,8,0.15);color:#eab308;font-weight:600}
+        .doc-section{display:none}
+        .doc-section.active{display:block}
+        .prose h2{font-size:1.3rem;font-weight:600;color:#f4f4f5;margin:2rem 0 0.75rem}
+        .prose h3{font-size:1.05rem;font-weight:600;color:#eab308;margin:1.5rem 0 0.5rem}
+        .prose p{color:#a1a1aa;line-height:1.8;margin-bottom:1rem}
+        .prose ul{color:#a1a1aa;line-height:1.8;margin-bottom:1rem;padding-left:1.5rem;list-style:disc}
+        .prose ul li{margin-bottom:0.4rem}
+        .prose ol{color:#a1a1aa;line-height:1.8;margin-bottom:1rem;padding-left:1.5rem;list-style:decimal}
+        .prose ol li{margin-bottom:0.4rem}
+        .prose a{color:#eab308;text-decoration:underline}
+        .faq-item{border-bottom:1px solid rgba(255,255,255,0.06)}
+        .faq-answer{display:none;padding:1rem 0 1.5rem;color:#a1a1aa;line-height:1.8;font-size:0.95rem}
+        .faq-answer.open{display:block}
+        .faq-question{padding:1.2rem 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:#e4e4e7;font-weight:500}
+        .faq-question:hover{color:#eab308}
+        .faq-icon{transition:transform 0.3s;flex-shrink:0;margin-left:1rem}
+        .faq-icon.rotated{transform:rotate(180deg)}
+        .contact-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:1.2rem;padding:1.5rem;transition:all 0.2s}
+        .contact-card:hover{border-color:rgba(234,179,8,0.3);background:rgba(234,179,8,0.04)}
+        .admin-btn{background:rgba(255,0,0,0.15);border:1px solid rgba(255,0,0,0.3);color:#f87171;transition:all 0.2s}
+        .admin-btn:hover{background:rgba(255,0,0,0.25)}
+        .fun-fact-anim{animation:fadeup 0.5s ease}
+        @keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+<!-- HEADER -->
+<header class="border-b border-zinc-800 py-5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div id="headerLogo" class="w-9 h-9 bg-yellow-500 rounded-2xl flex items-center justify-center cursor-pointer">
+            <i class="fa-solid fa-music text-black text-xl"></i>
+        </div>
+        <span class="font-title text-3xl font-semibold tracking-tighter neon-text text-yellow-400">СоздайСвоюПесню</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-x-6 text-sm font-medium">
+        <a href="#" onclick="switchToView('create');return false;" class="hover:text-yellow-400 transition"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Студия</a>
+        <a href="#" onclick="switchToView('library');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-layer-group mr-1"></i>Библиотека</a>
+        <a href="#" onclick="switchToView('explore');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-compass mr-1"></i>Исследовать</a>
+        <a href="#" onclick="switchToView('profile');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-user mr-1"></i>Профиль</a>
+        <a href="#" onclick="switchToView('payment');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-gem mr-1"></i>Пакеты</a>
+        <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-file-lines mr-1"></i>Документы</a>
+    </nav>
+    <div class="flex items-center gap-3">
+        <div class="bg-white/5 px-4 py-2 rounded-3xl text-sm border border-white/10 cursor-pointer hover:border-yellow-400/30 transition" onclick="switchToView('payment')">
+            <i class="fa-regular fa-gem text-yellow-400 mr-2"></i><span id="headerBalance">2 генерации</span>
+        </div>
+        <div class="w-8 h-8 bg-zinc-800 rounded-2xl flex items-center justify-center"><i class="fa-regular fa-user text-yellow-300"></i></div>
+    </div>
+</header>
+
+<div class="flex flex-col lg:flex-row gap-6 my-8">
+
+<!-- ЛЕВАЯ ПАНЕЛЬ -->
+<div class="lg:w-72 shrink-0 order-2 lg:order-1">
+    <div class="glass-panel p-6 sticky top-24 space-y-6">
+        <div>
+            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-lightbulb text-yellow-400"></i>Идея дня</div>
+            <button id="randomIdeaBtn" class="w-full bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-3 rounded-2xl text-sm font-medium hover:bg-yellow-400/30 transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-dice-d6"></i> Вдохновение
+            </button>
+            <p id="randomIdeaPreview" class="text-xs text-zinc-500 mt-2 text-center line-clamp-2">Нажми, чтобы получить идею</p>
+        </div>
+        <div>
+            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-chart-simple"></i>Жанры</div>
+            <div class="flex flex-wrap gap-2" id="genrePopularList">
+                <div data-genre="Pop" class="genre-chip text-xs py-1.5">Pop</div>
+                <div data-genre="Rock" class="genre-chip text-xs py-1.5">Rock</div>
+                <div data-genre="Hip-Hop" class="genre-chip text-xs py-1.5">Hip-Hop</div>
+                <div data-genre="Electronic" class="genre-chip text-xs py-1.5">Electronic</div>
+                <div data-genre="Lo-Fi" class="genre-chip text-xs py-1.5">Lo-Fi</div>
+            </div>
+        </div>
+        <div>
+            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ сообщества</div>
+            <div id="communityTopList" class="space-y-2">
+                <div class="flex justify-between items-center text-sm"><span>Ocean Dreams</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
+                <div class="flex justify-between items-center text-sm"><span>Heart on Fire</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
+                <div class="flex justify-between items-center text-sm"><span>Tokyo Lights</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
+            <div class="font-semibold text-sm">💎 Полная версия</div>
+            <div class="text-xs text-zinc-400 mt-1">Всего <span class="text-yellow-400 font-bold">199₽</span> за трек. Навсегда в библиотеке.</div>
+            <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить генерации</button>
+        </div>
+        <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
+            <i class="fa-regular fa-comment text-yellow-400"></i> Спросить помощника
+        </button>
+    </div>
+</div>
+
+<!-- ЦЕНТР -->
+<div class="flex-1 min-w-0 order-1 lg:order-2">
+
+    <!-- Hero -->
+    <div class="hero-glow relative rounded-3xl p-8 mb-8 overflow-hidden border border-white/5">
+        <div class="music-wave absolute top-6 right-6"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+        <div class="flex items-center gap-3 mb-4">
+            <div class="px-4 py-1.5 bg-white/10 rounded-full text-xs flex items-center gap-2">
+                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-400"></span></span>LIVE
+            </div>
+            <div class="text-sm text-yellow-400/80">✨ Твоя история заслуживает своей музыки</div>
+        </div>
+        <h1 class="font-title text-5xl lg:text-6xl font-bold tracking-tighter leading-tight neon-text">ТВОЯ ПЕСНЯ<br>ЗА МГНОВЕНИЕ</h1>
+        <p class="text-zinc-400 max-w-md mt-4">Опиши идею — нейросеть напишет текст и создаст музыку в твоём стиле.</p>
+        <div id="onboardingSteps" class="mt-6 flex flex-col sm:flex-row gap-4">
+            <div class="onboard-step active text-xs text-zinc-400"><div class="text-yellow-400 font-semibold mb-0.5">① Стиль</div>Жанр, вокал, настроение</div>
+            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">② Идея</div>Нейросеть напишет текст</div>
+            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">③ Трек</div>Два варианта на выбор</div>
+        </div>
+    </div>
+
+    <!-- СТУДИЯ -->
+    <div id="createPanel">
+
+        <!-- Шаг 1: Стиль -->
+        <div class="glass-panel p-6 mb-6">
+            <div class="flex items-center gap-3 mb-5">
+                <span class="step-badge done">1</span>
+                <span class="font-semibold">Выбери стиль трека</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div><label class="block text-xs text-zinc-400 mb-3">🎸 Жанр</label><div id="stylePicker" class="flex flex-wrap gap-2"></div></div>
+                <div>
+                    <label class="block text-xs text-zinc-400 mb-3">🎤 Вокал</label>
+                    <div id="vocalPicker" class="flex flex-wrap gap-2"></div>
+                    <div class="mt-3"><label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="backingVocalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Бэк-вокал</span></label></div>
+                </div>
+                <div><label class="block text-xs text-zinc-400 mb-3">🌊 Настроение</label><div id="moodPicker" class="flex flex-wrap gap-2"></div></div>
+            </div>
+            <!-- Референс исполнителя -->
+            <div class="mt-5 pt-4 border-t border-zinc-800/50">
+                <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания <span class="text-zinc-600">(необязательно)</span></label>
+                <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: Coldplay, Billie Eilish, Меладзе, Земфира...">
+                <div class="text-xs text-zinc-600 mt-1.5">Нейросеть определит музыкальные характеристики стиля — без упоминания имён в треке</div>
+            </div>
+        </div>
+
+        <!-- Шаг 2: Идея + текст -->
+        <div class="glass-panel p-6 mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="step-badge" id="badge2">2</span>
+                <span class="font-semibold">Опиши идею трека</span>
+            </div>
+            <textarea id="ideaInput" rows="2" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Пример: энергичный трек про рассвет в мегаполисе, смесь синтвейва и хип-хопа..."></textarea>
+            <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> Сгенерировать текст
+            </button>
+            <p class="text-xs text-zinc-600 mt-2">✏️ Генерация текста бесплатна — перегенерируй сколько угодно</p>
+        </div>
+
+        <!-- Текст песни -->
+        <div id="lyricsBlock" class="glass-panel p-6 mb-6 hidden">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-3">
+                    <span class="step-badge done">✓</span>
+                    <span class="text-xs text-zinc-400">Текст готов</span>
+                </div>
+                <div class="flex gap-3">
+                    <button id="regenLyricsBtn" class="text-zinc-400 text-xs hover:text-yellow-400 transition flex items-center gap-1"><i class="fa-solid fa-rotate-right"></i> Ещё раз</button>
+                    <button id="editLyricsBtn" class="text-yellow-400 text-xs flex items-center gap-1"><i class="fa-regular fa-pen-to-square"></i> Редактировать</button>
+                </div>
+            </div>
+            <div id="lyricsDisplay" class="bg-black/30 rounded-xl p-4 text-sm leading-relaxed font-mono text-zinc-300 max-h-64 overflow-y-auto border border-zinc-800/50 whitespace-pre-wrap"></div>
+            <textarea id="lyricsEditor" class="hidden w-full bg-black/50 border border-yellow-400/50 rounded-xl p-4 text-sm font-mono text-white/90 h-64 outline-none"></textarea>
+        </div>
+
+        <!-- Шаг 3: Создать песню -->
+        <div id="step3Block" class="glass-panel p-6 mb-6 hidden">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="step-badge" id="badge3">3</span>
+                <span class="font-semibold">Создать песню</span>
+                <span class="ml-auto text-xs text-zinc-500 bg-white/5 px-3 py-1 rounded-full"><i class="fa-regular fa-gem text-yellow-400 mr-1"></i>−1 генерация</span>
+            </div>
+            <p class="text-xs text-zinc-500 mb-4">Нейросеть создаст 2 варианта песни по 30 секунд — выбери лучший или купи полную версию.</p>
+            <button id="createDemoBtn" class="w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню
+            </button>
+            <p class="text-center text-zinc-500 text-xs mt-4">⚡ Два варианта по 30 сек — выбери лучший</p>
+        </div>
+
+        <!-- Экран генерации -->
+        <div id="generatingBlock" class="glass-panel p-8 mb-6 hidden text-center">
+            <div class="flex justify-center mb-6">
+                <div id="genLogo" class="w-16 h-16 bg-yellow-500 rounded-3xl flex items-center justify-center pulse-logo">
+                    <i class="fa-solid fa-music text-black text-3xl"></i>
+                </div>
+            </div>
+            <div id="generatingMsg" class="text-lg font-semibold mb-2">Подбираем биты...</div>
+            <div id="generatingSubMsg" class="text-xs text-zinc-500 mb-6">Займёт около 30–60 секунд</div>
+            <div class="w-full bg-white/5 rounded-full h-1 mb-2 overflow-hidden">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+            <div class="text-xs text-zinc-600 mt-2" id="progressPercent">0%</div>
+            <div id="funFact" class="mt-5 p-3 bg-white/3 rounded-xl text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed" style="min-height:40px"></div>
+            <div class="text-xs text-zinc-700 mt-2" id="genTimerDisplay"></div>
+        </div>
+
+    </div>
+
+    <!-- БИБЛИОТЕКА -->
+    <div id="libraryPanel" class="hidden">
+        <h2 class="text-2xl font-title font-semibold mb-5">Моя фонотека</h2>
+        <div id="libraryTracksList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+
+    <!-- ИССЛЕДОВАТЬ -->
+    <div id="explorePanel" class="hidden">
+        <h2 class="text-2xl font-title font-semibold mb-5">Популярные треки</h2>
+        <div id="exploreGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div id="profilePanel" class="hidden">
+        <div class="glass-panel p-6 text-center max-w-md mx-auto">
+            <div class="w-24 h-24 bg-yellow-400/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-regular fa-user text-4xl text-yellow-400"></i></div>
+            <div class="text-4xl font-bold text-yellow-400" id="profileBalance">0</div>
+            <div class="text-zinc-400 mb-1">генераций треков</div>
+            <div class="text-xs text-zinc-600 mb-6">Каждая генерация = 2 варианта песни на выбор</div>
+            <button id="profileTopupBtn" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-semibold mb-4"><i class="fa-regular fa-gem mr-2"></i>Купить генерации</button>
+
+            <!-- Реферальная программа -->
+            <div class="mt-6 bg-gradient-to-r from-yellow-400/10 to-amber-400/5 border border-yellow-400/20 rounded-2xl p-5 text-left">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="font-semibold text-sm">🎁 Реферальная программа</div>
+                    <span class="text-[10px] bg-amber-400/20 text-amber-400 border border-amber-400/30 px-2 py-0.5 rounded-full">Скоро</span>
+                </div>
+                <div class="text-xs text-zinc-500 mb-4 leading-relaxed">Программа находится в разработке и будет запущена в ближайшее время. Следите за новостями в нашем <a href="https://t.me/mma_marketing72" target="_blank" class="text-yellow-400 hover:underline">Telegram-канале</a>.</div>
+                <div class="text-xs text-zinc-600 italic mb-3">После запуска: приглашай друзей — получай 30% с каждой их оплаты на свой баланс.</div>
+                <div class="grid grid-cols-2 gap-3 mb-4 opacity-40 pointer-events-none">
+                    <div class="bg-black/30 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold text-yellow-400" id="refCount">0</div>
+                        <div class="text-xs text-zinc-500 mt-1">Рефералов</div>
+                    </div>
+                    <div class="bg-black/30 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold text-emerald-400" id="refEarned">0 ₽</div>
+                        <div class="text-xs text-zinc-500 mt-1">Заработано</div>
+                    </div>
+                </div>
+                <div class="text-xs text-zinc-500 mb-2">Твоя реферальная ссылка:</div>
+                <div class="flex gap-2 opacity-40 pointer-events-none">
+                    <div id="refLink" class="flex-1 bg-black/40 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-400 truncate">создайсвоюпесню.рф/?ref=xxxxxxxx</div>
+                    <button id="copyRefBtn" class="bg-yellow-400/20 border border-yellow-400/30 text-yellow-400 px-3 py-2 rounded-xl text-xs hover:bg-yellow-400/30 transition flex-shrink-0">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+                <p class="text-[10px] text-zinc-600 mt-2">Друг должен совершить минимум одну оплату — тогда тебе начислятся бонусы.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ПАКЕТЫ -->
+    <div id="paymentPanel" class="hidden">
+        <h2 class="text-2xl font-title font-semibold mb-2">Пакеты генераций</h2>
+        <p class="text-zinc-500 text-sm mb-5">Каждая генерация = 2 варианта песни • Полная версия (до 4 мин) — 199₽ отдельно</p>
+        <div id="packetsContainer" class="space-y-4"></div>
+        <button id="paymentConfirmBtn" class="w-full mt-6 upgrade-btn py-4 rounded-2xl text-lg">💳 Перейти к оплате</button>
+        <p class="text-center text-zinc-500 text-xs mt-4">Карты РФ • СБП • Telegram Stars • Треки остаются навсегда</p>
+    </div>
+
+
+    <!-- ДОКУМЕНТЫ / FAQ / ПОДДЕРЖКА -->
+    <div id="legalPanel" class="hidden">
+        <div class="max-w-4xl mx-auto">
+<!-- НАВИГАЦИЯ ПО РАЗДЕЛАМ -->
+<div class="border-b border-zinc-800 sticky top-0 bg-black/80 backdrop-blur-xl z-50">
+    <div class="max-w-4xl mx-auto px-6 py-3 flex flex-wrap gap-2">
+        <div class="nav-link active" data-section="agreement">Соглашение</div>
+        <div class="nav-link" data-section="privacy">Конфиденциальность</div>
+        <div class="nav-link" data-section="faq">FAQ</div>
+        <div class="nav-link" data-section="support">Поддержка</div>
+    </div>
+</div>
+
+<div class="max-w-4xl mx-auto px-6 py-10">
+
+<!-- ================================================ -->
+<!-- 1. ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ -->
+<!-- ================================================ -->
+<div id="section-agreement" class="doc-section active">
+    <div class="glass-panel p-8">
+        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 18 июня 2026 г.</div>
+        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Пользовательское соглашение</h1>
+        <p class="text-zinc-400 mb-8">Сервис «СоздайСвоюПесню» (создайсвоюпесню.рф)</p>
+
+        <div class="prose">
+            <h2>1. Общие положения</h2>
+            <p>Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между Индивидуальным предпринимателем Мошкиным Максимом Александровичем (далее — Сервис, Исполнитель) и физическим лицом, использующим сервис «СоздайСвоюПесню» (далее — Пользователь).</p>
+            <p>Использование сервиса означает полное и безоговорочное принятие условий настоящего Соглашения. Если вы не согласны с условиями, пожалуйста, прекратите использование сервиса.</p>
+
+            <h2>2. Описание сервиса</h2>
+            <p>«СоздайСвоюПесню» — онлайн-платформа для создания уникальных музыкальных произведений с помощью искусственного интеллекта. Сервис предоставляет следующие возможности:</p>
+            <ul>
+                <li>Генерация текста песни на основе описания Пользователя с использованием языковых моделей ИИ</li>
+                <li>Создание музыкального трека на основе текста и выбранных параметров стиля с использованием технологий генерации ИИ</li>
+                <li>Прослушивание демо-версии трека (30 секунд)</li>
+                <li>Приобретение полной версии трека (до 4 минут) для личного использования</li>
+                <li>Хранение приобретённых треков в личной библиотеке</li>
+            </ul>
+
+            <h2>3. Регистрация и аккаунт</h2>
+            <p>Для полноценного использования сервиса Пользователь может авторизоваться через Telegram, ВКонтакте или с помощью номера телефона / адреса электронной почты. Без регистрации доступна бесплатная пробная генерация (2 варианта песни).</p>
+            <p>Пользователь несёт ответственность за сохранность данных своей учётной записи и за все действия, совершённые с её использованием.</p>
+
+            <h2>4. Стоимость услуг и оплата</h2>
+            <p>Сервис предоставляет платные и бесплатные возможности:</p>
+            <ul>
+                <li><strong style="color:#e4e4e7">Бесплатно:</strong> 2 пробные генерации при первом использовании; неограниченная перегенерация текста песни</li>
+                <li><strong style="color:#e4e4e7">Создание песни:</strong> от 199 ₽ за 1 генерацию (= 2 варианта трека по 30 сек на выбор)</li>
+                <li><strong style="color:#e4e4e7">Полная версия:</strong> 199 ₽ за трек (до 4 минут, высокое качество)</li>
+            </ul>
+            <p>Актуальные тарифы размещены на странице «Пакеты». Оплата производится через платёжные системы Робокасса, ЮKassa, СБП или Telegram Stars. Списание происходит в момент подтверждения оплаты.</p>
+
+            <h2>5. Возврат средств</h2>
+            <p>Возврат денежных средств не предусмотрен, за исключением случая технического сбоя сервиса, в результате которого генерация не была выполнена, а баланс был списан. В таком случае мы восстановим генерацию бесплатно. Во всех остальных случаях возврат не производится. Рекомендуем заранее планировать использование пакетов.</p>
+
+            <h2>6. Авторские права на созданные треки</h2>
+            <h3>Полная передача прав</h3>
+            <p>После оплаты полной версии трека все исключительные авторские права на созданную музыкальную композицию переходят к Пользователю в полном объёме. Это означает, что вы вправе использовать трек в любых целях, включая коммерческие: продажа, использование в рекламе, публикация на музыкальных платформах (Spotify, Apple Music, ВКонтакте Музыка и др.), монетизация на YouTube и иных сервисах.</p>
+            <h3>Демо-версии</h3>
+            <p>Демо-версии (30 секунд) предоставляются исключительно для предварительного прослушивания и оценки результата. Права на демо не передаются — они не могут быть использованы, опубликованы или распространены в каком-либо виде.</p>
+            <h3>Уникальность</h3>
+            <p>ИИ может теоретически создать схожие треки для разных запросов. При необходимости юридической защиты уникальности трека рекомендуем обратиться за консультацией к специалисту по авторскому праву.</p>
+
+            <h2>7. Ограничения использования</h2>
+            <p>Пользователь обязуется не использовать сервис для создания контента:</p>
+            <ul>
+                <li>Содержащего призывы к насилию, экстремизму, дискриминации</li>
+                <li>Нарушающего права третьих лиц, в том числе авторские права</li>
+                <li>Оскорбительного, непристойного или незаконного характера</li>
+                <li>Направленного против конкретных лиц с целью их дискредитации</li>
+            </ul>
+            <p>Сервис вправе заблокировать аккаунт Пользователя при нарушении данных условий без возврата средств.</p>
+
+            <h2>8. Ответственность сторон</h2>
+            <p>Сервис прилагает все усилия для обеспечения стабильной работы, однако не гарантирует:</p>
+            <ul>
+                <li>Бесперебойную работу в случае технических сбоев на стороне сторонних провайдеров</li>
+                <li>Соответствие результата ожиданиям Пользователя — генерация ИИ носит вероятностный характер</li>
+                <li>Уникальность созданного трека — ИИ может генерировать схожие результаты для разных запросов</li>
+            </ul>
+            <p>Максимальная ответственность Сервиса ограничена суммой, уплаченной Пользователем за конкретную услугу.</p>
+
+            <h2>9. Изменение соглашения</h2>
+            <p>Сервис вправе вносить изменения в настоящее Соглашение. При существенных изменениях Пользователь будет уведомлён через интерфейс сервиса. Продолжение использования после публикации изменений означает согласие с новой редакцией.</p>
+
+            <h2>10. Реквизиты</h2>
+            <p>ИП Мошкин М.А.<br>
+            Email: <a href="mailto:bam8282@mail.ru">bam8282@mail.ru</a><br>
+            Сервис: создайсвоюпесню.рф</p>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================ -->
+<!-- 2. ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ -->
+<!-- ================================================ -->
+<div id="section-privacy" class="doc-section">
+    <div class="glass-panel p-8">
+        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 18 июня 2026 г.</div>
+        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Политика конфиденциальности</h1>
+        <p class="text-zinc-400 mb-8">В соответствии с Федеральным законом №152-ФЗ «О персональных данных»</p>
+
+        <div class="prose">
+            <h2>1. Кто мы</h2>
+            <p>Оператор персональных данных — ИП Мошкин М.А. (сервис «СоздайСвоюПесню», создайсвоюпесню.рф). Контактный email: <a href="mailto:bam8282@mail.ru">bam8282@mail.ru</a></p>
+
+            <h2>2. Какие данные мы собираем</h2>
+            <h3>При регистрации через Telegram</h3>
+            <ul>
+                <li>Telegram ID, имя пользователя (username), имя в профиле</li>
+            </ul>
+            <h3>При регистрации через ВКонтакте</h3>
+            <ul>
+                <li>VK ID, имя и фамилия из профиля</li>
+            </ul>
+            <h3>При регистрации через email / телефон</h3>
+            <ul>
+                <li>Адрес электронной почты или номер телефона</li>
+            </ul>
+            <h3>Автоматически при использовании сервиса</h3>
+            <ul>
+                <li>История запросов и созданных треков</li>
+                <li>Данные об устройстве (браузер, ОС) и IP-адрес</li>
+                <li>Файлы cookie для обеспечения работы сервиса</li>
+                <li>Информация о транзакциях (без данных карты — они обрабатываются платёжными системами)</li>
+            </ul>
+
+            <h2>3. Зачем мы используем ваши данные</h2>
+            <ul>
+                <li>Для идентификации Пользователя и ведения личного кабинета</li>
+                <li>Для хранения баланса генераций и библиотеки треков</li>
+                <li>Для обработки платежей и выдачи чеков</li>
+                <li>Для ответов на обращения в службу поддержки</li>
+                <li>Для улучшения качества сервиса и анализа использования</li>
+                <li>Для уведомлений об изменениях в сервисе (только при наличии согласия)</li>
+            </ul>
+
+            <h2>4. Кому мы передаём данные</h2>
+            <p>Мы не продаём и не передаём ваши персональные данные третьим лицам, за исключением:</p>
+            <ul>
+                <li><strong style="color:#e4e4e7">Платёжные системы</strong> (Робокасса, ЮKassa, СБП) — для обработки платежей в соответствии с их политиками конфиденциальности</li>
+                <li><strong style="color:#e4e4e7">Сервисы веб-аналитики</strong> — для анализа посещаемости в обезличенном агрегированном виде</li>
+                <li><strong style="color:#e4e4e7">Государственные органы</strong> — по требованию законодательства РФ</li>
+            </ul>
+
+            <h2>5. Как мы защищаем данные</h2>
+            <ul>
+                <li>Хранение данных на серверах в РФ</li>
+                <li>Шифрование передачи данных (HTTPS/TLS)</li>
+                <li>Доступ к данным имеет только ИП Мошкин М.А.</li>
+                <li>Пароли хранятся в зашифрованном виде (bcrypt)</li>
+            </ul>
+
+            <h2>6. Сроки хранения данных</h2>
+            <ul>
+                <li>Данные аккаунта — до удаления аккаунта Пользователем</li>
+                <li>История транзакций — 5 лет (требование налогового законодательства)</li>
+                <li>Демо-треки — удаляются через 3 дня после создания</li>
+                <li>Купленные треки — хранятся бессрочно в библиотеке</li>
+                <li>Данные из cookie — до 1 года</li>
+            </ul>
+
+            <h2>7. Ваши права</h2>
+            <p>В соответствии с 152-ФЗ вы вправе:</p>
+            <ul>
+                <li>Запросить информацию о своих персональных данных</li>
+                <li>Потребовать исправления неточных данных</li>
+                <li>Потребовать удаления своих данных (право на забвение)</li>
+                <li>Отозвать согласие на обработку персональных данных</li>
+                <li>Обратиться в Роскомнадзор в случае нарушения своих прав</li>
+            </ul>
+            <p>Для реализации прав обращайтесь: <a href="mailto:bam8282@mail.ru">bam8282@mail.ru</a>. Срок ответа — 10 рабочих дней.</p>
+
+            <h2>8. Cookie</h2>
+            <p>Сервис использует файлы cookie для авторизации, хранения настроек и аналитики. Вы можете отключить cookie в настройках браузера, однако это может повлиять на работу сервиса. Продолжая использовать сайт, вы соглашаетесь с использованием cookie.</p>
+
+            <h2>9. Дети</h2>
+            <p>Сервис не предназначен для лиц младше 18 лет. Мы не собираем данные несовершеннолетних намеренно. Если вам стало известно, что ребёнок предоставил нам данные — сообщите на <a href="mailto:bam8282@mail.ru">bam8282@mail.ru</a>.</p>
+
+            <h2>10. Контакты оператора</h2>
+            <p>ИП Мошкин М.А.<br>
+            Email: <a href="mailto:bam8282@mail.ru">bam8282@mail.ru</a><br>
+            Сайт: создайсвоюпесню.рф</p>
+        </div>
+
+        <!-- Форма согласия -->
+        <div class="mt-8 p-5 bg-yellow-400/5 border border-yellow-400/20 rounded-2xl">
+            <div class="text-sm font-semibold text-zinc-200 mb-3">Согласие на обработку персональных данных</div>
+            <p class="text-xs text-zinc-400 mb-4 leading-relaxed">Регистрируясь в сервисе «СоздайСвоюПесню», я даю согласие ИП Мошкину М.А. на обработку моих персональных данных (имя, контактные данные, история использования) в целях предоставления услуг сервиса, в порядке и на условиях, определённых Политикой конфиденциальности. Согласие может быть отозвано в любой момент путём обращения на bam8282@mail.ru.</p>
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" id="consentCheckbox" class="mt-0.5 w-4 h-4 accent-yellow-400 flex-shrink-0">
+                <span class="text-xs text-zinc-300">Я ознакомлен(а) с Политикой конфиденциальности и даю согласие на обработку персональных данных</span>
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================ -->
+<!-- 3. FAQ -->
+<!-- ================================================ -->
+<div id="section-faq" class="doc-section">
+    <div class="glass-panel p-8">
+        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Частые вопросы</h1>
+        <p class="text-zinc-400 mb-8">Ответы на самые популярные вопросы о сервисе</p>
+
+        <!-- Категории FAQ -->
+        <div class="flex flex-wrap gap-2 mb-8" id="faqCats">
+            <button class="faq-cat-btn active px-4 py-2 rounded-full text-sm border border-yellow-400/40 bg-yellow-400/10 text-yellow-400" data-cat="all">Все</button>
+            <button class="faq-cat-btn px-4 py-2 rounded-full text-sm border border-white/10 text-zinc-400 hover:border-yellow-400/30 hover:text-yellow-400 transition" data-cat="how">Как работает</button>
+            <button class="faq-cat-btn px-4 py-2 rounded-full text-sm border border-white/10 text-zinc-400 hover:border-yellow-400/30 hover:text-yellow-400 transition" data-cat="price">Оплата</button>
+            <button class="faq-cat-btn px-4 py-2 rounded-full text-sm border border-white/10 text-zinc-400 hover:border-yellow-400/30 hover:text-yellow-400 transition" data-cat="quality">Качество</button>
+            <button class="faq-cat-btn px-4 py-2 rounded-full text-sm border border-white/10 text-zinc-400 hover:border-yellow-400/30 hover:text-yellow-400 transition" data-cat="rights">Права</button>
+        </div>
+
+        <div id="faqList"></div>
+    </div>
+</div>
+
+<!-- ================================================ -->
+<!-- 4. ПОДДЕРЖКА -->
+<!-- ================================================ -->
+<div id="section-support" class="doc-section">
+    <div class="glass-panel p-8">
+        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Служба поддержки</h1>
+        <p class="text-zinc-400 mb-8">Мы поможем разобраться с любым вопросом</p>
+
+        <!-- Карточки контактов -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+            <a href="https://t.me/m_moshkin" target="_blank" class="contact-card flex flex-col items-center text-center gap-3">
+                <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                    <i class="fa-brands fa-telegram text-blue-400 text-2xl"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-sm">Telegram</div>
+                    <div class="text-xs text-zinc-500 mt-1">@m_moshkin</div>
+                    <div class="text-xs text-yellow-400/80 mt-1">Быстрее всего</div>
+                </div>
+            </a>
+            <a href="https://vk.com/moshkin_aikreator" target="_blank" class="contact-card flex flex-col items-center text-center gap-3">
+                <div class="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center">
+                    <i class="fa-brands fa-vk text-blue-500 text-2xl"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-sm">ВКонтакте</div>
+                    <div class="text-xs text-zinc-500 mt-1">@moshkin_aikreator</div>
+                    <div class="text-xs text-zinc-500 mt-1">Пн–Пт, 9:00–21:00</div>
+                </div>
+            </a>
+            <a href="mailto:bam8282@mail.ru" class="contact-card flex flex-col items-center text-center gap-3">
+                <div class="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center">
+                    <i class="fa-regular fa-envelope text-yellow-400 text-2xl"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-sm">Email</div>
+                    <div class="text-xs text-zinc-500 mt-1">bam8282@mail.ru</div>
+                    <div class="text-xs text-zinc-500 mt-1">Ответ до 24 часов</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Форма обращения -->
+        <div class="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800">
+            <h2 class="font-semibold text-lg mb-1">Написать в поддержку</h2>
+            <p class="text-xs text-zinc-500 mb-5">Опишите проблему как можно подробнее — это ускорит решение</p>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-zinc-400 mb-2">Ваше имя</label>
+                        <input id="supportName" type="text" placeholder="Как к вам обращаться" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-yellow-400/50 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-zinc-400 mb-2">Email или Telegram</label>
+                        <input id="supportContact" type="text" placeholder="bam@mail.ru или @username" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-yellow-400/50 transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-zinc-400 mb-2">Тема обращения</label>
+                    <select id="supportTopic" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-300 outline-none focus:border-yellow-400/50 transition">
+                        <option value="">Выберите тему...</option>
+                        <option>Технический сбой — генерация не сработала</option>
+                        <option>Проблема с оплатой</option>
+                        <option>Возврат средств</option>
+                        <option>Качество трека</option>
+                        <option>Вопрос по авторским правам</option>
+                        <option>Удаление аккаунта и данных</option>
+                        <option>Другое</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-zinc-400 mb-2">Описание</label>
+                    <textarea id="supportMessage" rows="4" placeholder="Опишите ситуацию подробно: что делали, что произошло, какой результат ожидали..." class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-yellow-400/50 transition resize-none"></textarea>
+                </div>
+                <button id="supportSendBtn" class="w-full upgrade-btn py-3 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Отправить обращение
+                </button>
+                <p class="text-center text-xs text-zinc-600">Нажимая кнопку, вы соглашаетесь с <span class="text-yellow-400 cursor-pointer" onclick="showSection('privacy')">Политикой конфиденциальности</span></p>
+            </div>
+            <div id="supportSuccess" class="hidden mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+                <div class="text-2xl mb-2">✅</div>
+                <div class="font-semibold text-emerald-400">Обращение отправлено!</div>
+                <div class="text-xs text-zinc-400 mt-1">Мы ответим в течение 24 часов на указанный контакт</div>
+            </div>
+        </div>
+
+        <!-- Часы работы -->
+        <div class="mt-6 p-5 bg-white/3 border border-white/07 rounded-2xl">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fa-regular fa-clock text-yellow-400"></i>
+                <span class="font-semibold text-sm">Время работы поддержки</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm text-zinc-400">
+                <div>Telegram / VK:</div><div class="text-zinc-200">Ежедневно, 9:00–21:00 МСК</div>
+                <div>Email:</div><div class="text-zinc-200">Ответ в течение 24 часов</div>
+                <div>Праздники:</div><div class="text-zinc-200">Возможна задержка ответа</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+
+        </div>
+    </div>
+
+    <!-- Популярные треки -->
+    <div id="homeTrends" class="mt-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Популярные треки</h3>
+            <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 text-sm">Все →</a>
+        </div>
+        <div id="homeExploreGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+    </div>
+</div>
+
+<!-- ПРАВАЯ ПАНЕЛЬ: плеер -->
+<div class="lg:w-80 shrink-0 hidden lg:block order-3">
+    <div class="glass-panel p-6 sticky top-24">
+        <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
+        <div class="bg-zinc-900/70 rounded-2xl overflow-hidden">
+            <div class="h-48 bg-[url('https://picsum.photos/id/1015/400/300')] bg-cover bg-center"></div>
+            <div class="p-4">
+                <div class="text-amber-300 text-xs">НЕЙРО-ХИТ</div>
+                <div class="font-semibold" id="playingTitle">—</div>
+                <div class="text-xs text-zinc-500">СоздайСвоюПесню</div>
+                <div class="flex gap-2 mt-3">
+                    <button id="playerPlayPause" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-play text-white"></i></button>
+                    <button id="playerStop" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-stop text-white"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="mt-6">
+            <div class="text-xs text-zinc-400 mb-2">💡 Совет</div>
+            <div class="text-sm leading-relaxed text-zinc-400">Добавляй в описание детали: «пение птиц», «ночной город», «гитарное соло» — нейросеть их учитывает.</div>
+        </div>
+        <button onclick="switchToView('payment')" class="w-full mt-4 bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-2 rounded-xl text-sm hover:bg-yellow-400/30 transition">💳 Купить генерации</button>
+        <!-- Админ-кнопка появится здесь после 5 кликов по логотипу -->
+        <div id="adminPlaceholder"></div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<!-- Нижняя навигация -->
+<div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 py-2 px-6 z-50 flex justify-around lg:hidden bottom-nav">
+    <a data-nav="create" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl active-nav"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><span class="text-[11px]">Студия</span></a>
+    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-layer-group text-xl"></i><span class="text-[11px]">Фонотека</span></a>
+    <a data-nav="explore" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-compass text-xl"></i><span class="text-[11px]">Открытия</span></a>
+    <a data-nav="profile" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[11px]">Кабинет</span></a>
+    <a data-nav="payment" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[11px]">Пакеты</span></a>
+    <a data-nav="legal" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-file-lines text-xl"></i><span class="text-[11px]">Инфо</span></a>
+</div>
+
+<!-- Модалка: нет баланса -->
+<div id="noBalanceModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4">
+    <div class="bg-zinc-900 rounded-3xl max-w-sm w-full p-6 text-center border border-yellow-400/20">
+        <div class="text-5xl mb-4">💎</div>
+        <div class="text-xl font-bold mb-2">Генерации закончились</div>
+        <div class="text-zinc-400 text-sm mb-6">Каждая генерация = 2 варианта песни. Пополни баланс — и продолжим!</div>
+        <button onclick="switchToView('payment');document.getElementById('noBalanceModal').classList.add('hidden');" class="w-full upgrade-btn py-3 rounded-2xl mb-3">💳 Купить генерации</button>
+        <button onclick="document.getElementById('noBalanceModal').classList.add('hidden')" class="w-full bg-white/5 py-3 rounded-2xl text-sm text-zinc-400">Отмена</button>
+    </div>
+</div>
+
+<!-- Модалка: результат -->
+<div id="resultModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4">
+    <div class="bg-zinc-900 rounded-3xl max-w-xl w-full p-6 border border-zinc-800">
+        <div class="text-center mb-4">
+            <div class="text-3xl">🎧</div>
+            <div class="text-xl font-bold mt-2">Песни готовы!</div>
+            <div class="text-sm text-zinc-400 mt-1">2 варианта • 30 секунд • слушай без ограничений</div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <button id="variantA" class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center hover:border-yellow-400/40 transition">
+                <div class="text-2xl mb-1">🎵</div><div class="text-sm font-semibold">Вариант A</div><div class="text-xs text-zinc-500 mt-1">Нажми, чтобы слушать</div>
+            </button>
+            <button id="variantB" class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center hover:border-yellow-400/40 transition">
+                <div class="text-2xl mb-1">🎶</div><div class="text-sm font-semibold">Вариант B</div><div class="text-xs text-zinc-500 mt-1">Нажми, чтобы слушать</div>
+            </button>
+        </div>
+        <div id="modalLyrics" class="bg-black/30 rounded-xl p-4 text-sm font-mono max-h-40 overflow-y-auto whitespace-pre-wrap text-zinc-400 mb-4"></div>
+        <div class="flex flex-wrap justify-center gap-3">
+            <button id="modalRegenBtn" class="bg-white/10 px-5 py-2 rounded-xl text-sm hover:bg-white/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Другие варианты <span class="text-zinc-500 text-xs">(−1 ген.)</span>
+            </button>
+            <button id="modalUpgradeBtn" class="upgrade-btn px-6 py-2 rounded-xl flex items-center gap-2"><i class="fa-regular fa-gem"></i> Полная версия 199₽</button>
+            <button id="modalCloseBtn" class="bg-white/5 px-5 py-2 rounded-xl text-sm">Закрыть</button>
+        </div>
+        <p class="text-center text-[11px] text-zinc-600 mt-4">Полная версия — до 4 мин • высокое качество • навсегда в библиотеке</p>
+    </div>
+</div>
+
+<!-- Чат-помощник -->
+<div id="chatWidget" class="hidden fixed bottom-24 lg:bottom-8 right-4 w-80 glass-panel overflow-hidden z-[9998] shadow-2xl shadow-black/60 flex flex-col" style="max-height:460px;">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-yellow-500 rounded-xl flex items-center justify-center"><i class="fa-solid fa-music text-black text-sm"></i></div>
+            <span class="font-semibold text-sm">Помощник СоздайСвоюПесню</span>
+        </div>
+        <button id="closeChatBtn" class="text-zinc-500 hover:text-white text-xl leading-none">×</button>
+    </div>
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3" style="min-height:200px;max-height:300px;">
+        <div class="chat-bubble-ai p-3 text-sm text-zinc-300">Привет! 👋 Спроси меня что угодно — как пользоваться, сколько стоит, или попроси идею для трека.</div>
+    </div>
+    <div class="p-3 border-t border-white/10 flex gap-2 flex-shrink-0">
+        <input id="chatInput" type="text" placeholder="Напиши вопрос..." class="flex-1 bg-black/40 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-400/50">
+        <button id="chatSendBtn" class="w-9 h-9 bg-yellow-400 rounded-xl flex items-center justify-center hover:bg-yellow-300 transition flex-shrink-0">
+            <i class="fa-solid fa-paper-plane text-black text-sm"></i>
+        </button>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="max-w-7xl mx-auto px-4 pb-24 lg:pb-8 mt-10">
+    <div class="border-t border-zinc-800 pt-6 text-center text-xs text-zinc-600 space-y-2">
+        <div>© 2026 СоздайСвоюПесню · ИП Мошкин М.А.</div>
+        <div class="flex justify-center gap-4 flex-wrap">
+            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Соглашение</a>
+            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Конфиденциальность</a>
+            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">FAQ</a>
+            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Поддержка</a>
+            <a href="mailto:bam8282@mail.ru" class="hover:text-yellow-400 transition">bam8282@mail.ru</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ =====
+var user={balance:2,tracks:[]};
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Pop",selectedVocal="female",selectedMood="uplifting",backingVocal=false,activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,genTimer=null;
+
+var genreMap={
+  "Поп":"pop, catchy, radio-ready, modern production",
+  "Рок":"rock, electric guitar, powerful drums, energetic",
+  "Хип-хоп":"hip-hop, trap beats, 808 bass, urban",
+  "Электронная":"electronic, synthesizers, EDM, driving beat",
+  "Ло-фай":"lo-fi, chill, relaxed, vinyl texture, jazz chords",
+  "Баллада":"ballad, emotional, piano, strings, slow tempo",
+  "Р-н-б":"r&b, soul, smooth groove, modern r&b production",
+  "Джаз":"jazz, piano, double bass, brushed drums, swing",
+  "Классическая":"classical, orchestral, strings, cinematic",
+  "Шансон":"chanson, acoustic guitar, storytelling, French cafe",
+  "Кантри":"country, acoustic guitar, fiddle, Nashville sound",
+  "Регги":"reggae, offbeat guitar, bass, relaxed groove",
+  "Металл":"heavy metal, distorted guitars, double kick drums",
+  "Панк":"punk rock, fast tempo, raw energy, short songs",
+  "Фолк":"folk, acoustic, storytelling, fingerpicking guitar",
+  "Блюз":"blues, guitar riffs, soulful, 12-bar blues",
+  "Соул":"soul, gospel influence, expressive vocals, organ",
+  "Фанк":"funk, groove, bass guitar, brass section",
+  "Трэп":"trap, hi-hats, 808, dark atmospheric beats",
+  "Дрилл":"drill, dark beats, sliding 808s, aggressive",
+  "Техно":"techno, repetitive beats, dark, industrial",
+  "Хаус":"house, 4/4 beat, piano chords, uplifting",
+  "Драм-н-бэйс":"drum and bass, fast breakbeats, heavy bass",
+  "Амбиент":"ambient, atmospheric pads, slow, peaceful",
+  "Бачата":"bachata, guitar, romantic, Latin Caribbean rhythm",
+  "Фламенко":"flamenco, Spanish guitar, passionate, clapping"
+};
+var vocalMap={"female":"female vocals","male":"male vocals","duet":"male and female duet","auto":"vocals"};
+var moodMap={
+  "uplifting":"energetic, uplifting, positive, motivational",
+  "melancholy":"melancholic, emotional, nostalgic, atmospheric",
+  "romantic":"romantic, warm, tender, loving",
+  "dark":"dark, intense, mysterious, powerful",
+  "joyful":"joyful, happy, bright, cheerful",
+  "adventurous":"adventurous, epic, bold, cinematic",
+  "peaceful":"peaceful, calm, meditative, serene",
+  "angry":"aggressive, angry, rebellious, intense",
+  "nostalgic":"nostalgic, retro, bittersweet, reminiscent",
+  "party":"party, fun, danceable, festive",
+  "spiritual":"spiritual, uplifting, gospel, soul-touching",
+  "experimental":"experimental, unusual, avant-garde, creative"
+};
+
+function saveData(){localStorage.setItem('создайсвоюпесню_user',JSON.stringify({balance:user.balance,tracks:user.tracks}));updateBalanceUI();}
+function loadData(){try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);user.balance=d.balance!=null?d.balance:2;user.tracks=d.tracks||[];}}catch(e){}updateBalanceUI();renderLibrary();renderExplore();renderHomeExplore();}
+function updateBalanceUI(){var b=user.balance,t=b===1?"1 генерация":(b>=2&&b<=4)?b+" генерации":b+" генераций";var hb=document.getElementById('headerBalance');if(hb)hb.textContent=t;var pb=document.getElementById('profileBalance');if(pb)pb.textContent=b;}
+
+function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var ht=document.getElementById('homeTrends');if(ht)ht.classList.remove('hidden');var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view!=='create'&&ht)ht.classList.add('hidden');if(view==='library')renderLibrary();if(view==='explore')renderExplore();if(view==='profile')updateBalanceUI();if(view==='payment')renderPackets();document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
+
+async function generateLyrics(idea){try{var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(!res.ok)throw new Error();var d=await res.json();return d.lyrics||"Текст не получен.";}catch(e){var moodRu={"uplifting":"Энергичный и яркий","melancholy":"Задумчивый и глубокий","romantic":"Тёплый и нежный","dark":"Мрачный и интенсивный"};return "[Куплет 1]\n"+idea.slice(0,55)+"\nНейросеть ткёт слова в такт\n"+(moodRu[selectedMood]||"")+" "+selectedGenre+" трек\n\n[Припев]\nЭто твой трек — твоя волна\nСквозь "+selectedGenre+" звучит она\nВсё что внутри выходит в свет\nТвоя песня — твой ответ\n\n[Куплет 2]\nАтмосфера вокруг\nГолос "+(vocalMap[selectedVocal]||"звучит")+" — слышишь звук?\nКаждый бит — это шаг вперёд\n"+selectedGenre+" тебя несёт\n\n[Аутро]\nТвой трек. Твой момент. Навсегда.";}}
+
+var genMsgs=[["Подбираем биты...","Настраиваем ритм-секцию"],["Сочиняем мелодию...","Ищем идеальный темп"],["Записываем вокал...","Настраиваем тембр голоса"],["Сводим инструменты...","Добавляем пространство"],["Финальный мастеринг...","Почти готово!"],["Упаковываем трек...","Секунды до результата..."]];
+
+var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня содержит около 300 слов текста","🎤 Музыка активирует те же центры мозга что и вкусная еда","🥁 Сердце начинает биться в такт музыке — это энтрейнмент","🎹 Бетховен написал шедевры будучи полностью глухим","⚡ AI анализирует миллионы треков чтобы создать твою песню","🌍 Музыка — единственный универсальный язык всех культур","🎼 Нейросеть подбирает темп, тональность и инструменты специально для тебя"];
+var funFactTimer=null;var genStartTime=0;
+function showFunFact(){var el=document.getElementById('funFact');if(!el)return;var f=funFacts[Math.floor(Math.random()*funFacts.length)];el.textContent=f;el.classList.remove('fun-fact-anim');void el.offsetWidth;el.classList.add('fun-fact-anim');}
+function showGenerating(){document.getElementById('step3Block').classList.add('hidden');document.getElementById('generatingBlock').classList.remove('hidden');var pct=0,idx=0,bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),sub=document.getElementById('generatingSubMsg'),pctEl=document.getElementById('progressPercent');genStartTime=Date.now();showFunFact();funFactTimer=setInterval(showFunFact,7000);genTimer=setInterval(function(){var elapsed=Date.now()-genStartTime;var natural=Math.min(elapsed/240000*95,95);if(pct<natural)pct=Math.min(pct+0.4,natural);bar.style.width=pct+'%';pctEl.textContent=Math.round(pct)+'%';var sec=Math.floor((Date.now()-genStartTime)/1000);var td=document.getElementById('genTimerDisplay');if(td)td.textContent='Прошло '+sec+' сек';var ni=Math.min(Math.floor(pct/17),genMsgs.length-1);if(ni!==idx){idx=ni;msg.textContent=genMsgs[idx][0];sub.textContent=genMsgs[idx][1];}},500);}
+
+function hideGenerating(cb){clearInterval(genTimer);clearInterval(funFactTimer);var bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),pctEl=document.getElementById('progressPercent');bar.style.width='100%';msg.textContent='Готово! 🎉';pctEl.textContent='100%';setTimeout(function(){document.getElementById('generatingBlock').classList.add('hidden');document.getElementById('step3Block').classList.remove('hidden');bar.style.width='0%';if(cb)cb();},800);}
+
+function addTrack(title,type,durationSec,lyrics,audioUrl){var t={id:Date.now(),title:title.slice(0,40),genre:selectedGenre,duration:Math.floor(durationSec/60)+":"+(durationSec%60).toString().padStart(2,'0'),cover:"https://picsum.photos/id/29/280/280",type:type,liked:false,audioUrl:audioUrl,createdAt:Date.now(),expiresAt:type==='demo'?Date.now()+3*24*3600*1000:null};user.tracks.unshift(t);saveData();renderLibrary();return t;}
+
+function renderLibrary(){var c=document.getElementById('libraryTracksList');if(!c)return;if(!user.tracks.length){c.innerHTML='<div class="text-center text-zinc-500 col-span-2 py-12">Здесь будут твои треки</div>';return;}c.innerHTML=user.tracks.map(function(t){return'<div class="glass-panel p-4 flex items-center justify-between gap-3"><img src="'+t.cover+'" class="w-14 h-14 rounded-xl object-cover flex-shrink-0"><div class="flex-1 min-w-0"><div class="font-medium truncate">'+escHtml(t.title)+'</div><div class="text-xs text-zinc-400">'+t.genre+' • '+t.duration+' '+(t.type==='demo'?'<span class="text-amber-400/70">• демо 30"</span>':'<span class="text-emerald-400">• полная</span>')+'</div></div><button data-url="'+t.audioUrl+'" data-title="'+escHtml(t.title)+'" class="play-track-btn bg-white/10 px-4 py-2 rounded-xl text-sm hover:bg-white/20 transition"><i class="fa-solid fa-play mr-1"></i>Слушать</button></div>';}).join('');document.querySelectorAll('.play-track-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();playAudio(btn.dataset.url,btn.dataset.title);});});}
+
+var exploreEx=[{title:"Ocean Dreams",author:"@lunarwave",plays:"24k",cover:"https://picsum.photos/id/1015/400/300"},{title:"Heart on Fire",author:"@beatbyai",plays:"41k",cover:"https://picsum.photos/id/160/400/300"},{title:"Tokyo Lights",author:"@neoncat",plays:"12k",cover:"https://picsum.photos/id/201/400/300"},{title:"Echo Valley",author:"@voidsounds",plays:"9k",cover:"https://picsum.photos/id/29/400/300"}];
+function renderExplore(){var eg=document.getElementById('exploreGrid');if(eg)eg.innerHTML=exploreEx.map(function(ex){return'<div class="glass-panel overflow-hidden cursor-pointer hover:scale-[1.02] transition"><img src="'+ex.cover+'" class="w-full aspect-square object-cover"><div class="p-3"><div class="font-medium text-sm">'+ex.title+'</div><div class="text-xs text-zinc-400">'+ex.author+'</div><div class="text-[10px] text-amber-400 mt-1"><i class="fa-regular fa-play mr-1"></i>'+ex.plays+'</div></div></div>';}).join('');}
+function renderHomeExplore(){var heg=document.getElementById('homeExploreGrid');if(heg)heg.innerHTML=exploreEx.map(function(ex){return'<div class="glass-panel overflow-hidden cursor-pointer hover:scale-[1.02] transition" onclick="switchToView(\'explore\')"><img src="'+ex.cover+'" class="w-full aspect-square object-cover"><div class="p-2"><div class="font-medium text-xs">'+ex.title+'</div><div class="text-[9px] text-zinc-400">'+ex.author+'</div><div class="text-[9px] text-amber-400"><i class="fa-regular fa-play mr-1"></i>'+ex.plays+'</div></div></div>';}).join('');}
+
+function renderPackets() {
+    var packets = [
+        { price: 199, songs: 1, label: "Попробовать", discount: "" },
+        { price: 499, songs: 3, label: "Популярный", discount: "−16%" },
+        { price: 799, songs: 5, label: "Творческий", discount: "−20%" },
+        { price: 1199, songs: 10, label: "Продюсер", discount: "−40%" }
+    ];
+    function genWord(n) {
+        if (n === 1) return 'генерация';
+        if (n >= 2 && n <= 4) return 'генерации';
+        return 'генераций';
+    }
+    function songWord(n) {
+        if (n === 1) return 'песня';
+        if (n >= 2 && n <= 4) return 'песни';
+        return 'песен';
+    }
+    var container = document.getElementById('packetsContainer');
+    container.innerHTML = packets.map(function(p) {
+        var drafts = p.songs * 2;
+        return '<div data-price="' + p.price + '" data-songs="' + p.songs + '" class="packet-item glass-panel p-5 flex justify-between items-center cursor-pointer hover:border-yellow-400/40 border border-transparent transition">' +
+            '<div><span class="font-bold text-lg">' + p.songs + ' ' + genWord(p.songs) + '</span>' +
+            '<div class="text-xs text-zinc-500">' + p.label + (p.discount ? ' • <span class="text-emerald-400">' + p.discount + '</span>' : '') + '</div>' +
+            '<div class="text-xs text-zinc-600">= ' + drafts + ' ' + songWord(drafts) + '</div></div>' +
+            '<div class="text-2xl font-semibold">' + p.price + '₽</div></div>';
+    }).join('');
+    document.querySelectorAll('.packet-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            document.querySelectorAll('.packet-item').forEach(function(p) { p.classList.remove('border-yellow-400/40'); });
+            el.classList.add('border-yellow-400/40');
+            activePacket.price = parseInt(el.dataset.price);
+            activePacket.songs = parseInt(el.dataset.songs);
+        });
+    });
+    var first = document.querySelector('.packet-item');
+    if (first) first.classList.add('border-yellow-400/40');
+}
+
+function playDemoAudio(url,title){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause text-white"></i>';}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play text-white"></i>';}return;}stopAudio();currentAudio=new Audio(url);currentPlayingId=url;currentAudio.play().catch(function(){});var pt=document.getElementById('playingTitle');if(pt)pt.textContent=title;var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-pause text-white"></i>';currentAudio.addEventListener('timeupdate',function(){if(currentAudio.currentTime>=30){currentAudio.pause();currentAudio.currentTime=0;var pp2=document.getElementById('playerPlayPause');if(pp2)pp2.innerHTML='<i class="fa-solid fa-play text-white"></i>';currentPlayingId=null;}});currentAudio.onended=stopAudio;}
+function stopAudio(){if(currentAudio){currentAudio.pause();currentAudio.currentTime=0;currentAudio=null;currentPlayingId=null;}var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-play text-white"></i>';var pt=document.getElementById('playingTitle');if(pt)pt.textContent='—';}
+function playAudio(url,title){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause text-white"></i>';}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play text-white"></i>';}return;}stopAudio();currentAudio=new Audio(url);currentPlayingId=url;currentAudio.play().catch(function(){});var pt=document.getElementById('playingTitle');if(pt)pt.textContent=title;var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-pause text-white"></i>';currentAudio.onended=stopAudio;}
+document.getElementById('playerPlayPause').addEventListener('click',function(){if(currentAudio){if(currentAudio.paused)currentAudio.play();else currentAudio.pause();}});
+document.getElementById('playerStop').addEventListener('click',stopAudio);
+
+function initChips(){
+  var genreList=Object.keys(genreMap);
+  var sd=document.getElementById('stylePicker');
+  sd.innerHTML='<select id="genreSelect" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-yellow-400/50 transition">'
+    +genreList.map(function(g){return'<option value="'+g+'" '+(g===selectedGenre?'selected':'')+'>'+g+'</option>';}).join('')
+    +'</select>';
+  document.getElementById('genreSelect').addEventListener('change',function(e){selectedGenre=e.target.value;});
+
+  var vocals=[["Женский","female"],["Мужской","male"],["Дуэт","duet"],["Авто","auto"]];
+  var vd=document.getElementById('vocalPicker');
+  vd.innerHTML=vocals.map(function(v){return'<div data-vocal="'+v[1]+'" class="genre-chip '+(v[1]===selectedVocal?'active':'')+'">'+v[0]+'</div>';}).join('');
+  vd.querySelectorAll('.genre-chip').forEach(function(el){el.addEventListener('click',function(){vd.querySelectorAll('.genre-chip').forEach(function(c){c.classList.remove('active');});el.classList.add('active');selectedVocal=el.dataset.vocal;});});
+
+  var moods=[
+    ["Энергично","uplifting"],["Меланхолично","melancholy"],["Романтично","romantic"],["Мрачно","dark"],
+    ["Радостно","joyful"],["Эпично","adventurous"],["Спокойно","peaceful"],["Агрессивно","angry"],
+    ["Ностальгия","nostalgic"],["Вечеринка","party"],["Духовно","spiritual"],["Экспериментально","experimental"]
+  ];
+  var md=document.getElementById('moodPicker');
+  md.innerHTML='<select id="moodSelect" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-yellow-400/50 transition">'
+    +moods.map(function(m){return'<option value="'+m[1]+'" '+(m[1]===selectedMood?'selected':'')+'>'+m[0]+'</option>';}).join('')
+    +'</select>';
+  document.getElementById('moodSelect').addEventListener('change',function(e){selectedMood=e.target.value;});
+  document.getElementById('backingVocalCheckbox').addEventListener('change',function(e){backingVocal=e.target.checked;});
+}
+
+function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});document.querySelectorAll('#communityTopList button').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.closest('.flex')&&btn.closest('.flex').querySelector('span')&&btn.closest('.flex').querySelector('span').textContent||'';document.getElementById('ideaInput').value='Создай песню в стиле "'+title+'", атмосферную и запоминающуюся';switchToView('create');});});}
+
+document.getElementById('generateTextBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Напиши идею для трека');return;}currentIdea=idea;var btn=document.getElementById('generateTextBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i>Генерируем текст...';var lyrics=await generateLyrics(idea);btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст';currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;document.getElementById('lyricsBlock').classList.remove('hidden');document.getElementById('step3Block').classList.remove('hidden');var b2=document.getElementById('badge2');b2.classList.add('done');b2.textContent='✓';});
+
+document.getElementById('regenLyricsBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;var lyrics=await generateLyrics(idea);currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
+
+document.getElementById('editLyricsBtn').addEventListener('click',function(){var disp=document.getElementById('lyricsDisplay'),ed=document.getElementById('lyricsEditor'),btn=document.getElementById('editLyricsBtn');if(ed.classList.contains('hidden')){disp.classList.add('hidden');ed.classList.remove('hidden');btn.innerHTML='<i class="fa-regular fa-floppy-disk mr-1"></i>Сохранить';}else{currentGeneratedLyrics=ed.value;disp.textContent=currentGeneratedLyrics;disp.classList.remove('hidden');ed.classList.add('hidden');btn.innerHTML='<i class="fa-regular fa-pen-to-square mr-1"></i>Редактировать';}});
+
+async function buildStylePrompt(){
+    var artistRef=document.getElementById('artistRef')?document.getElementById('artistRef').value.trim():'';
+    var genreEn=genreMap[selectedGenre]||selectedGenre;
+    var moodEn=moodMap[selectedMood]||selectedMood;
+    try{
+        var sr=await fetch('/api/generate-style',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({genre:genreEn,mood:moodEn,artist_ref:artistRef,vocal:selectedVocal,backing:backingVocal})});
+        if(sr.ok){var sd=await sr.json();return sd.style||genreEn+', '+moodEn;}
+    }catch(e){}
+    var s=genreEn+', '+moodEn;
+    if(backingVocal)s+=', with backing vocals, harmonies';
+    if(selectedVocal==='duet')s+=', male and female duet vocals';
+    return s;
+}
+document.getElementById('createDemoBtn').addEventListener('click',async function(){
+    if(!currentGeneratedLyrics){alert('Сначала сгенерируй текст');return;}
+    if(user.balance<=0){document.getElementById('noBalanceModal').classList.remove('hidden');return;}
+    user.balance-=1;saveData();
+    showGenerating();
+    var urls=["https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"];
+    try{
+        var style=await buildStylePrompt();
+        var res=await fetch('/api/generate-music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lyrics:currentGeneratedLyrics,style:style,vocal:selectedVocal,idea:currentIdea})});
+        if(res.ok){
+            var d=await res.json();
+            if(d.music_url) urls[0]=d.music_url;
+            if(d.music_url_b) urls[1]=d.music_url_b;
+        }
+    }catch(e){console.error('Ошибка генерации музыки:',e);}
+    addTrack('Идея: '+(currentIdea||'новая песня').slice(0,35),'demo',30,currentGeneratedLyrics,urls[0]);
+    hideGenerating(function(){
+        document.getElementById('modalLyrics').textContent=currentGeneratedLyrics.substring(0,500);
+        var vA=document.getElementById('variantA'),vB=document.getElementById('variantB');
+        [vA,vB].forEach(function(v){v.classList.remove('border-yellow-400/60','bg-yellow-400/10');});
+        vA.onclick=function(){playDemoAudio(urls[0],'Вариант A');vA.classList.add('border-yellow-400/60','bg-yellow-400/10');vB.classList.remove('border-yellow-400/60','bg-yellow-400/10');};
+        vB.onclick=function(){playDemoAudio(urls[1],'Вариант B');vB.classList.add('border-yellow-400/60','bg-yellow-400/10');vA.classList.remove('border-yellow-400/60','bg-yellow-400/10');};
+        document.getElementById('modalRegenBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');document.getElementById('createDemoBtn').click();};
+        document.getElementById('modalUpgradeBtn').onclick=function(){switchToView('payment');document.getElementById('resultModal').classList.add('hidden');};
+        document.getElementById('modalCloseBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');};
+        document.getElementById('resultModal').classList.remove('hidden');
+    });
+});
+
+document.getElementById('paymentConfirmBtn').addEventListener('click',function(){alert('Выбран пакет: '+activePacket.songs+' ген. за '+activePacket.price+'₽\n\nЗдесь будет переход на страницу оплаты.\nПосле оплаты генерации начисляются автоматически.');});
+document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
+
+// ===== РЕЖИМ АДМИНИСТРАТОРА (5 кликов по логотипу) =====
+(function() {
+    var logo = document.getElementById('headerLogo');
+    var clickCount = 0;
+    var adminActive = false;
+    if (logo) {
+        logo.addEventListener('click', function() {
+            clickCount++;
+            if (clickCount >= 5 && !adminActive) {
+                adminActive = true;
+                var adminBtn = document.createElement('button');
+                adminBtn.className = 'w-full mt-3 admin-btn py-2 rounded-xl text-sm';
+                adminBtn.innerHTML = '➕ Добавить 10 генераций (тест)';
+                adminBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    user.balance += 10;
+                    saveData();
+                    updateBalanceUI();
+                    alert('Баланс пополнен на 10 генераций. Текущий баланс: ' + user.balance);
+                });
+                var placeholder = document.getElementById('adminPlaceholder');
+                if (placeholder) placeholder.appendChild(adminBtn);
+                // также добавим в профиль
+                var profileDiv = document.querySelector('#profilePanel .glass-panel');
+                if (profileDiv) {
+                    var cloneBtn = adminBtn.cloneNode(true);
+                    cloneBtn.className = 'w-full mt-3 admin-btn py-2 rounded-xl text-sm';
+                    profileDiv.appendChild(cloneBtn);
+                }
+                clickCount = 0;
+            }
+            clearTimeout(window._adminTimer);
+            window._adminTimer = setTimeout(function() { clickCount = 0; }, 3000);
+        });
+    }
+})();
+
+document.querySelectorAll('.bottom-nav a').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();switchToView(a.dataset.nav);});});
+
+// ===== FAQ =====
+var faqs = [
+    { cat:"how", q:"Как работает сервис?", a:"Всё просто — три шага: выбери стиль (жанр, вокал, настроение) → опиши идею своей песни → нажми «Создать песни». Нейросеть напишет текст и создаст 2 варианта трека по 30 секунд. Выбери лучший и купи полную версию." },
+    { cat:"how", q:"Что такое «генерация»?", a:"Одна генерация = создание 2 вариантов песни по 30 секунд. Вы слушаете оба и выбираете понравившийся. Генерация текста песни — всегда бесплатна и не ограничена." },
+    { cat:"how", q:"Сколько времени занимает создание трека?", a:"Генерация текста — 5–15 секунд. Создание песни — 30–90 секунд." },
+    { cat:"how", q:"Можно ли редактировать текст перед созданием музыки?", a:"Да! После генерации текста есть кнопка «Редактировать»." },
+    { cat:"how", q:"Что такое «2 бесплатные генерации»?", a:"При первом использовании сервиса вы получаете 2 генерации бесплатно — это 4 варианта песни." },
+    { cat:"how", q:"Чем демо-версия отличается от полной?", a:"Демо — 30 секунд. Полная — до 4 минут, высокое качество, навсегда в библиотеке." },
+    { cat:"price", q:"Сколько стоит создать песню?", a:"1 генерация = 199₽ (2 варианта). Пакеты: 3=499₽, 5=799₽, 10=1199₽. Полная версия — 199₽." },
+    { cat:"price", q:"Как оплатить?", a:"Карты РФ, СБП, Telegram Stars." },
+    { cat:"price", q:"Можно ли вернуть деньги?", a:"Возврат не предусмотрен. При техническом сбое восстановим генерацию бесплатно." },
+    { cat:"price", q:"Баланс сгорит, если не использую?", a:"Нет, генерации хранятся без ограничения по времени." },
+    { cat:"quality", q:"Почему результат может не совпасть с ожиданиями?", a:"Генерация ИИ — вероятностный процесс. Мы создаём 2 варианта." },
+    { cat:"quality", q:"Текст получился не очень. Что делать?", a:"Текст можно перегенерировать бесплатно — кнопка «Ещё раз»." },
+    { cat:"quality", q:"Поддерживается ли русский язык?", a:"Да, полностью." },
+    { cat:"rights", q:"Кому принадлежит созданная песня?", a:"После оплаты полной версии — все права переходят к вам." },
+    { cat:"rights", q:"Могу ли я выложить трек на Spotify?", a:"Да, после оплаты вы получаете все права." },
+    { cat:"rights", q:"Могут ли два пользователя получить одинаковую песню?", a:"Теоретически возможно, поэтому не рекомендуем использовать без отдельного соглашения." },
+];
+
+function renderFAQ(cat) {
+    var list = document.getElementById('faqList');
+    var filtered = cat === 'all' ? faqs : faqs.filter(function(f){ return f.cat === cat; });
+    list.innerHTML = filtered.map(function(f, i){
+        return '<div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>'+f.q+'</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">'+f.a+'</div></div>';
+    }).join('');
+}
+
+function toggleFaq(el) {
+    var answer = el.nextElementSibling;
+    var icon = el.querySelector('.faq-icon');
+    var isOpen = answer.classList.contains('open');
+    document.querySelectorAll('.faq-answer').forEach(function(a){ a.classList.remove('open'); });
+    document.querySelectorAll('.faq-icon').forEach(function(i){ i.classList.remove('rotated'); });
+    if (!isOpen) { answer.classList.add('open'); icon.classList.add('rotated'); }
+}
+
+document.querySelectorAll('.faq-cat-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+        document.querySelectorAll('.faq-cat-btn').forEach(function(b){
+            b.classList.remove('active','bg-yellow-400/10','text-yellow-400','border-yellow-400/40');
+            b.classList.add('text-zinc-400','border-white/10');
+        });
+        btn.classList.add('active','bg-yellow-400/10','text-yellow-400','border-yellow-400/40');
+        btn.classList.remove('text-zinc-400','border-white/10');
+        renderFAQ(btn.dataset.cat);
+    });
+});
+
+function showSection(id) {
+    document.querySelectorAll('.doc-section').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.nav-link').forEach(function(l){ l.classList.remove('active'); });
+    document.getElementById('section-'+id).classList.add('active');
+    document.querySelector('.nav-link[data-section="'+id+'"]').classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.querySelectorAll('.nav-link').forEach(function(link){
+    link.addEventListener('click', function(){ showSection(link.dataset.section); });
+});
+
+document.getElementById('supportSendBtn').addEventListener('click', function(){
+    var name = document.getElementById('supportName').value.trim();
+    var contact = document.getElementById('supportContact').value.trim();
+    var topic = document.getElementById('supportTopic').value;
+    var message = document.getElementById('supportMessage').value.trim();
+    if (!name || !contact || !topic || !message) {
+        alert('Пожалуйста, заполните все поля');
+        return;
+    }
+    var mailBody = encodeURIComponent('Имя: '+name+'\nКонтакт: '+contact+'\nТема: '+topic+'\n\n'+message);
+    window.location.href = 'mailto:bam8282@mail.ru?subject='+encodeURIComponent('[СоздайСвоюПесню] '+topic)+'&body='+mailBody;
+    document.getElementById('supportSuccess').classList.remove('hidden');
+});
+
+// ===== ЧАТ =====
+var chatMessages=document.getElementById('chatMessages');
+function appendMsg(text,isUser){var d=document.createElement('div');d.className='p-3 text-sm '+(isUser?'chat-bubble-user text-right':'chat-bubble-ai text-zinc-300');d.textContent=text;chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;}
+function appendTyping(){var d=document.createElement('div');d.id='chatTyping';d.className='chat-typing p-3';d.innerHTML='<span></span><span></span><span></span>';chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;return d;}
+
+async function sendChat(text){if(!text.trim())return;appendMsg(text,true);var typing=appendTyping();try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,system:'Ты помощник сервиса СоздайСвоюПесню. Отвечай кратко и дружелюбно на русском. Цены: 1 ген=199₽, 3=499₽, 5=799₽, 10=1199₽. Полная версия=199₽. Жанры: Pop, Electronic, Hip-Hop, Rock, Lo-Fi. 2 бесплатные генерации при старте.',messages:[{role:'user',content:text}]})});typing.remove();if(res.ok){var data=await res.json();appendMsg((data.content&&data.content.find(function(b){return b.type==='text';})&&data.content.find(function(b){return b.type==='text';}).text)||'Попробуй ещё раз.',false);}else throw new Error();}catch(e){typing.remove();var low=text.toLowerCase(),ans='Спроси о стоимости, жанрах или как пользоваться — помогу! 🎵';for(var k in faq){if(low.includes(k)){ans=faq[k];break;}}appendMsg(ans,false);}}
+
+document.getElementById('chatSendBtn').addEventListener('click',function(){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';});
+document.getElementById('chatInput').addEventListener('keydown',function(e){if(e.key==='Enter'){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';}});
+document.getElementById('openChatBtn').addEventListener('click',function(){document.getElementById('chatWidget').classList.remove('hidden');});
+document.getElementById('closeChatBtn').addEventListener('click',function(){document.getElementById('chatWidget').classList.add('hidden');});
+
+function escHtml(s){return String(s).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+
+loadData();initChips();initSidebarActions();switchToView('create');renderHomeExplore();renderFAQ('all');
+</script>
+</body>
+</html>
