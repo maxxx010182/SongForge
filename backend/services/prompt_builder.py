@@ -28,6 +28,8 @@ class PromptBuilder:
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        style_mode: str = "presets",
+        custom_description: str = "",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Two-stage AI Prompt Builder: Analyst → Composer."""
         analysis = self._analyst.analyze(
@@ -38,6 +40,8 @@ class PromptBuilder:
             instrumental=instrumental,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            style_mode=style_mode,
+            custom_description=custom_description,
         )
         payload = self._composer.compose(
             analysis,
@@ -57,6 +61,8 @@ class PromptBuilder:
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        style_mode: str = "presets",
+        custom_description: str = "",
     ) -> ProductionPlan:
         plan, _ = self.build(
             idea,
@@ -66,6 +72,8 @@ class PromptBuilder:
             instrumental=instrumental,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            style_mode=style_mode,
+            custom_description=custom_description,
         )
         return plan
 
@@ -113,11 +121,24 @@ class PromptBuilder:
         style = ", ".join(p for p in parts if p)
         return truncate(style, 950)
 
-    def build_style_via_ai(self, plan: ProductionPlan, artist_ref: str = "") -> str:
+    def build_style_via_ai(
+        self,
+        plan: ProductionPlan,
+        artist_ref: str = "",
+        *,
+        style_mode: str = "presets",
+        custom_description: str = "",
+    ) -> str:
         artist_part = ""
         if artist_ref.strip():
             artist_part = (
                 f"Референс (без имён артистов в ответе): {artist_ref.strip()}. "
+            )
+        custom_part = ""
+        if style_mode == "custom" and custom_description.strip():
+            custom_part = (
+                f"Пользователь описал звучание своими словами: "
+                f"{custom_description.strip()}. "
             )
 
         system_prompt = (
@@ -127,6 +148,7 @@ class PromptBuilder:
             "Одна строка через запятую, без имён артистов, максимум 900 символов."
         )
         user_text = (
+            f"{custom_part}"
             f"{artist_part}"
             f"Genre: {plan.genre}, Subgenre: {plan.subgenre}, Mood: {plan.mood}, "
             f"BPM: {plan.bpm}, Energy: {plan.energy}, Vocal: {plan.vocal}, "

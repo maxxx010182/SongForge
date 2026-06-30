@@ -11,6 +11,8 @@ class ProduceRequest(BaseModel):
     instrumental: bool = False
     vocal_hint: str = ""
     backing_vocal: bool = False
+    style_mode: str = "presets"
+    custom_description: str = ""
 
 
 class MusicAnalysis(BaseModel):
@@ -115,6 +117,8 @@ class CreateSongRequest(BaseModel):
     instrumental: bool = False
     vocal_hint: str = ""
     backing_vocal: bool = False
+    style_mode: str = "presets"
+    custom_description: str = ""
 
 
 class CreateSongResponse(BaseModel):
@@ -151,6 +155,8 @@ class StyleRequest(BaseModel):
     artist_ref: str = ""
     vocal: str = "auto"
     backing: bool = False
+    style_mode: str = "presets"
+    custom_description: str = ""
 
 
 class MusicRequest(BaseModel):

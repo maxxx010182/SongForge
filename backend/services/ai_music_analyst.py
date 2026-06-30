@@ -36,17 +36,35 @@ class AiMusicAnalyst:
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        style_mode: str = "presets",
+        custom_description: str = "",
     ) -> MusicAnalysis:
         hints: list[str] = []
-        if genre.strip():
-            hints.append(f"Жанр от пользователя: {genre.strip()}")
-        if mood.strip():
-            hints.append(f"Настроение от пользователя: {mood.strip()}")
+        custom_mode = style_mode == "custom" and custom_description.strip()
+
+        if custom_mode:
+            user_text = f"Описание желаемого звучания своими словами:\n{custom_description.strip()}"
+            if idea.strip():
+                user_text = (
+                    f"Идея песни: {idea.strip()}\n\n{user_text}"
+                )
+            hints.append(
+                "Режим «своими словами»: извлеки жанр, поджанр, настроение, "
+                "вокал, BPM, энергию и инструменты из описания пользователя. "
+                "Списки жанра и настроения не заданы — опирайся только на текст."
+            )
+        else:
+            user_text = idea.strip()
+            if genre.strip():
+                hints.append(f"Жанр от пользователя: {genre.strip()}")
+            if mood.strip():
+                hints.append(f"Настроение от пользователя: {mood.strip()}")
+
         if artist_ref.strip():
             hints.append(
                 f"Референс звучания (без имён в треке): {artist_ref.strip()}"
             )
-        if vocal_hint.strip() and vocal_hint != "auto":
+        if not custom_mode and vocal_hint.strip() and vocal_hint != "auto":
             hints.append(f"Пожелание по вокалу: {vocal_hint.strip()}")
         if backing_vocal:
             hints.append("Нужны бэк-вокалы и гармонии.")
@@ -55,7 +73,6 @@ class AiMusicAnalyst:
                 "Инструментальный трек без вокала — анализируй только музыкальную концепцию."
             )
 
-        user_text = idea.strip()
         if hints:
             user_text += "\n\n" + "\n".join(hints)
 

@@ -29,10 +29,15 @@ class AiProducer:
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        style_mode: str = "presets",
+        custom_description: str = "",
     ) -> ProduceResponse:
         idea = idea.strip()
-        if not idea:
+        custom_mode = style_mode == "custom" and custom_description.strip()
+        if not idea and not custom_mode:
             raise ValueError("Идея песни не может быть пустой")
+        if custom_mode and not idea:
+            idea = custom_description.strip()
 
         plan, payload = self._builder.build(
             idea,
@@ -42,6 +47,8 @@ class AiProducer:
             instrumental=instrumental,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            style_mode=style_mode,
+            custom_description=custom_description,
         )
         plan.optimized_idea = idea
 
@@ -120,6 +127,8 @@ class AiProducer:
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        style_mode: str = "presets",
+        custom_description: str = "",
     ) -> CreateSongResponse:
         produced = self.produce(
             idea,
@@ -129,6 +138,8 @@ class AiProducer:
             instrumental=instrumental,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            style_mode=style_mode,
+            custom_description=custom_description,
         )
         task_id = self.start_music(
             production_id=produced.production_id,

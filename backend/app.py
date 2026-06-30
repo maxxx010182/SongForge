@@ -63,6 +63,8 @@ async def produce_song(req: ProduceRequest):
             instrumental=req.instrumental,
             vocal_hint=req.vocal_hint,
             backing_vocal=req.backing_vocal,
+            style_mode=req.style_mode,
+            custom_description=req.custom_description,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -82,6 +84,8 @@ async def create_song(req: CreateSongRequest):
             instrumental=req.instrumental,
             vocal_hint=req.vocal_hint,
             backing_vocal=req.backing_vocal,
+            style_mode=req.style_mode,
+            custom_description=req.custom_description,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -186,12 +190,26 @@ async def generate_lyrics_endpoint(req: LyricsRequest):
 
 @app.post("/api/generate-style")
 async def generate_style_endpoint(req: StyleRequest):
-    plan = prompt_builder._fallback_plan("", vocal_hint=req.vocal)
-    plan.genre = req.genre
-    plan.mood = req.mood
-    plan.vocal = req.vocal
+    custom_mode = req.style_mode == "custom" and req.custom_description.strip()
+    if custom_mode:
+        plan = prompt_builder.build_plan(
+            req.custom_description,
+            vocal_hint=req.vocal,
+            style_mode="custom",
+            custom_description=req.custom_description,
+        )
+    else:
+        plan = prompt_builder._fallback_plan("", vocal_hint=req.vocal)
+        plan.genre = req.genre
+        plan.mood = req.mood
+        plan.vocal = req.vocal
     try:
-        style = prompt_builder.build_style_via_ai(plan, artist_ref=req.artist_ref)
+        style = prompt_builder.build_style_via_ai(
+            plan,
+            artist_ref=req.artist_ref,
+            style_mode=req.style_mode,
+            custom_description=req.custom_description,
+        )
         if req.backing:
             style += ", with backing vocals, harmonies"
         if req.vocal == "duet":
