@@ -96,6 +96,11 @@
         .expert-style-tab{flex:1;min-width:120px;padding:10px 14px;border-radius:14px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#a1a1aa;transition:all .2s;cursor:pointer}
         .expert-style-tab:hover{color:#fff;border-color:rgba(255,255,255,.2)}
         .expert-style-tab.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.45);color:#eab308}
+        .studio-mode-card{cursor:pointer;transition:all .2s;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:1rem;padding:1rem}
+        .studio-mode-card:hover{border-color:rgba(255,255,255,.18)}
+        .studio-mode-card.active{background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.4);box-shadow:0 0 0 1px rgba(234,179,8,.15)}
+        .studio-mode-card.active .studio-mode-title{color:#eab308}
+        .studio-mode-card:not(.active) .studio-mode-title{color:#d4d4d8}
         .notes-zero{color:#f87171!important}
         .toast-notify{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10000;background:#18181b;border:1px solid rgba(234,179,8,.4);color:#fafafa;padding:12px 20px;border-radius:1rem;font-size:.9rem;box-shadow:0 10px 40px rgba(0,0,0,.5)}
     </style>
@@ -192,33 +197,38 @@
     <!-- СТУДИЯ -->
     <div id="createPanel">
 
-        <!-- Главный сценарий: идея → AI-продюсер -->
-        <div class="glass-panel p-6 mb-6 border border-yellow-400/20">
+        <!-- Главный сценарий: идея → AI-продюсер / Расширенный -->
+        <div id="studioMainPanel" class="glass-panel p-6 mb-6 border border-yellow-400/20">
             <div class="flex items-center gap-3 mb-4">
                 <span class="step-badge done">✦</span>
-                <span class="font-semibold">AI-продюсер SongForge</span>
-                <span class="ml-auto text-[10px] uppercase tracking-wider bg-yellow-400/15 text-yellow-400 border border-yellow-400/30 px-2 py-1 rounded-full">Быстрый режим</span>
+                <span class="font-semibold">Студия создания</span>
+                <span id="studioModeBadge" class="ml-auto text-[10px] uppercase tracking-wider bg-yellow-400/15 text-yellow-400 border border-yellow-400/30 px-2 py-1 rounded-full">Быстрый режим</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 text-xs">
-                <div class="bg-yellow-400/10 border border-yellow-400/25 rounded-2xl p-4">
-                    <div class="font-semibold text-yellow-400 mb-1">⚡ AI-продюсер</div>
+                <div id="modeProducerCard" class="studio-mode-card active" role="button" tabindex="0">
+                    <div class="font-semibold studio-mode-title mb-1">⚡ AI-продюсер</div>
                     <p class="text-zinc-400 leading-relaxed">Одна кнопка — AI сам подберёт стиль, напишет текст и создаст 2 варианта песни.</p>
                     <p class="text-zinc-600 mt-2">Плюс: быстро и просто · Минус: без ручной правки текста</p>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4">
-                    <div class="font-semibold text-zinc-300 mb-1">🎛 Расширенный режим</div>
-                    <p class="text-zinc-400 leading-relaxed">Полный контроль над генерацией. Самостоятельно настройте жанр, вокал, настроение и дополнительные параметры.</p>
+                <div id="modeExpertCard" class="studio-mode-card" role="button" tabindex="0">
+                    <div class="font-semibold studio-mode-title mb-1">🎛 Расширенный режим</div>
+                    <p class="text-zinc-400 leading-relaxed">Полный контроль: жанр, вокал, настроение и описание звучания своими словами.</p>
                     <p class="text-zinc-600 mt-2">Плюс: полный контроль · Минус: больше шагов</p>
                 </div>
             </div>
-            <textarea id="ideaInput" rows="3" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Опишите, о чём должна быть песня..."></textarea>
-            <button id="createSongBtn" class="mt-4 w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером
-            </button>
-            <p class="text-xs text-zinc-600 mt-3 text-center">⚡ Бесплатное превью • 2 варианта по 30 сек • полные версии — 1 нота</p>
-            <details class="mt-5" id="expertModePanel">
-                <summary class="text-sm text-zinc-300 cursor-pointer hover:text-yellow-400 transition font-medium">🎛 Расширенный режим — настроить вручную</summary>
-                <p class="text-xs text-zinc-500 mt-3 mb-4">Полный контроль над генерацией. Выберите параметры списками или опишите звучание своими словами.</p>
+
+            <label id="ideaInputLabel" class="block text-xs text-zinc-400 mb-2">Опиши идею песни</label>
+            <textarea id="ideaInput" rows="4" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Опишите, о чём должна быть песня..."></textarea>
+
+            <div id="producerModeContent" class="mt-4">
+                <button id="createSongBtn" class="w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером
+                </button>
+                <p class="text-xs text-zinc-600 mt-3 text-center">⚡ Бесплатное превью • 2 варианта по 30 сек • полные версии — 1 нота</p>
+            </div>
+
+            <div id="expertModeContent" class="hidden mt-4">
+                <p class="text-xs text-zinc-500 mb-4">Настрой параметры вручную или опиши звучание своими словами — затем сгенерируй текст и создай песню.</p>
                 <div class="expert-style-tabs mb-4">
                     <button type="button" id="styleModePresetsBtn" class="expert-style-tab active">📋 Списки</button>
                     <button type="button" id="styleModeCustomBtn" class="expert-style-tab">✍️ Своими словами</button>
@@ -244,9 +254,9 @@
                     <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: звучание как у The Weeknd, Billie Eilish или Басты — но без копирования">
                 </div>
                 <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-pen-to-square"></i> Только сгенерировать текст
+                    <i class="fa-solid fa-pen-to-square"></i> Сгенерировать текст песни
                 </button>
-            </details>
+            </div>
         </div>
 
         <!-- Решения AI-продюсера -->
@@ -867,7 +877,7 @@
 <script>
 // ===== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ =====
 var user={balance:0,tracks:[]};
-var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_SONG="Опишите, о чём должна быть песня...";
 var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты, настроение и характер композиции...";
 
@@ -963,6 +973,7 @@ function openCreditPurchaseModal(){document.getElementById('creditPurchaseModal'
 function closeCreditPurchaseModal(){document.getElementById('creditPurchaseModal').classList.add('hidden');}
 function showResultModal(data,urls,tracks){stopModalPreview();lastResult={urls:urls,tracks:tracks||[],title:data.title||'Ваша песня',lyrics:currentGeneratedLyrics,cover:(tracks[0]&&tracks[0].image_url)||'https://picsum.photos/id/29/280/280',selected:null,savedVariants:[false,false],savedTrackIds:[],generationId:Date.now()};document.getElementById('modalSongTitle').textContent=lastResult.title;document.getElementById('modalLyrics').classList.add('hidden');['variantA','variantB'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('selected');});['variantATimer','variantBTimer'].forEach(function(id){var t=document.getElementById(id);if(t)t.textContent='0:00 / 0:30';});updateModalCreditsBalance();updateResultModalUI();document.getElementById('variantAListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(0);};document.getElementById('variantBListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(1);};document.getElementById('variantA').onclick=function(){selectResultVariant(0);};document.getElementById('variantB').onclick=function(){selectResultVariant(1);};document.getElementById('modalOpenLibraryBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('library');};document.getElementById('modalStudioBtn').onclick=goToStudioFromResult;document.getElementById('modalShowLyricsBtn').onclick=function(){var ml=document.getElementById('modalLyrics');if(ml.classList.contains('hidden')){ml.textContent=lastResult.lyrics||'Текст недоступен';ml.classList.remove('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-eye-slash mr-1"></i> Скрыть текст';}else{ml.classList.add('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-file-lines mr-1"></i> Посмотреть текст';}};document.getElementById('resultModal').classList.remove('hidden');updatePaymentReturnBtn();}
 
+function setStudioMode(mode){studioMode=mode==='expert'?'expert':'producer';var producerCard=document.getElementById('modeProducerCard');var expertCard=document.getElementById('modeExpertCard');var producerContent=document.getElementById('producerModeContent');var expertContent=document.getElementById('expertModeContent');var badge=document.getElementById('studioModeBadge');var panel=document.getElementById('studioMainPanel');var ideaLabel=document.getElementById('ideaInputLabel');if(producerCard)producerCard.classList.toggle('active',studioMode==='producer');if(expertCard)expertCard.classList.toggle('active',studioMode==='expert');if(producerContent)producerContent.classList.toggle('hidden',studioMode!=='producer');if(expertContent)expertContent.classList.toggle('hidden',studioMode!=='expert');if(badge)badge.textContent=studioMode==='producer'?'Быстрый режим':'Расширенный режим';if(panel){panel.classList.toggle('border-yellow-400/20',studioMode==='producer');panel.classList.toggle('border-white/10',studioMode==='expert');}if(ideaLabel)ideaLabel.textContent=studioMode==='producer'?'Опиши идею песни':'Опиши идею песни';updateIdeaPlaceholder();}
 function getCustomDescription(){var el=document.getElementById('customDescriptionInput');return el?el.value.trim():'';}
 function buildSongPayload(idea){var vocalMapReq={female:'female',male:'male',duet:'duet',auto:'auto'};var customDesc=expertStyleMode==='custom'?getCustomDescription():'';return{idea:idea,genre:selectedGenre,mood:selectedMood,artist_ref:(document.getElementById('artistRef')&&document.getElementById('artistRef').value.trim())||'',instrumental:!!(document.getElementById('instrumentalCheckbox')&&document.getElementById('instrumentalCheckbox').checked),vocal_hint:vocalMapReq[selectedVocal]||'auto',backing_vocal:!!(document.getElementById('backingVocalCheckbox')&&document.getElementById('backingVocalCheckbox').checked),style_mode:expertStyleMode,custom_description:customDesc};}
 function setExpertStyleMode(mode){expertStyleMode=mode==='custom'?'custom':'presets';var presetsBtn=document.getElementById('styleModePresetsBtn');var customBtn=document.getElementById('styleModeCustomBtn');var presetsBlock=document.getElementById('expertPresetsBlock');var customBlock=document.getElementById('expertCustomBlock');if(presetsBtn)presetsBtn.classList.toggle('active',expertStyleMode==='presets');if(customBtn)customBtn.classList.toggle('active',expertStyleMode==='custom');if(presetsBlock)presetsBlock.classList.toggle('hidden',expertStyleMode==='custom');if(customBlock)customBlock.classList.toggle('hidden',expertStyleMode!=='custom');}
@@ -1057,6 +1068,10 @@ function initChips(){
 
 function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});document.querySelectorAll('#communityTopList button').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.closest('.flex')&&btn.closest('.flex').querySelector('span')&&btn.closest('.flex').querySelector('span').textContent||'';document.getElementById('ideaInput').value='Создай песню в стиле "'+title+'", атмосферную и запоминающуюся';switchToView('create');});});}
 
+document.getElementById('modeProducerCard').addEventListener('click',function(){setStudioMode('producer');});
+document.getElementById('modeExpertCard').addEventListener('click',function(){setStudioMode('expert');});
+document.getElementById('modeProducerCard').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();setStudioMode('producer');}});
+document.getElementById('modeExpertCard').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();setStudioMode('expert');}});
 document.getElementById('styleModePresetsBtn').addEventListener('click',function(){setExpertStyleMode('presets');});
 document.getElementById('styleModeCustomBtn').addEventListener('click',function(){setExpertStyleMode('custom');});
 
@@ -1219,7 +1234,7 @@ document.getElementById('buy1CreditBtn').addEventListener('click',goToPaymentFro
 document.getElementById('buy5CreditsBtn').addEventListener('click',goToPaymentFromResult);
 document.getElementById('returnToVariantsBtn').addEventListener('click',returnToResultModal);
 
-loadData();initChips();initSidebarActions();setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
+loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 </script>
 </body>
 </html>
