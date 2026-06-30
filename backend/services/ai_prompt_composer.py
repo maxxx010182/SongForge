@@ -1,6 +1,7 @@
 from backend.models import MusicAnalysis, SunoPromptPayload
 from backend.services.yandex_client import YandexClient
-from backend.utils.text import clean_text, extract_json, truncate
+from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT_WEIRDNESS
+from backend.utils.text import clean_text, ensure_russian_vocal_style, extract_json, truncate
 
 
 class AiPromptComposer:
@@ -12,9 +13,9 @@ class AiPromptComposer:
         "title (короткое запоминающееся название на русском, до 4 слов), "
         "lyrics (полный текст песни на русском со структурными тегами "
         "[Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]), "
-        "style (максимально подробное описание на английском в одну строку через запятую: "
-        "основной жанр, поджанр, настроение, темп BPM, энергетика, инструменты, вокал, "
-        "атмосфера, тип сведения, коммерческое звучание — минимум 12 элементов), "
+        "style (подробное описание на английском в одну строку через запятую: "
+        "жанр, поджанр, настроение, BPM, энергия, инструменты, вокал, атмосфера, сведение; "
+        "обязательно включи: sung in Russian, native Russian vocals), "
         "vocalGender (f или m — кого выбрать для вокала; для дуэта выбери доминирующий), "
         "negativeTags (список исключений через запятую на английском), "
         "styleWeight (0.0-1.0), weirdnessConstraint (0.0-1.0), audioWeight (0.0-1.0). "
@@ -34,7 +35,7 @@ class AiPromptComposer:
         "style (максимально подробное музыкальное описание на английском: жанр, поджанр, "
         "настроение, BPM, энергия, инструменты, атмосфера, сведение, коммерческое звучание), "
         "vocalGender (пустая строка \"\"), "
-        "negativeTags, styleWeight, weirdnessConstraint, audioWeight (рекомендуется 0.90). "
+        "negativeTags, styleWeight (0.50), weirdnessConstraint (0.30), audioWeight (0.50). "
         "Не создавай текст песни. lyrics всегда \"\"."
     )
 
@@ -54,11 +55,11 @@ class AiPromptComposer:
     }
 
     STYLE_WEIGHT: dict[str, float] = {
-        "pop": 0.85,
-        "rock": 0.80,
-        "electronic": 0.92,
-        "epic": 0.90,
-        "lo-fi": 0.75,
+        "pop": 0.50,
+        "rock": 0.50,
+        "electronic": 0.55,
+        "epic": 0.55,
+        "lo-fi": 0.45,
     }
 
     def __init__(self, yandex: YandexClient) -> None:
@@ -129,9 +130,9 @@ class AiPromptComposer:
         if analysis.instrumental:
             payload.lyrics = ""
             payload.vocal_gender = ""
-            payload.audio_weight = max(payload.audio_weight, 0.90)
         else:
             payload.lyrics = clean_text(payload.lyrics)
+            payload.style = truncate(ensure_russian_vocal_style(payload.style), 950)
 
         if backing_vocal and "backing vocal" not in payload.style.lower():
             payload.style += ", layered backing vocals, rich vocal harmonies"
@@ -191,10 +192,12 @@ class AiPromptComposer:
             style_parts.append("male and female duet vocals")
 
         style = ", ".join(p for p in style_parts if p)
+        if not analysis.instrumental:
+            style = truncate(ensure_russian_vocal_style(style), 950)
         genre_key = analysis.genre.lower().split()[0]
-        style_weight = self.STYLE_WEIGHT.get(genre_key, 0.85)
-        weirdness = 0.20 if analysis.commercial_intent == "commercial" else 0.50
-        audio_weight = 0.90 if analysis.instrumental else 0.70
+        style_weight = self.STYLE_WEIGHT.get(genre_key, DEFAULT_STYLE_WEIGHT)
+        weirdness = DEFAULT_WEIRDNESS if analysis.commercial_intent == "commercial" else 0.50
+        audio_weight = DEFAULT_AUDIO_WEIGHT
 
         words = [w for w in idea.split() if w.strip()]
         title = truncate(" ".join(words[:4]) if words else "Моя песня", 75)

@@ -2,6 +2,14 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from backend.settings import (
+    DEFAULT_AUDIO_WEIGHT,
+    DEFAULT_CHANNEL,
+    DEFAULT_MODEL_VERSION,
+    DEFAULT_STYLE_WEIGHT,
+    DEFAULT_WEIRDNESS,
+)
+
 
 class ProduceRequest(BaseModel):
     idea: str
@@ -38,9 +46,9 @@ class SunoPromptPayload(BaseModel):
     style: str = ""
     vocal_gender: str = Field(default="", alias="vocalGender")
     negative_tags: str = Field(default="", alias="negativeTags")
-    style_weight: float = Field(default=0.85, alias="styleWeight")
-    weirdness_constraint: float = Field(default=0.20, alias="weirdnessConstraint")
-    audio_weight: float = Field(default=0.70, alias="audioWeight")
+    style_weight: float = Field(default=DEFAULT_STYLE_WEIGHT, alias="styleWeight")
+    weirdness_constraint: float = Field(default=DEFAULT_WEIRDNESS, alias="weirdnessConstraint")
+    audio_weight: float = Field(default=DEFAULT_AUDIO_WEIGHT, alias="audioWeight")
 
     model_config = {"populate_by_name": True}
 
@@ -61,13 +69,13 @@ class ProductionPlan(BaseModel):
         "unwanted noise, distortion, clipping, screaming, off-key vocals, "
         "poor mix, muddy sound, low quality, chaotic arrangement"
     )
-    style_weight: float = 0.85
-    weirdness_constraint: float = 0.20
-    audio_weight: float = 0.70
+    style_weight: float = DEFAULT_STYLE_WEIGHT
+    weirdness_constraint: float = DEFAULT_WEIRDNESS
+    audio_weight: float = DEFAULT_AUDIO_WEIGHT
     vocal_gender: str = ""
     instrumental: bool = False
-    channel: str = "auto"
-    model_version: str = "V5_5"
+    channel: str = DEFAULT_CHANNEL
+    model_version: str = DEFAULT_MODEL_VERSION
     explanation_ru: str = ""
     optimized_idea: str = ""
 

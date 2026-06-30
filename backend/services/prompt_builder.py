@@ -2,7 +2,7 @@ from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.yandex_client import YandexClient
-from backend.utils.text import clean_text, truncate
+from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
 
 
 class PromptBuilder:
@@ -119,6 +119,8 @@ class PromptBuilder:
         if plan.vocal == "duet":
             parts.append("male and female duet vocals")
         style = ", ".join(p for p in parts if p)
+        if not plan.instrumental:
+            style = ensure_russian_vocal_style(style)
         return truncate(style, 950)
 
     def build_style_via_ai(
@@ -145,6 +147,7 @@ class PromptBuilder:
             "Ты эксперт по музыкальному продакшену для Suno V5.5. "
             "Собери профессиональный style prompt на английском: жанр, поджанр, "
             "настроение, BPM, энергия, инструменты, вокал, продакшн, атмосфера, микс. "
+            "Обязательно укажи sung in Russian и native Russian vocals. "
             "Одна строка через запятую, без имён артистов, максимум 900 символов."
         )
         user_text = (
@@ -164,6 +167,8 @@ class PromptBuilder:
             )
             style = clean_text(style)
             if style:
+                if not plan.instrumental:
+                    style = ensure_russian_vocal_style(style)
                 return truncate(style, 950)
         except Exception:
             pass

@@ -131,6 +131,7 @@ class ApiPassClient:
     def _progress_hint(state: str) -> str:
         hints = {
             "queue": "Задача в очереди...",
+            "queuing": "Задача в очереди...",
             "generating": "Создаём твой лучший трек...",
             "success": "Готово!",
             "fail": "Генерация не удалась",

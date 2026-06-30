@@ -27,3 +27,25 @@ def truncate(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
+
+
+_RUSSIAN_VOCAL_MARKERS = (
+    "russian vocal",
+    "sung in russian",
+    "russian lyrics",
+    "singing in russian",
+)
+
+
+def ensure_russian_vocal_style(style: str) -> str:
+    """Prefix English style with Russian vocal directive for Suno custom mode."""
+    cleaned = style.strip()
+    if not cleaned:
+        return "sung in Russian, native Russian vocals, clear Russian pronunciation"
+    lower = cleaned.lower()
+    if any(marker in lower for marker in _RUSSIAN_VOCAL_MARKERS):
+        return cleaned
+    return (
+        "sung in Russian, native Russian vocals, clear Russian pronunciation, "
+        + cleaned
+    )
