@@ -21,6 +21,8 @@ class ApiPassClient:
 
     @staticmethod
     def _vocal_gender(plan: ProductionPlan) -> Optional[str]:
+        if plan.vocal == "duet":
+            return None
         gender = (plan.vocal_gender or "").strip().lower()
         if gender in {"m", "f"}:
             return gender
@@ -66,10 +68,14 @@ class ApiPassClient:
         }
 
         log.info(
-            "APIPass createTask: title=%s, style_len=%s, lyrics_len=%s",
+            "APIPass createTask: title=%s, vocal=%s, vocalGender=%s, "
+            "style_len=%s, lyrics_len=%s, backing_in_style=%s",
             title[:40],
+            plan.vocal,
+            input_data.get("vocalGender", "—"),
             len(style),
             len(lyrics),
+            "backing vocal" in style.lower(),
         )
 
         response = requests.post(

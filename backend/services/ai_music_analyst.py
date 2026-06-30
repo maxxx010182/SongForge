@@ -1,4 +1,5 @@
 from backend.models import MusicAnalysis
+from backend.services.artist_reference import resolve_artist_reference
 from backend.services.yandex_client import YandexClient
 from backend.utils.text import extract_json
 
@@ -139,14 +140,32 @@ class AiMusicAnalyst:
                     "не используй Pop по умолчанию без оснований."
                 )
 
-        if artist_ref.strip():
+        artist_profile = resolve_artist_reference(artist_ref)
+        if artist_profile:
+            hints.append(
+                f"Референс звучания (без имён артистов в ответе): {artist_profile.style_tags}"
+            )
+            hints.append(
+                f"Жанр по референсу: {artist_profile.genre} / {artist_profile.subgenre}"
+            )
+            hints.append(f"Вокал по референсу: {artist_profile.vocal_description}")
+            if artist_profile.bpm:
+                hints.append(f"Ориентир BPM по референсу: {artist_profile.bpm}")
+        elif artist_ref.strip():
             hints.append(
                 f"Референс звучания (без имён в треке): {artist_ref.strip()}"
             )
-        if not custom_mode and vocal_hint.strip() and vocal_hint != "auto":
+        if vocal_hint == "duet":
+            hints.append(
+                "ОБЯЗАТЕЛЬНО дуэт: мужской И женский вокал в одном треке, "
+                "чередование или совместное пение."
+            )
+        elif not custom_mode and vocal_hint.strip() and vocal_hint != "auto":
             hints.append(f"Пожелание по вокалу: {vocal_hint.strip()}")
         if backing_vocal:
-            hints.append("Нужны бэк-вокалы и гармонии.")
+            hints.append(
+                "ОБЯЗАТЕЛЬНЫ бэк-вокалы и гармонии на припевах, бридже и аутро."
+            )
         if instrumental:
             hints.append(
                 "Инструментальный трек без вокала — анализируй только музыкальную концепцию."
@@ -167,7 +186,15 @@ class AiMusicAnalyst:
             analysis.instrumental = instrumental
             if vocal_hint in {"male", "female", "duet", "auto"}:
                 analysis.vocal = vocal_hint
-            return self._normalize(analysis)
+            analysis = self._normalize(analysis)
+            if artist_profile:
+                analysis.genre = artist_profile.genre
+                analysis.subgenre = artist_profile.subgenre
+                if artist_profile.bpm:
+                    analysis.bpm = artist_profile.bpm
+                if vocal_hint == "auto" and analysis.vocal == "auto":
+                    analysis.vocal_description = artist_profile.vocal_description
+            return analysis
         except Exception:
             return self._fallback(
                 idea,
@@ -175,6 +202,7 @@ class AiMusicAnalyst:
                 mood=mood,
                 instrumental=instrumental,
                 vocal_hint=vocal_hint,
+                artist_ref=artist_ref,
             )
 
     @classmethod
@@ -229,20 +257,29 @@ class AiMusicAnalyst:
         mood: str = "",
         instrumental: bool = False,
         vocal_hint: str = "",
+        artist_ref: str = "",
     ) -> MusicAnalysis:
         vocal = vocal_hint if vocal_hint in {"male", "female", "duet", "auto"} else "auto"
-        genre_en, subgenre = cls._resolve_genre(genre, idea)
+        artist_profile = resolve_artist_reference(artist_ref)
+        if artist_profile:
+            genre_en, subgenre = artist_profile.genre, artist_profile.subgenre
+            vocal_description = artist_profile.vocal_description
+            bpm = artist_profile.bpm or 120
+        else:
+            genre_en, subgenre = cls._resolve_genre(genre, idea)
+            vocal_description = "expressive modern vocals"
+            bpm = 120
         mood_en = cls._resolve_mood(mood, idea)
         return MusicAnalysis(
             genre=genre_en,
             subgenre=subgenre,
             mood=mood_en,
-            bpm=120,
+            bpm=bpm,
             energy="medium",
             instruments=["synth", "drums", "bass", "electric guitar"],
             atmosphere="modern emotional atmosphere",
             vocal=vocal,
-            vocal_description="expressive modern vocals",
+            vocal_description=vocal_description,
             production_style="radio-ready polished mix",
             commercial_intent="commercial",
             structure="verse-chorus-verse-chorus-bridge-chorus-outro",

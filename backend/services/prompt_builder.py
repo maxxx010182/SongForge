@@ -46,6 +46,8 @@ class PromptBuilder:
         payload = self._composer.compose(
             analysis,
             idea,
+            artist_ref=artist_ref,
+            vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
         )
         plan = self._analysis_to_plan(analysis, payload)
