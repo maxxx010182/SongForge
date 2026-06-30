@@ -145,7 +145,7 @@ async def music_status(task_id: str):
                 state="failed",
                 progress_hint=status["progress_hint"],
                 fail_code=status.get("fail_code", ""),
-                fail_msg=status.get("fail_msg", "") or "Suno не смогла создать трек",
+                fail_msg=status.get("fail_msg", "") or "Не удалось создать трек",
                 production_id=production_id,
             )
 

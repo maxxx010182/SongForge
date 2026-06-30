@@ -96,7 +96,7 @@
         .expert-style-tab{flex:1;min-width:120px;padding:10px 14px;border-radius:14px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#a1a1aa;transition:all .2s;cursor:pointer}
         .expert-style-tab:hover{color:#fff;border-color:rgba(255,255,255,.2)}
         .expert-style-tab.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.45);color:#eab308}
-        .credits-zero{color:#f87171!important}
+        .notes-zero{color:#f87171!important}
         .toast-notify{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10000;background:#18181b;border:1px solid rgba(234,179,8,.4);color:#fafafa;padding:12px 20px;border-radius:1rem;font-size:.9rem;box-shadow:0 10px 40px rgba(0,0,0,.5)}
     </style>
 </head>
@@ -121,7 +121,7 @@
     </nav>
     <div class="flex items-center gap-3">
         <div class="bg-white/5 px-4 py-2 rounded-3xl text-sm border border-white/10 cursor-pointer hover:border-yellow-400/30 transition" onclick="switchToView('payment')">
-            <i class="fa-regular fa-gem text-yellow-400 mr-2"></i><span id="headerBalance">2 кредита</span>
+            <i class="fa-solid fa-music text-yellow-400 mr-2"></i><span id="headerBalance">0 нот</span>
         </div>
         <div class="w-8 h-8 bg-zinc-800 rounded-2xl flex items-center justify-center"><i class="fa-regular fa-user text-yellow-300"></i></div>
     </div>
@@ -158,9 +158,9 @@
             </div>
         </div>
         <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
-            <div class="font-semibold text-sm">💎 Полная версия</div>
-            <div class="text-xs text-zinc-400 mt-1">Всего <span class="text-yellow-400 font-bold">199₽</span> за трек. Навсегда в библиотеке.</div>
-            <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить генерации</button>
+            <div class="font-semibold text-sm">🎵 Полные версии</div>
+            <div class="text-xs text-zinc-400 mt-1"><span class="text-yellow-400 font-bold">1 нота = 199₽</span> — 2 варианта навсегда в библиотеке.</div>
+            <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить ноты</button>
         </div>
         <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
             <i class="fa-regular fa-comment text-yellow-400"></i> Спросить помощника
@@ -215,7 +215,7 @@
             <button id="createSongBtn" class="mt-4 w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером
             </button>
-            <p class="text-xs text-zinc-600 mt-3 text-center">⚡ Бесплатное превью • 2 варианта по 30 сек • полная версия — 1 кредит</p>
+            <p class="text-xs text-zinc-600 mt-3 text-center">⚡ Бесплатное превью • 2 варианта по 30 сек • полные версии — 1 нота</p>
             <details class="mt-5" id="expertModePanel">
                 <summary class="text-sm text-zinc-300 cursor-pointer hover:text-yellow-400 transition font-medium">🎛 Расширенный режим — настроить вручную</summary>
                 <p class="text-xs text-zinc-500 mt-3 mb-4">Полный контроль над генерацией. Выберите параметры списками или опишите звучание своими словами.</p>
@@ -241,7 +241,7 @@
                 </div>
                 <div class="mt-4">
                     <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания</label>
-                    <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: звучание The Weeknd + Billie Eilish + Баста — но без копирования">
+                    <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: звучание как у The Weeknd, Billie Eilish или Басты — но без копирования">
                 </div>
                 <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-pen-to-square"></i> Только сгенерировать текст
@@ -283,7 +283,7 @@
                 <span class="font-semibold">Создать песню</span>
                 <span class="ml-auto text-xs text-emerald-400/90 bg-emerald-400/10 px-3 py-1 rounded-full"><i class="fa-solid fa-gift mr-1"></i>Бесплатное превью</span>
             </div>
-            <p class="text-xs text-zinc-500 mb-4">Нейросеть создаст 2 варианта по 30 секунд бесплатно. Полная версия в библиотеку — 1 кредит при скачивании.</p>
+            <p class="text-xs text-zinc-500 mb-4">Нейросеть создаст 2 варианта по 30 секунд бесплатно. Полные версии в библиотеку — 1 нота при скачивании.</p>
             <button id="createDemoBtn" class="w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню
             </button>
@@ -326,9 +326,9 @@
         <div class="glass-panel p-6 text-center max-w-md mx-auto">
             <div class="w-24 h-24 bg-yellow-400/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-regular fa-user text-4xl text-yellow-400"></i></div>
             <div class="text-4xl font-bold text-yellow-400" id="profileBalance">0</div>
-            <div class="text-zinc-400 mb-1">генераций треков</div>
-            <div class="text-xs text-zinc-600 mb-6">1 кредит = полная песня в библиотеке</div>
-            <button id="profileTopupBtn" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-semibold mb-4"><i class="fa-regular fa-gem mr-2"></i>Купить генерации</button>
+            <div class="text-zinc-400 mb-1">нот на балансе</div>
+            <div class="text-xs text-zinc-600 mb-6">1 нота = 1 генерация (2 варианта песни)</div>
+            <button id="profileTopupBtn" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-semibold mb-4"><i class="fa-solid fa-music mr-2"></i>Купить ноты</button>
 
             <!-- Реферальная программа -->
             <div class="mt-6 bg-gradient-to-r from-yellow-400/10 to-amber-400/5 border border-yellow-400/20 rounded-2xl p-5 text-left">
@@ -363,8 +363,11 @@
 
     <!-- ПАКЕТЫ -->
     <div id="paymentPanel" class="hidden">
-        <h2 class="text-2xl font-title font-semibold mb-2">Пакеты генераций</h2>
-        <p class="text-zinc-500 text-sm mb-5">Каждая генерация = 2 варианта песни • Полная версия (до 4 мин) — 199₽ отдельно</p>
+        <h2 class="text-2xl font-title font-semibold mb-2">Пакеты нот</h2>
+        <p class="text-zinc-500 text-sm mb-5">1 нота = 1 генерация = 2 варианта песни • Полные версии (до 4 мин) — 199₽</p>
+        <button id="returnToVariantsBtn" class="hidden w-full mb-4 bg-white/10 hover:bg-white/20 border border-yellow-400/30 py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-left"></i> Вернуться к вариантам песни
+        </button>
         <div id="packetsContainer" class="space-y-4"></div>
         <button id="paymentConfirmBtn" class="w-full mt-6 upgrade-btn py-4 rounded-2xl text-lg">💳 Перейти к оплате</button>
         <p class="text-center text-zinc-500 text-xs mt-4">Карты РФ • СБП • Telegram Stars • Треки остаются навсегда</p>
@@ -418,7 +421,7 @@
             <p>Сервис предоставляет платные и бесплатные возможности:</p>
             <ul>
                 <li><strong style="color:#e4e4e7">Бесплатно:</strong> 2 пробные генерации при первом использовании; неограниченная перегенерация текста песни</li>
-                <li><strong style="color:#e4e4e7">Создание песни:</strong> от 199 ₽ за 1 генерацию (= 2 варианта трека по 30 сек на выбор)</li>
+                <li><strong style="color:#e4e4e7">Создание песни:</strong> от 199 ₽ за 1 ноту (= 1 генерация, 2 варианта трека)</li>
                 <li><strong style="color:#e4e4e7">Полная версия:</strong> 199 ₽ за трек (до 4 минут, высокое качество)</li>
             </ul>
             <p>Актуальные тарифы размещены на странице «Пакеты». Оплата производится через платёжные системы Робокасса, ЮKassa, СБП или Telegram Stars. Списание происходит в момент подтверждения оплаты.</p>
@@ -501,7 +504,7 @@
             <h2>3. Зачем мы используем ваши данные</h2>
             <ul>
                 <li>Для идентификации Пользователя и ведения личного кабинета</li>
-                <li>Для хранения баланса генераций и библиотеки треков</li>
+                <li>Для хранения баланса нот и библиотеки треков</li>
                 <li>Для обработки платежей и выдачи чеков</li>
                 <li>Для ответов на обращения в службу поддержки</li>
                 <li>Для улучшения качества сервиса и анализа использования</li>
@@ -726,7 +729,7 @@
             <div class="text-xs text-zinc-400 mb-2">💡 Совет</div>
             <div class="text-sm leading-relaxed text-zinc-400">Добавляй в описание детали: «пение птиц», «ночной город», «гитарное соло» — нейросеть их учитывает.</div>
         </div>
-        <button onclick="switchToView('payment')" class="w-full mt-4 bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-2 rounded-xl text-sm hover:bg-yellow-400/30 transition">💳 Купить генерации</button>
+        <button onclick="switchToView('payment')" class="w-full mt-4 bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-2 rounded-xl text-sm hover:bg-yellow-400/30 transition">💳 Купить ноты</button>
         <!-- Админ-кнопка появится здесь после 5 кликов по логотипу -->
         <div id="adminPlaceholder"></div>
     </div>
@@ -748,10 +751,10 @@
 <!-- Модалка: нет баланса -->
 <div id="noBalanceModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4">
     <div class="bg-zinc-900 rounded-3xl max-w-sm w-full p-6 text-center border border-yellow-400/20">
-        <div class="text-5xl mb-4">💎</div>
-        <div class="text-xl font-bold mb-2">Генерации закончились</div>
-        <div class="text-zinc-400 text-sm mb-6">Каждая генерация = 2 варианта песни. Пополни баланс — и продолжим!</div>
-        <button onclick="switchToView('payment');document.getElementById('noBalanceModal').classList.add('hidden');" class="w-full upgrade-btn py-3 rounded-2xl mb-3">💳 Купить генерации</button>
+        <div class="text-5xl mb-4">🎵</div>
+        <div class="text-xl font-bold mb-2">Ноты закончились</div>
+        <div class="text-zinc-400 text-sm mb-6">1 нота = 2 варианта песни. Пополни баланс — и продолжим!</div>
+        <button onclick="goToPaymentFromResult();document.getElementById('noBalanceModal').classList.add('hidden');" class="w-full upgrade-btn py-3 rounded-2xl mb-3">💳 Купить ноты</button>
         <button onclick="document.getElementById('noBalanceModal').classList.add('hidden')" class="w-full bg-white/5 py-3 rounded-2xl text-sm text-zinc-400">Отмена</button>
     </div>
 </div>
@@ -766,7 +769,7 @@
                 <div id="modalSongTitle" class="text-sm text-yellow-400 mt-1 font-medium"></div>
                 <div class="text-xs text-zinc-500 mt-1">2 варианта • 30 секунд • слушай без ограничений</div>
             </div>
-            <div id="modalCreditsBalance" class="text-right text-sm shrink-0"><i class="fa-regular fa-gem text-yellow-400 mr-1"></i><span id="modalCreditsText">Баланс 0 кредитов</span></div>
+            <div id="modalCreditsBalance" class="text-right text-sm shrink-0"><i class="fa-solid fa-music text-yellow-400 mr-1"></i><span id="modalCreditsText">Баланс 0 нот</span></div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 mt-4">
@@ -777,7 +780,7 @@
                 <div class="variant-wave" id="variantAWave"><span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:85%"></span><span style="height:45%"></span></div>
                 <button id="variantAListen" class="w-full bg-white/10 hover:bg-white/20 py-2.5 rounded-xl text-sm transition">▶ Слушать превью</button>
                 <div id="variantATimer" class="text-[11px] text-zinc-500 mt-2">0:00 / 0:30</div>
-                <button id="variantADownload" class="w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked">Скачать (1 кредит)</button>
+                <button id="variantADownload" class="w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked">Скачать (1 нота)</button>
             </div>
             <div id="variantB" class="variant-card bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
                 <span class="variant-badge">Выбран</span>
@@ -786,11 +789,11 @@
                 <div class="variant-wave" id="variantBWave"><span style="height:50%"></span><span style="height:75%"></span><span style="height:40%"></span><span style="height:90%"></span><span style="height:60%"></span></div>
                 <button id="variantBListen" class="w-full bg-white/10 hover:bg-white/20 py-2.5 rounded-xl text-sm transition">▶ Слушать превью</button>
                 <div id="variantBTimer" class="text-[11px] text-zinc-500 mt-2">0:00 / 0:30</div>
-                <button id="variantBDownload" class="w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked">Скачать (1 кредит)</button>
+                <button id="variantBDownload" class="w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked">Скачать (1 нота)</button>
             </div>
         </div>
 
-        <div id="modalSelectHint" class="modal-step-hint mb-3">👆 Превью бесплатно (30 сек). Скачивание полной версии — 1 кредит за вариант.</div>
+        <div id="modalSelectHint" class="modal-step-hint mb-3">👆 Превью бесплатно (30 сек). Скачивание полных версий — 1 нота за оба варианта.</div>
 
         <div id="modalActionsBlock" class="mb-4">
             <div id="modalSelectedLabel" class="text-sm font-semibold text-yellow-400 mb-3 hidden"></div>
@@ -801,34 +804,29 @@
 
             <div class="info-plaque mb-4 flex gap-3 items-start">
                 <div class="text-xl shrink-0">💡</div>
-                <div id="modalInfoText">Прослушайте оба варианта бесплатно. Чтобы сохранить полную песню в библиотеку — нажмите «Скачать (1 кредит)» на понравившемся варианте. Без кредита кнопка неактивна.</div>
+                <div id="modalInfoText">Прослушайте оба варианта бесплатно. Чтобы сохранить полные версии в библиотеку — нажмите «Скачать (1 нота)» на любом варианте. Обе песни сохранятся сразу. Без ноты кнопка неактивна.</div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button id="modalSimilarBtn" class="bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-xs sm:text-sm transition"><i class="fa-solid fa-music mr-1"></i> Создать похожую</button>
-                <button id="modalRegenBtn" class="bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-xs sm:text-sm transition"><i class="fa-solid fa-rotate-right mr-1"></i> Ещё 2 варианта</button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button id="modalShowLyricsBtn" class="bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-xs sm:text-sm transition"><i class="fa-regular fa-file-lines mr-1"></i> Посмотреть текст</button>
+                <button id="modalStudioBtn" class="bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-xs sm:text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> Вернуться в студию</button>
             </div>
         </div>
 
         <div id="modalLyrics" class="hidden bg-black/30 rounded-xl p-4 text-sm font-mono max-h-40 overflow-y-auto whitespace-pre-wrap text-zinc-400 mb-4 border border-zinc-800"></div>
-
-        <button id="modalBackBtn" class="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-2xl text-sm transition mt-2">
-            <i class="fa-solid fa-arrow-left mr-1"></i> Вернуться к генерации
-        </button>
     </div>
 </div>
 
-<!-- Модалка: покупка кредита -->
+<!-- Модалка: покупка ноты -->
 <div id="creditPurchaseModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10000] p-4">
     <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-6 border border-zinc-800 relative">
         <button id="creditModalClose" class="absolute top-4 right-4 text-zinc-500 hover:text-white text-2xl leading-none">&times;</button>
-        <div class="text-xl font-bold mb-2">Купить кредит</div>
-        <p class="text-sm text-zinc-400 mb-1">1 кредит = одна полная песня в библиотеке.</p>
+        <div class="text-xl font-bold mb-2">Купить ноту</div>
+        <p class="text-sm text-zinc-400 mb-1">1 нота = 1 генерация = 2 варианта песни в библиотеке.</p>
         <p class="text-sm text-zinc-300 mb-5">Стоимость: <span class="text-yellow-400 font-semibold">199 ₽</span></p>
-        <button id="buy1CreditBtn" class="w-full upgrade-btn py-3 rounded-2xl mb-3">Купить 1 кредит (199 ₽)</button>
-        <button id="buy5CreditsBtn" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-2xl text-sm transition">Купить 5 кредитов (885 ₽) <span class="text-emerald-400 text-xs">−5%</span></button>
-        <p class="text-[11px] text-zinc-600 mt-4 text-center">После покупки песня навсегда останется в вашей библиотеке.</p>
+        <button id="buy1CreditBtn" class="w-full upgrade-btn py-3 rounded-2xl mb-3">Купить 1 ноту (199 ₽)</button>
+        <button id="buy5CreditsBtn" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-2xl text-sm transition">Купить 5 нот (885 ₽) <span class="text-emerald-400 text-xs">−5%</span></button>
+        <p class="text-[11px] text-zinc-600 mt-4 text-center">После покупки песни навсегда останутся в вашей библиотеке.</p>
     </div>
 </div>
 
@@ -919,13 +917,13 @@ var moodMap={
 
 function saveData(){localStorage.setItem('создайсвоюпесню_user',JSON.stringify({balance:user.balance,tracks:user.tracks}));updateBalanceUI();}
 function loadData(){try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);user.balance=d.balance!=null?d.balance:0;user.tracks=d.tracks||[];}}catch(e){}updateBalanceUI();renderLibrary();renderExplore();renderHomeExplore();}
-function updateBalanceUI(){var b=user.balance,t=creditsWord(b);var hb=document.getElementById('headerBalance');if(hb)hb.textContent=t;var pb=document.getElementById('profileBalance');if(pb)pb.textContent=b;updateModalCreditsBalance();}
+function updateBalanceUI(){var b=user.balance,t=notesWord(b);var hb=document.getElementById('headerBalance');if(hb)hb.textContent=t;var pb=document.getElementById('profileBalance');if(pb)pb.textContent=b;updateModalCreditsBalance();}
 
-function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var ht=document.getElementById('homeTrends');if(ht)ht.classList.remove('hidden');var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view!=='create'&&ht)ht.classList.add('hidden');if(view==='library')renderLibrary();if(view==='explore')renderExplore();if(view==='profile')updateBalanceUI();if(view==='payment')renderPackets();document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
+function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var ht=document.getElementById('homeTrends');if(ht)ht.classList.remove('hidden');var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view!=='create'&&ht)ht.classList.add('hidden');if(view==='library')renderLibrary();if(view==='explore')renderExplore();if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
 
 async function generateLyrics(idea){try{var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(!res.ok)throw new Error();var d=await res.json();return d.lyrics||"Текст не получен.";}catch(e){var moodRu={"uplifting":"Энергичный и яркий","melancholy":"Задумчивый и глубокий","romantic":"Тёплый и нежный","dark":"Мрачный и интенсивный"};return "[Куплет 1]\n"+idea.slice(0,55)+"\nНейросеть ткёт слова в такт\n"+(moodRu[selectedMood]||"")+" "+selectedGenre+" трек\n\n[Припев]\nЭто твой трек — твоя волна\nСквозь "+selectedGenre+" звучит она\nВсё что внутри выходит в свет\nТвоя песня — твой ответ\n\n[Куплет 2]\nАтмосфера вокруг\nГолос "+(vocalMap[selectedVocal]||"звучит")+" — слышишь звук?\nКаждый бит — это шаг вперёд\n"+selectedGenre+" тебя несёт\n\n[Аутро]\nТвой трек. Твой момент. Навсегда.";}}
 
-var genMsgs=[["AI-продюсер анализирует идею...","Подбираем оптимальные параметры генерации"],["AI-продюсер анализирует идею...","Подбираем оптимальные параметры генерации"],["Suno создаёт ваш трек...","Обычно 1–3 минуты"],["Suno создаёт ваш трек...","Почти готово!"],["Suno создаёт ваш трек...","Финальная обработка..."],["Готово!","Секунды до результата..."]];
+var genMsgs=[["AI-продюсер анализирует идею...","Подбираем оптимальные параметры"],["AI-продюсер анализирует идею...","Подбираем оптимальные параметры"],["Создаём твой лучший трек...","Обычно 1–3 минуты"],["Создаём твой лучший трек...","Почти готово!"],["Создаём твой лучший трек...","Финальная обработка..."],["Готово!","Секунды до результата..."]];
 
 var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня содержит около 300 слов текста","🎤 Музыка активирует те же центры мозга что и вкусная еда","🥁 Сердце начинает биться в такт музыке — это энтрейнмент","🎹 Бетховен написал шедевры будучи полностью глухим","⚡ AI анализирует миллионы треков чтобы создать твою песню","🌍 Музыка — единственный универсальный язык всех культур","🎼 Нейросеть подбирает темп, тональность и инструменты специально для тебя"];
 var funFactTimer=null;var genStartTime=0;
@@ -933,20 +931,26 @@ function showFunFact(){var el=document.getElementById('funFact');if(!el)return;v
 function showGenerating(stage){document.getElementById('step3Block').classList.add('hidden');document.getElementById('generatingBlock').classList.remove('hidden');var pct=0,idx=stage||0,bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),sub=document.getElementById('generatingSubMsg'),pctEl=document.getElementById('progressPercent');genStartTime=Date.now();showFunFact();funFactTimer=setInterval(showFunFact,7000);if(genTimer)clearInterval(genTimer);genTimer=setInterval(function(){var elapsed=Date.now()-genStartTime;var natural=Math.min(elapsed/240000*95,95);if(pct<natural)pct=Math.min(pct+0.4,natural);bar.style.width=pct+'%';pctEl.textContent=Math.round(pct)+'%';var sec=Math.floor((Date.now()-genStartTime)/1000);var td=document.getElementById('genTimerDisplay');if(td)td.textContent='Прошло '+sec+' сек';var ni=Math.min(Math.floor(pct/17),genMsgs.length-1);if(ni!==idx){idx=ni;msg.textContent=genMsgs[idx][0];sub.textContent=genMsgs[idx][1];}},500);}
 function setGeneratingStatus(main,sub,pct){var msg=document.getElementById('generatingMsg'),subEl=document.getElementById('generatingSubMsg'),bar=document.getElementById('progressBar'),pctEl=document.getElementById('progressPercent');if(msg)msg.textContent=main;if(subEl)subEl.textContent=sub;if(bar)bar.style.width=(pct||0)+'%';if(pctEl)pctEl.textContent=Math.round(pct||0)+'%';}
 function renderProducerPlan(data){var block=document.getElementById('producerPlanBlock');if(!block||!data||!data.plan)return;block.classList.remove('hidden');document.getElementById('producerExplanation').textContent=data.message||data.plan.explanation_ru||'';document.getElementById('producerTitle').textContent=data.title||'';var items=[['Жанр',data.plan.genre+' / '+data.plan.subgenre],['Настроение',data.plan.mood],['BPM',data.plan.bpm],['Энергия',data.plan.energy],['Вокал',data.plan.vocal],['Инструменты',(data.plan.instruments||[]).join(', ')],['Атмосфера',data.plan.atmosphere],['Продакшн',data.plan.production_style]];document.getElementById('producerPlanGrid').innerHTML=items.map(function(it){return'<div class="bg-black/30 border border-zinc-800/60 rounded-xl p-3"><div class="text-zinc-500 mb-1">'+it[0]+'</div><div class="text-zinc-200">'+escHtml(String(it[1]))+'</div></div>';}).join('');}
-async function pollMusicStatus(taskId,onTick){var attempts=0,maxAttempts=48;while(attempts<maxAttempts){attempts++;try{var res=await fetch('/api/music/status/'+encodeURIComponent(taskId));if(!res.ok)throw new Error('status http');var data=await res.json();if(onTick)onTick(data,attempts);if(data.state==='success'&&data.tracks&&data.tracks.length)return{ok:true,data:data};if(data.state==='failed'||data.state==='fail')return{ok:false,data:data,error:data.fail_msg||'Suno не смогла создать трек'};}catch(e){if(onTick)onTick({state:'waiting',progress_hint:'Проверяем статус...'},attempts);}await new Promise(function(r){setTimeout(r,5000);});}return{ok:false,error:'Превышено время ожидания. Попробуйте ещё раз.'};}
+async function pollMusicStatus(taskId,onTick){var attempts=0,maxAttempts=48;while(attempts<maxAttempts){attempts++;try{var res=await fetch('/api/music/status/'+encodeURIComponent(taskId));if(!res.ok)throw new Error('status http');var data=await res.json();if(onTick)onTick(data,attempts);if(data.state==='success'&&data.tracks&&data.tracks.length)return{ok:true,data:data};if(data.state==='failed'||data.state==='fail')return{ok:false,data:data,error:data.fail_msg||'Не удалось создать трек'};}catch(e){if(onTick)onTick({state:'waiting',progress_hint:'Проверяем статус...'},attempts);}await new Promise(function(r){setTimeout(r,5000);});}return{ok:false,error:'Превышено время ожидания. Попробуйте ещё раз.'};}
 
 function hideGenerating(cb,opts){opts=opts||{};clearInterval(genTimer);clearInterval(funFactTimer);var bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),pctEl=document.getElementById('progressPercent');bar.style.width='100%';msg.textContent='Готово! 🎉';pctEl.textContent='100%';setTimeout(function(){document.getElementById('generatingBlock').classList.add('hidden');if(!opts.hideExpertSteps)document.getElementById('step3Block').classList.remove('hidden');bar.style.width='0%';if(cb)cb();},800);}
 
 function formatDurationSec(durationSec){durationSec=Math.max(0,Math.round(durationSec||0));return Math.floor(durationSec/60)+':'+(durationSec%60).toString().padStart(2,'0');}
 function getTrackById(trackId){return user.tracks.find(function(t){return String(t.id)===String(trackId);});}
 function addTrack(opts){var t={id:opts.id||(Date.now()+Math.floor(Math.random()*1000)),title:(opts.title||'Без названия').slice(0,60),variant:opts.variant||'',generationId:opts.generationId||null,genre:opts.genre||selectedGenre,duration:formatDurationSec(opts.durationSec),durationSec:opts.durationSec||0,cover:opts.cover||'https://picsum.photos/id/29/280/280',lyrics:opts.lyrics||'',audioUrl:opts.audioUrl,createdAt:Date.now()};user.tracks.unshift(t);saveData();return t;}
-function updateVariantDownloadButtons(){var ids=['variantADownload','variantBDownload'];ids.forEach(function(btnId,idx){var btn=document.getElementById(btnId);if(!btn||!lastResult.savedVariants)return;if(lastResult.savedVariants[idx]){btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition btn-success-green';btn.innerHTML='<i class="fa-solid fa-check mr-1"></i> В библиотеке';btn.onclick=function(e){e.stopPropagation();downloadAudio(lastResult.urls[idx],lastResult.title);};return;}if(user.balance>0){btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition upgrade-btn';btn.innerHTML='<i class="fa-solid fa-download mr-1"></i> Скачать (1 кредит)';btn.onclick=function(e){e.stopPropagation();purchaseVariantToLibrary(idx);};}else{btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked';btn.innerHTML='<i class="fa-solid fa-lock mr-1"></i> Скачать (1 кредит)';btn.onclick=function(e){e.stopPropagation();openCreditPurchaseModal();};}});var libBtn=document.getElementById('modalOpenLibraryBtn');if(libBtn){var anySaved=lastResult.savedVariants&&lastResult.savedVariants.some(function(s){return s;});libBtn.classList.toggle('hidden',!anySaved);}}
-function purchaseVariantToLibrary(idx){if(!lastResult.urls||!lastResult.urls[idx])return;if(lastResult.savedVariants&&lastResult.savedVariants[idx]){downloadAudio(lastResult.urls[idx],lastResult.title);return;}if(user.balance<=0){openCreditPurchaseModal();return;}var labels=['A','B'];var tr=lastResult.tracks[idx]||{};var saved=addTrack({id:(lastResult.generationId||Date.now())+idx,title:lastResult.title+' (вариант '+labels[idx]+')',variant:labels[idx],generationId:lastResult.generationId,durationSec:tr.duration||180,lyrics:lastResult.lyrics,audioUrl:lastResult.urls[idx],cover:tr.image_url||lastResult.cover});lastResult.savedVariants[idx]=true;lastResult.savedTrackIds=lastResult.savedTrackIds||[];lastResult.savedTrackIds.push(saved.id);user.balance-=1;saveData();updateModalCreditsBalance();updateBalanceUI();updateVariantDownloadButtons();renderLibrary();downloadAudio(lastResult.urls[idx],lastResult.title);showToast('Песня сохранена в библиотеке');}
+function isGenerationPurchased(){return lastResult.savedVariants&&lastResult.savedVariants.some(function(s){return s;});}
+function hasPendingResult(){return lastResult.urls&&lastResult.urls.length>0&&!isGenerationPurchased();}
+function updateVariantDownloadButtons(){var ids=['variantADownload','variantBDownload'];var purchased=isGenerationPurchased();ids.forEach(function(btnId,idx){var btn=document.getElementById(btnId);if(!btn||!lastResult.savedVariants)return;if(purchased){btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition btn-success-green';btn.innerHTML='<i class="fa-solid fa-check mr-1"></i> В библиотеке';btn.onclick=function(e){e.stopPropagation();downloadAudio(lastResult.urls[idx],lastResult.title);};return;}if(user.balance>0){btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition upgrade-btn';btn.innerHTML='<i class="fa-solid fa-download mr-1"></i> Скачать (1 нота)';btn.onclick=function(e){e.stopPropagation();purchaseVariantToLibrary(idx);};}else{btn.className='w-full mt-2 py-2.5 rounded-xl text-sm transition btn-locked';btn.innerHTML='<i class="fa-solid fa-lock mr-1"></i> Скачать (1 нота)';btn.onclick=function(e){e.stopPropagation();openCreditPurchaseModal();};}});var libBtn=document.getElementById('modalOpenLibraryBtn');if(libBtn)libBtn.classList.toggle('hidden',!purchased);updatePaymentReturnBtn();}
+function purchaseVariantToLibrary(idx){if(!lastResult.urls||!lastResult.urls[idx])return;if(isGenerationPurchased()){downloadAudio(lastResult.urls[idx],lastResult.title);return;}if(user.balance<=0){openCreditPurchaseModal();return;}user.balance-=1;var labels=['A','B'];lastResult.savedTrackIds=lastResult.savedTrackIds||[];for(var i=0;i<2;i++){if(!lastResult.urls[i])continue;var tr=lastResult.tracks[i]||{};var saved=addTrack({id:(lastResult.generationId||Date.now())+i,title:lastResult.title+' (вариант '+labels[i]+')',variant:labels[i],generationId:lastResult.generationId,durationSec:tr.duration||180,lyrics:lastResult.lyrics,audioUrl:lastResult.urls[i],cover:tr.image_url||lastResult.cover});lastResult.savedVariants[i]=true;lastResult.savedTrackIds.push(saved.id);}saveData();updateModalCreditsBalance();updateBalanceUI();updateVariantDownloadButtons();renderLibrary();downloadAudio(lastResult.urls[idx],lastResult.title);showToast('Оба варианта сохранены в библиотеке');}
 function deleteTrack(trackId){var t=getTrackById(trackId);if(!t)return;if(!confirm('Удалить «'+t.title+'» из библиотеки?\n\nЭто действие нельзя отменить.'))return;user.tracks=user.tracks.filter(function(x){return String(x.id)!==String(trackId);});saveData();renderLibrary();showToast('Песня удалена из библиотеки');}
 
-function creditsWord(n){if(n===1)return'1 кредит';if(n>=2&&n<=4)return n+' кредита';return n+' кредитов';}
+function notesWord(n){if(n===1)return'1 нота';if(n>=2&&n<=4)return n+' ноты';return n+' нот';}
 function showToast(msg){var t=document.createElement('div');t.className='toast-notify';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},3200);}
-function updateModalCreditsBalance(){var el=document.getElementById('modalCreditsText');var box=document.getElementById('modalCreditsBalance');if(!el)return;el.textContent='Баланс '+creditsWord(user.balance);if(box)box.classList.toggle('credits-zero',user.balance<=0);}
+function updateModalCreditsBalance(){var el=document.getElementById('modalCreditsText');var box=document.getElementById('modalCreditsBalance');if(!el)return;el.textContent='Баланс '+notesWord(user.balance);if(box)box.classList.toggle('notes-zero',user.balance<=0);}
+function updatePaymentReturnBtn(){var btn=document.getElementById('returnToVariantsBtn');if(btn)btn.classList.toggle('hidden',!hasPendingResult());}
+function returnToResultModal(){document.getElementById('resultModal').classList.remove('hidden');updateModalCreditsBalance();updateVariantDownloadButtons();}
+function goToStudioFromResult(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('create');}
+function goToPaymentFromResult(){closeCreditPurchaseModal();document.getElementById('resultModal').classList.add('hidden');switchToView('payment');}
 function resetListenButtons(){['variantAListen','variantBListen'].forEach(function(id){var btn=document.getElementById(id);if(btn)btn.innerHTML='<i class="fa-solid fa-play mr-1"></i> Слушать превью';});}
 function stopModalPreview(){if(modalPreviewAudio){modalPreviewAudio.pause();modalPreviewAudio.onended=null;modalPreviewAudio.ontimeupdate=null;modalPreviewAudio=null;}modalPreviewPlaying=false;modalPreviewIdx=null;resetListenButtons();['variantAWave','variantBWave'].forEach(function(id){var w=document.getElementById(id);if(w)w.classList.remove('playing');});}
 function formatAudioTime(sec){sec=Math.max(0,Math.floor(sec));return Math.floor(sec/60)+':'+(sec%60).toString().padStart(2,'0');}
@@ -957,18 +961,18 @@ function updateResultModalUI(){var hasSel=lastResult.selected!==null;var label=d
 function selectResultVariant(idx){stopModalPreview();lastResult.selected=idx;['variantA','variantB'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('selected',i===idx);});updateResultModalUI();}
 function openCreditPurchaseModal(){document.getElementById('creditPurchaseModal').classList.remove('hidden');}
 function closeCreditPurchaseModal(){document.getElementById('creditPurchaseModal').classList.add('hidden');}
-function showResultModal(data,urls,tracks){stopModalPreview();lastResult={urls:urls,tracks:tracks||[],title:data.title||'Ваша песня',lyrics:currentGeneratedLyrics,cover:(tracks[0]&&tracks[0].image_url)||'https://picsum.photos/id/29/280/280',selected:null,savedVariants:[false,false],savedTrackIds:[],generationId:Date.now()};document.getElementById('modalSongTitle').textContent=lastResult.title;document.getElementById('modalLyrics').classList.add('hidden');['variantA','variantB'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('selected');});['variantATimer','variantBTimer'].forEach(function(id){var t=document.getElementById(id);if(t)t.textContent='0:00 / 0:30';});updateModalCreditsBalance();updateResultModalUI();document.getElementById('variantAListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(0);};document.getElementById('variantBListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(1);};document.getElementById('variantA').onclick=function(){selectResultVariant(0);};document.getElementById('variantB').onclick=function(){selectResultVariant(1);};document.getElementById('modalOpenLibraryBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('library');};document.getElementById('modalSimilarBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');var idea=currentIdea||lastResult.title;document.getElementById('ideaInput').value='Создай похожую песню: '+idea;switchToView('create');};document.getElementById('modalRegenBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');createSongWithProducer();};document.getElementById('modalShowLyricsBtn').onclick=function(){var ml=document.getElementById('modalLyrics');if(ml.classList.contains('hidden')){ml.textContent=lastResult.lyrics||'Текст недоступен';ml.classList.remove('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-eye-slash mr-1"></i> Скрыть текст';}else{ml.classList.add('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-file-lines mr-1"></i> Посмотреть текст';}};document.getElementById('modalBackBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('create');};document.getElementById('resultModal').classList.remove('hidden');}
+function showResultModal(data,urls,tracks){stopModalPreview();lastResult={urls:urls,tracks:tracks||[],title:data.title||'Ваша песня',lyrics:currentGeneratedLyrics,cover:(tracks[0]&&tracks[0].image_url)||'https://picsum.photos/id/29/280/280',selected:null,savedVariants:[false,false],savedTrackIds:[],generationId:Date.now()};document.getElementById('modalSongTitle').textContent=lastResult.title;document.getElementById('modalLyrics').classList.add('hidden');['variantA','variantB'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('selected');});['variantATimer','variantBTimer'].forEach(function(id){var t=document.getElementById(id);if(t)t.textContent='0:00 / 0:30';});updateModalCreditsBalance();updateResultModalUI();document.getElementById('variantAListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(0);};document.getElementById('variantBListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(1);};document.getElementById('variantA').onclick=function(){selectResultVariant(0);};document.getElementById('variantB').onclick=function(){selectResultVariant(1);};document.getElementById('modalOpenLibraryBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('library');};document.getElementById('modalStudioBtn').onclick=goToStudioFromResult;document.getElementById('modalShowLyricsBtn').onclick=function(){var ml=document.getElementById('modalLyrics');if(ml.classList.contains('hidden')){ml.textContent=lastResult.lyrics||'Текст недоступен';ml.classList.remove('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-eye-slash mr-1"></i> Скрыть текст';}else{ml.classList.add('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-file-lines mr-1"></i> Посмотреть текст';}};document.getElementById('resultModal').classList.remove('hidden');updatePaymentReturnBtn();}
 
 function getCustomDescription(){var el=document.getElementById('customDescriptionInput');return el?el.value.trim():'';}
 function buildSongPayload(idea){var vocalMapReq={female:'female',male:'male',duet:'duet',auto:'auto'};var customDesc=expertStyleMode==='custom'?getCustomDescription():'';return{idea:idea,genre:selectedGenre,mood:selectedMood,artist_ref:(document.getElementById('artistRef')&&document.getElementById('artistRef').value.trim())||'',instrumental:!!(document.getElementById('instrumentalCheckbox')&&document.getElementById('instrumentalCheckbox').checked),vocal_hint:vocalMapReq[selectedVocal]||'auto',backing_vocal:!!(document.getElementById('backingVocalCheckbox')&&document.getElementById('backingVocalCheckbox').checked),style_mode:expertStyleMode,custom_description:customDesc};}
 function setExpertStyleMode(mode){expertStyleMode=mode==='custom'?'custom':'presets';var presetsBtn=document.getElementById('styleModePresetsBtn');var customBtn=document.getElementById('styleModeCustomBtn');var presetsBlock=document.getElementById('expertPresetsBlock');var customBlock=document.getElementById('expertCustomBlock');if(presetsBtn)presetsBtn.classList.toggle('active',expertStyleMode==='presets');if(customBtn)customBtn.classList.toggle('active',expertStyleMode==='custom');if(presetsBlock)presetsBlock.classList.toggle('hidden',expertStyleMode==='custom');if(customBlock)customBlock.classList.toggle('hidden',expertStyleMode!=='custom');}
-async function runMusicGeneration(payload,btn,btnHtml,opts){opts=opts||{};showGenerating(0);setGeneratingStatus('AI-продюсер анализирует идею...','Подбираем оптимальные параметры генерации',8);var res=await fetch('/api/create-song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!res.ok){var err=await res.json().catch(function(){return{}});throw new Error((err&&err.detail)||'Ошибка AI-продюсера');}var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentTaskId=data.task_id||'';setGeneratingStatus('Suno создаёт ваш трек...','Обычно 1–3 минуты. Не закрывайте страницу.',25);var result=await pollMusicStatus(currentTaskId,function(st,n){var pct=25+Math.min(n*3,65);setGeneratingStatus(st.progress_hint||'Suno работает...','Проверка '+n+' / ~3 мин',pct);});if(!result.ok){hideGenerating(function(){},{hideExpertSteps:!!opts.hideExpertSteps});throw new Error(result.error||'Не удалось создать песню');}var tracks=result.data.tracks;var urls=[tracks[0]&&tracks[0].audio_url,tracks[1]&&tracks[1].audio_url].filter(Boolean);if(urls.length<1)throw new Error('Suno не вернула аудио');if(urls.length===1)urls.push(urls[0]);hideGenerating(function(){showResultModal({title:data.title,showLyrics:!!opts.showLyrics},urls,tracks);},{hideExpertSteps:!!opts.hideExpertSteps});}
+async function runMusicGeneration(payload,btn,btnHtml,opts){opts=opts||{};showGenerating(0);setGeneratingStatus('AI-продюсер анализирует идею...','Подбираем оптимальные параметры генерации',8);var res=await fetch('/api/create-song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!res.ok){var err=await res.json().catch(function(){return{}});throw new Error((err&&err.detail)||'Ошибка AI-продюсера');}var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentTaskId=data.task_id||'';setGeneratingStatus('Создаём твой лучший трек...','Обычно 1–3 минуты. Не закрывайте страницу.',25);var result=await pollMusicStatus(currentTaskId,function(st,n){var pct=25+Math.min(n*3,65);setGeneratingStatus(st.progress_hint||'Создаём твой лучший трек...','Проверка '+n+' / ~3 мин',pct);});if(!result.ok){hideGenerating(function(){},{hideExpertSteps:!!opts.hideExpertSteps});throw new Error(result.error||'Не удалось создать песню');}var tracks=result.data.tracks;var urls=[tracks[0]&&tracks[0].audio_url,tracks[1]&&tracks[1].audio_url].filter(Boolean);if(urls.length<1)throw new Error('Аудио не получено');if(urls.length===1)urls.push(urls[0]);hideGenerating(function(){showResultModal({title:data.title,showLyrics:!!opts.showLyrics},urls,tracks);},{hideExpertSteps:!!opts.hideExpertSteps});}
 
 async function createSongWithProducer(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Опиши идею для песни');return;}var btn=document.getElementById('createSongBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер работает...';currentIdea=idea;document.getElementById('lyricsBlock').classList.add('hidden');document.getElementById('step3Block').classList.add('hidden');document.getElementById('producerPlanBlock').classList.add('hidden');var payload=buildSongPayload(idea);payload.style_mode='presets';payload.custom_description='';try{await runMusicGeneration(payload,btn,'',{hideExpertSteps:true,showLyrics:false});}catch(e){console.error(e);alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером';}
 
-async function createSongExpert(){var idea=currentIdea||document.getElementById('ideaInput').value.trim();if(!instrumentalMode&&!currentGeneratedLyrics){alert('Сначала сгенерируйте текст в Расширенном режиме');return;}var btn=document.getElementById('createDemoBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Создаём песню...';if(instrumentalMode&&!currentProduction){try{await runMusicGeneration(buildSongPayload(idea),btn,'',{hideExpertSteps:false,showLyrics:false});}catch(e){console.error(e);alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';return;}showGenerating(0);try{var ed=document.getElementById('lyricsEditor');var lyrics=instrumentalMode?'':(ed&&!ed.classList.contains('hidden')?ed.value:currentGeneratedLyrics);var style=(currentProduction&&currentProduction.style)||await buildStylePrompt();setGeneratingStatus('AI-продюсер анализирует идею...','Подбираем оптимальные параметры генерации',10);setGeneratingStatus('Suno создаёт ваш трек...','Создаём 2 варианта',20);var startRes=await fetch('/api/music/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({production_id:(currentProduction&&currentProduction.production_id)||'',lyrics:lyrics,style:style,title:(currentProduction&&currentProduction.title)||idea.slice(0,40),idea:idea,plan:(currentProduction&&currentProduction.plan)||null})});if(!startRes.ok)throw new Error('Не удалось запустить генерацию');var startData=await startRes.json();currentTaskId=startData.task_id;var result=await pollMusicStatus(currentTaskId,function(st,n){setGeneratingStatus(st.progress_hint||'Suno работает...','Проверка '+n+' / ~3 мин',20+Math.min(n*3,70));});if(!result.ok){hideGenerating(function(){});throw new Error(result.error||'Не удалось создать песню');}var tracks=result.data.tracks;var urls=[tracks[0]&&tracks[0].audio_url,tracks[1]&&tracks[1].audio_url].filter(Boolean);if(urls.length===1)urls.push(urls[0]);hideGenerating(function(){showResultModal({title:(currentProduction&&currentProduction.title)||idea.slice(0,40),showLyrics:!instrumentalMode},urls,tracks);});}catch(e){console.error(e);hideGenerating(function(){});alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';}
+async function createSongExpert(){var idea=currentIdea||document.getElementById('ideaInput').value.trim();if(!instrumentalMode&&!currentGeneratedLyrics){alert('Сначала сгенерируйте текст в Расширенном режиме');return;}var btn=document.getElementById('createDemoBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Создаём песню...';if(instrumentalMode&&!currentProduction){try{await runMusicGeneration(buildSongPayload(idea),btn,'',{hideExpertSteps:false,showLyrics:false});}catch(e){console.error(e);alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';return;}showGenerating(0);try{var ed=document.getElementById('lyricsEditor');var lyrics=instrumentalMode?'':(ed&&!ed.classList.contains('hidden')?ed.value:currentGeneratedLyrics);var style=(currentProduction&&currentProduction.style)||await buildStylePrompt();setGeneratingStatus('AI-продюсер анализирует идею...','Подбираем оптимальные параметры генерации',10);setGeneratingStatus('Создаём твой лучший трек...','Создаём 2 варианта',20);var startRes=await fetch('/api/music/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({production_id:(currentProduction&&currentProduction.production_id)||'',lyrics:lyrics,style:style,title:(currentProduction&&currentProduction.title)||idea.slice(0,40),idea:idea,plan:(currentProduction&&currentProduction.plan)||null})});if(!startRes.ok)throw new Error('Не удалось запустить генерацию');var startData=await startRes.json();currentTaskId=startData.task_id;var result=await pollMusicStatus(currentTaskId,function(st,n){setGeneratingStatus(st.progress_hint||'Создаём твой лучший трек...','Проверка '+n+' / ~3 мин',20+Math.min(n*3,70));});if(!result.ok){hideGenerating(function(){});throw new Error(result.error||'Не удалось создать песню');}var tracks=result.data.tracks;var urls=[tracks[0]&&tracks[0].audio_url,tracks[1]&&tracks[1].audio_url].filter(Boolean);if(urls.length===1)urls.push(urls[0]);hideGenerating(function(){showResultModal({title:(currentProduction&&currentProduction.title)||idea.slice(0,40),showLyrics:!instrumentalMode},urls,tracks);});}catch(e){console.error(e);hideGenerating(function(){});alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';}
 
-function renderLibrary(){var c=document.getElementById('libraryTracksList');if(!c)return;if(!user.tracks.length){c.innerHTML='<div class="text-center text-zinc-500 col-span-full py-12">Здесь будут песни после скачивания (1 кредит за полную версию)</div>';return;}c.innerHTML=user.tracks.map(function(t){var variantBadge=t.variant?' <span class="text-yellow-400/80">• вариант '+escHtml(t.variant)+'</span>':'';return'<div class="lib-track-card glass-panel"><div class="lib-track-cover"><img src="'+escHtml(t.cover)+'" alt="'+escHtml(t.title)+'" loading="lazy"><span class="lib-track-duration">'+escHtml(t.duration)+'</span></div><div class="p-3"><div class="font-medium text-sm truncate leading-tight mb-1" title="'+escHtml(t.title)+'">'+escHtml(t.title)+'</div><div class="text-xs text-zinc-500 mb-3 truncate">'+escHtml(t.genre)+variantBadge+'</div><div class="lib-track-actions"><button data-id="'+t.id+'" class="lib-play-btn bg-white/10 hover:bg-white/20 transition"><i class="fa-solid fa-play mr-1"></i>Слушать</button><button data-id="'+t.id+'" class="lib-download-btn bg-white/10 hover:bg-white/20 transition"><i class="fa-solid fa-download mr-1"></i>Скачать</button><button data-id="'+t.id+'" class="lib-delete-btn lib-delete-icon transition" title="Удалить"><i class="fa-regular fa-trash-can"></i></button></div></div></div>';}).join('');document.querySelectorAll('.lib-play-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var t=getTrackById(btn.dataset.id);if(t)playAudio(t.audioUrl,t.title);});});document.querySelectorAll('.lib-download-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var t=getTrackById(btn.dataset.id);if(t)downloadAudio(t.audioUrl,t.title);});});document.querySelectorAll('.lib-delete-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();deleteTrack(btn.dataset.id);});});}
+function renderLibrary(){var c=document.getElementById('libraryTracksList');if(!c)return;if(!user.tracks.length){c.innerHTML='<div class="text-center text-zinc-500 col-span-full py-12">Здесь будут песни после скачивания (1 нота за оба варианта)</div>';return;}c.innerHTML=user.tracks.map(function(t){var variantBadge=t.variant?' <span class="text-yellow-400/80">• вариант '+escHtml(t.variant)+'</span>':'';return'<div class="lib-track-card glass-panel"><div class="lib-track-cover"><img src="'+escHtml(t.cover)+'" alt="'+escHtml(t.title)+'" loading="lazy"><span class="lib-track-duration">'+escHtml(t.duration)+'</span></div><div class="p-3"><div class="font-medium text-sm truncate leading-tight mb-1" title="'+escHtml(t.title)+'">'+escHtml(t.title)+'</div><div class="text-xs text-zinc-500 mb-3 truncate">'+escHtml(t.genre)+variantBadge+'</div><div class="lib-track-actions"><button data-id="'+t.id+'" class="lib-play-btn bg-white/10 hover:bg-white/20 transition"><i class="fa-solid fa-play mr-1"></i>Слушать</button><button data-id="'+t.id+'" class="lib-download-btn bg-white/10 hover:bg-white/20 transition"><i class="fa-solid fa-download mr-1"></i>Скачать</button><button data-id="'+t.id+'" class="lib-delete-btn lib-delete-icon transition" title="Удалить"><i class="fa-regular fa-trash-can"></i></button></div></div></div>';}).join('');document.querySelectorAll('.lib-play-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var t=getTrackById(btn.dataset.id);if(t)playAudio(t.audioUrl,t.title);});});document.querySelectorAll('.lib-download-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var t=getTrackById(btn.dataset.id);if(t)downloadAudio(t.audioUrl,t.title);});});document.querySelectorAll('.lib-delete-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();deleteTrack(btn.dataset.id);});});}
 
 var exploreEx=[{title:"Ocean Dreams",author:"@lunarwave",plays:"24k",cover:"https://picsum.photos/id/1015/400/300"},{title:"Heart on Fire",author:"@beatbyai",plays:"41k",cover:"https://picsum.photos/id/160/400/300"},{title:"Tokyo Lights",author:"@neoncat",plays:"12k",cover:"https://picsum.photos/id/201/400/300"},{title:"Echo Valley",author:"@voidsounds",plays:"9k",cover:"https://picsum.photos/id/29/400/300"}];
 function renderExplore(){var eg=document.getElementById('exploreGrid');if(eg)eg.innerHTML=exploreEx.map(function(ex){return'<div class="glass-panel overflow-hidden cursor-pointer hover:scale-[1.02] transition"><img src="'+ex.cover+'" class="w-full aspect-square object-cover"><div class="p-3"><div class="font-medium text-sm">'+ex.title+'</div><div class="text-xs text-zinc-400">'+ex.author+'</div><div class="text-[10px] text-amber-400 mt-1"><i class="fa-regular fa-play mr-1"></i>'+ex.plays+'</div></div></div>';}).join('');}
@@ -982,9 +986,9 @@ function renderPackets() {
         { price: 1199, songs: 10, label: "Продюсер", discount: "−40%" }
     ];
     function genWord(n) {
-        if (n === 1) return 'генерация';
-        if (n >= 2 && n <= 4) return 'генерации';
-        return 'генераций';
+        if (n === 1) return 'нота';
+        if (n >= 2 && n <= 4) return 'ноты';
+        return 'нот';
     }
     function songWord(n) {
         if (n === 1) return 'песня';
@@ -1079,7 +1083,7 @@ async function buildStylePrompt(){
 document.getElementById('createSongBtn').addEventListener('click',createSongWithProducer);
 document.getElementById('createDemoBtn').addEventListener('click',createSongExpert);
 
-document.getElementById('paymentConfirmBtn').addEventListener('click',function(){alert('Выбран пакет: '+activePacket.songs+' ген. за '+activePacket.price+'₽\n\nЗдесь будет переход на страницу оплаты.\nПосле оплаты генерации начисляются автоматически.');});
+document.getElementById('paymentConfirmBtn').addEventListener('click',function(){alert('Выбран пакет: '+activePacket.songs+' нот за '+activePacket.price+'₽\n\nЗдесь будет переход на страницу оплаты.\nПосле оплаты ноты начисляются автоматически.');});
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
 
 // ===== РЕЖИМ АДМИНИСТРАТОРА (5 кликов по логотипу) =====
@@ -1094,13 +1098,13 @@ document.getElementById('profileTopupBtn').addEventListener('click',function(){s
                 adminActive = true;
                 var adminBtn = document.createElement('button');
                 adminBtn.className = 'w-full mt-3 admin-btn py-2 rounded-xl text-sm';
-                adminBtn.innerHTML = '➕ Добавить 10 генераций (тест)';
+                adminBtn.innerHTML = '➕ Добавить 10 нот (тест)';
                 adminBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     user.balance += 10;
                     saveData();
                     updateBalanceUI();
-                    alert('Баланс пополнен на 10 генераций. Текущий баланс: ' + user.balance);
+                    alert('Баланс пополнен на 10 нот. Текущий баланс: ' + user.balance);
                 });
                 var placeholder = document.getElementById('adminPlaceholder');
                 if (placeholder) placeholder.appendChild(adminBtn);
@@ -1124,15 +1128,15 @@ document.querySelectorAll('.bottom-nav a').forEach(function(a){a.addEventListene
 // ===== FAQ =====
 var faqs = [
     { cat:"how", q:"Как работает сервис?", a:"Всё просто — три шага: выбери стиль (жанр, вокал, настроение) → опиши идею своей песни → нажми «Создать песни». Нейросеть напишет текст и создаст 2 варианта трека по 30 секунд. Выбери лучший и купи полную версию." },
-    { cat:"how", q:"Что такое «генерация»?", a:"Одна генерация = создание 2 вариантов песни по 30 секунд. Вы слушаете оба и выбираете понравившийся. Генерация текста песни — всегда бесплатна и не ограничена." },
+    { cat:"how", q:"Что такое «нота»?", a:"1 нота = 1 генерация = 2 варианта песни по 30 секунд. Превью бесплатно. За 1 ноту вы скачиваете полные версии обоих вариантов в библиотеку. Генерация текста — всегда бесплатна." },
     { cat:"how", q:"Сколько времени занимает создание трека?", a:"Генерация текста — 5–15 секунд. Создание песни — 30–90 секунд." },
     { cat:"how", q:"Можно ли редактировать текст перед созданием музыки?", a:"Да! После генерации текста есть кнопка «Редактировать»." },
-    { cat:"how", q:"Что такое «2 бесплатные генерации»?", a:"При первом использовании сервиса вы получаете 2 генерации бесплатно — это 4 варианта песни." },
+    { cat:"how", q:"Сколько стоит превью?", a:"Создание 2 вариантов по 30 секунд — бесплатно и без ограничений. Ноты нужны только для скачивания полных версий." },
     { cat:"how", q:"Чем демо-версия отличается от полной?", a:"Демо — 30 секунд. Полная — до 4 минут, высокое качество, навсегда в библиотеке." },
-    { cat:"price", q:"Сколько стоит создать песню?", a:"1 генерация = 199₽ (2 варианта). Пакеты: 3=499₽, 5=799₽, 10=1199₽. Полная версия — 199₽." },
+    { cat:"price", q:"Сколько стоит создать песню?", a:"1 нота = 199₽ (2 варианта, полные версии). Пакеты: 3=499₽, 5=799₽, 10=1199₽." },
     { cat:"price", q:"Как оплатить?", a:"Карты РФ, СБП, Telegram Stars." },
     { cat:"price", q:"Можно ли вернуть деньги?", a:"Возврат не предусмотрен. При техническом сбое восстановим генерацию бесплатно." },
-    { cat:"price", q:"Баланс сгорит, если не использую?", a:"Нет, генерации хранятся без ограничения по времени." },
+    { cat:"price", q:"Баланс сгорит, если не использую?", a:"Нет, ноты хранятся без ограничения по времени." },
     { cat:"quality", q:"Почему результат может не совпасть с ожиданиями?", a:"Генерация ИИ — вероятностный процесс. Мы создаём 2 варианта." },
     { cat:"quality", q:"Текст получился не очень. Что делать?", a:"Текст можно перегенерировать бесплатно — кнопка «Ещё раз»." },
     { cat:"quality", q:"Поддерживается ли русский язык?", a:"Да, полностью." },
@@ -1201,7 +1205,7 @@ var chatMessages=document.getElementById('chatMessages');
 function appendMsg(text,isUser){var d=document.createElement('div');d.className='p-3 text-sm '+(isUser?'chat-bubble-user text-right':'chat-bubble-ai text-zinc-300');d.textContent=text;chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;}
 function appendTyping(){var d=document.createElement('div');d.id='chatTyping';d.className='chat-typing p-3';d.innerHTML='<span></span><span></span><span></span>';chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;return d;}
 
-async function sendChat(text){if(!text.trim())return;appendMsg(text,true);var typing=appendTyping();try{var ctx=currentIdea?('Текущая идея: '+currentIdea):'';var res=await fetch('/api/consultant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context:ctx})});typing.remove();if(res.ok){var data=await res.json();appendMsg(data.reply||'Попробуй ещё раз.',false);}else throw new Error();}catch(e){typing.remove();appendMsg('Спроси, как описать идею песни или сколько стоит генерация — помогу! 🎵',false);}}
+async function sendChat(text){if(!text.trim())return;appendMsg(text,true);var typing=appendTyping();try{var ctx=currentIdea?('Текущая идея: '+currentIdea):'';var res=await fetch('/api/consultant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context:ctx})});typing.remove();if(res.ok){var data=await res.json();appendMsg(data.reply||'Попробуй ещё раз.',false);}else throw new Error();}catch(e){typing.remove();appendMsg('Спроси, как описать идею песни или сколько стоят ноты — помогу! 🎵',false);}}
 
 document.getElementById('chatSendBtn').addEventListener('click',function(){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';});
 document.getElementById('chatInput').addEventListener('keydown',function(e){if(e.key==='Enter'){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';}});
@@ -1211,8 +1215,9 @@ document.getElementById('closeChatBtn').addEventListener('click',function(){docu
 function escHtml(s){return String(s).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 
 document.getElementById('creditModalClose').addEventListener('click',closeCreditPurchaseModal);
-document.getElementById('buy1CreditBtn').addEventListener('click',function(){closeCreditPurchaseModal();document.getElementById('resultModal').classList.add('hidden');switchToView('payment');});
-document.getElementById('buy5CreditsBtn').addEventListener('click',function(){closeCreditPurchaseModal();document.getElementById('resultModal').classList.add('hidden');switchToView('payment');});
+document.getElementById('buy1CreditBtn').addEventListener('click',goToPaymentFromResult);
+document.getElementById('buy5CreditsBtn').addEventListener('click',goToPaymentFromResult);
+document.getElementById('returnToVariantsBtn').addEventListener('click',returnToResultModal);
 
 loadData();initChips();initSidebarActions();setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 </script>
