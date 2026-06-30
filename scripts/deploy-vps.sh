@@ -10,6 +10,8 @@ DIR="${HOME}/SongForge"
 echo "=== SongForge deploy ==="
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
+mkdir -p backend/services scripts
+
 echo "[1/4] Скачиваем файлы с GitHub..."
 wget -q -O index.html "$BASE/index.html"
 
