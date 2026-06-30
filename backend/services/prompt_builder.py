@@ -1,20 +1,11 @@
-from backend.models import ProductionPlan
+from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
+from backend.services.ai_music_analyst import AiMusicAnalyst
+from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.yandex_client import YandexClient
-from backend.utils.text import clean_text, extract_json, truncate
+from backend.utils.text import clean_text, truncate
 
 
 class PromptBuilder:
-    PLAN_SYSTEM = (
-        "Ты AI Prompt Builder для музыкального сервиса SongForge и Suno V5.5. "
-        "Проанализируй идею пользователя и верни ТОЛЬКО валидный JSON без markdown. "
-        "Поля: genre, subgenre, mood, bpm (число), energy (low|medium|high), "
-        "instruments (массив строк на английском), atmosphere, production_style, "
-        "vocal (male|female|duet|auto), vocal_description, structure, negative_tags, "
-        "style_weight (0.0-1.0), weirdness_constraint (0.0-1.0), audio_weight (0.0-1.0), "
-        "explanation_ru (1-2 предложения на русском — почему выбраны эти параметры). "
-        "Не упоминай имена артистов. Делай коммерчески сильные решения."
-    )
-
     LYRICS_SYSTEM = (
         "Ты поэт-песенник и музыкальный продюсер. "
         "Напиши текст песни на русском языке со структурными тегами "
@@ -24,45 +15,64 @@ class PromptBuilder:
 
     def __init__(self, yandex: YandexClient) -> None:
         self._yandex = yandex
+        self._analyst = AiMusicAnalyst(yandex)
+        self._composer = AiPromptComposer(yandex)
+
+    def build(
+        self,
+        idea: str,
+        *,
+        genre: str = "",
+        mood: str = "",
+        artist_ref: str = "",
+        instrumental: bool = False,
+        vocal_hint: str = "",
+        backing_vocal: bool = False,
+    ) -> tuple[ProductionPlan, SunoPromptPayload]:
+        """Two-stage AI Prompt Builder: Analyst → Composer."""
+        analysis = self._analyst.analyze(
+            idea,
+            genre=genre,
+            mood=mood,
+            artist_ref=artist_ref,
+            instrumental=instrumental,
+            vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
+        )
+        payload = self._composer.compose(
+            analysis,
+            idea,
+            backing_vocal=backing_vocal,
+        )
+        plan = self._analysis_to_plan(analysis, payload)
+        return plan, payload
 
     def build_plan(
         self,
         idea: str,
         *,
+        genre: str = "",
+        mood: str = "",
         artist_ref: str = "",
         instrumental: bool = False,
         vocal_hint: str = "",
+        backing_vocal: bool = False,
     ) -> ProductionPlan:
-        hints = []
-        if artist_ref.strip():
-            hints.append(
-                f"Референс звучания (без имён в треке): {artist_ref.strip()}"
-            )
-        if vocal_hint.strip():
-            hints.append(f"Пожелание по вокалу: {vocal_hint.strip()}")
-        if instrumental:
-            hints.append("Нужен инструментальный трек без вокала.")
-
-        user_text = idea
-        if hints:
-            user_text += "\n\n" + "\n".join(hints)
-
-        try:
-            raw = self._yandex.complete(
-                self.PLAN_SYSTEM,
-                user_text,
-                max_tokens=700,
-                temperature=0.55,
-            )
-            data = extract_json(raw)
-            plan = ProductionPlan.model_validate(data)
-            plan.instrumental = instrumental
-            plan.optimized_idea = idea
-            return self._normalize_plan(plan)
-        except Exception:
-            return self._fallback_plan(idea, instrumental=instrumental, vocal_hint=vocal_hint)
+        plan, _ = self.build(
+            idea,
+            genre=genre,
+            mood=mood,
+            artist_ref=artist_ref,
+            instrumental=instrumental,
+            vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
+        )
+        return plan
 
     def generate_lyrics(self, idea: str, plan: ProductionPlan) -> str:
+        if plan.instrumental:
+            return ""
+
         user_text = (
             f"Идея: {idea}\n"
             f"Жанр: {plan.genre} / {plan.subgenre}\n"
@@ -73,9 +83,6 @@ class PromptBuilder:
             f"Атмосфера: {plan.atmosphere}\n"
             f"Структура: {plan.structure}"
         )
-        if plan.instrumental:
-            return "[Instrumental]\n"
-
         try:
             lyrics = self._yandex.complete(
                 self.LYRICS_SYSTEM,
@@ -141,16 +148,31 @@ class PromptBuilder:
         return self.build_style(plan)
 
     @staticmethod
-    def _normalize_plan(plan: ProductionPlan) -> ProductionPlan:
-        plan.bpm = max(60, min(int(plan.bpm or 120), 200))
-        plan.style_weight = max(0.0, min(float(plan.style_weight), 1.0))
-        plan.weirdness_constraint = max(0.0, min(float(plan.weirdness_constraint), 1.0))
-        plan.audio_weight = max(0.0, min(float(plan.audio_weight), 1.0))
-        if plan.vocal not in {"male", "female", "duet", "auto"}:
-            plan.vocal = "auto"
-        if not plan.instruments:
-            plan.instruments = ["synth", "drums", "bass"]
-        return plan
+    def _analysis_to_plan(
+        analysis: MusicAnalysis,
+        payload: SunoPromptPayload,
+    ) -> ProductionPlan:
+        return ProductionPlan(
+            genre=analysis.genre,
+            subgenre=analysis.subgenre,
+            mood=analysis.mood,
+            bpm=analysis.bpm,
+            energy=analysis.energy,
+            instruments=analysis.instruments,
+            atmosphere=analysis.atmosphere,
+            production_style=analysis.production_style,
+            vocal=analysis.vocal,
+            vocal_description=analysis.vocal_description,
+            structure=analysis.structure,
+            negative_tags=payload.negative_tags,
+            style_weight=payload.style_weight,
+            weirdness_constraint=payload.weirdness_constraint,
+            audio_weight=payload.audio_weight,
+            vocal_gender=payload.vocal_gender,
+            instrumental=analysis.instrumental,
+            explanation_ru="AI-продюсер анализирует идею и подбирает оптимальные параметры генерации.",
+            optimized_idea=analysis.idea,
+        )
 
     @staticmethod
     def _fallback_plan(

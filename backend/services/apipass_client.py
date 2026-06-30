@@ -20,10 +20,13 @@ class ApiPassClient:
             raise RuntimeError("APIPASS_API_KEY is not configured")
 
     @staticmethod
-    def _vocal_gender(vocal: str) -> Optional[str]:
-        if vocal == "male":
+    def _vocal_gender(plan: ProductionPlan) -> Optional[str]:
+        gender = (plan.vocal_gender or "").strip().lower()
+        if gender in {"m", "f"}:
+            return gender
+        if plan.vocal == "male":
             return "m"
-        if vocal == "female":
+        if plan.vocal == "female":
             return "f"
         return None
 
@@ -37,11 +40,13 @@ class ApiPassClient:
     ) -> str:
         self._ensure_key()
 
+        prompt = "" if plan.instrumental else clean_text(lyrics)
+
         input_data: dict[str, Any] = {
             "model_version": plan.model_version,
             "customMode": True,
             "instrumental": plan.instrumental,
-            "prompt": clean_text(lyrics),
+            "prompt": prompt,
             "style": style,
             "title": title[:75],
             "negativeTags": plan.negative_tags,
@@ -50,7 +55,7 @@ class ApiPassClient:
             "audioWeight": plan.audio_weight,
         }
 
-        vocal_gender = self._vocal_gender(plan.vocal)
+        vocal_gender = self._vocal_gender(plan)
         if vocal_gender:
             input_data["vocalGender"] = vocal_gender
 

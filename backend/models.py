@@ -5,9 +5,42 @@ from pydantic import BaseModel, Field
 
 class ProduceRequest(BaseModel):
     idea: str
+    genre: str = ""
+    mood: str = ""
     artist_ref: str = ""
     instrumental: bool = False
     vocal_hint: str = ""
+    backing_vocal: bool = False
+
+
+class MusicAnalysis(BaseModel):
+    genre: str = "Pop"
+    subgenre: str = "Modern Pop"
+    mood: str = "uplifting"
+    bpm: int = 120
+    energy: str = "medium"
+    instruments: list[str] = Field(default_factory=lambda: ["synth", "drums", "bass"])
+    atmosphere: str = "modern"
+    vocal: str = "auto"
+    vocal_description: str = "expressive vocals"
+    production_style: str = "radio-ready mix"
+    commercial_intent: str = "commercial"
+    structure: str = "verse-chorus-verse-chorus-outro"
+    instrumental: bool = False
+    idea: str = ""
+
+
+class SunoPromptPayload(BaseModel):
+    title: str = ""
+    lyrics: str = ""
+    style: str = ""
+    vocal_gender: str = Field(default="", alias="vocalGender")
+    negative_tags: str = Field(default="", alias="negativeTags")
+    style_weight: float = Field(default=0.85, alias="styleWeight")
+    weirdness_constraint: float = Field(default=0.20, alias="weirdnessConstraint")
+    audio_weight: float = Field(default=0.70, alias="audioWeight")
+
+    model_config = {"populate_by_name": True}
 
 
 class ProductionPlan(BaseModel):
@@ -23,12 +56,13 @@ class ProductionPlan(BaseModel):
     vocal_description: str = "expressive vocals"
     structure: str = "verse-chorus-verse-chorus-outro"
     negative_tags: str = (
-        "low quality, noise, distortion, clipping, bad mixing, "
-        "monotone, mumbling, spoken word"
+        "unwanted noise, distortion, clipping, screaming, off-key vocals, "
+        "poor mix, muddy sound, low quality, chaotic arrangement"
     )
     style_weight: float = 0.85
     weirdness_constraint: float = 0.20
     audio_weight: float = 0.70
+    vocal_gender: str = ""
     instrumental: bool = False
     channel: str = "auto"
     model_version: str = "V5_5"
@@ -75,9 +109,12 @@ class MusicStatusResponse(BaseModel):
 
 class CreateSongRequest(BaseModel):
     idea: str
+    genre: str = ""
+    mood: str = ""
     artist_ref: str = ""
     instrumental: bool = False
     vocal_hint: str = ""
+    backing_vocal: bool = False
 
 
 class CreateSongResponse(BaseModel):

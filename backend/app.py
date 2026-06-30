@@ -57,9 +57,12 @@ async def produce_song(req: ProduceRequest):
     try:
         return producer.produce(
             req.idea,
+            genre=req.genre,
+            mood=req.mood,
             artist_ref=req.artist_ref,
             instrumental=req.instrumental,
             vocal_hint=req.vocal_hint,
+            backing_vocal=req.backing_vocal,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -73,9 +76,12 @@ async def create_song(req: CreateSongRequest):
     try:
         return producer.create_song(
             req.idea,
+            genre=req.genre,
+            mood=req.mood,
             artist_ref=req.artist_ref,
             instrumental=req.instrumental,
             vocal_hint=req.vocal_hint,
+            backing_vocal=req.backing_vocal,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

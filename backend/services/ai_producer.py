@@ -2,20 +2,20 @@ import uuid
 
 from backend.logger import log
 from backend.models import CreateSongResponse, ProduceResponse, ProductionPlan
-from backend.services.ai_optimizer import AiOptimizer
 from backend.services.apipass_client import ApiPassClient
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
-from backend.services.title_generator import TitleGenerator
 from backend.services.yandex_client import YandexClient
 
 
 class AiProducer:
+    PRODUCER_MESSAGE = (
+        "AI-продюсер анализирует идею и подбирает оптимальные параметры генерации..."
+    )
+
     def __init__(self) -> None:
         yandex = YandexClient()
-        self._optimizer = AiOptimizer(yandex)
         self._builder = PromptBuilder(yandex)
-        self._titles = TitleGenerator(yandex)
         self._apipass = ApiPassClient()
         self._history = HistoryService()
 
@@ -23,39 +23,44 @@ class AiProducer:
         self,
         idea: str,
         *,
+        genre: str = "",
+        mood: str = "",
         artist_ref: str = "",
         instrumental: bool = False,
         vocal_hint: str = "",
+        backing_vocal: bool = False,
     ) -> ProduceResponse:
         idea = idea.strip()
         if not idea:
             raise ValueError("Идея песни не может быть пустой")
 
-        optimized = self._optimizer.optimize(idea)
-        plan = self._builder.build_plan(
-            optimized,
+        plan, payload = self._builder.build(
+            idea,
+            genre=genre,
+            mood=mood,
             artist_ref=artist_ref,
             instrumental=instrumental,
             vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
         )
-        plan.optimized_idea = optimized
+        plan.optimized_idea = idea
 
-        title = self._titles.generate(optimized, plan)
-        lyrics = self._builder.generate_lyrics(optimized, plan)
-        style = self._builder.build_style_via_ai(plan, artist_ref=artist_ref)
+        title = payload.title
+        lyrics = payload.lyrics
+        style = payload.style
 
         production_id = str(uuid.uuid4())
         self._history.save_production(
             production_id=production_id,
             idea=idea,
-            optimized_idea=optimized,
+            optimized_idea=idea,
             plan=plan,
             title=title,
             lyrics=lyrics,
             style=style,
         )
 
-        log.info("Production ready: %s | %s", production_id, title)
+        log.info("Production ready: %s | %s | instrumental=%s", production_id, title, instrumental)
         return ProduceResponse(
             success=True,
             production_id=production_id,
@@ -63,7 +68,7 @@ class AiProducer:
             title=title,
             lyrics=lyrics,
             style=style,
-            message=plan.explanation_ru or "AI-продюсер подобрал параметры для вашей песни.",
+            message=self.PRODUCER_MESSAGE,
         )
 
     def start_music(
@@ -109,15 +114,21 @@ class AiProducer:
         self,
         idea: str,
         *,
+        genre: str = "",
+        mood: str = "",
         artist_ref: str = "",
         instrumental: bool = False,
         vocal_hint: str = "",
+        backing_vocal: bool = False,
     ) -> CreateSongResponse:
         produced = self.produce(
             idea,
+            genre=genre,
+            mood=mood,
             artist_ref=artist_ref,
             instrumental=instrumental,
             vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
         )
         task_id = self.start_music(
             production_id=produced.production_id,
