@@ -16,6 +16,9 @@ private/
 # Backup
 reserve/
 
+# Data
+data/
+
 # Logs
 *.log
 nohup.out

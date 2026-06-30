@@ -149,49 +149,58 @@
         <h1 class="font-title text-5xl lg:text-6xl font-bold tracking-tighter leading-tight neon-text">ТВОЯ ПЕСНЯ<br>ЗА МГНОВЕНИЕ</h1>
         <p class="text-zinc-400 max-w-md mt-4">Опиши идею — нейросеть напишет текст и создаст музыку в твоём стиле.</p>
         <div id="onboardingSteps" class="mt-6 flex flex-col sm:flex-row gap-4">
-            <div class="onboard-step active text-xs text-zinc-400"><div class="text-yellow-400 font-semibold mb-0.5">① Стиль</div>Жанр, вокал, настроение</div>
-            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">② Идея</div>Нейросеть напишет текст</div>
-            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">③ Трек</div>Два варианта на выбор</div>
+            <div class="onboard-step active text-xs text-zinc-400"><div class="text-yellow-400 font-semibold mb-0.5">① Идея</div>Опиши историю своими словами</div>
+            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">② AI-продюсер</div>Сам подберёт стиль и текст</div>
+            <div class="onboard-step text-xs text-zinc-400"><div class="text-zinc-300 font-semibold mb-0.5">③ Трек</div>Два варианта за 1–3 минуты</div>
         </div>
     </div>
 
     <!-- СТУДИЯ -->
     <div id="createPanel">
 
-        <!-- Шаг 1: Стиль -->
-        <div class="glass-panel p-6 mb-6">
-            <div class="flex items-center gap-3 mb-5">
-                <span class="step-badge done">1</span>
-                <span class="font-semibold">Выбери стиль трека</span>
+        <!-- Главный сценарий: идея → AI-продюсер -->
+        <div class="glass-panel p-6 mb-6 border border-yellow-400/20">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="step-badge done">✦</span>
+                <span class="font-semibold">AI-продюсер SongForge</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div><label class="block text-xs text-zinc-400 mb-3">🎸 Жанр</label><div id="stylePicker" class="flex flex-wrap gap-2"></div></div>
-                <div>
-                    <label class="block text-xs text-zinc-400 mb-3">🎤 Вокал</label>
-                    <div id="vocalPicker" class="flex flex-wrap gap-2"></div>
-                    <div class="mt-3"><label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="backingVocalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Бэк-вокал</span></label></div>
+            <p class="text-sm text-zinc-400 mb-4">Опиши идею — продюсер сам подберёт жанр, темп, вокал, стиль и напишет текст. Тебе не нужно знать промпты.</p>
+            <textarea id="ideaInput" rows="3" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Пример: тёплая поп-песня про первую встречу в метро, женский вокал, радиохит"></textarea>
+            <button id="createSongBtn" class="mt-4 w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером
+            </button>
+            <p class="text-xs text-zinc-600 mt-3 text-center">⚡ Текст бесплатно • Музыка 1–3 мин • 2 варианта на выбор • −1 генерация</p>
+            <details class="mt-5">
+                <summary class="text-xs text-zinc-500 cursor-pointer hover:text-yellow-400 transition">Расширенные настройки (необязательно)</summary>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div><label class="block text-xs text-zinc-400 mb-3">🎸 Жанр</label><div id="stylePicker"></div></div>
+                    <div>
+                        <label class="block text-xs text-zinc-400 mb-3">🎤 Вокал</label>
+                        <div id="vocalPicker" class="flex flex-wrap gap-2"></div>
+                        <div class="mt-3"><label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="backingVocalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Бэк-вокал</span></label></div>
+                        <div class="mt-3"><label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="instrumentalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Инструментал</span></label></div>
+                    </div>
+                    <div><label class="block text-xs text-zinc-400 mb-3">🌊 Настроение</label><div id="moodPicker"></div></div>
                 </div>
-                <div><label class="block text-xs text-zinc-400 mb-3">🌊 Настроение</label><div id="moodPicker" class="flex flex-wrap gap-2"></div></div>
-            </div>
-            <!-- Референс исполнителя -->
-            <div class="mt-5 pt-4 border-t border-zinc-800/50">
-                <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания <span class="text-zinc-600">(необязательно)</span></label>
-                <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: Coldplay, Billie Eilish, Меладзе, Земфира...">
-                <div class="text-xs text-zinc-600 mt-1.5">Нейросеть определит музыкальные характеристики стиля — без упоминания имён в треке</div>
-            </div>
+                <div class="mt-4">
+                    <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания</label>
+                    <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: атмосфера как у Coldplay, но без копирования">
+                </div>
+                <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> Только сгенерировать текст
+                </button>
+            </details>
         </div>
 
-        <!-- Шаг 2: Идея + текст -->
-        <div class="glass-panel p-6 mb-6">
+        <!-- Решения AI-продюсера -->
+        <div id="producerPlanBlock" class="glass-panel p-6 mb-6 hidden">
             <div class="flex items-center gap-3 mb-4">
-                <span class="step-badge" id="badge2">2</span>
-                <span class="font-semibold">Опиши идею трека</span>
+                <span class="step-badge done">AI</span>
+                <span class="font-semibold">Решения AI-продюсера</span>
             </div>
-            <textarea id="ideaInput" rows="2" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Пример: энергичный трек про рассвет в мегаполисе, смесь синтвейва и хип-хопа..."></textarea>
-            <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-pen-to-square"></i> Сгенерировать текст
-            </button>
-            <p class="text-xs text-zinc-600 mt-2">✏️ Генерация текста бесплатна — перегенерируй сколько угодно</p>
+            <p id="producerExplanation" class="text-sm text-zinc-300 mb-4"></p>
+            <div id="producerPlanGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"></div>
+            <div class="mt-4 text-xs text-zinc-500">Название: <span id="producerTitle" class="text-yellow-400 font-semibold"></span></div>
         </div>
 
         <!-- Текст песни -->
@@ -232,7 +241,7 @@
                 </div>
             </div>
             <div id="generatingMsg" class="text-lg font-semibold mb-2">Подбираем биты...</div>
-            <div id="generatingSubMsg" class="text-xs text-zinc-500 mb-6">Займёт около 30–60 секунд</div>
+            <div id="generatingSubMsg" class="text-xs text-zinc-500 mb-6">AI-продюсер работает — обычно 1–3 минуты</div>
             <div class="w-full bg-white/5 rounded-full h-1 mb-2 overflow-hidden">
                 <div id="progressBar" class="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-500" style="width:0%"></div>
             </div>
@@ -755,7 +764,7 @@
 <script>
 // ===== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ =====
 var user={balance:2,tracks:[]};
-var currentGeneratedLyrics="",currentIdea="",selectedGenre="Pop",selectedVocal="female",selectedMood="uplifting",backingVocal=false,activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,genTimer=null;
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="female",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="";
 
 var genreMap={
   "Поп":"pop, catchy, radio-ready, modern production",
@@ -809,12 +818,16 @@ function switchToView(view){['create','library','explore','profile','payment','l
 
 async function generateLyrics(idea){try{var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(!res.ok)throw new Error();var d=await res.json();return d.lyrics||"Текст не получен.";}catch(e){var moodRu={"uplifting":"Энергичный и яркий","melancholy":"Задумчивый и глубокий","romantic":"Тёплый и нежный","dark":"Мрачный и интенсивный"};return "[Куплет 1]\n"+idea.slice(0,55)+"\nНейросеть ткёт слова в такт\n"+(moodRu[selectedMood]||"")+" "+selectedGenre+" трек\n\n[Припев]\nЭто твой трек — твоя волна\nСквозь "+selectedGenre+" звучит она\nВсё что внутри выходит в свет\nТвоя песня — твой ответ\n\n[Куплет 2]\nАтмосфера вокруг\nГолос "+(vocalMap[selectedVocal]||"звучит")+" — слышишь звук?\nКаждый бит — это шаг вперёд\n"+selectedGenre+" тебя несёт\n\n[Аутро]\nТвой трек. Твой момент. Навсегда.";}}
 
-var genMsgs=[["Подбираем биты...","Настраиваем ритм-секцию"],["Сочиняем мелодию...","Ищем идеальный темп"],["Записываем вокал...","Настраиваем тембр голоса"],["Сводим инструменты...","Добавляем пространство"],["Финальный мастеринг...","Почти готово!"],["Упаковываем трек...","Секунды до результата..."]];
+var genMsgs=[["AI-продюсер анализирует идею...","Подбираем жанр и настроение"],["Пишем текст песни...","Строим структуру трека"],["Создаём style prompt...","Настраиваем Suno V5.5"],["Suno генерирует вариант A...","Это занимает 1–3 минуты"],["Suno генерирует вариант B...","Почти готово!"],["Финальная обработка...","Секунды до результата..."]];
 
 var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня содержит около 300 слов текста","🎤 Музыка активирует те же центры мозга что и вкусная еда","🥁 Сердце начинает биться в такт музыке — это энтрейнмент","🎹 Бетховен написал шедевры будучи полностью глухим","⚡ AI анализирует миллионы треков чтобы создать твою песню","🌍 Музыка — единственный универсальный язык всех культур","🎼 Нейросеть подбирает темп, тональность и инструменты специально для тебя"];
 var funFactTimer=null;var genStartTime=0;
 function showFunFact(){var el=document.getElementById('funFact');if(!el)return;var f=funFacts[Math.floor(Math.random()*funFacts.length)];el.textContent=f;el.classList.remove('fun-fact-anim');void el.offsetWidth;el.classList.add('fun-fact-anim');}
-function showGenerating(){document.getElementById('step3Block').classList.add('hidden');document.getElementById('generatingBlock').classList.remove('hidden');var pct=0,idx=0,bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),sub=document.getElementById('generatingSubMsg'),pctEl=document.getElementById('progressPercent');genStartTime=Date.now();showFunFact();funFactTimer=setInterval(showFunFact,7000);genTimer=setInterval(function(){var elapsed=Date.now()-genStartTime;var natural=Math.min(elapsed/240000*95,95);if(pct<natural)pct=Math.min(pct+0.4,natural);bar.style.width=pct+'%';pctEl.textContent=Math.round(pct)+'%';var sec=Math.floor((Date.now()-genStartTime)/1000);var td=document.getElementById('genTimerDisplay');if(td)td.textContent='Прошло '+sec+' сек';var ni=Math.min(Math.floor(pct/17),genMsgs.length-1);if(ni!==idx){idx=ni;msg.textContent=genMsgs[idx][0];sub.textContent=genMsgs[idx][1];}},500);}
+function showGenerating(stage){document.getElementById('step3Block').classList.add('hidden');document.getElementById('generatingBlock').classList.remove('hidden');var pct=0,idx=stage||0,bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),sub=document.getElementById('generatingSubMsg'),pctEl=document.getElementById('progressPercent');genStartTime=Date.now();showFunFact();funFactTimer=setInterval(showFunFact,7000);if(genTimer)clearInterval(genTimer);genTimer=setInterval(function(){var elapsed=Date.now()-genStartTime;var natural=Math.min(elapsed/240000*95,95);if(pct<natural)pct=Math.min(pct+0.4,natural);bar.style.width=pct+'%';pctEl.textContent=Math.round(pct)+'%';var sec=Math.floor((Date.now()-genStartTime)/1000);var td=document.getElementById('genTimerDisplay');if(td)td.textContent='Прошло '+sec+' сек';var ni=Math.min(Math.floor(pct/17),genMsgs.length-1);if(ni!==idx){idx=ni;msg.textContent=genMsgs[idx][0];sub.textContent=genMsgs[idx][1];}},500);}
+function setGeneratingStatus(main,sub,pct){var msg=document.getElementById('generatingMsg'),subEl=document.getElementById('generatingSubMsg'),bar=document.getElementById('progressBar'),pctEl=document.getElementById('progressPercent');if(msg)msg.textContent=main;if(subEl)subEl.textContent=sub;if(bar)bar.style.width=(pct||0)+'%';if(pctEl)pctEl.textContent=Math.round(pct||0)+'%';}
+function renderProducerPlan(data){var block=document.getElementById('producerPlanBlock');if(!block||!data||!data.plan)return;block.classList.remove('hidden');document.getElementById('producerExplanation').textContent=data.message||data.plan.explanation_ru||'';document.getElementById('producerTitle').textContent=data.title||'';var items=[['Жанр',data.plan.genre+' / '+data.plan.subgenre],['Настроение',data.plan.mood],['BPM',data.plan.bpm],['Энергия',data.plan.energy],['Вокал',data.plan.vocal],['Инструменты',(data.plan.instruments||[]).join(', ')],['Атмосфера',data.plan.atmosphere],['Продакшн',data.plan.production_style]];document.getElementById('producerPlanGrid').innerHTML=items.map(function(it){return'<div class="bg-black/30 border border-zinc-800/60 rounded-xl p-3"><div class="text-zinc-500 mb-1">'+it[0]+'</div><div class="text-zinc-200">'+escHtml(String(it[1]))+'</div></div>';}).join('');}
+async function pollMusicStatus(taskId,onTick){var attempts=0,maxAttempts=48;while(attempts<maxAttempts){attempts++;try{var res=await fetch('/api/music/status/'+encodeURIComponent(taskId));if(!res.ok)throw new Error('status http');var data=await res.json();if(onTick)onTick(data,attempts);if(data.state==='success'&&data.tracks&&data.tracks.length)return{ok:true,data:data};if(data.state==='failed'||data.state==='fail')return{ok:false,data:data,error:data.fail_msg||'Suno не смогла создать трек'};}catch(e){if(onTick)onTick({state:'waiting',progress_hint:'Проверяем статус...'},attempts);}await new Promise(function(r){setTimeout(r,5000);});}return{ok:false,error:'Превышено время ожидания. Попробуйте ещё раз.'};}
+async function createSongWithProducer(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Опиши идею для песни');return;}if(user.balance<=0){document.getElementById('noBalanceModal').classList.remove('hidden');return;}var btn=document.getElementById('createSongBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер работает...';currentIdea=idea;showGenerating(0);setGeneratingStatus('AI-продюсер анализирует идею...','Подбираем жанр, темп и вокал',8);try{var vocalMapReq={female:'female',male:'male',duet:'duet',auto:'auto'};var payload={idea:idea,artist_ref:(document.getElementById('artistRef')&&document.getElementById('artistRef').value.trim())||'',instrumental:!!(document.getElementById('instrumentalCheckbox')&&document.getElementById('instrumentalCheckbox').checked),vocal_hint:vocalMapReq[selectedVocal]||''};var res=await fetch('/api/create-song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!res.ok){var err=await res.json().catch(function(){return{};});throw new Error((err&&err.detail)||'Ошибка AI-продюсера');}var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentTaskId=data.task_id||'';renderProducerPlan(data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;document.getElementById('lyricsBlock').classList.remove('hidden');user.balance-=1;saveData();setGeneratingStatus('Suno создаёт ваш трек...','Обычно 1–3 минуты. Не закрывайте страницу.',25);var result=await pollMusicStatus(currentTaskId,function(st,n){var pct=25+Math.min(n*3,65);var hint=st.progress_hint||'Suno работает...';setGeneratingStatus(hint,'Проверка '+n+' / ~3 мин',pct);});if(!result.ok){hideGenerating(function(){});alert(result.error||'Не удалось создать песню. Генерация возвращена на баланс.');user.balance+=1;saveData();return;}var tracks=result.data.tracks;var urls=[tracks[0]&&tracks[0].audio_url,tracks[1]&&tracks[1].audio_url].filter(Boolean);if(urls.length<1)throw new Error('Suno не вернула аудио');if(urls.length===1)urls.push(urls[0]);var cover=(tracks[0]&&tracks[0].image_url)||'https://picsum.photos/id/29/280/280';addTrack(data.title||('Идея: '+idea.slice(0,30)),'demo',tracks[0].duration||30,currentGeneratedLyrics,urls[0]);hideGenerating(function(){document.getElementById('modalLyrics').textContent=currentGeneratedLyrics.substring(0,500);var vA=document.getElementById('variantA'),vB=document.getElementById('variantB');[vA,vB].forEach(function(v){v.classList.remove('border-yellow-400/60','bg-yellow-400/10');});vA.onclick=function(){playDemoAudio(urls[0],data.title||'Вариант A');vA.classList.add('border-yellow-400/60','bg-yellow-400/10');vB.classList.remove('border-yellow-400/60','bg-yellow-400/10');};vB.onclick=function(){playDemoAudio(urls[1],data.title||'Вариант B');vB.classList.add('border-yellow-400/60','bg-yellow-400/10');vA.classList.remove('border-yellow-400/60','bg-yellow-400/10');};document.getElementById('modalRegenBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');createSongWithProducer();};document.getElementById('modalUpgradeBtn').onclick=function(){switchToView('payment');document.getElementById('resultModal').classList.add('hidden');};document.getElementById('modalCloseBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');};document.getElementById('resultModal').classList.remove('hidden');});}catch(e){console.error(e);hideGenerating(function(){});alert(e.message||'Ошибка создания песни');}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером';}
 
 function hideGenerating(cb){clearInterval(genTimer);clearInterval(funFactTimer);var bar=document.getElementById('progressBar'),msg=document.getElementById('generatingMsg'),pctEl=document.getElementById('progressPercent');bar.style.width='100%';msg.textContent='Готово! 🎉';pctEl.textContent='100%';setTimeout(function(){document.getElementById('generatingBlock').classList.add('hidden');document.getElementById('step3Block').classList.remove('hidden');bar.style.width='0%';if(cb)cb();},800);}
 
@@ -894,11 +907,12 @@ function initChips(){
     +'</select>';
   document.getElementById('moodSelect').addEventListener('change',function(e){selectedMood=e.target.value;});
   document.getElementById('backingVocalCheckbox').addEventListener('change',function(e){backingVocal=e.target.checked;});
+  var instr=document.getElementById('instrumentalCheckbox');if(instr)instr.addEventListener('change',function(e){instrumentalMode=e.target.checked;});
 }
 
 function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});document.querySelectorAll('#communityTopList button').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.closest('.flex')&&btn.closest('.flex').querySelector('span')&&btn.closest('.flex').querySelector('span').textContent||'';document.getElementById('ideaInput').value='Создай песню в стиле "'+title+'", атмосферную и запоминающуюся';switchToView('create');});});}
 
-document.getElementById('generateTextBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Напиши идею для трека');return;}currentIdea=idea;var btn=document.getElementById('generateTextBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i>Генерируем текст...';var lyrics=await generateLyrics(idea);btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст';currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;document.getElementById('lyricsBlock').classList.remove('hidden');document.getElementById('step3Block').classList.remove('hidden');var b2=document.getElementById('badge2');b2.classList.add('done');b2.textContent='✓';});
+document.getElementById('generateTextBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Напиши идею для трека');return;}currentIdea=idea;var btn=document.getElementById('generateTextBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер пишет текст...';try{var vocalMapReq={female:'female',male:'male',duet:'duet',auto:'auto'};var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:idea,artist_ref:(document.getElementById('artistRef')&&document.getElementById('artistRef').value.trim())||'',instrumental:!!(document.getElementById('instrumentalCheckbox')&&document.getElementById('instrumentalCheckbox').checked),vocal_hint:vocalMapReq[selectedVocal]||''})});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);}else{currentGeneratedLyrics=await generateLyrics(idea);}}catch(e){currentGeneratedLyrics=await generateLyrics(idea);}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;document.getElementById('lyricsBlock').classList.remove('hidden');document.getElementById('step3Block').classList.remove('hidden');});
 
 document.getElementById('regenLyricsBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;var lyrics=await generateLyrics(idea);currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
 
@@ -917,34 +931,8 @@ async function buildStylePrompt(){
     if(selectedVocal==='duet')s+=', male and female duet vocals';
     return s;
 }
-document.getElementById('createDemoBtn').addEventListener('click',async function(){
-    if(!currentGeneratedLyrics){alert('Сначала сгенерируй текст');return;}
-    if(user.balance<=0){document.getElementById('noBalanceModal').classList.remove('hidden');return;}
-    user.balance-=1;saveData();
-    showGenerating();
-    var urls=["https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"];
-    try{
-        var style=await buildStylePrompt();
-        var res=await fetch('/api/generate-music',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lyrics:currentGeneratedLyrics,style:style,vocal:selectedVocal,idea:currentIdea})});
-        if(res.ok){
-            var d=await res.json();
-            if(d.music_url) urls[0]=d.music_url;
-            if(d.music_url_b) urls[1]=d.music_url_b;
-        }
-    }catch(e){console.error('Ошибка генерации музыки:',e);}
-    addTrack('Идея: '+(currentIdea||'новая песня').slice(0,35),'demo',30,currentGeneratedLyrics,urls[0]);
-    hideGenerating(function(){
-        document.getElementById('modalLyrics').textContent=currentGeneratedLyrics.substring(0,500);
-        var vA=document.getElementById('variantA'),vB=document.getElementById('variantB');
-        [vA,vB].forEach(function(v){v.classList.remove('border-yellow-400/60','bg-yellow-400/10');});
-        vA.onclick=function(){playDemoAudio(urls[0],'Вариант A');vA.classList.add('border-yellow-400/60','bg-yellow-400/10');vB.classList.remove('border-yellow-400/60','bg-yellow-400/10');};
-        vB.onclick=function(){playDemoAudio(urls[1],'Вариант B');vB.classList.add('border-yellow-400/60','bg-yellow-400/10');vA.classList.remove('border-yellow-400/60','bg-yellow-400/10');};
-        document.getElementById('modalRegenBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');document.getElementById('createDemoBtn').click();};
-        document.getElementById('modalUpgradeBtn').onclick=function(){switchToView('payment');document.getElementById('resultModal').classList.add('hidden');};
-        document.getElementById('modalCloseBtn').onclick=function(){document.getElementById('resultModal').classList.add('hidden');};
-        document.getElementById('resultModal').classList.remove('hidden');
-    });
-});
+document.getElementById('createSongBtn').addEventListener('click',createSongWithProducer);
+document.getElementById('createDemoBtn').addEventListener('click',createSongWithProducer);
 
 document.getElementById('paymentConfirmBtn').addEventListener('click',function(){alert('Выбран пакет: '+activePacket.songs+' ген. за '+activePacket.price+'₽\n\nЗдесь будет переход на страницу оплаты.\nПосле оплаты генерации начисляются автоматически.');});
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
@@ -1068,7 +1056,7 @@ var chatMessages=document.getElementById('chatMessages');
 function appendMsg(text,isUser){var d=document.createElement('div');d.className='p-3 text-sm '+(isUser?'chat-bubble-user text-right':'chat-bubble-ai text-zinc-300');d.textContent=text;chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;}
 function appendTyping(){var d=document.createElement('div');d.id='chatTyping';d.className='chat-typing p-3';d.innerHTML='<span></span><span></span><span></span>';chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;return d;}
 
-async function sendChat(text){if(!text.trim())return;appendMsg(text,true);var typing=appendTyping();try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,system:'Ты помощник сервиса СоздайСвоюПесню. Отвечай кратко и дружелюбно на русском. Цены: 1 ген=199₽, 3=499₽, 5=799₽, 10=1199₽. Полная версия=199₽. Жанры: Pop, Electronic, Hip-Hop, Rock, Lo-Fi. 2 бесплатные генерации при старте.',messages:[{role:'user',content:text}]})});typing.remove();if(res.ok){var data=await res.json();appendMsg((data.content&&data.content.find(function(b){return b.type==='text';})&&data.content.find(function(b){return b.type==='text';}).text)||'Попробуй ещё раз.',false);}else throw new Error();}catch(e){typing.remove();var low=text.toLowerCase(),ans='Спроси о стоимости, жанрах или как пользоваться — помогу! 🎵';for(var k in faq){if(low.includes(k)){ans=faq[k];break;}}appendMsg(ans,false);}}
+async function sendChat(text){if(!text.trim())return;appendMsg(text,true);var typing=appendTyping();try{var ctx=currentIdea?('Текущая идея: '+currentIdea):'';var res=await fetch('/api/consultant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context:ctx})});typing.remove();if(res.ok){var data=await res.json();appendMsg(data.reply||'Попробуй ещё раз.',false);}else throw new Error();}catch(e){typing.remove();appendMsg('Спроси, как описать идею песни или сколько стоит генерация — помогу! 🎵',false);}}
 
 document.getElementById('chatSendBtn').addEventListener('click',function(){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';});
 document.getElementById('chatInput').addEventListener('keydown',function(e){if(e.key==='Enter'){var i=document.getElementById('chatInput');sendChat(i.value);i.value='';}});
