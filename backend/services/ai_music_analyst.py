@@ -1,5 +1,5 @@
 from backend.models import MusicAnalysis
-from backend.services.artist_reference import resolve_artist_reference
+from backend.services.reference_translator import ReferenceTranslation
 from backend.services.yandex_client import YandexClient
 from backend.utils.text import extract_json
 
@@ -107,7 +107,7 @@ class AiMusicAnalyst:
         *,
         genre: str = "",
         mood: str = "",
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
         instrumental: bool = False,
         vocal_hint: str = "",
         backing_vocal: bool = False,
@@ -140,21 +140,22 @@ class AiMusicAnalyst:
                     "не используй Pop по умолчанию без оснований."
                 )
 
-        artist_profile = resolve_artist_reference(artist_ref)
-        if artist_profile:
+        if reference and reference.has_content:
             hints.append(
-                f"Референс звучания (без имён артистов в ответе): {artist_profile.style_tags}"
+                f"Референс звучания (без имён артистов в ответе): {reference.style_tags}"
             )
-            hints.append(
-                f"Жанр по референсу: {artist_profile.genre} / {artist_profile.subgenre}"
-            )
-            hints.append(f"Вокал по референсу: {artist_profile.vocal_description}")
-            if artist_profile.bpm:
-                hints.append(f"Ориентир BPM по референсу: {artist_profile.bpm}")
-        elif artist_ref.strip():
-            hints.append(
-                f"Референс звучания (без имён в треке): {artist_ref.strip()}"
-            )
+            if reference.genre:
+                hints.append(
+                    f"Жанр по референсу: {reference.genre} / {reference.subgenre}"
+                )
+            if reference.vocal_description:
+                hints.append(f"Вокал по референсу: {reference.vocal_description}")
+            if reference.bpm:
+                hints.append(f"Ориентир BPM по референсу: {reference.bpm}")
+            if not genre.strip():
+                hints.append(
+                    "Если жанр пользователем не задан — опирайся на жанр референса."
+                )
         if vocal_hint == "duet":
             hints.append(
                 "ОБЯЗАТЕЛЬНО дуэт: мужской И женский вокал в одном треке, "
@@ -187,13 +188,15 @@ class AiMusicAnalyst:
             if vocal_hint in {"male", "female", "duet", "auto"}:
                 analysis.vocal = vocal_hint
             analysis = self._normalize(analysis)
-            if artist_profile:
-                analysis.genre = artist_profile.genre
-                analysis.subgenre = artist_profile.subgenre
-                if artist_profile.bpm:
-                    analysis.bpm = artist_profile.bpm
-                if vocal_hint == "auto" and analysis.vocal == "auto":
-                    analysis.vocal_description = artist_profile.vocal_description
+            if reference and reference.has_content and not genre.strip():
+                if reference.genre:
+                    analysis.genre = reference.genre
+                if reference.subgenre:
+                    analysis.subgenre = reference.subgenre
+                if reference.bpm:
+                    analysis.bpm = reference.bpm
+                if reference.vocal_description and vocal_hint == "auto":
+                    analysis.vocal_description = reference.vocal_description
             return analysis
         except Exception:
             return self._fallback(
@@ -202,7 +205,7 @@ class AiMusicAnalyst:
                 mood=mood,
                 instrumental=instrumental,
                 vocal_hint=vocal_hint,
-                artist_ref=artist_ref,
+                reference=reference,
             )
 
     @classmethod
@@ -257,14 +260,14 @@ class AiMusicAnalyst:
         mood: str = "",
         instrumental: bool = False,
         vocal_hint: str = "",
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
     ) -> MusicAnalysis:
         vocal = vocal_hint if vocal_hint in {"male", "female", "duet", "auto"} else "auto"
-        artist_profile = resolve_artist_reference(artist_ref)
-        if artist_profile:
-            genre_en, subgenre = artist_profile.genre, artist_profile.subgenre
-            vocal_description = artist_profile.vocal_description
-            bpm = artist_profile.bpm or 120
+        if reference and reference.has_content and not genre.strip():
+            genre_en = reference.genre or cls._resolve_genre(genre, idea)[0]
+            subgenre = reference.subgenre or cls._SUBGENRE_BY_GENRE.get(genre_en, "Modern")
+            vocal_description = reference.vocal_description or "expressive modern vocals"
+            bpm = reference.bpm or 120
         else:
             genre_en, subgenre = cls._resolve_genre(genre, idea)
             vocal_description = "expressive modern vocals"

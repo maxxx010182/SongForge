@@ -1,6 +1,7 @@
 from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
+from backend.services.reference_translator import ReferenceTranslator
 from backend.services.yandex_client import YandexClient
 from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
 
@@ -15,6 +16,7 @@ class PromptBuilder:
 
     def __init__(self, yandex: YandexClient) -> None:
         self._yandex = yandex
+        self._translator = ReferenceTranslator(yandex)
         self._analyst = AiMusicAnalyst(yandex)
         self._composer = AiPromptComposer(yandex)
 
@@ -31,12 +33,14 @@ class PromptBuilder:
         style_mode: str = "presets",
         custom_description: str = "",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
-        """Two-stage AI Prompt Builder: Analyst → Composer."""
+        """Reference → Analyst → Composer → Suno payload."""
+        reference = self._translator.translate(artist_ref, idea=idea) if artist_ref.strip() else None
+
         analysis = self._analyst.analyze(
             idea,
             genre=genre,
             mood=mood,
-            artist_ref=artist_ref,
+            reference=reference,
             instrumental=instrumental,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
@@ -46,7 +50,7 @@ class PromptBuilder:
         payload = self._composer.compose(
             analysis,
             idea,
-            artist_ref=artist_ref,
+            reference=reference,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
         )
@@ -135,9 +139,15 @@ class PromptBuilder:
     ) -> str:
         artist_part = ""
         if artist_ref.strip():
-            artist_part = (
-                f"Референс (без имён артистов в ответе): {artist_ref.strip()}. "
-            )
+            reference = self._translator.translate(artist_ref)
+            if reference.has_content:
+                artist_part = (
+                    f"Референс звучания (без имён артистов): {reference.style_tags}. "
+                )
+            else:
+                artist_part = (
+                    f"Референс (без имён артистов в ответе): {artist_ref.strip()}. "
+                )
         custom_part = ""
         if style_mode == "custom" and custom_description.strip():
             custom_part = (

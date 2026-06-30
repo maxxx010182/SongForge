@@ -1,5 +1,5 @@
 from backend.models import MusicAnalysis, SunoPromptPayload
-from backend.services.artist_reference import resolve_artist_reference
+from backend.services.reference_translator import ReferenceTranslation
 from backend.services.yandex_client import YandexClient
 from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT_WEIRDNESS
 from backend.utils.text import clean_text, ensure_russian_vocal_style, extract_json, truncate
@@ -71,7 +71,7 @@ class AiPromptComposer:
         analysis: MusicAnalysis,
         idea: str,
         *,
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
         vocal_hint: str = "",
         backing_vocal: bool = False,
     ) -> SunoPromptPayload:
@@ -81,7 +81,7 @@ class AiPromptComposer:
         user_text = self._build_user_prompt(
             analysis,
             idea,
-            artist_ref=artist_ref,
+            reference=reference,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
         )
@@ -98,14 +98,14 @@ class AiPromptComposer:
             return self._normalize(
                 payload,
                 analysis,
-                artist_ref=artist_ref,
+                reference=reference,
                 backing_vocal=backing_vocal,
             )
         except Exception:
             return self._fallback(
                 analysis,
                 idea,
-                artist_ref=artist_ref,
+                reference=reference,
                 backing_vocal=backing_vocal,
             )
 
@@ -114,7 +114,7 @@ class AiPromptComposer:
         analysis: MusicAnalysis,
         idea: str,
         *,
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
         vocal_hint: str = "",
         backing_vocal: bool = False,
     ) -> str:
@@ -132,11 +132,10 @@ class AiPromptComposer:
             f"Commercial intent: {analysis.commercial_intent}",
             f"Structure: {analysis.structure}",
         ]
-        artist_profile = resolve_artist_reference(artist_ref)
-        if artist_profile:
-            parts.append(f"Artist reference style (no names): {artist_profile.style_tags}")
-        elif artist_ref.strip():
-            parts.append(f"Artist reference (no names): {artist_ref.strip()}")
+        if reference and reference.has_content:
+            parts.append(f"Artist reference style (no names): {reference.style_tags}")
+            if reference.vocal_description:
+                parts.append(f"Reference vocal character: {reference.vocal_description}")
         if vocal_hint == "duet" or analysis.vocal == "duet":
             parts.append(
                 "MANDATORY duet: male AND female lead vocals in the same track."
@@ -154,7 +153,7 @@ class AiPromptComposer:
         payload: SunoPromptPayload,
         analysis: MusicAnalysis,
         *,
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
         backing_vocal: bool = False,
     ) -> SunoPromptPayload:
         payload.title = truncate(clean_text(payload.title).strip("\"'«»"), 75)
@@ -167,9 +166,12 @@ class AiPromptComposer:
             payload.lyrics = clean_text(payload.lyrics)
             payload.style = truncate(ensure_russian_vocal_style(payload.style), 950)
 
-        artist_profile = resolve_artist_reference(artist_ref)
-        if artist_profile and artist_profile.style_tags.lower() not in payload.style.lower():
-            payload.style = f"{artist_profile.style_tags}, {payload.style}"
+        if (
+            reference
+            and reference.has_content
+            and reference.style_tags.lower() not in payload.style.lower()
+        ):
+            payload.style = f"{reference.style_tags}, {payload.style}"
 
         payload.style = self._apply_vocal_style(payload.style, analysis.vocal, backing_vocal)
         payload.style = truncate(payload.style, 950)
@@ -239,7 +241,7 @@ class AiPromptComposer:
         analysis: MusicAnalysis,
         idea: str,
         *,
-        artist_ref: str = "",
+        reference: ReferenceTranslation | None = None,
         backing_vocal: bool = False,
     ) -> SunoPromptPayload:
         instruments = ", ".join(analysis.instruments)
@@ -258,9 +260,8 @@ class AiPromptComposer:
             "memorable chorus",
             "high quality mix",
         ]
-        artist_profile = resolve_artist_reference(artist_ref)
-        if artist_profile:
-            style_parts.insert(0, artist_profile.style_tags)
+        if reference and reference.has_content:
+            style_parts.insert(0, reference.style_tags)
 
         style = ", ".join(p for p in style_parts if p)
         if not analysis.instrumental:
