@@ -3,6 +3,7 @@
 _GENRE_FROM_UI: dict[str, str] = {
     "поп": "Pop",
     "рок": "Rock",
+    "реп": "Hip-Hop",
     "хип-хоп": "Hip-Hop",
     "электронная": "Electronic",
     "ло-фай": "Lo-Fi",
