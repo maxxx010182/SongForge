@@ -34,12 +34,14 @@ wget -q -O backend/services/reference_translator.py "$BASE/backend/services/refe
 wget -q -O backend/services/style_enforcer.py "$BASE/backend/services/style_enforcer.py"
 wget -q -O backend/services/plan_overrides.py "$BASE/backend/services/plan_overrides.py"
 wget -q -O backend/services/genre_resolver.py "$BASE/backend/services/genre_resolver.py"
+wget -q -O backend/services/idea_parser.py "$BASE/backend/services/idea_parser.py"
 wget -q -O backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py"
 wget -q -O backend/services/history.py "$BASE/backend/services/history.py"
 wget -q -O backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 for f in \
   backend/services/genre_resolver.py \
+  backend/services/idea_parser.py \
   backend/services/plan_overrides.py \
   backend/services/style_enforcer.py; do
   if [ ! -s "$f" ]; then
@@ -50,6 +52,7 @@ done
 
 echo "[2/4] Проверяем Python..."
 ./venv/bin/python -c "
+from backend.services.idea_parser import parse_idea
 from backend.services.genre_resolver import resolve_genre
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style

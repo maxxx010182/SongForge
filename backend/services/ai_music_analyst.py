@@ -49,6 +49,8 @@ class AiMusicAnalyst:
         backing_vocal: bool = False,
         style_mode: str = "presets",
         custom_description: str = "",
+        locked_genre: bool = False,
+        locked_artist: bool = False,
     ) -> MusicAnalysis:
         hints: list[str] = []
         custom_mode = style_mode == "custom" and custom_description.strip()
@@ -68,6 +70,11 @@ class AiMusicAnalyst:
             user_text = idea.strip()
             if genre.strip():
                 hints.append(f"Жанр от пользователя: {genre.strip()}")
+                if locked_genre:
+                    hints.append(
+                        "ОБЯЗАТЕЛЬНО: пользователь явно указал жанр в идее. "
+                        "Не меняй жанр на Pop/Ballad даже при романтической теме."
+                    )
             if mood.strip():
                 hints.append(f"Настроение от пользователя: {mood.strip()}")
             if not genre.strip() and not mood.strip():
@@ -80,6 +87,11 @@ class AiMusicAnalyst:
             hints.append(
                 f"Референс звучания (без имён артистов в ответе): {reference.style_tags}"
             )
+            if locked_artist:
+                hints.append(
+                    "ОБЯЗАТЕЛЬНО: пользователь указал референс артиста в идее. "
+                    "Сохрани характер звучания референса в жанре, вокале и продакшне."
+                )
             if reference.genre:
                 hints.append(
                     f"Жанр по референсу: {reference.genre} / {reference.subgenre}"

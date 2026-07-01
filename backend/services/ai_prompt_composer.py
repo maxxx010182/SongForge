@@ -75,6 +75,7 @@ class AiPromptComposer:
         reference: ReferenceTranslation | None = None,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        backing_vocal_gender: str = "",
     ) -> SunoPromptPayload:
         system = (
             self.SYSTEM_INSTRUMENTAL if analysis.instrumental else self.SYSTEM_VOCAL
@@ -85,6 +86,7 @@ class AiPromptComposer:
             reference=reference,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            backing_vocal_gender=backing_vocal_gender,
         )
 
         try:
@@ -101,6 +103,7 @@ class AiPromptComposer:
                 analysis,
                 reference=reference,
                 backing_vocal=backing_vocal,
+                backing_vocal_gender=backing_vocal_gender,
             )
         except Exception:
             return self._fallback(
@@ -108,6 +111,7 @@ class AiPromptComposer:
                 idea,
                 reference=reference,
                 backing_vocal=backing_vocal,
+                backing_vocal_gender=backing_vocal_gender,
             )
 
     @staticmethod
@@ -118,6 +122,7 @@ class AiPromptComposer:
         reference: ReferenceTranslation | None = None,
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        backing_vocal_gender: str = "",
     ) -> str:
         parts = [
             f"Идея: {idea}",
@@ -142,9 +147,15 @@ class AiPromptComposer:
                 "MANDATORY duet: male AND female lead vocals in the same track."
             )
         if backing_vocal:
-            parts.append(
+            backing_line = (
                 "MANDATORY layered backing vocals, vocal harmonies, chorus stacks."
             )
+            if backing_vocal_gender == "f":
+                backing_line = (
+                    "MANDATORY female backing vocals on chorus, "
+                    "layered female harmonies, female chorus stacks."
+                )
+            parts.append(backing_line)
         if analysis.instrumental:
             parts.append("Instrumental only — no vocals, lyrics must be empty.")
         return "\n".join(parts)

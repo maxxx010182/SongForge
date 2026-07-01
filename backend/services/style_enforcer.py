@@ -1,6 +1,7 @@
 """Supplement AI-generated Suno style prompts — never replace the AI output."""
 
 from backend.models import ProductionPlan
+from backend.services.idea_parser import is_rap_genre
 from backend.services.reference_translator import ReferenceTranslation
 from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
 
@@ -44,6 +45,7 @@ def enforce_style(
     *,
     reference: ReferenceTranslation | None = None,
     backing_vocal: bool = False,
+    backing_vocal_gender: str = "",
 ) -> str:
     """Keep AI style as the base; prepend reference and append only missing tags."""
     base = clean_text(style).strip()
@@ -78,6 +80,12 @@ def enforce_style(
     if plan.atmosphere:
         base = _append_unique(base, plan.atmosphere)
 
+    if is_rap_genre(plan.genre, plan.subgenre):
+        base = _append_unique(
+            base,
+            "Russian hip-hop, rap vocals, 808 drums, boom bap flow, urban beat",
+        )
+
     if plan.vocal == "duet":
         base = _append_unique(
             base,
@@ -85,15 +93,27 @@ def enforce_style(
             "alternating male and female verses",
         )
     elif plan.vocal == "male":
-        base = _append_unique(base, "male lead vocals")
+        base = _append_unique(base, "male lead vocals, deep male rap delivery")
     elif plan.vocal == "female":
         base = _append_unique(base, "female lead vocals")
 
     if backing_vocal:
-        base = _append_unique(
-            base,
-            "layered backing vocals, rich vocal harmonies, chorus vocal stacks",
-        )
+        if backing_vocal_gender == "f":
+            base = _append_unique(
+                base,
+                "female backing vocals, layered female harmonies, "
+                "female chorus stacks on hooks",
+            )
+        elif backing_vocal_gender == "m":
+            base = _append_unique(
+                base,
+                "male backing vocals, layered male harmonies, chorus stacks",
+            )
+        else:
+            base = _append_unique(
+                base,
+                "layered backing vocals, rich vocal harmonies, chorus vocal stacks",
+            )
 
     if not plan.instrumental:
         base = ensure_russian_vocal_style(base)

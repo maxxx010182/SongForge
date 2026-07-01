@@ -84,6 +84,10 @@ def apply_user_to_plan(
         plan.vocal_gender = ""
     elif plan.vocal == "male":
         plan.vocal_gender = "m"
+        plan.negative_tags = _append_negative(
+            plan.negative_tags,
+            "solo female lead, female lead only, pop ballad vocals",
+        )
     elif plan.vocal == "female":
         plan.vocal_gender = "f"
 

@@ -1,6 +1,7 @@
 from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
+from backend.services.idea_parser import merge_parsed_with_request, parse_idea
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
@@ -35,8 +36,30 @@ class PromptBuilder:
         style_mode: str = "presets",
         custom_description: str = "",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
-        """Reference → Analyst → Composer → Suno payload."""
-        reference = self._translator.translate(artist_ref, idea=idea) if artist_ref.strip() else None
+        """Parse idea → Reference → Analyst → Composer → Suno payload."""
+        parsed = parse_idea(idea)
+        (
+            genre,
+            mood,
+            artist_ref,
+            vocal_hint,
+            backing_vocal,
+            backing_gender,
+            parsed,
+        ) = merge_parsed_with_request(
+            parsed,
+            genre=genre,
+            mood=mood,
+            artist_ref=artist_ref,
+            vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
+        )
+
+        reference = (
+            self._translator.translate(artist_ref, idea=idea)
+            if artist_ref.strip()
+            else None
+        )
 
         analysis = self._analyst.analyze(
             idea,
@@ -48,6 +71,8 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
             style_mode=style_mode,
             custom_description=custom_description,
+            locked_genre=parsed.has_locked_genre,
+            locked_artist=parsed.has_locked_artist,
         )
         payload = self._composer.compose(
             analysis,
@@ -55,8 +80,9 @@ class PromptBuilder:
             reference=reference,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            backing_vocal_gender=backing_gender,
         )
-        plan = self._analysis_to_plan(analysis, payload)
+        plan = self._analysis_to_plan(analysis, payload, parsed=parsed)
         plan = apply_user_to_plan(
             plan,
             genre=genre,
@@ -70,6 +96,7 @@ class PromptBuilder:
             plan,
             reference=reference,
             backing_vocal=backing_vocal,
+            backing_vocal_gender=backing_gender,
         )
         payload.vocal_gender = plan.vocal_gender
         payload.negative_tags = plan.negative_tags
@@ -209,10 +236,39 @@ class PromptBuilder:
         return self.build_style(plan)
 
     @staticmethod
+    def _build_explanation(parsed) -> str:
+        parts = ["AI-продюсер разобрал вашу идею."]
+        if parsed.has_locked_genre:
+            parts.append(f"Жанр из текста: {parsed.genre}.")
+        if parsed.has_locked_artist:
+            parts.append(f"Референс: {parsed.artist_ref}.")
+        if parsed.mood:
+            parts.append(f"Настроение: {parsed.mood}.")
+        if parsed.backing_vocal:
+            gender = (
+                "женские"
+                if parsed.backing_vocal_gender == "f"
+                else "мужские"
+                if parsed.backing_vocal_gender == "m"
+                else ""
+            )
+            parts.append(f"Подпевки: {gender or 'да'}.")
+        if parsed.vocal_hint:
+            parts.append(f"Лид-вокал: {parsed.vocal_hint}.")
+        return " ".join(parts)
+
+    @staticmethod
     def _analysis_to_plan(
         analysis: MusicAnalysis,
         payload: SunoPromptPayload,
+        *,
+        parsed=None,
     ) -> ProductionPlan:
+        explanation = (
+            PromptBuilder._build_explanation(parsed)
+            if parsed and parsed.locked_fields
+            else "AI-продюсер анализирует идею и подбирает оптимальные параметры генерации."
+        )
         return ProductionPlan(
             genre=analysis.genre,
             subgenre=analysis.subgenre,
@@ -231,7 +287,7 @@ class PromptBuilder:
             audio_weight=payload.audio_weight,
             vocal_gender=payload.vocal_gender,
             instrumental=analysis.instrumental,
-            explanation_ru="AI-продюсер анализирует идею и подбирает оптимальные параметры генерации.",
+            explanation_ru=explanation,
             optimized_idea=analysis.idea,
         )
 
