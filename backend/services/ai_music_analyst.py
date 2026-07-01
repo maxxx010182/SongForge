@@ -1,4 +1,12 @@
 from backend.models import MusicAnalysis
+from backend.services.genre_resolver import (
+    SUBGENRE_BY_GENRE,
+    infer_genre_from_idea,
+    infer_mood_from_idea,
+    resolve_genre,
+    resolve_mood,
+)
+from backend.services.plan_overrides import apply_user_to_analysis
 from backend.services.reference_translator import ReferenceTranslation
 from backend.services.yandex_client import YandexClient
 from backend.utils.text import extract_json
@@ -25,78 +33,6 @@ class AiMusicAnalyst:
         "а не подставляй Pop по умолчанию. "
         "Не упоминай имена артистов. Будь конкретным и профессиональным."
     )
-
-    _GENRE_FROM_UI: dict[str, str] = {
-        "поп": "Pop",
-        "рок": "Rock",
-        "хип-хоп": "Hip-Hop",
-        "электронная": "Electronic",
-        "ло-фай": "Lo-Fi",
-        "баллада": "Ballad",
-        "р-н-б": "R&B",
-        "джаз": "Jazz",
-        "классическая": "Classical",
-        "шансон": "Chanson",
-        "кантри": "Country",
-        "регги": "Reggae",
-        "металл": "Metal",
-        "панк": "Punk",
-        "фолк": "Folk",
-        "блюз": "Blues",
-        "соул": "Soul",
-        "фанк": "Funk",
-        "трэп": "Trap",
-        "дрилл": "Drill",
-        "техно": "Techno",
-        "хаус": "House",
-        "драм-н-бэйс": "Drum and Bass",
-        "амбиент": "Ambient",
-        "бачата": "Bachata",
-        "фламенко": "Flamenco",
-    }
-
-    _GENRE_HINTS: list[tuple[str, str, tuple[str, ...]]] = [
-        ("Hip-Hop", "Modern Hip-Hop", ("рэп", "rap", "хип", "hip-hop", "hip hop", "трэп", "trap", "drill", "дрилл", "битмейк", "808")),
-        ("Rock", "Alternative Rock", ("рок", "rock", "гитар", "metal", "метал", "панк", "punk")),
-        ("Electronic", "Modern Electronic", ("электрон", "electronic", "edm", "техно", "techno", "хаус", "house", "синт", "synth")),
-        ("Ballad", "Emotional Ballad", ("баллад", "ballad", "лирич", "нежн", "трогательн")),
-        ("Lo-Fi", "Chill Lo-Fi", ("лофи", "lo-fi", "lofi", "чилл", "chill", "расслаб")),
-        ("R&B", "Modern R&B", ("r&b", "рнб", "р&б", "соул", "soul")),
-        ("Jazz", "Contemporary Jazz", ("джаз", "jazz", "свинг", "swing")),
-        ("Classical", "Orchestral", ("классик", "classical", "оркестр", "orchestr", "симфон")),
-        ("Country", "Modern Country", ("кантри", "country")),
-        ("Metal", "Heavy Metal", ("металл", "metal", "heavy")),
-        ("Pop", "Modern Pop", ("поп", "pop", "радио", "хит")),
-    ]
-
-    _MOOD_HINTS: list[tuple[str, tuple[str, ...]]] = [
-        ("melancholic", ("груст", "печал", "тоск", "melanchol", "sad", "одинок")),
-        ("romantic", ("любов", "романт", "romantic", "нежн", "свидан")),
-        ("dark", ("мрач", "тёмн", "dark", "агресс", "злост", "ярост")),
-        ("uplifting", ("радост", "счаст", "энерг", "happy", "upbeat", "весел", "праздн", "мотив")),
-        ("calm", ("спокой", "мирн", "calm", "peace", "медита", "тишин")),
-        ("nostalgic", ("ностальг", "воспомин", "прошл", "детств")),
-    ]
-
-    _SUBGENRE_BY_GENRE: dict[str, str] = {
-        "Pop": "Modern Pop",
-        "Rock": "Alternative Rock",
-        "Hip-Hop": "Modern Hip-Hop",
-        "Electronic": "Modern Electronic",
-        "Ballad": "Emotional Ballad",
-        "Lo-Fi": "Chill Lo-Fi",
-        "R&B": "Modern R&B",
-        "Jazz": "Contemporary Jazz",
-        "Classical": "Orchestral",
-        "Country": "Modern Country",
-        "Metal": "Heavy Metal",
-        "Trap": "Dark Trap",
-        "Drill": "UK Drill",
-        "Techno": "Peak Time Techno",
-        "House": "Deep House",
-        "Drum and Bass": "Liquid DnB",
-        "Ambient": "Cinematic Ambient",
-    }
 
     def __init__(self, yandex: YandexClient) -> None:
         self._yandex = yandex
@@ -185,9 +121,13 @@ class AiMusicAnalyst:
             data = extract_json(raw)
             analysis = MusicAnalysis.model_validate(data)
             analysis.instrumental = instrumental
-            if vocal_hint in {"male", "female", "duet", "auto"}:
-                analysis.vocal = vocal_hint
             analysis = self._normalize(analysis)
+            analysis = apply_user_to_analysis(
+                analysis,
+                genre=genre,
+                mood=mood,
+                vocal_hint=vocal_hint,
+            )
             if reference and reference.has_content and not genre.strip():
                 if reference.genre:
                     analysis.genre = reference.genre
@@ -208,37 +148,10 @@ class AiMusicAnalyst:
                 reference=reference,
             )
 
-    @classmethod
-    def _infer_genre_from_idea(cls, idea: str) -> tuple[str, str]:
-        text = idea.lower()
-        for genre, subgenre, keywords in cls._GENRE_HINTS:
-            if any(word in text for word in keywords):
-                return genre, subgenre
-        return "Pop", "Modern Pop"
-
-    @classmethod
-    def _infer_mood_from_idea(cls, idea: str) -> str:
-        text = idea.lower()
-        for mood, keywords in cls._MOOD_HINTS:
-            if any(word in text for word in keywords):
-                return mood
-        return "uplifting"
-
-    @classmethod
-    def _resolve_genre(cls, genre: str, idea: str) -> tuple[str, str]:
-        normalized = genre.strip().lower()
-        if normalized:
-            if normalized in cls._GENRE_FROM_UI:
-                genre_en = cls._GENRE_FROM_UI[normalized]
-                return genre_en, cls._SUBGENRE_BY_GENRE.get(genre_en, "Modern Pop")
-            return genre.strip(), cls._SUBGENRE_BY_GENRE.get(genre.strip(), "Modern Pop")
-        return cls._infer_genre_from_idea(idea)
-
-    @classmethod
-    def _resolve_mood(cls, mood: str, idea: str) -> str:
-        if mood.strip():
-            return mood.strip()
-        return cls._infer_mood_from_idea(idea)
+    _resolve_genre = staticmethod(resolve_genre)
+    _resolve_mood = staticmethod(resolve_mood)
+    _infer_genre_from_idea = staticmethod(infer_genre_from_idea)
+    _infer_mood_from_idea = staticmethod(infer_mood_from_idea)
 
     @staticmethod
     def _normalize(analysis: MusicAnalysis) -> MusicAnalysis:
@@ -265,7 +178,7 @@ class AiMusicAnalyst:
         vocal = vocal_hint if vocal_hint in {"male", "female", "duet", "auto"} else "auto"
         if reference and reference.has_content and not genre.strip():
             genre_en = reference.genre or cls._resolve_genre(genre, idea)[0]
-            subgenre = reference.subgenre or cls._SUBGENRE_BY_GENRE.get(genre_en, "Modern")
+            subgenre = reference.subgenre or SUBGENRE_BY_GENRE.get(genre_en, "Modern")
             vocal_description = reference.vocal_description or "expressive modern vocals"
             bpm = reference.bpm or 120
         else:
@@ -273,7 +186,7 @@ class AiMusicAnalyst:
             vocal_description = "expressive modern vocals"
             bpm = 120
         mood_en = cls._resolve_mood(mood, idea)
-        return MusicAnalysis(
+        analysis = MusicAnalysis(
             genre=genre_en,
             subgenre=subgenre,
             mood=mood_en,
@@ -288,4 +201,10 @@ class AiMusicAnalyst:
             structure="verse-chorus-verse-chorus-bridge-chorus-outro",
             instrumental=instrumental,
             idea=idea,
+        )
+        return apply_user_to_analysis(
+            analysis,
+            genre=genre,
+            mood=mood,
+            vocal_hint=vocal_hint,
         )

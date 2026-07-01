@@ -1,5 +1,6 @@
 from backend.models import MusicAnalysis, SunoPromptPayload
 from backend.services.reference_translator import ReferenceTranslation
+from backend.services.style_enforcer import enforce_style
 from backend.services.yandex_client import YandexClient
 from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT_WEIRDNESS
 from backend.utils.text import clean_text, ensure_russian_vocal_style, extract_json, truncate
@@ -36,7 +37,7 @@ class AiPromptComposer:
         "style (максимально подробное музыкальное описание на английском: жанр, поджанр, "
         "настроение, BPM, энергия, инструменты, атмосфера, сведение, коммерческое звучание), "
         "vocalGender (пустая строка \"\"), "
-        "negativeTags, styleWeight (0.50), weirdnessConstraint (0.30), audioWeight (0.50). "
+        "negativeTags, styleWeight (0.85), weirdnessConstraint (0.20), audioWeight (0.70). "
         "Не создавай текст песни. lyrics всегда \"\"."
     )
 
@@ -56,11 +57,11 @@ class AiPromptComposer:
     }
 
     STYLE_WEIGHT: dict[str, float] = {
-        "pop": 0.50,
-        "rock": 0.50,
-        "electronic": 0.55,
-        "epic": 0.55,
-        "lo-fi": 0.45,
+        "pop": 0.85,
+        "rock": 0.80,
+        "electronic": 0.85,
+        "epic": 0.90,
+        "lo-fi": 0.75,
     }
 
     def __init__(self, yandex: YandexClient) -> None:
@@ -166,21 +167,25 @@ class AiPromptComposer:
             payload.lyrics = clean_text(payload.lyrics)
             payload.style = truncate(ensure_russian_vocal_style(payload.style), 950)
 
-        if (
-            reference
-            and reference.has_content
-            and reference.style_tags.lower() not in payload.style.lower()
-        ):
-            payload.style = f"{reference.style_tags}, {payload.style}"
-
-        payload.style = self._apply_vocal_style(payload.style, analysis.vocal, backing_vocal)
-        payload.style = truncate(payload.style, 950)
-
         payload.style_weight = max(0.0, min(float(payload.style_weight), 1.0))
         payload.weirdness_constraint = max(
             0.0, min(float(payload.weirdness_constraint), 1.0)
         )
         payload.audio_weight = max(0.0, min(float(payload.audio_weight), 1.0))
+
+        if payload.style_weight <= 0.55:
+            genre_key = analysis.genre.lower().split()[0]
+            payload.style_weight = self.STYLE_WEIGHT.get(
+                genre_key, DEFAULT_STYLE_WEIGHT
+            )
+        if payload.weirdness_constraint <= 0.0:
+            payload.weirdness_constraint = (
+                DEFAULT_WEIRDNESS
+                if analysis.commercial_intent == "commercial"
+                else 0.50
+            )
+        if payload.audio_weight <= 0.55:
+            payload.audio_weight = DEFAULT_AUDIO_WEIGHT
 
         if not payload.negative_tags.strip():
             payload.negative_tags = self._build_negative_tags(analysis.genre)
@@ -206,6 +211,29 @@ class AiPromptComposer:
                 payload.vocal_gender = gender if gender in {"f", "m"} else ""
 
         return payload
+
+    @staticmethod
+    def _analysis_as_plan(analysis: MusicAnalysis, payload: SunoPromptPayload):
+        from backend.models import ProductionPlan
+
+        return ProductionPlan(
+            genre=analysis.genre,
+            subgenre=analysis.subgenre,
+            mood=analysis.mood,
+            bpm=analysis.bpm,
+            energy=analysis.energy,
+            instruments=analysis.instruments,
+            atmosphere=analysis.atmosphere,
+            production_style=analysis.production_style,
+            vocal=analysis.vocal,
+            vocal_description=analysis.vocal_description,
+            negative_tags=payload.negative_tags,
+            style_weight=payload.style_weight,
+            weirdness_constraint=payload.weirdness_constraint,
+            audio_weight=payload.audio_weight,
+            vocal_gender=payload.vocal_gender,
+            instrumental=analysis.instrumental,
+        )
 
     @staticmethod
     def _apply_vocal_style(style: str, vocal: str, backing_vocal: bool) -> str:
@@ -260,14 +288,16 @@ class AiPromptComposer:
             "memorable chorus",
             "high quality mix",
         ]
-        if reference and reference.has_content:
-            style_parts.insert(0, reference.style_tags)
-
-        style = ", ".join(p for p in style_parts if p)
-        if not analysis.instrumental:
-            style = ensure_russian_vocal_style(style)
-            style = self._apply_vocal_style(style, analysis.vocal, backing_vocal)
-            style = truncate(style, 950)
+        plan_snapshot = self._analysis_as_plan(
+            analysis,
+            SunoPromptPayload(negative_tags=self._build_negative_tags(analysis.genre)),
+        )
+        style = enforce_style(
+            ", ".join(p for p in style_parts if p),
+            plan_snapshot,
+            reference=reference,
+            backing_vocal=backing_vocal,
+        )
         genre_key = analysis.genre.lower().split()[0]
         style_weight = self.STYLE_WEIGHT.get(genre_key, DEFAULT_STYLE_WEIGHT)
         weirdness = DEFAULT_WEIRDNESS if analysis.commercial_intent == "commercial" else 0.50

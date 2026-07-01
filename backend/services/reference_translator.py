@@ -72,7 +72,9 @@ class ReferenceTranslator:
             return ReferenceTranslation(
                 source=ref,
                 style_tags=truncate(
-                    f"production style inspired by reference, {ref} sonic aesthetic",
+                    "distinctive commercial production, recognizable vocal character, "
+                    "genre-appropriate instrumentation, polished radio-ready mix, "
+                    "emotional delivery, modern studio sound",
                     500,
                 ),
             )

@@ -5,6 +5,7 @@ from backend.models import CreateSongResponse, ProduceResponse, ProductionPlan
 from backend.services.apipass_client import ApiPassClient
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
+from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.yandex_client import YandexClient
 
 
@@ -87,6 +88,11 @@ class AiProducer:
         title: str,
         plan: ProductionPlan | None = None,
         idea: str = "",
+        genre: str = "",
+        mood: str = "",
+        artist_ref: str = "",
+        vocal_hint: str = "",
+        backing_vocal: bool = False,
     ) -> str:
         if plan is None and production_id:
             stored = self._history.get_production(production_id)
@@ -99,6 +105,15 @@ class AiProducer:
 
         if plan is None:
             raise ValueError("Не найден план продакшена")
+
+        if genre.strip() or mood.strip() or vocal_hint.strip() or backing_vocal:
+            plan = apply_user_to_plan(
+                plan,
+                genre=genre,
+                mood=mood,
+                vocal_hint=vocal_hint,
+                backing_vocal=backing_vocal,
+            )
 
         task_id = self._apipass.create_task(
             lyrics=lyrics,
@@ -148,6 +163,11 @@ class AiProducer:
             title=produced.title,
             plan=produced.plan,
             idea=idea,
+            genre=genre,
+            mood=mood,
+            artist_ref=artist_ref,
+            vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
         )
         return CreateSongResponse(
             success=True,

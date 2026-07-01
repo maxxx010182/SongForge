@@ -2,6 +2,8 @@ from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.reference_translator import ReferenceTranslator
+from backend.services.plan_overrides import apply_user_to_plan
+from backend.services.style_enforcer import enforce_style
 from backend.services.yandex_client import YandexClient
 from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
 
@@ -55,6 +57,26 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
         )
         plan = self._analysis_to_plan(analysis, payload)
+        plan = apply_user_to_plan(
+            plan,
+            genre=genre,
+            mood=mood,
+            vocal_hint=vocal_hint,
+            backing_vocal=backing_vocal,
+        )
+
+        payload.style = enforce_style(
+            payload.style,
+            plan,
+            reference=reference,
+            backing_vocal=backing_vocal,
+        )
+        payload.vocal_gender = plan.vocal_gender
+        payload.negative_tags = plan.negative_tags
+        payload.style_weight = plan.style_weight
+        payload.weirdness_constraint = plan.weirdness_constraint
+        payload.audio_weight = plan.audio_weight
+
         return plan, payload
 
     def build_plan(

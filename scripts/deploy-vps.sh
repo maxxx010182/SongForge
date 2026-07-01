@@ -27,12 +27,17 @@ wget -q -O backend/services/apipass_client.py "$BASE/backend/services/apipass_cl
 wget -q -O backend/services/ai_music_analyst.py "$BASE/backend/services/ai_music_analyst.py"
 wget -q -O backend/services/ai_prompt_composer.py "$BASE/backend/services/ai_prompt_composer.py"
 wget -q -O backend/services/reference_translator.py "$BASE/backend/services/reference_translator.py"
+wget -q -O backend/services/style_enforcer.py "$BASE/backend/services/style_enforcer.py"
+wget -q -O backend/services/plan_overrides.py "$BASE/backend/services/plan_overrides.py"
+wget -q -O backend/services/genre_resolver.py "$BASE/backend/services/genre_resolver.py"
 wget -q -O backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py"
 wget -q -O backend/services/history.py "$BASE/backend/services/history.py"
 wget -q -O backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 echo "[2/4] Проверяем Python..."
 ./venv/bin/python -c "
+from backend.services.style_enforcer import enforce_style
+from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.prompt_builder import PromptBuilder
