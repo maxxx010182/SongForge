@@ -12,6 +12,10 @@ cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
 mkdir -p backend/services backend/utils backend/database scripts
 
+echo "[0/4] Обновляем скрипт деплоя..."
+wget -q -O scripts/deploy-vps.sh "$BASE/scripts/deploy-vps.sh"
+chmod +x scripts/deploy-vps.sh
+
 echo "[1/4] Скачиваем файлы с GitHub..."
 wget -q -O index.html "$BASE/index.html"
 
@@ -34,11 +38,21 @@ wget -q -O backend/services/yandex_client.py "$BASE/backend/services/yandex_clie
 wget -q -O backend/services/history.py "$BASE/backend/services/history.py"
 wget -q -O backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
+for f in \
+  backend/services/genre_resolver.py \
+  backend/services/plan_overrides.py \
+  backend/services/style_enforcer.py; do
+  if [ ! -s "$f" ]; then
+    echo "ОШИБКА: не скачан $f"
+    exit 1
+  fi
+done
+
 echo "[2/4] Проверяем Python..."
 ./venv/bin/python -c "
-from backend.services.style_enforcer import enforce_style
+from backend.services.genre_resolver import resolve_genre
 from backend.services.plan_overrides import apply_user_to_plan
-from backend.services.reference_translator import ReferenceTranslator
+from backend.services.style_enforcer import enforce_style
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.prompt_builder import PromptBuilder
 print('import OK')
