@@ -35,6 +35,7 @@ from backend.services.apipass_client import ApiPassClient
 from backend.services.auth_service import AuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
+from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
 from backend.services.profile_service import ProfileService
@@ -53,8 +54,9 @@ guest_service = GuestService()
 auth_service = AuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
+generation_quota = GenerationQuotaService()
 
-app = FastAPI(title="SongForge", version="2.2.2")
+app = FastAPI(title="SongForge", version="2.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -112,6 +114,31 @@ def _user_info(user: dict) -> UserInfo:
     )
 
 
+def _begin_generation(
+    *,
+    user: dict | None,
+    guest_id: str,
+    production_id: str | None = None,
+) -> tuple[str, int | None]:
+    mode = generation_quota.resolve_mode(user=user, guest_id=guest_id)
+    balance = generation_quota.consume_on_start(
+        mode=mode,
+        user=user,
+        guest_id=guest_id,
+        production_id=production_id,
+    )
+    if mode == "paid" and production_id:
+        generation_quota.mark_note_charged(production_id)
+    return mode, balance
+
+
+def _generation_flags(production_id: str) -> tuple[bool, bool]:
+    row = history.get_by_id(production_id) if production_id else None
+    if not row:
+        return False, False
+    return bool(row.get("purchased")), bool(row.get("note_charged"))
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
@@ -127,7 +154,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.2.2"}
+    return {"ok": True, "service": "SongForge", "version": "2.3.0"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -135,7 +162,10 @@ async def get_me(
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
-    remaining = guest_service.remaining(guest_id) if not user else GUEST_GENERATION_LIMIT
+    if user:
+        remaining = generation_quota.user_trial_remaining(user["id"])
+    else:
+        remaining = guest_service.remaining(guest_id)
     return MeResponse(
         logged_in=bool(user),
         user=_user_info(user) if user else None,
@@ -199,6 +229,9 @@ async def auth_email_verify(
     try:
         user, token = auth_service.verify_email_code(req.email, req.code)
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+        generation_quota.sync_guest_trial_on_login(
+            guest_id=guest_id, user_id=user["id"]
+        )
         response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
         return {"success": True, "user": _user_info(user).model_dump()}
     except ValueError as exc:
@@ -218,6 +251,9 @@ async def auth_telegram(
             username=req.username,
         )
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+        generation_quota.sync_guest_trial_on_login(
+            guest_id=guest_id, user_id=user["id"]
+        )
         response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
         return {"success": True, "user": _user_info(user).model_dump()}
     except ValueError as exc:
@@ -338,11 +374,15 @@ async def create_song(
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
-    if not user and not guest_service.can_generate(guest_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Бесплатная генерация использована. Войдите в аккаунт, чтобы продолжить.",
-        )
+    mode = ""
+    paid_user_id: str | None = None
+    balance: int | None = None
+    try:
+        mode, balance = _begin_generation(user=user, guest_id=guest_id)
+        if user and mode == "paid":
+            paid_user_id = user["id"]
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
     try:
         producer.set_actor(
@@ -360,12 +400,18 @@ async def create_song(
             style_mode=req.style_mode,
             custom_description=req.custom_description,
         )
-        if not user:
-            guest_service.consume_generation(guest_id)
+        if mode == "paid" and result.production_id:
+            generation_quota.mark_note_charged(result.production_id)
+        result.balance = balance
+        result.generation_mode = mode
         return result
     except ValueError as exc:
+        if paid_user_id:
+            generation_quota.refund_paid_start(user_id=paid_user_id)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        if paid_user_id:
+            generation_quota.refund_paid_start(user_id=paid_user_id)
         log.exception("create-song failed")
         raise HTTPException(status_code=500, detail="Не удалось запустить создание песни") from exc
     finally:
@@ -378,11 +424,19 @@ async def start_music(
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
-    if not user and not guest_service.can_generate(guest_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Бесплатная генерация использована. Войдите в аккаунт, чтобы продолжить.",
+    mode = ""
+    paid_user_id: str | None = None
+    balance: int | None = None
+    try:
+        mode, balance = _begin_generation(
+            user=user,
+            guest_id=guest_id,
+            production_id=req.production_id or None,
         )
+        if user and mode == "paid":
+            paid_user_id = user["id"]
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
     try:
         producer.set_actor(
@@ -402,12 +456,20 @@ async def start_music(
             vocal_hint=req.vocal_hint,
             backing_vocal=req.backing_vocal,
         )
-        if not user:
-            guest_service.consume_generation(guest_id)
-        return {"success": True, "task_id": task_id, "production_id": req.production_id}
+        return {
+            "success": True,
+            "task_id": task_id,
+            "production_id": req.production_id,
+            "balance": balance,
+            "generation_mode": mode,
+        }
     except ValueError as exc:
+        if paid_user_id:
+            generation_quota.refund_paid_start(user_id=paid_user_id)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        if paid_user_id:
+            generation_quota.refund_paid_start(user_id=paid_user_id)
         log.exception("music start failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
@@ -425,6 +487,9 @@ async def music_status(task_id: str):
 
         if state == "success" and tracks:
             history.update_task_result(task_id=task_id, status="success", tracks=tracks)
+            if production_id:
+                cabinet.complete_prepaid_generation(production_id)
+            purchased, prepaid = _generation_flags(production_id)
             return MusicStatusResponse(
                 success=True,
                 task_id=task_id,
@@ -432,6 +497,8 @@ async def music_status(task_id: str):
                 progress_hint=status["progress_hint"],
                 tracks=tracks,
                 production_id=production_id,
+                purchased=purchased,
+                prepaid=prepaid,
             )
 
         if state in {"fail", "failed"}:
@@ -442,6 +509,12 @@ async def music_status(task_id: str):
                 fail_code=status.get("fail_code", ""),
                 fail_msg=status.get("fail_msg", ""),
             )
+            if production:
+                generation_quota.refund_if_charged(
+                    production_id=production.get("id", ""),
+                    user_id=production.get("user_id"),
+                )
+            purchased, prepaid = _generation_flags(production_id)
             return MusicStatusResponse(
                 success=False,
                 task_id=task_id,
@@ -450,6 +523,8 @@ async def music_status(task_id: str):
                 fail_code=status.get("fail_code", ""),
                 fail_msg=status.get("fail_msg", "") or "Не удалось создать трек",
                 production_id=production_id,
+                purchased=purchased,
+                prepaid=prepaid,
             )
 
         return MusicStatusResponse(

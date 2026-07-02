@@ -119,6 +119,63 @@ class CabinetService:
             )
         return cur.rowcount
 
+    def _save_generation_to_library(self, conn, *, gen, user_id: str) -> list[str]:
+        plan = json.loads(gen["plan_json"] or "{}")
+        genre = plan.get("genre", "")
+        now = utc_now()
+        labels = ["A", "B"]
+        urls = [gen["music_url_a"], gen["music_url_b"]]
+        images = [gen["image_url_a"], gen["image_url_b"]]
+        durations = [gen["duration_a"], gen["duration_b"]]
+        title = gen["title"] or "Без названия"
+        saved_ids: list[str] = []
+
+        for i in range(2):
+            if not urls[i]:
+                continue
+            lib_id = str(uuid.uuid4())
+            conn.execute(
+                """
+                INSERT INTO user_library (
+                    id, user_id, generation_id, title, variant, audio_url,
+                    image_url, duration, lyrics, genre, purchased_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    lib_id,
+                    user_id,
+                    gen["id"],
+                    f"{title} (вариант {labels[i]})",
+                    labels[i],
+                    urls[i],
+                    images[i],
+                    durations[i],
+                    gen["lyrics"],
+                    genre,
+                    now,
+                ),
+            )
+            saved_ids.append(lib_id)
+        return saved_ids
+
+    def complete_prepaid_generation(self, generation_id: str) -> bool:
+        """После успешной музыки: нота уже списана при старте — кладём в фонотеку."""
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            if not gen or not gen["user_id"] or not gen["note_charged"]:
+                return False
+            if gen["purchased"] or gen["status"] != "success":
+                return False
+            self._save_generation_to_library(conn, gen=gen, user_id=gen["user_id"])
+            conn.execute(
+                "UPDATE generations SET purchased = 1, showcase_eligible = 0 WHERE id = ?",
+                (generation_id,),
+            )
+        return True
+
     def purchase_generation(self, *, user_id: str, generation_id: str) -> dict:
         with get_connection() as conn:
             user = conn.execute(
@@ -127,8 +184,6 @@ class CabinetService:
             ).fetchone()
             if not user:
                 raise ValueError("Пользователь не найден")
-            if user["balance"] < 1:
-                raise ValueError("Недостаточно нот на балансе")
 
             gen = conn.execute(
                 "SELECT * FROM generations WHERE id = ? AND user_id = ?",
@@ -141,47 +196,18 @@ class CabinetService:
             if gen["status"] != "success":
                 raise ValueError("Генерация ещё не готова")
 
-            plan = json.loads(gen["plan_json"] or "{}")
-            genre = plan.get("genre", "")
-            now = utc_now()
-            labels = ["A", "B"]
-            urls = [gen["music_url_a"], gen["music_url_b"]]
-            images = [gen["image_url_a"], gen["image_url_b"]]
-            durations = [gen["duration_a"], gen["duration_b"]]
-            title = gen["title"] or "Без названия"
-            saved_ids: list[str] = []
+            charge_balance = not bool(gen["note_charged"])
+            if charge_balance and user["balance"] < 1:
+                raise ValueError("Недостаточно нот на балансе")
 
-            for i in range(2):
-                if not urls[i]:
-                    continue
-                lib_id = str(uuid.uuid4())
-                conn.execute(
-                    """
-                    INSERT INTO user_library (
-                        id, user_id, generation_id, title, variant, audio_url,
-                        image_url, duration, lyrics, genre, purchased_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        lib_id,
-                        user_id,
-                        generation_id,
-                        f"{title} (вариант {labels[i]})",
-                        labels[i],
-                        urls[i],
-                        images[i],
-                        durations[i],
-                        gen["lyrics"],
-                        genre,
-                        now,
-                    ),
-                )
-                saved_ids.append(lib_id)
-
-            conn.execute(
-                "UPDATE users SET balance = balance - 1 WHERE id = ?",
-                (user_id,),
+            saved_ids = self._save_generation_to_library(
+                conn, gen=gen, user_id=user_id
             )
+            if charge_balance:
+                conn.execute(
+                    "UPDATE users SET balance = balance - 1 WHERE id = ?",
+                    (user_id,),
+                )
             conn.execute(
                 "UPDATE generations SET purchased = 1, showcase_eligible = 0 WHERE id = ?",
                 (generation_id,),

@@ -12,7 +12,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.2.2"
+EXPECTED_VERSION="2.3.0"
 
 strip_crlf() {
   local f="$1"
@@ -56,7 +56,7 @@ echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
 download requirements.txt "$BASE/requirements.txt"
 download index.html "$BASE/index.html"
-download SongForgeLogo.png "$BASE/SongForgeLogo.png"
+download SongForgeLogo.png "$BASE/SongForgeLogo.png" 2>/dev/null || true
 
 download backend/app.py "$BASE/backend/app.py"
 download backend/models.py "$BASE/backend/models.py"
@@ -80,6 +80,7 @@ download backend/services/guest_service.py "$BASE/backend/services/guest_service
 download backend/services/auth_service.py "$BASE/backend/services/auth_service.py"
 download backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py"
 download backend/services/profile_service.py "$BASE/backend/services/profile_service.py"
+download backend/services/generation_quota_service.py "$BASE/backend/services/generation_quota_service.py"
 download backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 for f in \
@@ -107,6 +108,7 @@ from backend.services.guest_service import GuestService
 from backend.services.auth_service import AuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.profile_service import ProfileService
+from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.idea_parser import parse_idea
 from backend.services.genre_resolver import resolve_genre
 from backend.services.plan_overrides import apply_user_to_plan

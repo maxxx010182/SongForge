@@ -115,6 +115,16 @@ class HistoryService:
             return None
         return dict(row)
 
+    def get_by_id(self, production_id: str) -> dict | None:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (production_id,),
+            ).fetchone()
+        if not row:
+            return None
+        return dict(row)
+
     def update_task_result(
         self,
         *,

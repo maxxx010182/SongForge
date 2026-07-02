@@ -151,6 +151,20 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
     if "avatar_url" not in existing:
         conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+    if "trial_generations_used" not in existing:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN trial_generations_used INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.execute(
+            """
+            UPDATE users
+            SET trial_generations_used = 1
+            WHERE id IN (
+                SELECT DISTINCT user_id FROM generations
+                WHERE user_id IS NOT NULL AND user_id != ''
+            )
+            """
+        )
 
 
 def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
@@ -160,6 +174,7 @@ def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
         "guest_id": "TEXT",
         "purchased": "INTEGER NOT NULL DEFAULT 0",
         "showcase_eligible": "INTEGER NOT NULL DEFAULT 1",
+        "note_charged": "INTEGER NOT NULL DEFAULT 0",
     }
     for column, col_type in additions.items():
         if column not in existing:

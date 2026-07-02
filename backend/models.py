@@ -120,6 +120,8 @@ class MusicStatusResponse(BaseModel):
     fail_code: str = ""
     fail_msg: str = ""
     production_id: str = ""
+    purchased: bool = False
+    prepaid: bool = False
 
 
 class CreateSongRequest(BaseModel):
@@ -143,6 +145,8 @@ class CreateSongResponse(BaseModel):
     lyrics: str
     style: str
     message: str = ""
+    balance: int | None = None
+    generation_mode: str = ""
 
 
 class ConsultantRequest(BaseModel):
