@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 3
+# deploy-script-version: 4
 # Запуск: bash scripts/deploy-vps.sh
 # Скачать (обход кэша raw.githubusercontent.com):
 # curl -fsSL -H "Accept: application/vnd.github.raw" \
@@ -32,6 +32,21 @@ download() {
   strip_crlf "$out"
 }
 
+ensure_venv() {
+  if [ -x "./venv/bin/python" ] && ./venv/bin/python -c "import sys; sys.exit(0)" 2>/dev/null; then
+    return 0
+  fi
+  echo "  Python-окружение сломано или отсутствует — создаём заново..."
+  rm -rf venv
+  python3 -m venv venv
+  ./venv/bin/pip install -q --upgrade pip
+  if [ -f requirements.txt ]; then
+    ./venv/bin/pip install -q -r requirements.txt
+  else
+    ./venv/bin/pip install -q fastapi uvicorn python-dotenv requests pydantic python-multipart
+  fi
+}
+
 echo "=== SongForge deploy ==="
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
@@ -39,6 +54,7 @@ mkdir -p backend/services backend/utils backend/database scripts
 
 echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
+download requirements.txt "$BASE/requirements.txt"
 download index.html "$BASE/index.html"
 
 download backend/app.py "$BASE/backend/app.py"
@@ -77,7 +93,8 @@ for f in \
 done
 
 echo "[2/7] Зависимости..."
-./venv/bin/pip install -q python-multipart 2>/dev/null || ./venv/bin/pip install python-multipart
+ensure_venv
+./venv/bin/pip install -q -r requirements.txt 2>/dev/null || ./venv/bin/pip install -r requirements.txt
 
 echo "[3/7] Очищаем Python cache..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
