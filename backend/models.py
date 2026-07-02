@@ -230,12 +230,14 @@ class HistoryItem(BaseModel):
     has_preview_a: bool = False
     has_preview_b: bool = False
     image_url_a: str | None = None
+    image_url_b: str | None = None
 
 
 class HistoryPreviewResponse(BaseModel):
     audio_url: str
     preview_limit_sec: int = 30
     title: str = ""
+    image_url: str | None = None
 
 
 class LibraryItem(BaseModel):

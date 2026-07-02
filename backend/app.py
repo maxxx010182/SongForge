@@ -54,7 +54,7 @@ auth_service = AuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
 
-app = FastAPI(title="SongForge", version="2.2.0")
+app = FastAPI(title="SongForge", version="2.2.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -119,7 +119,7 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.2.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.2.1"}
 
 
 @app.get("/api/me", response_model=MeResponse)

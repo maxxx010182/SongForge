@@ -7,7 +7,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.2.0"
+EXPECTED_VERSION="2.2.1"
 
 strip_crlf() {
   local f="$1"

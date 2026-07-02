@@ -21,6 +21,7 @@ class CabinetService:
             "has_preview_a": bool(row["music_url_a"]),
             "has_preview_b": bool(row["music_url_b"]),
             "image_url_a": row["image_url_a"] or row["image_url_b"],
+            "image_url_b": row["image_url_b"] or row["image_url_a"],
         }
 
     def get_history_preview(
@@ -47,10 +48,15 @@ class CabinetService:
         if not url:
             raise ValueError("Аудио не найдено")
 
+        image_url = (
+            row["image_url_b"] if variant_key == "b" else row["image_url_a"]
+        ) or row["image_url_a"] or row["image_url_b"]
+
         return {
             "audio_url": url,
             "preview_limit_sec": 30,
             "title": row["title"] or "Без названия",
+            "image_url": image_url,
         }
 
     def list_history(self, user_id: str) -> list[dict]:
