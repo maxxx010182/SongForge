@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 4
+# deploy-script-version: 5
 # Запуск: bash scripts/deploy-vps.sh
 # Скачать (обход кэша raw.githubusercontent.com):
 # curl -fsSL -H "Accept: application/vnd.github.raw" \
@@ -147,9 +147,7 @@ if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
   exit 1
 fi
 
-echo "[+] Обновляем скрипт деплоя на следующий раз..."
-download scripts/deploy-vps.sh "$BASE/scripts/deploy-vps.sh"
-chmod +x scripts/deploy-vps.sh
-
 echo ""
 echo "=== Готово! v$EXPECTED_VERSION — http://195.19.20.245:8000/ ==="
+echo ""
+echo "Скрипт деплоя скачай отдельно (см. инструкцию в начале файла deploy-vps.sh)."
