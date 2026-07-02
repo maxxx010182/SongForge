@@ -1,36 +1,49 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 8
+# deploy-script-version: 9
 # Запуск: bash scripts/deploy-vps.sh
-# Скачать (обход кэша raw.githubusercontent.com):
-# curl -fsSL -H "Accept: application/vnd.github.raw" \
-#   "https://api.github.com/repos/maxxx010182/SongForge/contents/scripts/deploy-vps.sh?ref=main" \
-#   -o scripts/deploy-vps.sh
 
 set -e
 
-GH_API="https://api.github.com/repos/maxxx010182/SongForge/contents"
 DIR="${HOME}/SongForge"
 EXPECTED_VERSION="2.4.0"
+ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
   local f="$1"
   [ -f "$f" ] || return 0
-  # Linux VPS: только sed, без .tmp/mv (старый fallback ломал деплой)
   sed -i 's/\r$//' "$f" 2>/dev/null || true
 }
 
-download() {
+fetch_archive() {
   local out="$1"
-  local repo_path="$2"
-  curl -fsSL -H "Accept: application/vnd.github.raw" \
-    "${GH_API}/${repo_path}?ref=main" \
-    -o "$out"
-  if [ ! -s "$out" ]; then
-    echo "ОШИБКА: не скачан или пустой файл: $out"
-    exit 1
+  local bust="?$(date +%s)"
+  curl -fsSL "${ARCHIVE_URL}${bust}" -o "$out" \
+    || wget -q -O "$out" "${ARCHIVE_URL}${bust}" \
+    || curl -fsSL "https://github.com/maxxx010182/SongForge/archive/refs/heads/main.tar.gz${bust}" -o "$out"
+}
+
+sync_from_src() {
+  local src="$1"
+  local dst="$2"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a \
+      --exclude 'data/' \
+      --exclude 'venv/' \
+      --exclude '.env' \
+      --exclude '.git/' \
+      "$src/" "$dst/"
+    return 0
   fi
-  strip_crlf "$out"
+  for path in "$src"/*; do
+    [ -e "$path" ] || continue
+    local base
+    base=$(basename "$path")
+    case "$base" in
+      data|venv|.env|.git) continue ;;
+    esac
+    cp -a "$path" "$dst/"
+  done
 }
 
 ensure_venv() {
@@ -49,64 +62,41 @@ ensure_venv() {
 }
 
 echo "=== SongForge deploy ==="
+mkdir -p "$DIR"
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
-mkdir -p backend/services backend/utils backend/database scripts assets
+mkdir -p backend/services backend/utils backend/database scripts assets data
 
-echo "[1/7] Скачиваем файлы с GitHub (API, без кэша)..."
-download app.py app.py
-download requirements.txt requirements.txt
-download index.html index.html
-download SongForgeLogo.png SongForgeLogo.png
-if [ ! -s SongForgeLogo.png ]; then
-  echo "ОШИБКА: SongForgeLogo.png не скачан"
+echo "[1/7] Скачиваем архив с GitHub (1 запрос, без лимита API)..."
+TMP=$(mktemp -d)
+ARCHIVE="$TMP/repo.tar.gz"
+if ! fetch_archive "$ARCHIVE"; then
+  echo "ОШИБКА: не удалось скачать архив репозитория"
+  rm -rf "$TMP"
+  exit 1
+fi
+if [ ! -s "$ARCHIVE" ]; then
+  echo "ОШИБКА: пустой архив"
+  rm -rf "$TMP"
   exit 1
 fi
 
-download assets/logo-header.png assets/logo-header.png
-download assets/logo-header@2x.png assets/logo-header@2x.png
-download assets/logo-gen.png assets/logo-gen.png
-for f in assets/logo-header.png assets/logo-header@2x.png assets/logo-gen.png; do
-  if [ ! -s "$f" ]; then
-    echo "ОШИБКА: не скачан $f"
-    exit 1
-  fi
-done
+tar -xzf "$ARCHIVE" -C "$TMP"
+SRC=$(find "$TMP" -maxdepth 1 -type d -name 'SongForge-*' | head -1)
+if [ -z "$SRC" ]; then
+  echo "ОШИБКА: не найдена папка SongForge-* после распаковки"
+  rm -rf "$TMP"
+  exit 1
+fi
 
-download backend/app.py backend/app.py
-download backend/models.py backend/models.py
-download backend/settings.py backend/settings.py
-download backend/logger.py backend/logger.py
-download backend/utils/text.py backend/utils/text.py
-download backend/database/db.py backend/database/db.py
-download backend/services/ai_producer.py backend/services/ai_producer.py
-download backend/services/prompt_builder.py backend/services/prompt_builder.py
-download backend/services/apipass_client.py backend/services/apipass_client.py
-download backend/services/ai_music_analyst.py backend/services/ai_music_analyst.py
-download backend/services/ai_prompt_composer.py backend/services/ai_prompt_composer.py
-download backend/services/reference_translator.py backend/services/reference_translator.py
-download backend/services/style_enforcer.py backend/services/style_enforcer.py
-download backend/services/plan_overrides.py backend/services/plan_overrides.py
-download backend/services/genre_resolver.py backend/services/genre_resolver.py
-download backend/services/idea_parser.py backend/services/idea_parser.py
-download backend/services/yandex_client.py backend/services/yandex_client.py
-download backend/services/history.py backend/services/history.py
-download backend/services/guest_service.py backend/services/guest_service.py
-download backend/services/auth_service.py backend/services/auth_service.py
-download backend/services/cabinet_service.py backend/services/cabinet_service.py
-download backend/services/profile_service.py backend/services/profile_service.py
-download backend/services/generation_quota_service.py backend/services/generation_quota_service.py
-download backend/services/consultant.py backend/services/consultant.py
-download backend/services/audio_access_service.py backend/services/audio_access_service.py
-download backend/services/payment_service.py backend/services/payment_service.py
+echo "  Распаковано из: $(basename "$SRC")"
+sync_from_src "$SRC" "$DIR"
+find "$DIR/scripts" -name '*.sh' -exec strip_crlf {} \; 2>/dev/null || true
+rm -rf "$TMP"
 
-for f in \
-  backend/services/genre_resolver.py \
-  backend/services/idea_parser.py \
-  backend/services/plan_overrides.py \
-  backend/services/style_enforcer.py; do
+for f in app.py index.html requirements.txt backend/app.py; do
   if [ ! -s "$f" ]; then
-    echo "ОШИБКА: не скачан $f"
+    echo "ОШИБКА: после синхронизации нет файла $f"
     exit 1
   fi
 done
@@ -211,5 +201,3 @@ fi
 
 echo ""
 echo "=== Готово! v$EXPECTED_VERSION — http://195.19.20.245:8000/ ==="
-echo ""
-echo "Скрипт деплоя скачай отдельно (см. инструкцию в начале файла deploy-vps.sh)."
