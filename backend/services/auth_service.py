@@ -23,7 +23,7 @@ class AuthService:
         with get_connection() as conn:
             row = conn.execute(
                 """
-                SELECT u.id, u.email, u.display_name, u.balance, u.created_at
+                SELECT u.id, u.email, u.display_name, u.balance, u.created_at, u.avatar_url
                 FROM sessions s
                 JOIN users u ON u.id = s.user_id
                 WHERE s.token = ? AND s.expires_at > ?
@@ -55,7 +55,7 @@ class AuthService:
         email = email.strip().lower()
         with get_connection() as conn:
             row = conn.execute(
-                "SELECT id, email, display_name, balance, created_at FROM users WHERE email = ?",
+                "SELECT id, email, display_name, balance, created_at, avatar_url FROM users WHERE email = ?",
                 (email,),
             ).fetchone()
             if row:
@@ -170,7 +170,7 @@ class AuthService:
                 )
 
             user_row = conn.execute(
-                "SELECT id, email, display_name, balance, created_at FROM users WHERE id = ?",
+                "SELECT id, email, display_name, balance, created_at, avatar_url FROM users WHERE id = ?",
                 (user_id,),
             ).fetchone()
 

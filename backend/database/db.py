@@ -41,6 +41,7 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_generations_task_id ON generations(task_id)"
         )
         _migrate_generations_columns(conn)
+        _migrate_users_columns(conn)
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id)"
         )
@@ -145,6 +146,12 @@ def init_db() -> None:
             )
             """
         )
+
+def _migrate_users_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
+    if "avatar_url" not in existing:
+        conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+
 
 def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(generations)")}

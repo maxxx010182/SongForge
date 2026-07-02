@@ -201,6 +201,16 @@ class UserInfo(BaseModel):
     email: str | None = None
     display_name: str = ""
     balance: int = 0
+    avatar_url: str | None = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str
+
+
+class ProfileUpdateResponse(BaseModel):
+    success: bool
+    user: UserInfo
 
 
 class MeResponse(BaseModel):

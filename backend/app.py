@@ -1,6 +1,7 @@
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.logger import log
 from backend.models import (
@@ -23,6 +24,8 @@ from backend.models import (
     PurchaseResponse,
     DevTopupRequest,
     DevTopupResponse,
+    ProfileUpdateRequest,
+    ProfileUpdateResponse,
     StyleRequest,
     TelegramAuthRequest,
     UserInfo,
@@ -34,9 +37,10 @@ from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
 from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
+from backend.services.profile_service import ProfileService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
-from backend.settings import DEV_TOPUP_ENABLED, GUEST_GENERATION_LIMIT, ROOT_DIR
+from backend.settings import DEV_TOPUP_ENABLED, GUEST_GENERATION_LIMIT, ROOT_DIR, UPLOADS_DIR
 from backend.utils.text import clean_text, truncate
 
 producer = AiProducer()
@@ -48,8 +52,9 @@ prompt_builder = PromptBuilder(yandex)
 guest_service = GuestService()
 auth_service = AuthService()
 cabinet = CabinetService()
+profile_service = ProfileService()
 
-app = FastAPI(title="SongForge", version="2.1.5")
+app = FastAPI(title="SongForge", version="2.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,6 +62,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 def _session_cookie_kwargs() -> dict:
@@ -94,6 +102,16 @@ def get_optional_user(
     return auth_service.get_user_by_session(sf_session)
 
 
+def _user_info(user: dict) -> UserInfo:
+    return UserInfo(
+        id=user["id"],
+        email=user.get("email"),
+        display_name=user.get("display_name") or "",
+        balance=int(user.get("balance") or 0),
+        avatar_url=user.get("avatar_url"),
+    )
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
@@ -101,7 +119,7 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.1.5"}
+    return {"ok": True, "service": "SongForge", "version": "2.2.0"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -112,14 +130,7 @@ async def get_me(
     remaining = guest_service.remaining(guest_id) if not user else GUEST_GENERATION_LIMIT
     return MeResponse(
         logged_in=bool(user),
-        user=UserInfo(
-            id=user["id"],
-            email=user.get("email"),
-            display_name=user.get("display_name") or "",
-            balance=int(user.get("balance") or 0),
-        )
-        if user
-        else None,
+        user=_user_info(user) if user else None,
         guest_remaining=remaining,
         guest_limit=GUEST_GENERATION_LIMIT,
     )
@@ -181,15 +192,7 @@ async def auth_email_verify(
         user, token = auth_service.verify_email_code(req.email, req.code)
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
         response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
-        return {
-            "success": True,
-            "user": {
-                "id": user["id"],
-                "email": user.get("email"),
-                "display_name": user.get("display_name"),
-                "balance": user.get("balance", 0),
-            },
-        }
+        return {"success": True, "user": _user_info(user).model_dump()}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -208,15 +211,44 @@ async def auth_telegram(
         )
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
         response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
-        return {
-            "success": True,
-            "user": {
-                "id": user["id"],
-                "email": user.get("email"),
-                "display_name": user.get("display_name"),
-                "balance": user.get("balance", 0),
-            },
-        }
+        return {"success": True, "user": _user_info(user).model_dump()}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/profile", response_model=ProfileUpdateResponse)
+async def update_profile(
+    req: ProfileUpdateRequest,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        updated = profile_service.update_display_name(
+            user_id=user["id"],
+            display_name=req.display_name,
+        )
+        return ProfileUpdateResponse(success=True, user=_user_info(updated))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/profile/avatar", response_model=ProfileUpdateResponse)
+async def upload_profile_avatar(
+    file: UploadFile = File(...),
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    content = await file.read()
+    try:
+        updated = profile_service.save_avatar(
+            user_id=user["id"],
+            content=content,
+            filename=file.filename or "",
+            content_type=file.content_type or "",
+        )
+        return ProfileUpdateResponse(success=True, user=_user_info(updated))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

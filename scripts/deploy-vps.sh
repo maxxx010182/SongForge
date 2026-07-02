@@ -7,7 +7,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.1.5"
+EXPECTED_VERSION="2.2.0"
 
 strip_crlf() {
   local f="$1"
@@ -27,7 +27,7 @@ cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
 mkdir -p backend/services backend/utils backend/database scripts
 
-echo "[1/6] Скачиваем файлы с GitHub..."
+echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
 download index.html "$BASE/index.html"
 
@@ -52,6 +52,7 @@ download backend/services/history.py "$BASE/backend/services/history.py"
 download backend/services/guest_service.py "$BASE/backend/services/guest_service.py"
 download backend/services/auth_service.py "$BASE/backend/services/auth_service.py"
 download backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py"
+download backend/services/profile_service.py "$BASE/backend/services/profile_service.py"
 download backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 for f in \
@@ -65,15 +66,19 @@ for f in \
   fi
 done
 
-echo "[2/6] Очищаем Python cache..."
+echo "[2/7] Зависимости..."
+./venv/bin/pip install -q python-multipart 2>/dev/null || ./venv/bin/pip install python-multipart
+
+echo "[3/7] Очищаем Python cache..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
-echo "[3/6] Проверяем Python..."
+echo "[4/7] Проверяем Python..."
 ./venv/bin/python -c "
 from backend.database.db import init_db
 from backend.services.guest_service import GuestService
 from backend.services.auth_service import AuthService
 from backend.services.cabinet_service import CabinetService
+from backend.services.profile_service import ProfileService
 from backend.services.idea_parser import parse_idea
 from backend.services.genre_resolver import resolve_genre
 from backend.services.plan_overrides import apply_user_to_plan
@@ -86,7 +91,7 @@ print('import OK')
 print('app version:', app.version)
 "
 
-echo "[4/6] Освобождаем порт 8000..."
+echo "[5/7] Освобождаем порт 8000..."
 if command -v fuser >/dev/null 2>&1; then
   fuser -k 8000/tcp 2>/dev/null || true
 elif command -v lsof >/dev/null 2>&1; then
@@ -98,12 +103,12 @@ else
 fi
 sleep 2
 
-echo "[5/6] Перезапускаем PM2..."
+echo "[6/7] Перезапускаем PM2..."
 pm2 delete songforge 2>/dev/null || true
 pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
 pm2 save
 
-echo "[6/6] Проверяем health..."
+echo "[7/7] Проверяем health..."
 sleep 3
 HEALTH="$(curl -s http://127.0.0.1:8000/api/health)"
 echo "$HEALTH"

@@ -14,6 +14,9 @@ APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 
 DATA_DIR = ROOT_DIR / "data"
 DB_PATH = DATA_DIR / "songforge.db"
+UPLOADS_DIR = DATA_DIR / "uploads"
+AVATARS_DIR = UPLOADS_DIR / "avatars"
+MAX_AVATAR_BYTES = 2 * 1024 * 1024
 
 DEFAULT_MODEL_VERSION = "V5_5"
 DEFAULT_CHANNEL = "auto"

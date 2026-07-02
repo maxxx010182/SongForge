@@ -131,7 +131,10 @@
         <div class="bg-white/5 px-4 py-2 rounded-3xl text-sm border border-white/10 cursor-pointer hover:border-yellow-400/30 transition" onclick="switchToView('payment')">
             <i class="fa-solid fa-music text-yellow-400 mr-2"></i><span id="headerBalance">0 нот</span>
         </div>
-        <div class="w-8 h-8 bg-zinc-800 rounded-2xl flex items-center justify-center"><i class="fa-regular fa-user text-yellow-300"></i></div>
+        <div id="headerAvatar" class="w-8 h-8 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer hover:ring-2 hover:ring-yellow-400/30 transition" onclick="switchToView('profile');return false;" title="Профиль">
+            <i id="headerAvatarIcon" class="fa-regular fa-user text-yellow-300"></i>
+            <img id="headerAvatarImg" class="w-full h-full object-cover hidden" alt="">
+        </div>
     </div>
 </header>
 
@@ -356,10 +359,24 @@
                 <button id="openAuthBtn" type="button" class="w-full bg-yellow-400 text-black py-3 rounded-2xl font-semibold mb-6">Войти / Регистрация</button>
             </div>
             <div id="profileUserBlock" class="hidden">
-                <div class="w-20 h-20 bg-yellow-400/10 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-regular fa-user text-3xl text-yellow-400"></i></div>
+                <div id="profileAvatarWrap" class="relative w-20 h-20 mx-auto mb-3">
+                    <div id="profileAvatarFallback" class="w-20 h-20 bg-yellow-400/10 rounded-full flex items-center justify-center"><i class="fa-regular fa-user text-3xl text-yellow-400"></i></div>
+                    <img id="profileAvatarImg" class="w-20 h-20 rounded-full object-cover hidden absolute inset-0" alt="">
+                    <label for="profileAvatarInput" class="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center cursor-pointer text-black text-xs shadow-lg hover:bg-yellow-300 transition" title="Загрузить фото"><i class="fa-solid fa-camera"></i></label>
+                    <input type="file" id="profileAvatarInput" accept="image/jpeg,image/png,image/webp" class="hidden">
+                </div>
                 <div id="profileDisplayName" class="font-semibold text-lg mb-1">Пользователь</div>
                 <div id="profileEmail" class="text-xs text-zinc-500 mb-4"></div>
                 <button id="logoutBtn" type="button" class="text-xs text-zinc-500 hover:text-zinc-300 mb-4 underline">Выйти</button>
+                <div id="profileSettingsBlock" class="mt-2 pt-4 border-t border-zinc-800 text-left">
+                    <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-gear text-yellow-400"></i>Настройки</div>
+                    <label for="profileNameInput" class="text-xs text-zinc-500 mb-1 block">Имя в профиле</label>
+                    <div class="flex gap-2 mb-2">
+                        <input id="profileNameInput" type="text" maxlength="40" class="flex-1 bg-black/40 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-yellow-400/50" placeholder="Ваше имя">
+                        <button id="profileNameSaveBtn" type="button" class="px-4 py-2 bg-yellow-400 text-black rounded-xl text-sm font-semibold hover:bg-yellow-300 transition whitespace-nowrap">Сохранить</button>
+                    </div>
+                    <div id="profileSettingsMsg" class="text-xs text-zinc-500 min-h-[1rem]"></div>
+                </div>
             </div>
             <div class="text-4xl font-bold text-yellow-400" id="profileBalance">0</div>
             <div class="text-zinc-400 mb-1">нот на балансе</div>
@@ -986,7 +1003,10 @@ function saveData(){if(session.loggedIn)return;localStorage.setItem('созда�
 function loadLocalData(){try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);user.balance=d.balance!=null?d.balance:0;user.tracks=d.tracks||[];}}catch(e){}}
 function getBalance(){return session.loggedIn&&session.user?session.user.balance:user.balance;}
 function updateBalanceUI(){var b=getBalance(),t=notesWord(b);var hb=document.getElementById('headerBalance');if(hb)hb.textContent=t;var pb=document.getElementById('profileBalance');if(pb)pb.textContent=b;updateModalCreditsBalance();updateProfileAuthUI();}
-function updateProfileAuthUI(){var guestBlock=document.getElementById('profileGuestBlock');var userBlock=document.getElementById('profileUserBlock');var guestText=document.getElementById('guestLimitText');if(session.loggedIn&&session.user){if(guestBlock)guestBlock.classList.add('hidden');if(userBlock)userBlock.classList.remove('hidden');var dn=document.getElementById('profileDisplayName');var em=document.getElementById('profileEmail');if(dn)dn.textContent=session.user.display_name||'Пользователь';if(em)em.textContent=session.user.email||'';}else{if(guestBlock)guestBlock.classList.remove('hidden');if(userBlock)userBlock.classList.add('hidden');if(guestText)guestText.textContent='Бесплатно: '+session.guestRemaining+' из '+session.guestLimit+' генераций. Дальше — вход в аккаунт.';}}
+function updateAvatarUI(){var url=session.loggedIn&&session.user?session.user.avatar_url:'';var pImg=document.getElementById('profileAvatarImg');var pFb=document.getElementById('profileAvatarFallback');var hImg=document.getElementById('headerAvatarImg');var hIcon=document.getElementById('headerAvatarIcon');if(url){if(pImg){pImg.src=url;pImg.classList.remove('hidden');}if(pFb)pFb.classList.add('hidden');if(hImg){hImg.src=url;hImg.classList.remove('hidden');}if(hIcon)hIcon.classList.add('hidden');}else{if(pImg){pImg.removeAttribute('src');pImg.classList.add('hidden');}if(pFb)pFb.classList.remove('hidden');if(hImg){hImg.removeAttribute('src');hImg.classList.add('hidden');}if(hIcon)hIcon.classList.remove('hidden');}}
+function updateProfileAuthUI(){var guestBlock=document.getElementById('profileGuestBlock');var userBlock=document.getElementById('profileUserBlock');var guestText=document.getElementById('guestLimitText');if(session.loggedIn&&session.user){if(guestBlock)guestBlock.classList.add('hidden');if(userBlock)userBlock.classList.remove('hidden');var dn=document.getElementById('profileDisplayName');var em=document.getElementById('profileEmail');var ni=document.getElementById('profileNameInput');if(dn)dn.textContent=session.user.display_name||'Пользователь';if(em)em.textContent=session.user.email||'';if(ni&&document.activeElement!==ni)ni.value=session.user.display_name||'';updateAvatarUI();}else{if(guestBlock)guestBlock.classList.remove('hidden');if(userBlock)userBlock.classList.add('hidden');if(guestText)guestText.textContent='Бесплатно: '+session.guestRemaining+' из '+session.guestLimit+' генераций. Дальше — вход в аккаунт.';updateAvatarUI();}}
+async function saveProfileName(){if(!session.loggedIn){openAuthModal();return;}var input=document.getElementById('profileNameInput');var msg=document.getElementById('profileSettingsMsg');var btn=document.getElementById('profileNameSaveBtn');var name=(input?input.value:'').trim();if(name.length<2){if(msg){msg.textContent='Имя — от 2 до 40 символов';msg.className='text-xs text-red-400';}return;}if(btn){btn.disabled=true;btn.textContent='...';}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(msg){msg.textContent=data.detail||'Не удалось сохранить';msg.className='text-xs text-red-400';}return;}if(data.user){session.user=data.user;updateProfileAuthUI();}if(msg){msg.textContent='Имя сохранено';msg.className='text-xs text-emerald-400';}showToast('Профиль обновлён');}catch(e){if(msg){msg.textContent='Ошибка сети';msg.className='text-xs text-red-400';}}finally{if(btn){btn.disabled=false;btn.textContent='Сохранить';}}}
+async function uploadProfileAvatar(file){if(!session.loggedIn||!file){openAuthModal();return;}if(file.size>2*1024*1024){showToast('Файл слишком большой (макс. 2 МБ)');return;}var fd=new FormData();fd.append('file',file);try{var res=await fetch('/api/profile/avatar',{method:'POST',body:fd,...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){showToast(data.detail||'Не удалось загрузить фото');return;}if(data.user){session.user=data.user;updateProfileAuthUI();}showToast('Аватар обновлён');}catch(e){showToast('Ошибка загрузки');}}
 async function fetchMe(){try{var res=await fetch('/api/me',fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:1;session.guestLimit=data.guest_limit||1;if(data.user){session.user=data.user;user.balance=data.user.balance;}else{session.user=null;loadLocalData();}updateBalanceUI();}catch(e){loadLocalData();updateBalanceUI();}}
 async function fetchHistory(){if(!session.loggedIn){session.history=[];return;}try{var res=await fetch('/api/history',fetchOpts);if(res.ok)session.history=await res.json();else session.history=[];}catch(e){session.history=[];}}
 async function fetchServerLibrary(){if(!session.loggedIn){session.serverLibrary=[];return;}try{var res=await fetch('/api/library',fetchOpts);if(res.ok)session.serverLibrary=await res.json();else session.serverLibrary=[];}catch(e){session.serverLibrary=[];}}
@@ -1228,6 +1248,9 @@ document.getElementById('createDemoBtn').addEventListener('click',createSongExpe
 
 document.getElementById('paymentConfirmBtn').addEventListener('click',function(){alert('Выбран пакет: '+activePacket.songs+' нот за '+activePacket.price+'₽\n\nЗдесь будет переход на страницу оплаты.\nПосле оплаты ноты начисляются автоматически.');});
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
+document.getElementById('profileNameSaveBtn').addEventListener('click',saveProfileName);
+document.getElementById('profileNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')saveProfileName();});
+document.getElementById('profileAvatarInput').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)uploadProfileAvatar(f);e.target.value='';});
 
 // ===== РЕЖИМ АДМИНИСТРАТОРА (5 кликов по логотипу) =====
 (function() {
