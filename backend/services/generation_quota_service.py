@@ -122,6 +122,36 @@ class GenerationQuotaService:
                 (user_id,),
             )
 
+    def refund_trial_start(self, *, user: dict | None, guest_id: str) -> None:
+        """Вернуть пробную попытку, если генерация не стартовала."""
+        if user:
+            with get_connection() as conn:
+                row = conn.execute(
+                    "SELECT trial_generations_used FROM users WHERE id = ?",
+                    (user["id"],),
+                ).fetchone()
+                if not row:
+                    return
+                used = max(0, int(row["trial_generations_used"]) - 1)
+                conn.execute(
+                    "UPDATE users SET trial_generations_used = ? WHERE id = ?",
+                    (used, user["id"]),
+                )
+            return
+
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT generations_used FROM guest_sessions WHERE guest_id = ?",
+                (guest_id,),
+            ).fetchone()
+            if not row:
+                return
+            used = max(0, int(row["generations_used"]) - 1)
+            conn.execute(
+                "UPDATE guest_sessions SET generations_used = ? WHERE guest_id = ?",
+                (used, guest_id),
+            )
+
     def refund_if_charged(self, *, production_id: str, user_id: str | None) -> bool:
         if not user_id:
             return False

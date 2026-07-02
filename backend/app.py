@@ -1,3 +1,4 @@
+import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -56,7 +57,7 @@ cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 
-app = FastAPI(title="SongForge", version="2.3.0")
+app = FastAPI(title="SongForge", version="2.3.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -132,6 +133,30 @@ def _begin_generation(
     return mode, balance
 
 
+def _generation_error_message(exc: Exception) -> str:
+    if isinstance(exc, requests.exceptions.Timeout):
+        return (
+            "Студия не дождалась ответа от сервиса создания музыки. "
+            "Попробуйте ещё раз через минуту."
+        )
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "Нет связи с сервисом создания музыки. Попробуйте позже."
+    return "Не удалось создать песню. Попробуйте ещё раз."
+
+
+def _refund_generation_start(
+    *,
+    mode: str,
+    user: dict | None,
+    guest_id: str,
+    paid_user_id: str | None,
+) -> None:
+    if mode == "trial":
+        generation_quota.refund_trial_start(user=user, guest_id=guest_id)
+    elif paid_user_id:
+        generation_quota.refund_paid_start(user_id=paid_user_id)
+
+
 def _generation_flags(production_id: str) -> tuple[bool, bool]:
     row = history.get_by_id(production_id) if production_id else None
     if not row:
@@ -149,12 +174,12 @@ async def get_logo():
     path = ROOT_DIR / "SongForgeLogo.png"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Logo not found")
-    return FileResponse(path)
+    return FileResponse(path, media_type="image/png")
 
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.3.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.3.1"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -406,14 +431,19 @@ async def create_song(
         result.generation_mode = mode
         return result
     except ValueError as exc:
-        if paid_user_id:
-            generation_quota.refund_paid_start(user_id=paid_user_id)
+        _refund_generation_start(
+            mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        if paid_user_id:
-            generation_quota.refund_paid_start(user_id=paid_user_id)
+        _refund_generation_start(
+            mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
+        )
         log.exception("create-song failed")
-        raise HTTPException(status_code=500, detail="Не удалось запустить создание песни") from exc
+        raise HTTPException(
+            status_code=500,
+            detail=_generation_error_message(exc),
+        ) from exc
     finally:
         producer.clear_actor()
 
@@ -464,14 +494,19 @@ async def start_music(
             "generation_mode": mode,
         }
     except ValueError as exc:
-        if paid_user_id:
-            generation_quota.refund_paid_start(user_id=paid_user_id)
+        _refund_generation_start(
+            mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        if paid_user_id:
-            generation_quota.refund_paid_start(user_id=paid_user_id)
+        _refund_generation_start(
+            mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
+        )
         log.exception("music start failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=500,
+            detail=_generation_error_message(exc),
+        ) from exc
     finally:
         producer.clear_actor()
 

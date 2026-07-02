@@ -1,3 +1,4 @@
+import time
 from typing import Any, Optional
 
 import requests
@@ -78,19 +79,39 @@ class ApiPassClient:
             "backing vocal" in style.lower(),
         )
 
-        response = requests.post(
-            f"{APIPASS_BASE}/createTask",
-            headers=self._headers,
-            json=payload,
-            timeout=30,
-        )
-        response.raise_for_status()
-        data = response.json()
-        task_id = data.get("data", {}).get("taskId")
-        if not task_id:
-            raise RuntimeError(f"APIPass did not return taskId: {data}")
-        log.info("APIPass task created: %s", task_id)
-        return task_id
+        last_error: Exception | None = None
+        for attempt in range(1, 4):
+            try:
+                response = requests.post(
+                    f"{APIPASS_BASE}/createTask",
+                    headers=self._headers,
+                    json=payload,
+                    timeout=90,
+                )
+                response.raise_for_status()
+                data = response.json()
+                task_id = data.get("data", {}).get("taskId")
+                if not task_id:
+                    raise RuntimeError(f"APIPass did not return taskId: {data}")
+                log.info("APIPass task created: %s", task_id)
+                return task_id
+            except requests.exceptions.Timeout as exc:
+                last_error = exc
+                log.warning("APIPass createTask timeout (attempt %s/3)", attempt)
+                if attempt < 3:
+                    time.sleep(2)
+                    continue
+            except requests.exceptions.RequestException as exc:
+                last_error = exc
+                log.warning("APIPass createTask failed (attempt %s/3): %s", attempt, exc)
+                if attempt < 3:
+                    time.sleep(2)
+                    continue
+                break
+
+        if last_error:
+            raise last_error
+        raise RuntimeError("APIPass createTask failed")
 
     def get_status(self, task_id: str) -> dict[str, Any]:
         self._ensure_key()

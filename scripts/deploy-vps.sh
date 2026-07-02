@@ -12,7 +12,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.3.0"
+EXPECTED_VERSION="2.3.1"
 
 strip_crlf() {
   local f="$1"
@@ -56,7 +56,11 @@ echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
 download requirements.txt "$BASE/requirements.txt"
 download index.html "$BASE/index.html"
-download SongForgeLogo.png "$BASE/SongForgeLogo.png" 2>/dev/null || true
+download SongForgeLogo.png "$BASE/SongForgeLogo.png"
+if [ ! -s SongForgeLogo.png ]; then
+  echo "ОШИБКА: SongForgeLogo.png не скачан"
+  exit 1
+fi
 
 download backend/app.py "$BASE/backend/app.py"
 download backend/models.py "$BASE/backend/models.py"
