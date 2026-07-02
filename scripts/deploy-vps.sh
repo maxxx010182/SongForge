@@ -12,7 +12,10 @@ EXPECTED_VERSION="2.2.1"
 strip_crlf() {
   local f="$1"
   [ -f "$f" ] || return 0
-  sed -i 's/\r$//' "$f" 2>/dev/null || tr -d '\r' <"$f" >"$f.tmp" && mv -f "$f.tmp" "$f"
+  if sed -i 's/\r$//' "$f" 2>/dev/null; then
+    return 0
+  fi
+  tr -d '\r' <"$f" >"$f.tmp" && mv -f "$f.tmp" "$f"
 }
 
 download() {
