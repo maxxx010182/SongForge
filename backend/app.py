@@ -20,6 +20,8 @@ from backend.models import (
     ProduceRequest,
     ProduceResponse,
     PurchaseResponse,
+    DevTopupRequest,
+    DevTopupResponse,
     StyleRequest,
     TelegramAuthRequest,
     UserInfo,
@@ -33,7 +35,7 @@ from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
-from backend.settings import GUEST_GENERATION_LIMIT, ROOT_DIR
+from backend.settings import DEV_TOPUP_ENABLED, GUEST_GENERATION_LIMIT, ROOT_DIR
 from backend.utils.text import clean_text, truncate
 
 producer = AiProducer()
@@ -46,7 +48,7 @@ guest_service = GuestService()
 auth_service = AuthService()
 cabinet = CabinetService()
 
-app = FastAPI(title="SongForge", version="2.1.1")
+app = FastAPI(title="SongForge", version="2.1.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,7 +100,7 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.1.1"}
+    return {"ok": True, "service": "SongForge", "version": "2.1.4"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -225,6 +227,29 @@ async def purchase_generation(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/dev/topup", response_model=DevTopupResponse)
+async def dev_topup(
+    req: DevTopupRequest,
+    user: dict | None = Depends(get_optional_user),
+):
+    """Тестовое пополнение баланса (скрытая кнопка в UI)."""
+    if not DEV_TOPUP_ENABLED:
+        raise HTTPException(status_code=403, detail="Тестовое пополнение отключено")
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Войдите в аккаунт — ноты хранятся на сервере",
+        )
+    amount = max(1, min(int(req.amount), 100))
+    balance = cabinet.add_balance(user["id"], amount)
+    log.info("Dev topup: user=%s +%s → balance=%s", user["id"], amount, balance)
+    return DevTopupResponse(
+        success=True,
+        balance=balance,
+        message=f"Баланс пополнен на {amount} нот",
+    )
 
 
 @app.post("/api/produce", response_model=ProduceResponse)

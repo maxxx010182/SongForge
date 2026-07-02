@@ -7,6 +7,7 @@ from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.yandex_client import YandexClient
+from backend.utils.text import lyrics_look_lazy
 
 
 class AiProducer:
@@ -70,6 +71,14 @@ class AiProducer:
             guest_id=getattr(self, "_current_guest_id", None),
         )
 
+        if not instrumental:
+            log.info(
+                "Production lyrics: id=%s len=%s lazy=%s preview=%r",
+                production_id,
+                len(lyrics),
+                lyrics_look_lazy(lyrics, idea),
+                lyrics[:160],
+            )
         log.info("Production ready: %s | %s | instrumental=%s", production_id, title, instrumental)
         return ProduceResponse(
             success=True,

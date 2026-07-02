@@ -6,15 +6,30 @@ from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
 from backend.services.yandex_client import YandexClient
-from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
+from backend.logger import log
+from backend.utils.text import (
+    clean_text,
+    ensure_russian_vocal_style,
+    lyrics_look_lazy,
+    scrub_idea_echo_from_lyrics,
+    truncate,
+)
 
 
 class PromptBuilder:
     LYRICS_SYSTEM = (
-        "Ты поэт-песенник и музыкальный продюсер. "
-        "Напиши текст песни на русском языке со структурными тегами "
+        "Ты профессиональный поэт-песенник для музыкального сервиса. "
+        "Напиши полноценный художественный текст песни на русском языке. "
+        "Обязательная структура с тегами на английском: "
         "[Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]. "
-        "Только текст песни, без пояснений и markdown."
+        "В каждом куплете 4 строки с рифмой, в припеве 4 строки. "
+        "Запрещено: копировать описание пользователя, пересказывать промпт, "
+        "писать прозу вместо стихов, markdown, пояснения. "
+        "Бери только тему и настроение — превращай в метафоры и образы."
+    )
+    LYRICS_RETRY_HINT = (
+        "\n\nКРИТИЧНО: нельзя использовать фразы из описания пользователя. "
+        "Пиши оригинальные стихи с рифмой, как у профессионального автора песен."
     )
 
     def __init__(self, yandex: YandexClient) -> None:
@@ -104,6 +119,11 @@ class PromptBuilder:
         payload.weirdness_constraint = plan.weirdness_constraint
         payload.audio_weight = plan.audio_weight
 
+        if plan.instrumental:
+            payload.lyrics = ""
+        else:
+            payload.lyrics = self.generate_lyrics(idea, plan)
+
         return plan, payload
 
     def build_plan(
@@ -133,11 +153,53 @@ class PromptBuilder:
         return plan
 
     def generate_lyrics(self, idea: str, plan: ProductionPlan) -> str:
-        if plan.instrumental:
-            return ""
+        lyrics, source = self._generate_lyrics_with_source(idea, plan)
+        log.info(
+            "Lyrics generated via %s (len=%s, lazy=%s)",
+            source,
+            len(lyrics),
+            lyrics_look_lazy(lyrics, idea),
+        )
+        return lyrics
 
-        user_text = (
-            f"Идея: {idea}\n"
+    def _generate_lyrics_with_source(
+        self, idea: str, plan: ProductionPlan
+    ) -> tuple[str, str]:
+        if plan.instrumental:
+            return "", "instrumental"
+
+        user_text = self._lyrics_user_prompt(idea, plan)
+        attempts: list[tuple[str, float, str, str]] = [
+            (self._yandex.MODEL_PRO, 0.72, "", "yandexgpt"),
+            (self._yandex.MODEL_PRO, 0.88, self.LYRICS_RETRY_HINT, "yandexgpt-retry"),
+            (self._yandex.MODEL_LITE, 0.82, self.LYRICS_RETRY_HINT, "yandexgpt-lite-retry"),
+        ]
+
+        for model, temperature, extra_hint, source in attempts:
+            try:
+                lyrics = clean_text(
+                    self._yandex.complete(
+                        self.LYRICS_SYSTEM,
+                        user_text + extra_hint,
+                        max_tokens=1000,
+                        temperature=temperature,
+                        model=model,
+                    )
+                )
+                lyrics = scrub_idea_echo_from_lyrics(lyrics, idea)
+                if lyrics and not lyrics_look_lazy(lyrics, idea):
+                    return lyrics, source
+                log.info("Lyrics attempt %s looked lazy — next try", source)
+            except Exception:
+                log.exception("Lyrics attempt %s failed", source)
+
+        log.warning("All lyrics attempts failed — using template fallback")
+        return self._fallback_lyrics(idea), "template-fallback"
+
+    @staticmethod
+    def _lyrics_user_prompt(idea: str, plan: ProductionPlan) -> str:
+        return (
+            f"Тема песни (не копировать дословно): {idea}\n"
             f"Жанр: {plan.genre} / {plan.subgenre}\n"
             f"Настроение: {plan.mood}\n"
             f"Энергия: {plan.energy}\n"
@@ -146,16 +208,6 @@ class PromptBuilder:
             f"Атмосфера: {plan.atmosphere}\n"
             f"Структура: {plan.structure}"
         )
-        try:
-            lyrics = self._yandex.complete(
-                self.LYRICS_SYSTEM,
-                user_text,
-                max_tokens=700,
-                temperature=0.75,
-            )
-            return clean_text(lyrics)
-        except Exception:
-            return self._fallback_lyrics(idea)
 
     def build_style(self, plan: ProductionPlan) -> str:
         instruments = ", ".join(plan.instruments)
@@ -317,14 +369,25 @@ class PromptBuilder:
 
     @staticmethod
     def _fallback_lyrics(idea: str) -> str:
-        snippet = truncate(idea, 80)
         return (
-            f"[Verse 1]\n{snippet}\nМузыка ведёт меня вперёд\n\n"
-            f"[Chorus]\nЭто моя песня, мой огонь\n"
-            f"Звучит внутри и снаружи\n\n"
-            f"[Verse 2]\nКаждый бит — как новый день\n"
-            f"Я иду туда, где слышен свет\n\n"
-            f"[Chorus]\nЭто моя песня, мой огонь\n"
-            f"Звучит внутри и снаружи\n\n"
-            f"[Outro]\nНавсегда."
+            "[Verse 1]\n"
+            "В сердце тихо тает лёд\n"
+            "Город дышит в синий час\n"
+            "Я ищу свой новый след\n"
+            "Среди звёзд и между нас\n\n"
+            "[Chorus]\n"
+            "Это песня — мой огонь\n"
+            "Звучит внутри и снаружи\n"
+            "Каждый такт ведёт домой\n"
+            "Туда, где слышны только чувства\n\n"
+            "[Verse 2]\n"
+            "Каждый бит — как новый день\n"
+            "Я иду туда, где слышен свет\n"
+            "Пусть мелодия звенит\n"
+            "И не знает больше преград\n\n"
+            "[Chorus]\n"
+            "Это песня — мой огонь\n"
+            "Звучит внутри и снаружи\n\n"
+            "[Outro]\n"
+            "Навсегда."
         )

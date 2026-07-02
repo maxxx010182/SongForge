@@ -243,3 +243,13 @@ class PurchaseResponse(BaseModel):
     generation_id: str
     library_ids: list[str] = Field(default_factory=list)
     balance: int = 0
+
+
+class DevTopupRequest(BaseModel):
+    amount: int = 10
+
+
+class DevTopupResponse(BaseModel):
+    success: bool
+    balance: int
+    message: str = ""

@@ -27,3 +27,9 @@ MUSIC_MAX_WAIT_SEC = 360
 GUEST_GENERATION_LIMIT = 1
 SESSION_TTL_DAYS = 30
 SHOWCASE_HOURS = 24
+
+DEV_TOPUP_ENABLED = os.getenv("DEV_TOPUP_ENABLED", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+}

@@ -13,8 +13,7 @@ class AiPromptComposer:
         "Верни ТОЛЬКО валидный JSON без markdown и обычного текста. "
         "Поля: "
         "title (короткое запоминающееся название на русском, до 4 слов), "
-        "lyrics (полный текст песни на русском со структурными тегами "
-        "[Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]), "
+        "lyrics (всегда пустая строка \"\" — текст песни генерируется отдельно), "
         "style (подробное описание на английском в одну строку через запятую: "
         "жанр, поджанр, настроение, BPM, энергия, инструменты, вокал, атмосфера, сведение; "
         "обязательно включи: sung in Russian, native Russian vocals), "
@@ -175,7 +174,7 @@ class AiPromptComposer:
             payload.lyrics = ""
             payload.vocal_gender = ""
         else:
-            payload.lyrics = clean_text(payload.lyrics)
+            payload.lyrics = ""
             payload.style = truncate(ensure_russian_vocal_style(payload.style), 950)
 
         payload.style_weight = max(0.0, min(float(payload.style_weight), 1.0))
@@ -320,16 +319,6 @@ class AiPromptComposer:
         title = truncate(" ".join(words[:4]) if words else "Моя песня", 75)
 
         lyrics = ""
-        if not analysis.instrumental:
-            snippet = truncate(idea, 60)
-            lyrics = (
-                f"[Verse 1]\n{snippet}\nМузыка ведёт меня вперёд\n\n"
-                f"[Chorus]\nЭто моя песня, мой огонь\n"
-                f"Звучит внутри и снаружи\n\n"
-                f"[Verse 2]\nКаждый бит — как новый день\n\n"
-                f"[Chorus]\nЭто моя песня, мой огонь\n\n"
-                f"[Outro]\nНавсегда."
-            )
 
         vocal_gender = ""
         if analysis.vocal == "female":
