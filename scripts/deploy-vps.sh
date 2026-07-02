@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 5
+# deploy-script-version: 6
 # Запуск: bash scripts/deploy-vps.sh
 # Скачать (обход кэша raw.githubusercontent.com):
 # curl -fsSL -H "Accept: application/vnd.github.raw" \
@@ -115,7 +115,16 @@ ensure_venv
 echo "[3/7] Очищаем Python cache..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
-echo "[4/7] Проверяем Python..."
+echo "[4/7] Проверяем файлы и Python..."
+if ! grep -q "\"version\":\"$EXPECTED_VERSION\"" backend/app.py; then
+  echo "ОШИБКА: backend/app.py не содержит версию $EXPECTED_VERSION"
+  grep version backend/app.py | head -3 || true
+  exit 1
+fi
+if ! grep -q 'data:image/png;base64,' index.html; then
+  echo "ОШИБКА: index.html без встроенного логотипа (base64)"
+  exit 1
+fi
 ./venv/bin/python -c "
 from backend.database.db import init_db
 from backend.services.guest_service import GuestService
@@ -133,29 +142,62 @@ from backend.app import app
 init_db()
 print('import OK')
 print('app version:', app.version)
+if app.version != '$EXPECTED_VERSION':
+    raise SystemExit('wrong app version on disk')
 "
 
-echo "[5/7] Освобождаем порт 8000..."
-if command -v fuser >/dev/null 2>&1; then
-  fuser -k 8000/tcp 2>/dev/null || true
-elif command -v lsof >/dev/null 2>&1; then
-  for pid in $(lsof -t -i:8000 2>/dev/null); do
-    kill "$pid" 2>/dev/null || true
+free_port_8000() {
+  pm2 delete songforge 2>/dev/null || true
+  pm2 stop songforge 2>/dev/null || true
+  for _ in 1 2 3 4 5; do
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k 8000/tcp 2>/dev/null || true
+    fi
+    if command -v lsof >/dev/null 2>&1; then
+      for pid in $(lsof -t -i:8000 2>/dev/null); do
+        kill -9 "$pid" 2>/dev/null || true
+      done
+    fi
+    pkill -9 -f "uvicorn.*8000" 2>/dev/null || true
+    pkill -9 -f "${DIR}/app.py" 2>/dev/null || true
+    pkill -9 -f "SongForge/app.py" 2>/dev/null || true
+    sleep 1
+    if ! (ss -lptn 'sport = :8000' 2>/dev/null | grep -q ':8000'); then
+      return 0
+    fi
   done
-else
-  pkill -f "${DIR}/app.py" 2>/dev/null || true
-fi
-sleep 2
+  return 1
+}
 
-echo "[6/7] Перезапускаем PM2..."
-pm2 delete songforge 2>/dev/null || true
-pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
-pm2 save
+start_songforge() {
+  cd "$DIR"
+  pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
+  pm2 save
+}
+
+echo "[5/7] Освобождаем порт 8000..."
+if ! free_port_8000; then
+  echo "ОШИБКА: порт 8000 всё ещё занят:"
+  ss -lptn 'sport = :8000' 2>/dev/null || netstat -tlnp 2>/dev/null | grep 8000 || true
+  exit 1
+fi
+
+echo "[6/7] Запускаем PM2..."
+start_songforge
 
 echo "[7/7] Проверяем health..."
-sleep 3
+sleep 4
 HEALTH="$(curl -s http://127.0.0.1:8000/api/health)"
 echo "$HEALTH"
+if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
+  echo ""
+  echo "Повтор: убиваем старый процесс и перезапускаем..."
+  free_port_8000 || true
+  start_songforge
+  sleep 4
+  HEALTH="$(curl -s http://127.0.0.1:8000/api/health)"
+  echo "$HEALTH"
+fi
 if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
   echo ""
   echo "ОШИБКА: ожидалась версия $EXPECTED_VERSION"
