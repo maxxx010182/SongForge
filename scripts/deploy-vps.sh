@@ -12,16 +12,18 @@ EXPECTED_VERSION="2.2.1"
 strip_crlf() {
   local f="$1"
   [ -f "$f" ] || return 0
-  if sed -i 's/\r$//' "$f" 2>/dev/null; then
-    return 0
-  fi
-  tr -d '\r' <"$f" >"$f.tmp" && mv -f "$f.tmp" "$f"
+  # Linux VPS: только sed, без .tmp/mv (старый fallback ломал деплой)
+  sed -i 's/\r$//' "$f" 2>/dev/null || true
 }
 
 download() {
   local out="$1"
   local url="$2"
   wget -q -O "$out" "${url}${CACHE_BUST}" || curl -fsSL -o "$out" "${url}${CACHE_BUST}"
+  if [ ! -s "$out" ]; then
+    echo "ОШИБКА: не скачан или пустой файл: $out"
+    exit 1
+  fi
   strip_crlf "$out"
 }
 
