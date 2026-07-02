@@ -11,7 +11,7 @@ set -e
 
 GH_API="https://api.github.com/repos/maxxx010182/SongForge/contents"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.3.4"
+EXPECTED_VERSION="2.4.0"
 
 strip_crlf() {
   local f="$1"
@@ -97,6 +97,8 @@ download backend/services/cabinet_service.py backend/services/cabinet_service.py
 download backend/services/profile_service.py backend/services/profile_service.py
 download backend/services/generation_quota_service.py backend/services/generation_quota_service.py
 download backend/services/consultant.py backend/services/consultant.py
+download backend/services/audio_access_service.py backend/services/audio_access_service.py
+download backend/services/payment_service.py backend/services/payment_service.py
 
 for f in \
   backend/services/genre_resolver.py \

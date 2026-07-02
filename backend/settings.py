@@ -30,8 +30,30 @@ MUSIC_MAX_WAIT_SEC = 360
 GUEST_GENERATION_LIMIT = 1
 SESSION_TTL_DAYS = 30
 SHOWCASE_HOURS = 24
+PREVIEW_LIMIT_SEC = 30
+PREVIEW_MAX_BYTES = 500_000
 
-DEV_TOPUP_ENABLED = os.getenv("DEV_TOPUP_ENABLED", "true").lower() in {
+SITE_URL = os.getenv("SITE_URL", "http://195.19.20.245:8000").rstrip("/")
+PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
+PRODAMUS_SECRET = os.getenv("PRODAMUS_SECRET", "")
+PRODAMUS_SHOP_ID = os.getenv("PRODAMUS_SHOP_ID", "")
+
+AUTH_DEV_CODE_ENABLED = os.getenv("AUTH_DEV_CODE_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+LEGACY_API_ENABLED = os.getenv("LEGACY_API_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+DEV_TOPUP_ENABLED = os.getenv("DEV_TOPUP_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
     "1",
     "true",
     "yes",

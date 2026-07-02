@@ -152,6 +152,24 @@ class GenerationQuotaService:
                 (used, guest_id),
             )
 
+    def refund_trial_on_failed(self, *, production_id: str) -> bool:
+        """Вернуть пробную попытку, если музыка не создалась."""
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT user_id, guest_id, note_charged, purchased FROM generations WHERE id = ?",
+                (production_id,),
+            ).fetchone()
+        if not row or row["purchased"] or row["note_charged"]:
+            return False
+
+        if row["user_id"]:
+            self.refund_trial_start(user={"id": row["user_id"]}, guest_id="")
+            return True
+        if row["guest_id"]:
+            self.refund_trial_start(user=None, guest_id=row["guest_id"])
+            return True
+        return False
+
     def refund_if_charged(self, *, production_id: str, user_id: str | None) -> bool:
         if not user_id:
             return False

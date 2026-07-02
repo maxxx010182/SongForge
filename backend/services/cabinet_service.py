@@ -2,6 +2,7 @@ import json
 import uuid
 
 from backend.database.db import get_connection, init_db, utc_now
+from backend.services.audio_access_service import AudioAccessService
 
 
 class CabinetService:
@@ -44,16 +45,19 @@ class CabinetService:
         if row["status"] != "success":
             raise ValueError("Генерация ещё не готова")
 
-        url = row["music_url_b"] if variant_key == "b" else row["music_url_a"]
-        if not url:
+        has_url = row["music_url_b"] if variant_key == "b" else row["music_url_a"]
+        if not has_url:
             raise ValueError("Аудио не найдено")
 
         image_url = (
             row["image_url_b"] if variant_key == "b" else row["image_url_a"]
         ) or row["image_url_a"] or row["image_url_b"]
 
+        variant_index = 1 if variant_key == "b" else 0
         return {
-            "audio_url": url,
+            "preview_url": AudioAccessService.preview_path(
+                generation_id, variant_index
+            ),
             "preview_limit_sec": 30,
             "title": row["title"] or "Без названия",
             "image_url": image_url,

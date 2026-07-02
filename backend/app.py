@@ -8,10 +8,14 @@ from backend.logger import log
 from backend.models import (
     ConsultantRequest,
     ConsultantResponse,
+    CreatePaymentOrderRequest,
     CreateSongRequest,
     CreateSongResponse,
+    DevTopupRequest,
+    DevTopupResponse,
     EmailAuthRequest,
     EmailVerifyRequest,
+    FullAudioResponse,
     HistoryItem,
     HistoryPreviewResponse,
     LibraryItem,
@@ -20,29 +24,42 @@ from backend.models import (
     MusicRequest,
     MusicStartRequest,
     MusicStatusResponse,
+    PaymentOrderResponse,
+    PaymentOrderStatusResponse,
+    PaymentPackage,
     ProduceRequest,
     ProduceResponse,
     PurchaseResponse,
-    DevTopupRequest,
-    DevTopupResponse,
     ProfileUpdateRequest,
     ProfileUpdateResponse,
     StyleRequest,
     TelegramAuthRequest,
+    TrackVariant,
     UserInfo,
 )
 from backend.services.ai_producer import AiProducer
 from backend.services.apipass_client import ApiPassClient
+from backend.services.audio_access_service import AudioAccessService
 from backend.services.auth_service import AuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
 from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
+from backend.services.payment_service import PaymentService
 from backend.services.profile_service import ProfileService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
-from backend.settings import DEV_TOPUP_ENABLED, GUEST_GENERATION_LIMIT, ROOT_DIR, UPLOADS_DIR
+from backend.settings import (
+    AUTH_DEV_CODE_ENABLED,
+    DEV_TOPUP_ENABLED,
+    GUEST_GENERATION_LIMIT,
+    LEGACY_API_ENABLED,
+    PAYMENT_PROVIDER,
+    ROOT_DIR,
+    TELEGRAM_AUTH_ENABLED,
+    UPLOADS_DIR,
+)
 from backend.utils.text import clean_text, truncate
 
 producer = AiProducer()
@@ -56,8 +73,10 @@ auth_service = AuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
+audio_access = AudioAccessService()
+payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.3.4")
+app = FastAPI(title="SongForge", version="2.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -182,7 +201,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.3.4"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.0"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -199,6 +218,8 @@ async def get_me(
         user=_user_info(user) if user else None,
         guest_remaining=remaining,
         guest_limit=GUEST_GENERATION_LIMIT,
+        dev_tools=DEV_TOPUP_ENABLED,
+        payment_provider=PAYMENT_PROVIDER,
     )
 
 
@@ -238,12 +259,15 @@ async def get_library(user: dict | None = Depends(get_optional_user)):
 async def auth_email_request(req: EmailAuthRequest):
     try:
         code = auth_service.request_email_code(req.email)
-        log.info("Email auth code for %s: %s", req.email, code)
-        return {
+        if AUTH_DEV_CODE_ENABLED:
+            log.info("Email auth code for %s: %s", req.email, code)
+        payload = {
             "success": True,
             "message": "Код отправлен на email",
-            "dev_code": code,
         }
+        if AUTH_DEV_CODE_ENABLED:
+            payload["dev_code"] = code
+        return payload
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -272,6 +296,11 @@ async def auth_telegram(
     response: Response,
     guest_id: str = Depends(get_guest_id),
 ):
+    if not TELEGRAM_AUTH_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Вход через Telegram скоро будет доступен",
+        )
     try:
         user, token = auth_service.login_telegram(
             telegram_id=req.id,
@@ -352,6 +381,123 @@ async def purchase_generation(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/payment/packages", response_model=list[PaymentPackage])
+async def list_payment_packages():
+    return payment_service.list_packages()
+
+
+@app.post("/api/payment/create-order", response_model=PaymentOrderResponse)
+async def create_payment_order(
+    req: CreatePaymentOrderRequest,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        order = payment_service.create_order(
+            user_id=user["id"],
+            package_id=req.package_id,
+        )
+        return PaymentOrderResponse(
+            order_id=order["order_id"],
+            status=order["status"],
+            package=PaymentPackage.model_validate(order["package"]),
+            payment_url=order.get("payment_url"),
+            provider=order.get("provider", PAYMENT_PROVIDER),
+            message=order.get("message", ""),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/payment/orders/{order_id}", response_model=PaymentOrderStatusResponse)
+async def get_payment_order(
+    order_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        order = payment_service.get_order(user_id=user["id"], order_id=order_id)
+        from backend.database.db import get_connection
+
+        with get_connection() as conn:
+            balance_row = conn.execute(
+                "SELECT balance FROM users WHERE id = ?",
+                (user["id"],),
+            ).fetchone()
+        balance = int(balance_row["balance"]) if balance_row else 0
+        return PaymentOrderStatusResponse(
+            order_id=order["order_id"],
+            status=order["status"],
+            package=(
+                PaymentPackage.model_validate(order["package"])
+                if order.get("package")
+                else None
+            ),
+            notes_amount=order.get("notes_amount", 0),
+            price_rub=order.get("price_rub", 0),
+            provider=order.get("provider", ""),
+            paid_at=order.get("paid_at"),
+            balance=balance,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/payment/webhook/{provider}")
+async def payment_webhook(provider: str, payload: dict):
+    try:
+        result = payment_service.handle_webhook(provider, payload)
+        if not result:
+            return {"ok": True, "status": "ignored"}
+        return {"ok": True, "status": "paid", **result}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/audio/preview/{production_id}/{variant}")
+async def stream_audio_preview(
+    production_id: str,
+    variant: int,
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
+    audio_access.assert_access(
+        row,
+        user_id=user["id"] if user else None,
+        guest_id=guest_id,
+    )
+    if row["purchased"]:
+        raise HTTPException(status_code=400, detail="Трек уже куплен — откройте фонотеку")
+    source = audio_access.resolve_source_url(row, variant)
+    return audio_access.stream_preview(source)
+
+
+@app.get("/api/audio/full/{production_id}/{variant}", response_model=FullAudioResponse)
+async def get_full_audio_url(
+    production_id: str,
+    variant: int,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
+    audio_access.assert_access(row, user_id=user["id"], guest_id=None)
+    if not row["purchased"]:
+        raise HTTPException(status_code=403, detail="Сначала купите трек")
+    source = audio_access.resolve_source_url(row, variant)
+    return FullAudioResponse(
+        audio_url=source,
+        title=row["title"] or "Без названия",
+    )
+
+
 @app.post("/api/dev/topup", response_model=DevTopupResponse)
 async def dev_topup(
     req: DevTopupRequest,
@@ -376,7 +522,10 @@ async def dev_topup(
 
 
 @app.post("/api/produce", response_model=ProduceResponse)
-async def produce_song(req: ProduceRequest):
+async def produce_song(
+    req: ProduceRequest,
+    guest_id: str = Depends(get_guest_id),
+):
     try:
         return producer.produce(
             req.idea,
@@ -514,26 +663,60 @@ async def start_music(
         producer.clear_actor()
 
 
+def _sanitize_status_tracks(
+    tracks: list[dict],
+    *,
+    production_id: str,
+    purchased: bool,
+    prepaid: bool,
+) -> list[dict]:
+    cleaned = audio_access.sanitize_tracks(
+        tracks,
+        production_id=production_id,
+        purchased=purchased,
+        prepaid=prepaid,
+    )
+    return [TrackVariant.model_validate(item) for item in cleaned]
+
+
 @app.get("/api/music/status/{task_id}", response_model=MusicStatusResponse)
-async def music_status(task_id: str):
+async def music_status(
+    task_id: str,
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
     try:
+        production = history.get_by_task(task_id) or {}
+        production_id = production.get("id", "")
+        if production_id:
+            row = audio_access.get_generation_row(production_id)
+            audio_access.assert_access(
+                row,
+                user_id=user["id"] if user else None,
+                guest_id=guest_id,
+            )
+
         status = apipass.get_status(task_id)
         state = status["state"]
         tracks = status["tracks"]
-        production = history.get_by_task(task_id) or {}
-        production_id = production.get("id", "")
 
         if state == "success" and tracks:
             history.update_task_result(task_id=task_id, status="success", tracks=tracks)
             if production_id:
                 cabinet.complete_prepaid_generation(production_id)
             purchased, prepaid = _generation_flags(production_id)
+            safe_tracks = _sanitize_status_tracks(
+                tracks,
+                production_id=production_id,
+                purchased=purchased,
+                prepaid=prepaid,
+            )
             return MusicStatusResponse(
                 success=True,
                 task_id=task_id,
                 state=state,
                 progress_hint=status["progress_hint"],
-                tracks=tracks,
+                tracks=safe_tracks,
                 production_id=production_id,
                 purchased=purchased,
                 prepaid=prepaid,
@@ -547,11 +730,12 @@ async def music_status(task_id: str):
                 fail_code=status.get("fail_code", ""),
                 fail_msg=status.get("fail_msg", ""),
             )
-            if production:
+            if production_id:
                 generation_quota.refund_if_charged(
-                    production_id=production.get("id", ""),
+                    production_id=production_id,
                     user_id=production.get("user_id"),
                 )
+                generation_quota.refund_trial_on_failed(production_id=production_id)
             purchased, prepaid = _generation_flags(production_id)
             return MusicStatusResponse(
                 success=False,
@@ -572,13 +756,23 @@ async def music_status(task_id: str):
             progress_hint=status["progress_hint"],
             production_id=production_id,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         log.exception("music status failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.post("/api/consultant/chat", response_model=ConsultantResponse)
-async def consultant_chat(req: ConsultantRequest):
+async def consultant_chat(
+    req: ConsultantRequest,
+    guest_id: str = Depends(get_guest_id),
+):
+    if not LEGACY_API_ENABLED:
+        return ConsultantResponse(
+            success=False,
+            reply="Консультант временно недоступен.",
+        )
     try:
         reply = consultant.reply(req.message, req.context)
         return ConsultantResponse(success=True, reply=reply)
@@ -591,7 +785,10 @@ async def consultant_chat(req: ConsultantRequest):
 
 
 @app.post("/api/generate-lyrics")
-async def generate_lyrics_endpoint(req: LyricsRequest):
+async def generate_lyrics_endpoint(
+    req: LyricsRequest,
+    guest_id: str = Depends(get_guest_id),
+):
     plan = prompt_builder._fallback_plan(req.prompt, vocal_hint=req.vocal)
     plan.genre = req.genre
     plan.mood = req.mood
@@ -605,7 +802,10 @@ async def generate_lyrics_endpoint(req: LyricsRequest):
 
 
 @app.post("/api/generate-style")
-async def generate_style_endpoint(req: StyleRequest):
+async def generate_style_endpoint(
+    req: StyleRequest,
+    guest_id: str = Depends(get_guest_id),
+):
     custom_mode = req.style_mode == "custom" and req.custom_description.strip()
     if custom_mode:
         plan = prompt_builder.build_plan(
@@ -638,8 +838,13 @@ async def generate_style_endpoint(req: StyleRequest):
 
 
 @app.post("/api/generate-music")
-async def generate_music_endpoint(req: MusicRequest):
+async def generate_music_endpoint(
+    req: MusicRequest,
+    guest_id: str = Depends(get_guest_id),
+):
     """Legacy endpoint: returns task_id immediately for polling."""
+    if not LEGACY_API_ENABLED:
+        raise HTTPException(status_code=410, detail="Endpoint отключён")
     from backend.models import ProductionPlan
 
     plan_data = req.plan or {}

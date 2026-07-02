@@ -106,7 +106,8 @@ class MusicStartRequest(BaseModel):
 
 class TrackVariant(BaseModel):
     id: str = ""
-    audio_url: str
+    audio_url: str = ""
+    preview_url: str = ""
     image_url: str = ""
     duration: float = 0
 
@@ -222,6 +223,8 @@ class MeResponse(BaseModel):
     user: UserInfo | None = None
     guest_remaining: int = 0
     guest_limit: int = 1
+    dev_tools: bool = False
+    payment_provider: str = "stub"
 
 
 class HistoryItem(BaseModel):
@@ -238,7 +241,7 @@ class HistoryItem(BaseModel):
 
 
 class HistoryPreviewResponse(BaseModel):
-    audio_url: str
+    preview_url: str
     preview_limit_sec: int = 30
     title: str = ""
     image_url: str | None = None
@@ -272,3 +275,40 @@ class DevTopupResponse(BaseModel):
     success: bool
     balance: int
     message: str = ""
+
+
+class PaymentPackage(BaseModel):
+    id: str
+    notes: int
+    price_rub: int
+    label: str = ""
+    discount: str = ""
+
+
+class CreatePaymentOrderRequest(BaseModel):
+    package_id: str
+
+
+class PaymentOrderResponse(BaseModel):
+    order_id: str
+    status: str
+    package: PaymentPackage
+    payment_url: str | None = None
+    provider: str = "stub"
+    message: str = ""
+
+
+class PaymentOrderStatusResponse(BaseModel):
+    order_id: str
+    status: str
+    package: PaymentPackage | None = None
+    notes_amount: int = 0
+    price_rub: int = 0
+    provider: str = ""
+    paid_at: str | None = None
+    balance: int | None = None
+
+
+class FullAudioResponse(BaseModel):
+    audio_url: str
+    title: str = ""

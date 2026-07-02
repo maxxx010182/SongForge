@@ -134,6 +134,26 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS payment_orders (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                package_id TEXT NOT NULL,
+                notes_amount INTEGER NOT NULL,
+                price_rub INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                provider TEXT,
+                provider_payment_id TEXT,
+                created_at TEXT NOT NULL,
+                paid_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_payment_orders_user ON payment_orders(user_id)"
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS showcase_tracks (
                 id TEXT PRIMARY KEY,
                 generation_id TEXT NOT NULL,
