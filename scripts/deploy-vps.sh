@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 7
+# deploy-script-version: 8
 # Запуск: bash scripts/deploy-vps.sh
 # Скачать (обход кэша raw.githubusercontent.com):
 # curl -fsSL -H "Accept: application/vnd.github.raw" \
@@ -119,7 +119,7 @@ echo "[3/7] Очищаем Python cache..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
 echo "[4/7] Проверяем файлы и Python..."
-if ! grep -q "\"version\":\"$EXPECTED_VERSION\"" backend/app.py; then
+if ! grep -qF "$EXPECTED_VERSION" backend/app.py; then
   echo "ОШИБКА: backend/app.py не содержит версию $EXPECTED_VERSION"
   grep version backend/app.py | head -3 || true
   exit 1
