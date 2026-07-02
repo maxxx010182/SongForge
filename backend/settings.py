@@ -38,6 +38,8 @@ PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
 PRODAMUS_SECRET = os.getenv("PRODAMUS_SECRET", "")
 PRODAMUS_SHOP_ID = os.getenv("PRODAMUS_SHOP_ID", "")
 
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+
 AUTH_DEV_CODE_ENABLED = os.getenv("AUTH_DEV_CODE_ENABLED", "false").lower() in {
     "1",
     "true",

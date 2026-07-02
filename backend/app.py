@@ -52,6 +52,7 @@ from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
 from backend.settings import (
     AUTH_DEV_CODE_ENABLED,
+    SMTP_HOST,
     DEV_TOPUP_ENABLED,
     GUEST_GENERATION_LIMIT,
     LEGACY_API_ENABLED,
@@ -76,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.0")
+app = FastAPI(title="SongForge", version="2.4.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -201,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.1"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -255,18 +256,24 @@ async def get_library(user: dict | None = Depends(get_optional_user)):
     return cabinet.list_library(user["id"])
 
 
+def _expose_email_auth_code() -> bool:
+    """Пока SMTP не настроен — код только на экране, не в письме."""
+    return AUTH_DEV_CODE_ENABLED or not SMTP_HOST
+
+
 @app.post("/api/auth/email/request")
 async def auth_email_request(req: EmailAuthRequest):
     try:
         code = auth_service.request_email_code(req.email)
-        if AUTH_DEV_CODE_ENABLED:
+        expose_code = _expose_email_auth_code()
+        if expose_code:
             log.info("Email auth code for %s: %s", req.email, code)
-        payload = {
-            "success": True,
-            "message": "Код отправлен на email",
-        }
-        if AUTH_DEV_CODE_ENABLED:
+        payload: dict = {"success": True}
+        if expose_code:
             payload["dev_code"] = code
+            payload["message"] = "Код показан на экране (почта пока не подключена)"
+        else:
+            payload["message"] = "Код отправлен на email"
         return payload
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
