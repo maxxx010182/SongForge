@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 6
+# deploy-script-version: 7
 # Запуск: bash scripts/deploy-vps.sh
 # Скачать (обход кэша raw.githubusercontent.com):
 # curl -fsSL -H "Accept: application/vnd.github.raw" \
@@ -9,8 +9,7 @@
 
 set -e
 
-BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
-CACHE_BUST="?$(date +%s)"
+GH_API="https://api.github.com/repos/maxxx010182/SongForge/contents"
 DIR="${HOME}/SongForge"
 EXPECTED_VERSION="2.3.4"
 
@@ -23,8 +22,10 @@ strip_crlf() {
 
 download() {
   local out="$1"
-  local url="$2"
-  wget -q -O "$out" "${url}${CACHE_BUST}" || curl -fsSL -o "$out" "${url}${CACHE_BUST}"
+  local repo_path="$2"
+  curl -fsSL -H "Accept: application/vnd.github.raw" \
+    "${GH_API}/${repo_path}?ref=main" \
+    -o "$out"
   if [ ! -s "$out" ]; then
     echo "ОШИБКА: не скачан или пустой файл: $out"
     exit 1
@@ -52,19 +53,19 @@ cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
 mkdir -p backend/services backend/utils backend/database scripts assets
 
-echo "[1/7] Скачиваем файлы с GitHub..."
-download app.py "$BASE/app.py"
-download requirements.txt "$BASE/requirements.txt"
-download index.html "$BASE/index.html"
-download SongForgeLogo.png "$BASE/SongForgeLogo.png"
+echo "[1/7] Скачиваем файлы с GitHub (API, без кэша)..."
+download app.py app.py
+download requirements.txt requirements.txt
+download index.html index.html
+download SongForgeLogo.png SongForgeLogo.png
 if [ ! -s SongForgeLogo.png ]; then
   echo "ОШИБКА: SongForgeLogo.png не скачан"
   exit 1
 fi
 
-download assets/logo-header.png "$BASE/assets/logo-header.png"
-download assets/logo-header@2x.png "$BASE/assets/logo-header@2x.png"
-download assets/logo-gen.png "$BASE/assets/logo-gen.png"
+download assets/logo-header.png assets/logo-header.png
+download assets/logo-header@2x.png assets/logo-header@2x.png
+download assets/logo-gen.png assets/logo-gen.png
 for f in assets/logo-header.png assets/logo-header@2x.png assets/logo-gen.png; do
   if [ ! -s "$f" ]; then
     echo "ОШИБКА: не скачан $f"
@@ -72,30 +73,30 @@ for f in assets/logo-header.png assets/logo-header@2x.png assets/logo-gen.png; d
   fi
 done
 
-download backend/app.py "$BASE/backend/app.py"
-download backend/models.py "$BASE/backend/models.py"
-download backend/settings.py "$BASE/backend/settings.py"
-download backend/logger.py "$BASE/backend/logger.py"
-download backend/utils/text.py "$BASE/backend/utils/text.py"
-download backend/database/db.py "$BASE/backend/database/db.py"
-download backend/services/ai_producer.py "$BASE/backend/services/ai_producer.py"
-download backend/services/prompt_builder.py "$BASE/backend/services/prompt_builder.py"
-download backend/services/apipass_client.py "$BASE/backend/services/apipass_client.py"
-download backend/services/ai_music_analyst.py "$BASE/backend/services/ai_music_analyst.py"
-download backend/services/ai_prompt_composer.py "$BASE/backend/services/ai_prompt_composer.py"
-download backend/services/reference_translator.py "$BASE/backend/services/reference_translator.py"
-download backend/services/style_enforcer.py "$BASE/backend/services/style_enforcer.py"
-download backend/services/plan_overrides.py "$BASE/backend/services/plan_overrides.py"
-download backend/services/genre_resolver.py "$BASE/backend/services/genre_resolver.py"
-download backend/services/idea_parser.py "$BASE/backend/services/idea_parser.py"
-download backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py"
-download backend/services/history.py "$BASE/backend/services/history.py"
-download backend/services/guest_service.py "$BASE/backend/services/guest_service.py"
-download backend/services/auth_service.py "$BASE/backend/services/auth_service.py"
-download backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py"
-download backend/services/profile_service.py "$BASE/backend/services/profile_service.py"
-download backend/services/generation_quota_service.py "$BASE/backend/services/generation_quota_service.py"
-download backend/services/consultant.py "$BASE/backend/services/consultant.py"
+download backend/app.py backend/app.py
+download backend/models.py backend/models.py
+download backend/settings.py backend/settings.py
+download backend/logger.py backend/logger.py
+download backend/utils/text.py backend/utils/text.py
+download backend/database/db.py backend/database/db.py
+download backend/services/ai_producer.py backend/services/ai_producer.py
+download backend/services/prompt_builder.py backend/services/prompt_builder.py
+download backend/services/apipass_client.py backend/services/apipass_client.py
+download backend/services/ai_music_analyst.py backend/services/ai_music_analyst.py
+download backend/services/ai_prompt_composer.py backend/services/ai_prompt_composer.py
+download backend/services/reference_translator.py backend/services/reference_translator.py
+download backend/services/style_enforcer.py backend/services/style_enforcer.py
+download backend/services/plan_overrides.py backend/services/plan_overrides.py
+download backend/services/genre_resolver.py backend/services/genre_resolver.py
+download backend/services/idea_parser.py backend/services/idea_parser.py
+download backend/services/yandex_client.py backend/services/yandex_client.py
+download backend/services/history.py backend/services/history.py
+download backend/services/guest_service.py backend/services/guest_service.py
+download backend/services/auth_service.py backend/services/auth_service.py
+download backend/services/cabinet_service.py backend/services/cabinet_service.py
+download backend/services/profile_service.py backend/services/profile_service.py
+download backend/services/generation_quota_service.py backend/services/generation_quota_service.py
+download backend/services/consultant.py backend/services/consultant.py
 
 for f in \
   backend/services/genre_resolver.py \
