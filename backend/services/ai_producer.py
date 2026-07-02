@@ -106,7 +106,17 @@ class AiProducer:
                 idea = idea or stored.get("idea", "")
 
         if plan is None:
-            raise ValueError("Не найден план продакшена")
+            if lyrics.strip() or style.strip() or idea.strip():
+                plan = self._builder.build_plan(
+                    idea or title or "My Song",
+                    genre=genre,
+                    mood=mood,
+                    artist_ref=artist_ref,
+                    vocal_hint=vocal_hint,
+                    backing_vocal=backing_vocal,
+                )
+            else:
+                raise ValueError("Не найден план продакшена")
 
         if genre.strip() or mood.strip() or vocal_hint.strip() or backing_vocal:
             plan = apply_user_to_plan(

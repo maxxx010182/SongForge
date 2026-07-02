@@ -282,6 +282,7 @@ class AiPromptComposer:
         *,
         reference: ReferenceTranslation | None = None,
         backing_vocal: bool = False,
+        backing_vocal_gender: str = "",
     ) -> SunoPromptPayload:
         instruments = ", ".join(analysis.instruments)
         style_parts = [
@@ -308,6 +309,7 @@ class AiPromptComposer:
             plan_snapshot,
             reference=reference,
             backing_vocal=backing_vocal,
+            backing_vocal_gender=backing_vocal_gender,
         )
         genre_key = analysis.genre.lower().split()[0]
         style_weight = self.STYLE_WEIGHT.get(genre_key, DEFAULT_STYLE_WEIGHT)

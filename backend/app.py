@@ -46,7 +46,7 @@ guest_service = GuestService()
 auth_service = AuthService()
 cabinet = CabinetService()
 
-app = FastAPI(title="SongForge", version="2.1.0")
+app = FastAPI(title="SongForge", version="2.1.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,7 +98,7 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.1.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.1.1"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -321,6 +321,8 @@ async def start_music(
         if not user:
             guest_service.consume_generation(guest_id)
         return {"success": True, "task_id": task_id, "production_id": req.production_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("music start failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
