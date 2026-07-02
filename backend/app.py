@@ -11,6 +11,7 @@ from backend.models import (
     EmailAuthRequest,
     EmailVerifyRequest,
     HistoryItem,
+    HistoryPreviewResponse,
     LibraryItem,
     LyricsRequest,
     MeResponse,
@@ -48,7 +49,7 @@ guest_service = GuestService()
 auth_service = AuthService()
 cabinet = CabinetService()
 
-app = FastAPI(title="SongForge", version="2.1.4")
+app = FastAPI(title="SongForge", version="2.1.5")
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,7 +101,7 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.1.4"}
+    return {"ok": True, "service": "SongForge", "version": "2.1.5"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -129,6 +130,24 @@ async def get_history(user: dict | None = Depends(get_optional_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
     return cabinet.list_history(user["id"])
+
+
+@app.get("/api/history/{generation_id}/preview", response_model=HistoryPreviewResponse)
+async def get_history_preview(
+    generation_id: str,
+    variant: str = "a",
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        return cabinet.get_history_preview(
+            user_id=user["id"],
+            generation_id=generation_id,
+            variant=variant,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/library", response_model=list[LibraryItem])

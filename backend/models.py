@@ -217,12 +217,15 @@ class HistoryItem(BaseModel):
     created_at: str
     genre: str = ""
     purchased: bool = False
-    music_url_a: str | None = None
-    music_url_b: str | None = None
+    has_preview_a: bool = False
+    has_preview_b: bool = False
     image_url_a: str | None = None
-    duration_a: float | None = None
-    duration_b: float | None = None
-    lyrics: str = ""
+
+
+class HistoryPreviewResponse(BaseModel):
+    audio_url: str
+    preview_limit_sec: int = 30
+    title: str = ""
 
 
 class LibraryItem(BaseModel):

@@ -18,12 +18,39 @@ class CabinetService:
             "created_at": row["created_at"],
             "genre": genre,
             "purchased": bool(row["purchased"]),
-            "music_url_a": row["music_url_a"],
-            "music_url_b": row["music_url_b"],
+            "has_preview_a": bool(row["music_url_a"]),
+            "has_preview_b": bool(row["music_url_b"]),
             "image_url_a": row["image_url_a"] or row["image_url_b"],
-            "duration_a": row["duration_a"],
-            "duration_b": row["duration_b"],
-            "lyrics": row["lyrics"] or "",
+        }
+
+    def get_history_preview(
+        self, *, user_id: str, generation_id: str, variant: str
+    ) -> dict:
+        variant_key = variant.strip().lower()
+        if variant_key not in {"a", "b"}:
+            raise ValueError("Неверный вариант")
+
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM generations WHERE id = ? AND user_id = ?",
+                (generation_id, user_id),
+            ).fetchone()
+
+        if not row:
+            raise ValueError("Генерация не найдена")
+        if row["purchased"]:
+            raise ValueError("Трек уже куплен — откройте фонотеку")
+        if row["status"] != "success":
+            raise ValueError("Генерация ещё не готова")
+
+        url = row["music_url_b"] if variant_key == "b" else row["music_url_a"]
+        if not url:
+            raise ValueError("Аудио не найдено")
+
+        return {
+            "audio_url": url,
+            "preview_limit_sec": 30,
+            "title": row["title"] or "Без названия",
         }
 
     def list_history(self, user_id: str) -> list[dict]:

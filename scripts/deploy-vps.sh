@@ -7,7 +7,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.1.4"
+EXPECTED_VERSION="2.1.5"
 SELF="$0"
 
 echo "=== SongForge deploy ==="
