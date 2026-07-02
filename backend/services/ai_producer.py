@@ -66,6 +66,8 @@ class AiProducer:
             title=title,
             lyrics=lyrics,
             style=style,
+            user_id=getattr(self, "_current_user_id", None),
+            guest_id=getattr(self, "_current_guest_id", None),
         )
 
         log.info("Production ready: %s | %s | instrumental=%s", production_id, title, instrumental)
@@ -129,8 +131,18 @@ class AiProducer:
             lyrics=lyrics,
             style=style,
             plan=plan,
+            user_id=getattr(self, "_current_user_id", None),
+            guest_id=getattr(self, "_current_guest_id", None),
         )
         return task_id
+
+    def set_actor(self, *, user_id: str | None = None, guest_id: str | None = None) -> None:
+        self._current_user_id = user_id
+        self._current_guest_id = guest_id
+
+    def clear_actor(self) -> None:
+        self._current_user_id = None
+        self._current_guest_id = None
 
     def create_song(
         self,

@@ -97,6 +97,11 @@ class MusicStartRequest(BaseModel):
     title: str
     plan: Optional[ProductionPlan] = None
     idea: str = ""
+    genre: str = ""
+    mood: str = ""
+    artist_ref: str = ""
+    vocal_hint: str = ""
+    backing_vocal: bool = False
 
 
 class TrackVariant(BaseModel):
@@ -174,3 +179,67 @@ class MusicRequest(BaseModel):
     idea: str = ""
     title: str = ""
     plan: Optional[dict[str, Any]] = None
+
+
+class EmailAuthRequest(BaseModel):
+    email: str
+
+
+class EmailVerifyRequest(BaseModel):
+    email: str
+    code: str
+
+
+class TelegramAuthRequest(BaseModel):
+    id: str
+    first_name: str = ""
+    username: str = ""
+
+
+class UserInfo(BaseModel):
+    id: str
+    email: str | None = None
+    display_name: str = ""
+    balance: int = 0
+
+
+class MeResponse(BaseModel):
+    logged_in: bool
+    user: UserInfo | None = None
+    guest_remaining: int = 0
+    guest_limit: int = 1
+
+
+class HistoryItem(BaseModel):
+    id: str
+    title: str
+    status: str
+    created_at: str
+    genre: str = ""
+    purchased: bool = False
+    music_url_a: str | None = None
+    music_url_b: str | None = None
+    image_url_a: str | None = None
+    duration_a: float | None = None
+    duration_b: float | None = None
+    lyrics: str = ""
+
+
+class LibraryItem(BaseModel):
+    id: str
+    generation_id: str
+    title: str
+    variant: str = ""
+    audio_url: str
+    image_url: str = ""
+    duration: float = 0
+    lyrics: str = ""
+    genre: str = ""
+    purchased_at: str = ""
+
+
+class PurchaseResponse(BaseModel):
+    success: bool
+    generation_id: str
+    library_ids: list[str] = Field(default_factory=list)
+    balance: int = 0

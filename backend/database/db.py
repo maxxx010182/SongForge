@@ -29,13 +29,134 @@ def init_db() -> None:
                 duration_a REAL,
                 duration_b REAL,
                 fail_code TEXT,
-                fail_msg TEXT
+                fail_msg TEXT,
+                user_id TEXT,
+                guest_id TEXT,
+                purchased INTEGER NOT NULL DEFAULT 0,
+                showcase_eligible INTEGER NOT NULL DEFAULT 1
             )
             """
         )
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_generations_task_id ON generations(task_id)"
         )
+        _migrate_generations_columns(conn)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_generations_guest_id ON generations(guest_id)"
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT,
+                display_name TEXT,
+                balance INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS auth_identities (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                provider_user_id TEXT NOT NULL,
+                metadata_json TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE(provider, provider_user_id)
+            )
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                token TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS guest_sessions (
+                guest_id TEXT PRIMARY KEY,
+                generations_used INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                last_seen_at TEXT NOT NULL
+            )
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS email_auth_codes (
+                email TEXT PRIMARY KEY,
+                code TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_library (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                generation_id TEXT NOT NULL,
+                title TEXT,
+                variant TEXT,
+                audio_url TEXT,
+                image_url TEXT,
+                duration REAL,
+                lyrics TEXT,
+                genre TEXT,
+                purchased_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_library_user_id ON user_library(user_id)"
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS showcase_tracks (
+                id TEXT PRIMARY KEY,
+                generation_id TEXT NOT NULL,
+                published_at TEXT NOT NULL,
+                preview_url_a TEXT,
+                preview_url_b TEXT,
+                image_url TEXT,
+                title TEXT,
+                genre TEXT
+            )
+            """
+        )
+
+def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(generations)")}
+    additions = {
+        "user_id": "TEXT",
+        "guest_id": "TEXT",
+        "purchased": "INTEGER NOT NULL DEFAULT 0",
+        "showcase_eligible": "INTEGER NOT NULL DEFAULT 1",
+    }
+    for column, col_type in additions.items():
+        if column not in existing:
+            conn.execute(f"ALTER TABLE generations ADD COLUMN {column} {col_type}")
 
 
 @contextmanager

@@ -18,14 +18,16 @@ class HistoryService:
         title: str,
         lyrics: str,
         style: str,
+        user_id: str | None = None,
+        guest_id: str | None = None,
     ) -> None:
         with get_connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO generations (
                     id, created_at, idea, optimized_idea, title, lyrics, style,
-                    plan_json, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    plan_json, status, user_id, guest_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     production_id,
@@ -37,6 +39,8 @@ class HistoryService:
                     style,
                     dumps_json(plan.model_dump()),
                     "planned",
+                    user_id,
+                    guest_id,
                 ),
             )
 
@@ -50,18 +54,20 @@ class HistoryService:
         lyrics: str,
         style: str,
         plan: ProductionPlan,
+        user_id: str | None = None,
+        guest_id: str | None = None,
     ) -> None:
         with get_connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO generations (
                     id, task_id, created_at, idea, title, lyrics, style,
-                    plan_json, status
+                    plan_json, status, user_id, guest_id
                 ) VALUES (
                     ?, ?, COALESCE(
                         (SELECT created_at FROM generations WHERE id = ?),
                         ?
-                    ), ?, ?, ?, ?, ?, ?
+                    ), ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """,
                 (
@@ -75,6 +81,8 @@ class HistoryService:
                     style,
                     dumps_json(plan.model_dump()),
                     "generating",
+                    user_id,
+                    guest_id,
                 ),
             )
 

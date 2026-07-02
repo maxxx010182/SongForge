@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -8,21 +8,32 @@ from backend.models import (
     ConsultantResponse,
     CreateSongRequest,
     CreateSongResponse,
+    EmailAuthRequest,
+    EmailVerifyRequest,
+    HistoryItem,
+    LibraryItem,
     LyricsRequest,
+    MeResponse,
     MusicRequest,
     MusicStartRequest,
     MusicStatusResponse,
     ProduceRequest,
     ProduceResponse,
+    PurchaseResponse,
     StyleRequest,
+    TelegramAuthRequest,
+    UserInfo,
 )
 from backend.services.ai_producer import AiProducer
 from backend.services.apipass_client import ApiPassClient
+from backend.services.auth_service import AuthService
+from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
+from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
-from backend.settings import ROOT_DIR
+from backend.settings import GUEST_GENERATION_LIMIT, ROOT_DIR
 from backend.utils.text import clean_text, truncate
 
 producer = AiProducer()
@@ -31,8 +42,11 @@ history = HistoryService()
 consultant = ConsultantService()
 yandex = YandexClient()
 prompt_builder = PromptBuilder(yandex)
+guest_service = GuestService()
+auth_service = AuthService()
+cabinet = CabinetService()
 
-app = FastAPI(title="SongForge", version="2.0.0")
+app = FastAPI(title="SongForge", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +56,41 @@ app.add_middleware(
 )
 
 
+def _session_cookie_kwargs() -> dict:
+    return {
+        "httponly": True,
+        "samesite": "lax",
+        "max_age": 60 * 60 * 24 * 30,
+        "path": "/",
+    }
+
+
+def _guest_cookie_kwargs() -> dict:
+    return {
+        "httponly": True,
+        "samesite": "lax",
+        "max_age": 60 * 60 * 24 * 365,
+        "path": "/",
+    }
+
+
+def get_guest_id(
+    response: Response,
+    sf_guest_id: str | None = Cookie(default=None),
+) -> str:
+    guest_id = sf_guest_id or guest_service.new_guest_id()
+    if not sf_guest_id:
+        response.set_cookie(GuestService.COOKIE_NAME, guest_id, **_guest_cookie_kwargs())
+    guest_service.touch(guest_id)
+    return guest_id
+
+
+def get_optional_user(
+    sf_session: str | None = Cookie(default=None),
+) -> dict | None:
+    return auth_service.get_user_by_session(sf_session)
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
@@ -49,7 +98,133 @@ async def get_index():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.0.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.1.0"}
+
+
+@app.get("/api/me", response_model=MeResponse)
+async def get_me(
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
+    remaining = guest_service.remaining(guest_id) if not user else GUEST_GENERATION_LIMIT
+    return MeResponse(
+        logged_in=bool(user),
+        user=UserInfo(
+            id=user["id"],
+            email=user.get("email"),
+            display_name=user.get("display_name") or "",
+            balance=int(user.get("balance") or 0),
+        )
+        if user
+        else None,
+        guest_remaining=remaining,
+        guest_limit=GUEST_GENERATION_LIMIT,
+    )
+
+
+@app.get("/api/history", response_model=list[HistoryItem])
+async def get_history(user: dict | None = Depends(get_optional_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    return cabinet.list_history(user["id"])
+
+
+@app.get("/api/library", response_model=list[LibraryItem])
+async def get_library(user: dict | None = Depends(get_optional_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    return cabinet.list_library(user["id"])
+
+
+@app.post("/api/auth/email/request")
+async def auth_email_request(req: EmailAuthRequest):
+    try:
+        code = auth_service.request_email_code(req.email)
+        log.info("Email auth code for %s: %s", req.email, code)
+        return {
+            "success": True,
+            "message": "Код отправлен на email",
+            "dev_code": code,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/auth/email/verify")
+async def auth_email_verify(
+    req: EmailVerifyRequest,
+    response: Response,
+    guest_id: str = Depends(get_guest_id),
+):
+    try:
+        user, token = auth_service.verify_email_code(req.email, req.code)
+        cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+        response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
+        return {
+            "success": True,
+            "user": {
+                "id": user["id"],
+                "email": user.get("email"),
+                "display_name": user.get("display_name"),
+                "balance": user.get("balance", 0),
+            },
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/auth/telegram")
+async def auth_telegram(
+    req: TelegramAuthRequest,
+    response: Response,
+    guest_id: str = Depends(get_guest_id),
+):
+    try:
+        user, token = auth_service.login_telegram(
+            telegram_id=req.id,
+            first_name=req.first_name,
+            username=req.username,
+        )
+        cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+        response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
+        return {
+            "success": True,
+            "user": {
+                "id": user["id"],
+                "email": user.get("email"),
+                "display_name": user.get("display_name"),
+                "balance": user.get("balance", 0),
+            },
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(
+    response: Response,
+    sf_session: str | None = Cookie(default=None),
+):
+    if sf_session:
+        auth_service.logout(sf_session)
+    response.delete_cookie(AuthService.COOKIE_NAME, path="/")
+    return {"success": True}
+
+
+@app.post("/api/purchase/{generation_id}", response_model=PurchaseResponse)
+async def purchase_generation(
+    generation_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        return cabinet.purchase_generation(
+            user_id=user["id"],
+            generation_id=generation_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/produce", response_model=ProduceResponse)
@@ -74,9 +249,23 @@ async def produce_song(req: ProduceRequest):
 
 
 @app.post("/api/create-song", response_model=CreateSongResponse)
-async def create_song(req: CreateSongRequest):
+async def create_song(
+    req: CreateSongRequest,
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user and not guest_service.can_generate(guest_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Бесплатная генерация использована. Войдите в аккаунт, чтобы продолжить.",
+        )
+
     try:
-        return producer.create_song(
+        producer.set_actor(
+            user_id=user["id"] if user else None,
+            guest_id=None if user else guest_id,
+        )
+        result = producer.create_song(
             req.idea,
             genre=req.genre,
             mood=req.mood,
@@ -87,16 +276,35 @@ async def create_song(req: CreateSongRequest):
             style_mode=req.style_mode,
             custom_description=req.custom_description,
         )
+        if not user:
+            guest_service.consume_generation(guest_id)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("create-song failed")
         raise HTTPException(status_code=500, detail="Не удалось запустить создание песни") from exc
+    finally:
+        producer.clear_actor()
 
 
 @app.post("/api/music/start")
-async def start_music(req: MusicStartRequest):
+async def start_music(
+    req: MusicStartRequest,
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user and not guest_service.can_generate(guest_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Бесплатная генерация использована. Войдите в аккаунт, чтобы продолжить.",
+        )
+
     try:
+        producer.set_actor(
+            user_id=user["id"] if user else None,
+            guest_id=None if user else guest_id,
+        )
         task_id = producer.start_music(
             production_id=req.production_id,
             lyrics=req.lyrics,
@@ -104,11 +312,20 @@ async def start_music(req: MusicStartRequest):
             title=req.title,
             plan=req.plan,
             idea=req.idea,
+            genre=req.genre,
+            mood=req.mood,
+            artist_ref=req.artist_ref,
+            vocal_hint=req.vocal_hint,
+            backing_vocal=req.backing_vocal,
         )
+        if not user:
+            guest_service.consume_generation(guest_id)
         return {"success": True, "task_id": task_id, "production_id": req.production_id}
     except Exception as exc:
         log.exception("music start failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        producer.clear_actor()
 
 
 @app.get("/api/music/status/{task_id}", response_model=MusicStatusResponse)

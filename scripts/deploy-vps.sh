@@ -37,6 +37,9 @@ wget -q -O backend/services/genre_resolver.py "$BASE/backend/services/genre_reso
 wget -q -O backend/services/idea_parser.py "$BASE/backend/services/idea_parser.py"
 wget -q -O backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py"
 wget -q -O backend/services/history.py "$BASE/backend/services/history.py"
+wget -q -O backend/services/guest_service.py "$BASE/backend/services/guest_service.py"
+wget -q -O backend/services/auth_service.py "$BASE/backend/services/auth_service.py"
+wget -q -O backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py"
 wget -q -O backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 for f in \
@@ -52,12 +55,17 @@ done
 
 echo "[2/4] Проверяем Python..."
 ./venv/bin/python -c "
+from backend.database.db import init_db
+from backend.services.guest_service import GuestService
+from backend.services.auth_service import AuthService
+from backend.services.cabinet_service import CabinetService
 from backend.services.idea_parser import parse_idea
 from backend.services.genre_resolver import resolve_genre
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.prompt_builder import PromptBuilder
+init_db()
 print('import OK')
 "
 
