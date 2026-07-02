@@ -1145,7 +1145,63 @@ document.getElementById('modeExpertCard').addEventListener('keydown',function(e)
 document.getElementById('styleModePresetsBtn').addEventListener('click',function(){setExpertStyleMode('presets');});
 document.getElementById('styleModeCustomBtn').addEventListener('click',function(){setExpertStyleMode('custom');});
 
-document.getElementById('generateTextBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim();if(!idea&&expertStyleMode!=='custom'){alert('Напиши идею для трека');return;}if(expertStyleMode==='custom'&&!getCustomDescription()){alert('Опиши желаемое звучание своими словами или переключись на режим «Списки»');return;}if(!idea&&expertStyleMode==='custom')idea=getCustomDescription();currentIdea=idea;var btn=document.getElementById('generateTextBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер анализирует идею...';document.getElementById('producerPlanBlock').classList.add('hidden');try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';}else{var err=await res.json().catch(function(){return{}});if(!instrumentalMode){currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;showToast('Текст сгенерирован, но план стиля не готов — нажмите «Создать песню» ещё раз');}else{currentGeneratedLyrics='';currentProduction=null;alert((err&&err.detail)||'Не удалось подготовить инструментал');return;}}catch(e){if(!instrumentalMode){currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;showToast('Текст сгенерирован без плана — при создании песни план будет собран автоматически');}else{currentGeneratedLyrics='';currentProduction=null;alert('Ошибка подготовки инструментала');return;}}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';if(instrumentalMode){document.getElementById('lyricsBlock').classList.add('hidden');document.getElementById('step3Block').classList.remove('hidden');}else{document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;document.getElementById('lyricsBlock').classList.remove('hidden');document.getElementById('step3Block').classList.remove('hidden');}});
+document.getElementById('generateTextBtn').addEventListener('click',async function(){
+    var idea=document.getElementById('ideaInput').value.trim();
+    if(!idea&&expertStyleMode!=='custom'){alert('Напиши идею для трека');return;}
+    if(expertStyleMode==='custom'&&!getCustomDescription()){alert('Опиши желаемое звучание своими словами или переключись на режим «Списки»');return;}
+    if(!idea&&expertStyleMode==='custom')idea=getCustomDescription();
+    currentIdea=idea;
+    var btn=document.getElementById('generateTextBtn');
+    btn.disabled=true;
+    btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер анализирует идею...';
+    document.getElementById('producerPlanBlock').classList.add('hidden');
+    try{
+        var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});
+        if(res.ok){
+            var data=await res.json();
+            currentProduction=data;
+            currentGeneratedLyrics=data.lyrics||'';
+        }else{
+            var err=await res.json().catch(function(){return{};});
+            if(!instrumentalMode){
+                currentGeneratedLyrics=await generateLyrics(idea);
+                currentProduction=null;
+                showToast('Текст сгенерирован, но план стиля не готов — нажмите «Создать песню» ещё раз');
+            }else{
+                currentGeneratedLyrics='';
+                currentProduction=null;
+                alert((err&&err.detail)||'Не удалось подготовить инструментал');
+                btn.disabled=false;
+                btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
+                return;
+            }
+        }
+    }catch(e){
+        if(!instrumentalMode){
+            currentGeneratedLyrics=await generateLyrics(idea);
+            currentProduction=null;
+            showToast('Текст сгенерирован без плана — при создании песни план будет собран автоматически');
+        }else{
+            currentGeneratedLyrics='';
+            currentProduction=null;
+            alert('Ошибка подготовки инструментала');
+            btn.disabled=false;
+            btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
+            return;
+        }
+    }
+    btn.disabled=false;
+    btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
+    if(instrumentalMode){
+        document.getElementById('lyricsBlock').classList.add('hidden');
+        document.getElementById('step3Block').classList.remove('hidden');
+    }else{
+        document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;
+        document.getElementById('lyricsEditor').value=currentGeneratedLyrics;
+        document.getElementById('lyricsBlock').classList.remove('hidden');
+        document.getElementById('step3Block').classList.remove('hidden');
+    }
+});
 
 document.getElementById('regenLyricsBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;var lyrics=await generateLyrics(idea);currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
 
