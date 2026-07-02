@@ -12,7 +12,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.3.1"
+EXPECTED_VERSION="2.3.2"
 
 strip_crlf() {
   local f="$1"
@@ -50,7 +50,7 @@ ensure_venv() {
 echo "=== SongForge deploy ==="
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
-mkdir -p backend/services backend/utils backend/database scripts
+mkdir -p backend/services backend/utils backend/database scripts assets
 
 echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
@@ -61,6 +61,17 @@ if [ ! -s SongForgeLogo.png ]; then
   echo "ОШИБКА: SongForgeLogo.png не скачан"
   exit 1
 fi
+
+download assets/logo.svg "$BASE/assets/logo.svg"
+download assets/logo-64.png "$BASE/assets/logo-64.png"
+download assets/logo-128.png "$BASE/assets/logo-128.png"
+download assets/logo-256.png "$BASE/assets/logo-256.png"
+for f in assets/logo.svg assets/logo-64.png assets/logo-128.png assets/logo-256.png; do
+  if [ ! -s "$f" ]; then
+    echo "ОШИБКА: не скачан $f"
+    exit 1
+  fi
+done
 
 download backend/app.py "$BASE/backend/app.py"
 download backend/models.py "$BASE/backend/models.py"

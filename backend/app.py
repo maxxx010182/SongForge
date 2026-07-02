@@ -57,7 +57,7 @@ cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 
-app = FastAPI(title="SongForge", version="2.3.1")
+app = FastAPI(title="SongForge", version="2.3.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,7 +67,10 @@ app.add_middleware(
 )
 
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+ASSETS_DIR = ROOT_DIR / "assets"
+ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
 
 def _session_cookie_kwargs() -> dict:
@@ -179,7 +182,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.3.1"}
+    return {"ok": True, "service": "SongForge", "version": "2.3.2"}
 
 
 @app.get("/api/me", response_model=MeResponse)
