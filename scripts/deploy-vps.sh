@@ -1,6 +1,11 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
+# deploy-script-version: 3
 # Запуск: bash scripts/deploy-vps.sh
+# Скачать (обход кэша raw.githubusercontent.com):
+# curl -fsSL -H "Accept: application/vnd.github.raw" \
+#   "https://api.github.com/repos/maxxx010182/SongForge/contents/scripts/deploy-vps.sh?ref=main" \
+#   -o scripts/deploy-vps.sh
 
 set -e
 
