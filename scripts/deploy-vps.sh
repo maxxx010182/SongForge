@@ -8,17 +8,26 @@ BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
 EXPECTED_VERSION="2.1.4"
+SELF="$0"
 
 echo "=== SongForge deploy ==="
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
 mkdir -p backend/services backend/utils backend/database scripts
 
-echo "[0/5] Обновляем скрипт деплоя..."
-wget -q -O scripts/deploy-vps.sh "$BASE/scripts/deploy-vps.sh$CACHE_BUST"
-chmod +x scripts/deploy-vps.sh
+echo "[0/6] Обновляем скрипт деплоя..."
+TMP_SCRIPT="$(mktemp)"
+wget -q -O "$TMP_SCRIPT" "$BASE/scripts/deploy-vps.sh$CACHE_BUST"
+chmod +x "$TMP_SCRIPT"
+if ! cmp -s "$TMP_SCRIPT" scripts/deploy-vps.sh 2>/dev/null; then
+  mv "$TMP_SCRIPT" scripts/deploy-vps.sh
+  chmod +x scripts/deploy-vps.sh
+  echo "Скрипт деплоя обновлён — перезапуск..."
+  exec bash scripts/deploy-vps.sh "$@"
+fi
+rm -f "$TMP_SCRIPT"
 
-echo "[1/5] Скачиваем файлы с GitHub..."
+echo "[1/6] Скачиваем файлы с GitHub..."
 wget -q -O app.py "$BASE/app.py$CACHE_BUST"
 wget -q -O index.html "$BASE/index.html$CACHE_BUST"
 
@@ -56,10 +65,10 @@ for f in \
   fi
 done
 
-echo "[2/5] Очищаем Python cache..."
+echo "[2/6] Очищаем Python cache..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
-echo "[3/5] Проверяем Python..."
+echo "[3/6] Проверяем Python..."
 ./venv/bin/python -c "
 from backend.database.db import init_db
 from backend.services.guest_service import GuestService
@@ -77,19 +86,40 @@ print('import OK')
 print('app version:', app.version)
 "
 
-echo "[4/5] Перезапускаем PM2..."
+echo "[4/6] Освобождаем порт 8000 (старые процессы вне PM2)..."
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k 8000/tcp 2>/dev/null || true
+elif command -v lsof >/dev/null 2>&1; then
+  for pid in $(lsof -t -i:8000 2>/dev/null); do
+    kill "$pid" 2>/dev/null || true
+  done
+else
+  pkill -f "${DIR}/app.py" 2>/dev/null || true
+  pkill -f "python.*SongForge/app.py" 2>/dev/null || true
+fi
+sleep 2
+
+echo "[5/6] Перезапускаем PM2..."
 pm2 delete songforge 2>/dev/null || true
 pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
 pm2 save
 
-echo "[5/5] Проверяем health..."
+echo "[6/6] Проверяем health..."
 sleep 3
 HEALTH="$(curl -s http://127.0.0.1:8000/api/health)"
 echo "$HEALTH"
 if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
-  echo "ОШИБКА: ожидалась версия $EXPECTED_VERSION"
+  echo ""
+  echo "ОШИБКА: live-версия не $EXPECTED_VERSION (файлы обновлены, но порт 8000 отвечает старым процессом)."
+  echo "Кто слушает 8000:"
+  (ss -lptn 'sport = :8000' 2>/dev/null || netstat -tlnp 2>/dev/null | grep 8000 || true)
+  echo ""
+  echo "Попробуйте вручную:"
+  echo "  fuser -k 8000/tcp; sleep 2; pm2 restart songforge"
+  echo "  curl -s http://127.0.0.1:8000/api/health"
   pm2 logs songforge --lines 30 --nostream
   exit 1
 fi
+
 echo ""
-echo "=== Готово! Откройте http://195.19.20.245:8000/ ==="
+echo "=== Готово! v$EXPECTED_VERSION — http://195.19.20.245:8000/ ==="
