@@ -12,7 +12,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.3.2"
+EXPECTED_VERSION="2.3.3"
 
 strip_crlf() {
   local f="$1"
@@ -62,11 +62,10 @@ if [ ! -s SongForgeLogo.png ]; then
   exit 1
 fi
 
-download assets/logo.svg "$BASE/assets/logo.svg"
-download assets/logo-64.png "$BASE/assets/logo-64.png"
-download assets/logo-128.png "$BASE/assets/logo-128.png"
-download assets/logo-256.png "$BASE/assets/logo-256.png"
-for f in assets/logo.svg assets/logo-64.png assets/logo-128.png assets/logo-256.png; do
+download assets/logo-header.png "$BASE/assets/logo-header.png"
+download assets/logo-header@2x.png "$BASE/assets/logo-header@2x.png"
+download assets/logo-gen.png "$BASE/assets/logo-gen.png"
+for f in assets/logo-header.png assets/logo-header@2x.png assets/logo-gen.png; do
   if [ ! -s "$f" ]; then
     echo "ОШИБКА: не скачан $f"
     exit 1

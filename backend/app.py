@@ -57,7 +57,7 @@ cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 
-app = FastAPI(title="SongForge", version="2.3.2")
+app = FastAPI(title="SongForge", version="2.3.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -182,7 +182,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.3.2"}
+    return {"ok": True, "service": "SongForge", "version": "2.3.3"}
 
 
 @app.get("/api/me", response_model=MeResponse)

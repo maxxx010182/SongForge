@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СоздайСвоюПесню — Создай свою песню за минуту</title>
-    <link rel="icon" href="/assets/logo-64.png?v=5" type="image/png">
+    <link rel="icon" href="/assets/logo-header.png?v=6" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -33,10 +33,8 @@
         .step-badge.done{background:#eab308;color:#09090b;border-color:#eab308}
         @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(234,179,8,0.5)}70%{box-shadow:0 0 0 14px rgba(234,179,8,0)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
         .pulse-logo{animation:pulse-ring 1.4s infinite}
-        .logo-slot{position:relative;width:100%;height:100%}
-        .logo-slot .logo-fallback{display:none;width:100%;height:100%;align-items:center;justify-content:center;background:linear-gradient(135deg,#facc15,#f97316);color:#0a0a0a}
-        .logo-slot.is-fallback .logo-img{display:none}
-        .logo-slot.is-fallback .logo-fallback{display:flex}
+        .logo-slot{position:relative;width:100%;height:100%;background:#0a0a0a}
+        .logo-slot .logo-img{display:block;width:100%;height:100%;object-fit:contain}
         .chat-bubble-user{background:rgba(234,179,8,0.12);border-radius:1.2rem 1.2rem 0.2rem 1.2rem}
         .chat-bubble-ai{background:rgba(255,255,255,0.05);border-radius:1.2rem 1.2rem 1.2rem 0.2rem}
         .chat-typing span{display:inline-block;width:6px;height:6px;background:#eab308;border-radius:50%;margin:0 2px;animation:tdot 1.2s infinite}
@@ -121,8 +119,7 @@
 <header class="border-b border-zinc-800 py-5 flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-3">
         <div id="headerLogo" class="logo-slot w-9 h-9 rounded-2xl overflow-hidden cursor-pointer shrink-0 ring-1 ring-yellow-400/20">
-            <img src="/assets/logo-128.png?v=5" alt="СоздайСвоюПесню" class="logo-img w-full h-full object-contain" width="36" height="36" decoding="async" onload="logoLoaded(this)" onerror="logoFallback(this)">
-            <div class="logo-fallback" aria-hidden="true"><img src="/assets/logo.svg?v=5" alt="" class="w-full h-full object-contain"></div>
+            <img src="/assets/logo-header.png?v=6" srcset="/assets/logo-header.png?v=6 1x, /assets/logo-header@2x.png?v=6 2x" alt="СоздайСвоюПесню" class="logo-img" width="36" height="36" decoding="async" fetchpriority="high">
         </div>
         <span class="font-title text-3xl font-semibold tracking-tighter neon-text text-yellow-400">СоздайСвоюПесню</span>
     </div>
@@ -316,8 +313,7 @@
         <div id="generatingBlock" class="glass-panel p-8 mb-6 hidden text-center">
             <div class="flex justify-center mb-6">
                 <div id="genLogo" class="logo-slot w-16 h-16 rounded-3xl overflow-hidden pulse-logo ring-2 ring-yellow-400/30">
-                    <img src="/assets/logo-256.png?v=5" alt="" class="logo-img w-full h-full object-contain" width="64" height="64" decoding="async" onload="logoLoaded(this)" onerror="logoFallback(this)">
-                    <div class="logo-fallback" aria-hidden="true"><img src="/assets/logo.svg?v=5" alt="" class="w-full h-full object-contain"></div>
+                    <img src="/assets/logo-gen.png?v=6" alt="" class="logo-img" width="64" height="64" decoding="async">
                 </div>
             </div>
             <div id="generatingMsg" class="text-lg font-semibold mb-2">Подбираем биты...</div>
@@ -1048,9 +1044,7 @@ function setPlayerCover(url){var img=document.getElementById('playerCover');if(!
 var genMsgs=[["Продюсер анализирует идею...","Подбираем оптимальные параметры"],["Создаём твой лучший трек...","Обычно 1–3 минуты"],["Создаём твой лучший трек...","Готовим 2 варианта песни"],["Создаём твой лучший трек...","Финальная обработка микса..."],["Создаём твой лучший трек...","Почти готово — ещё немного"]];
 var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня — около 300 слов текста","🎤 Музыка активирует те же зоны мозга, что и вкусная еда","🥁 Сердце подстраивается под ритм — это энтрейнмент","🎹 Бетховен писал шедевры, будучи почти глухим","⚡ Студия анализирует стиль тысяч хитов для твоей песни","🌍 Музыка — универсальный язык культур","🎼 Продюсер подбирает темп и инструменты под твою идею","🎧 Мы создаём два варианта — выбери лучший","🎶 Рифма и ритм усиливают запоминаемость мелодии","🎙 Структура [Verse]/[Chorus] помогает песне звучать цельно","🔊 Коммерческий микс — отдельный этап после записи","🌙 Lo-Fi родился из сэмплов старых джазовых пластинок","🥁 BPM задаёт настроение не хуже мелодии","🎹 Синтезаторы в поп-музыке — с конца 60-х","🎤 Дуэт мужской и женский вокал — отдельная настройка в студии","📝 Текст песни пишется отдельно от аранжировки","🎵 1 нота = 2 полных варианта трека навсегда","🌊 Ambient часто используют частоты ниже 200 Гц для «объёма»","🎸 Электрогитара в роке обычно записывают два дубля в стерео","🎤 Припев обычно повторяется 3–4 раза — так песня запоминается","🎹 Минор чаще ассоциируется с грустью, мажор — с радостью","⚡ Написание текста бесплатно — платите только за полные треки","🎧 Превью всегда 30 секунд — полная версия после покупки","🎶 Продюсер подбирает жанр, BPM и атмосферу из вашей идеи","🎵 Первые секунды трека решают, дослушают ли до конца","🎤 Бэк-вокал и гармонии добавляют «радиозвучание»","🎹 У каждого жанра свой типичный диапазон BPM","🌟 Скоро — публикация треков и голосование в сообществе"];
 var funFactTimer=null;var genStartTime=0;var lastFunFactIdx=-1;var genApiPhase='idle';
-function logoFallback(img){if(!img)return;var slot=img.closest('.logo-slot');if(slot)slot.classList.add('is-fallback');}
-function logoLoaded(img){if(!img)return;var slot=img.closest('.logo-slot');if(slot)slot.classList.remove('is-fallback');}
-function initLogoImages(){document.querySelectorAll('.logo-slot .logo-img').forEach(function(img){if(!img.complete||img.naturalWidth===0)logoFallback(img);else logoLoaded(img);});}
+
 function humanizeGenError(detail,status){var d=String(detail||'');if(/не дождалась|таймаут|timeout|не ответил|попробуйте ещё/i.test(d))return d+' Если списалась пробная попытка или нота — обновите страницу: баланс должен вернуться.';if(status===0||/Failed to fetch|NetworkError|сеть/i.test(d))return 'Пропало соединение с интернетом. Проверьте сеть и попробуйте снова.';if(/Превышено время ожидания/i.test(d))return 'Создание заняло слишком много времени. Попробуйте ещё раз — обычно со второй попытки получается.';return d||'Что-то пошло не так. Попробуйте создать песню ещё раз.';}
 function showGenerationError(msg){var el=document.getElementById('genErrorText');if(el)el.textContent=humanizeGenError(msg);document.getElementById('genErrorModal').classList.remove('hidden');}
 function closeGenErrorModal(){document.getElementById('genErrorModal').classList.add('hidden');}
@@ -1415,7 +1409,7 @@ document.getElementById('authTabTelegram').addEventListener('click',function(){s
 document.getElementById('authEmailSubmitBtn').addEventListener('click',submitAuthEmail);
 document.getElementById('logoutBtn').addEventListener('click',logoutUser);
 
-initLogoImages();loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
+loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 </script>
 </body>
 </html>
