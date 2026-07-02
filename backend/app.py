@@ -54,7 +54,7 @@ auth_service = AuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
 
-app = FastAPI(title="SongForge", version="2.2.1")
+app = FastAPI(title="SongForge", version="2.2.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -117,9 +117,17 @@ async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
 
 
+@app.get("/SongForgeLogo.png")
+async def get_logo():
+    path = ROOT_DIR / "SongForgeLogo.png"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Logo not found")
+    return FileResponse(path)
+
+
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.2.1"}
+    return {"ok": True, "service": "SongForge", "version": "2.2.2"}
 
 
 @app.get("/api/me", response_model=MeResponse)

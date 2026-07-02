@@ -12,7 +12,7 @@ set -e
 BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.2.1"
+EXPECTED_VERSION="2.2.2"
 
 strip_crlf() {
   local f="$1"
@@ -56,6 +56,7 @@ echo "[1/7] Скачиваем файлы с GitHub..."
 download app.py "$BASE/app.py"
 download requirements.txt "$BASE/requirements.txt"
 download index.html "$BASE/index.html"
+download SongForgeLogo.png "$BASE/SongForgeLogo.png"
 
 download backend/app.py "$BASE/backend/app.py"
 download backend/models.py "$BASE/backend/models.py"
