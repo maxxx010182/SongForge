@@ -8,51 +8,51 @@ BASE="https://raw.githubusercontent.com/maxxx010182/SongForge/main"
 CACHE_BUST="?$(date +%s)"
 DIR="${HOME}/SongForge"
 EXPECTED_VERSION="2.1.5"
-SELF="$0"
+
+strip_crlf() {
+  local f="$1"
+  [ -f "$f" ] || return 0
+  sed -i 's/\r$//' "$f" 2>/dev/null || tr -d '\r' <"$f" >"$f.tmp" && mv -f "$f.tmp" "$f"
+}
+
+download() {
+  local out="$1"
+  local url="$2"
+  wget -q -O "$out" "${url}${CACHE_BUST}" || curl -fsSL -o "$out" "${url}${CACHE_BUST}"
+  strip_crlf "$out"
+}
 
 echo "=== SongForge deploy ==="
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
 mkdir -p backend/services backend/utils backend/database scripts
 
-echo "[0/6] Обновляем скрипт деплоя..."
-TMP_SCRIPT="$(mktemp)"
-wget -q -O "$TMP_SCRIPT" "$BASE/scripts/deploy-vps.sh$CACHE_BUST"
-chmod +x "$TMP_SCRIPT"
-if ! cmp -s "$TMP_SCRIPT" scripts/deploy-vps.sh 2>/dev/null; then
-  mv "$TMP_SCRIPT" scripts/deploy-vps.sh
-  chmod +x scripts/deploy-vps.sh
-  echo "Скрипт деплоя обновлён — перезапуск..."
-  exec bash scripts/deploy-vps.sh "$@"
-fi
-rm -f "$TMP_SCRIPT"
-
 echo "[1/6] Скачиваем файлы с GitHub..."
-wget -q -O app.py "$BASE/app.py$CACHE_BUST"
-wget -q -O index.html "$BASE/index.html$CACHE_BUST"
+download app.py "$BASE/app.py"
+download index.html "$BASE/index.html"
 
-wget -q -O backend/app.py "$BASE/backend/app.py$CACHE_BUST"
-wget -q -O backend/models.py "$BASE/backend/models.py$CACHE_BUST"
-wget -q -O backend/settings.py "$BASE/backend/settings.py$CACHE_BUST"
-wget -q -O backend/logger.py "$BASE/backend/logger.py$CACHE_BUST"
-wget -q -O backend/utils/text.py "$BASE/backend/utils/text.py$CACHE_BUST"
-wget -q -O backend/database/db.py "$BASE/backend/database/db.py$CACHE_BUST"
-wget -q -O backend/services/ai_producer.py "$BASE/backend/services/ai_producer.py$CACHE_BUST"
-wget -q -O backend/services/prompt_builder.py "$BASE/backend/services/prompt_builder.py$CACHE_BUST"
-wget -q -O backend/services/apipass_client.py "$BASE/backend/services/apipass_client.py$CACHE_BUST"
-wget -q -O backend/services/ai_music_analyst.py "$BASE/backend/services/ai_music_analyst.py$CACHE_BUST"
-wget -q -O backend/services/ai_prompt_composer.py "$BASE/backend/services/ai_prompt_composer.py$CACHE_BUST"
-wget -q -O backend/services/reference_translator.py "$BASE/backend/services/reference_translator.py$CACHE_BUST"
-wget -q -O backend/services/style_enforcer.py "$BASE/backend/services/style_enforcer.py$CACHE_BUST"
-wget -q -O backend/services/plan_overrides.py "$BASE/backend/services/plan_overrides.py$CACHE_BUST"
-wget -q -O backend/services/genre_resolver.py "$BASE/backend/services/genre_resolver.py$CACHE_BUST"
-wget -q -O backend/services/idea_parser.py "$BASE/backend/services/idea_parser.py$CACHE_BUST"
-wget -q -O backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py$CACHE_BUST"
-wget -q -O backend/services/history.py "$BASE/backend/services/history.py$CACHE_BUST"
-wget -q -O backend/services/guest_service.py "$BASE/backend/services/guest_service.py$CACHE_BUST"
-wget -q -O backend/services/auth_service.py "$BASE/backend/services/auth_service.py$CACHE_BUST"
-wget -q -O backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py$CACHE_BUST"
-wget -q -O backend/services/consultant.py "$BASE/backend/services/consultant.py$CACHE_BUST"
+download backend/app.py "$BASE/backend/app.py"
+download backend/models.py "$BASE/backend/models.py"
+download backend/settings.py "$BASE/backend/settings.py"
+download backend/logger.py "$BASE/backend/logger.py"
+download backend/utils/text.py "$BASE/backend/utils/text.py"
+download backend/database/db.py "$BASE/backend/database/db.py"
+download backend/services/ai_producer.py "$BASE/backend/services/ai_producer.py"
+download backend/services/prompt_builder.py "$BASE/backend/services/prompt_builder.py"
+download backend/services/apipass_client.py "$BASE/backend/services/apipass_client.py"
+download backend/services/ai_music_analyst.py "$BASE/backend/services/ai_music_analyst.py"
+download backend/services/ai_prompt_composer.py "$BASE/backend/services/ai_prompt_composer.py"
+download backend/services/reference_translator.py "$BASE/backend/services/reference_translator.py"
+download backend/services/style_enforcer.py "$BASE/backend/services/style_enforcer.py"
+download backend/services/plan_overrides.py "$BASE/backend/services/plan_overrides.py"
+download backend/services/genre_resolver.py "$BASE/backend/services/genre_resolver.py"
+download backend/services/idea_parser.py "$BASE/backend/services/idea_parser.py"
+download backend/services/yandex_client.py "$BASE/backend/services/yandex_client.py"
+download backend/services/history.py "$BASE/backend/services/history.py"
+download backend/services/guest_service.py "$BASE/backend/services/guest_service.py"
+download backend/services/auth_service.py "$BASE/backend/services/auth_service.py"
+download backend/services/cabinet_service.py "$BASE/backend/services/cabinet_service.py"
+download backend/services/consultant.py "$BASE/backend/services/consultant.py"
 
 for f in \
   backend/services/genre_resolver.py \
@@ -86,7 +86,7 @@ print('import OK')
 print('app version:', app.version)
 "
 
-echo "[4/6] Освобождаем порт 8000 (старые процессы вне PM2)..."
+echo "[4/6] Освобождаем порт 8000..."
 if command -v fuser >/dev/null 2>&1; then
   fuser -k 8000/tcp 2>/dev/null || true
 elif command -v lsof >/dev/null 2>&1; then
@@ -95,7 +95,6 @@ elif command -v lsof >/dev/null 2>&1; then
   done
 else
   pkill -f "${DIR}/app.py" 2>/dev/null || true
-  pkill -f "python.*SongForge/app.py" 2>/dev/null || true
 fi
 sleep 2
 
@@ -110,16 +109,15 @@ HEALTH="$(curl -s http://127.0.0.1:8000/api/health)"
 echo "$HEALTH"
 if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
   echo ""
-  echo "ОШИБКА: live-версия не $EXPECTED_VERSION (файлы обновлены, но порт 8000 отвечает старым процессом)."
-  echo "Кто слушает 8000:"
+  echo "ОШИБКА: ожидалась версия $EXPECTED_VERSION"
   (ss -lptn 'sport = :8000' 2>/dev/null || netstat -tlnp 2>/dev/null | grep 8000 || true)
-  echo ""
-  echo "Попробуйте вручную:"
-  echo "  fuser -k 8000/tcp; sleep 2; pm2 restart songforge"
-  echo "  curl -s http://127.0.0.1:8000/api/health"
   pm2 logs songforge --lines 30 --nostream
   exit 1
 fi
+
+echo "[+] Обновляем скрипт деплоя на следующий раз..."
+download scripts/deploy-vps.sh "$BASE/scripts/deploy-vps.sh"
+chmod +x scripts/deploy-vps.sh
 
 echo ""
 echo "=== Готово! v$EXPECTED_VERSION — http://195.19.20.245:8000/ ==="
