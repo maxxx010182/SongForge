@@ -269,6 +269,42 @@
 
 ---
 
+## Внешний аудит (июль 2026) — что применить
+
+> Источник: сторонний обзор по `app.py` + `requirements.txt`. Часть выводов **устарела** — проект уже модульный, с polling, auth, деплоем.
+
+### Уже есть (аудит не учёл)
+
+- [x] Модули `backend/services/`, `models.py`, `settings.py`, `database/`
+- [x] Долгая генерация: `task_id` + `GET /api/music/status/{task_id}` (не синхронно в эндпоинте)
+- [x] Фронтенд `index.html`, auth, фонотека, оплата (stub)
+- [x] Лимит trial / guest quota
+- [x] Деплой: `scripts/update-now.sh`, `DEPLOY-NOW.txt`
+- [x] Документация: `SONGFORGE-КОНТЕКСТ.txt`, `docs/ARCHITECTURE.md`
+
+### Сделано по аудиту (июль 2026)
+
+- [x] `.env.example` — шаблон переменных
+- [x] `README.md` — краткое описание и запуск
+- [x] Smoke-тесты `tests/test_smoke.py` + `requirements-dev.txt`
+- [x] `PORT` из env в корневом `app.py`
+
+### Сейчас / перед трафиком
+
+- [ ] Rate limiting на `/api/create-song`, `/api/music/start` (slowapi или Redis)
+- [ ] Расширить тесты: purchase, download с сессией
+- [ ] `httpx` вместо `requests` в hot-path — при росте нагрузки
+
+### Позже (не перегружать MVP)
+
+- [ ] Celery + Redis — только при сотнях одновременных генераций
+- [ ] GitHub Actions (lint + pytest)
+- [ ] Docker / docker-compose
+- [ ] Разбить `backend/app.py` на `routes/` — рефакторинг по желанию
+- [ ] CONTRIBUTING.md — не нужно (закрытый коммерческий продукт)
+
+---
+
 ## Не в scope ближайшей правки (напоминание)
 
 - Реальная отправка email-кодов (SMTP) — отдельная задача

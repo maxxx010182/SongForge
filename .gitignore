@@ -8,7 +8,9 @@ venv/
 
 # Environment variables
 .env
-.env.*
+.env.local
+.env.*.local
+!.env.example
 
 # Private files
 private/
