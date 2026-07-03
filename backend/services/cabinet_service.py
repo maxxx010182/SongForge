@@ -225,6 +225,114 @@ class CabinetService:
             "message": "Лайк добавлен",
         }
 
+    def unlike_published_track(self, *, user_id: str, library_id: str) -> dict:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT id FROM user_library
+                WHERE id = ? AND published_at IS NOT NULL
+                """,
+                (library_id,),
+            ).fetchone()
+            if not row:
+                raise ValueError("Публичный трек не найден")
+
+            cur = conn.execute(
+                """
+                DELETE FROM track_likes
+                WHERE user_id = ? AND library_id = ?
+                """,
+                (user_id, library_id),
+            )
+            likes = self._sync_library_likes_count(conn, library_id)
+            removed = cur.rowcount > 0
+        return {
+            "success": True,
+            "likes": likes,
+            "liked": False,
+            "already_liked": False,
+            "message": "Лайк отменён" if removed else "Лайк не был поставлен",
+        }
+
+    def list_track_comments(self, *, library_id: str, limit: int = 50) -> dict:
+        limit = max(1, min(limit, 100))
+        with get_connection() as conn:
+            published = conn.execute(
+                """
+                SELECT id FROM user_library
+                WHERE id = ? AND published_at IS NOT NULL
+                """,
+                (library_id,),
+            ).fetchone()
+            if not published:
+                raise ValueError("Публичный трек не найден")
+
+            rows = conn.execute(
+                f"""
+                SELECT tc.id, tc.text, tc.created_at, u.display_name
+                FROM track_comments tc
+                LEFT JOIN users u ON u.id = tc.user_id
+                WHERE tc.library_id = ?
+                ORDER BY tc.created_at DESC
+                LIMIT {limit}
+                """,
+                (library_id,),
+            ).fetchall()
+            total = conn.execute(
+                "SELECT COUNT(*) AS c FROM track_comments WHERE library_id = ?",
+                (library_id,),
+            ).fetchone()["c"]
+        items = [
+            {
+                "id": r["id"],
+                "text": r["text"],
+                "author_name": (r["display_name"] or "").strip() or "Аноним",
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ]
+        return {"items": items, "total": int(total)}
+
+    def add_track_comment(
+        self, *, user_id: str, library_id: str, text: str
+    ) -> dict:
+        body = (text or "").strip()
+        if len(body) < 2:
+            raise ValueError("Комментарий слишком короткий")
+        if len(body) > 500:
+            raise ValueError("Комментарий не длиннее 500 символов")
+
+        with get_connection() as conn:
+            published = conn.execute(
+                """
+                SELECT id FROM user_library
+                WHERE id = ? AND published_at IS NOT NULL
+                """,
+                (library_id,),
+            ).fetchone()
+            if not published:
+                raise ValueError("Публичный трек не найден")
+
+            user = conn.execute(
+                "SELECT display_name FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            comment_id = str(uuid.uuid4())
+            now = utc_now()
+            conn.execute(
+                """
+                INSERT INTO track_comments (id, library_id, user_id, text, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (comment_id, library_id, user_id, body, now),
+            )
+        return {
+            "id": comment_id,
+            "text": body,
+            "author_name": (user["display_name"] or "").strip() or "Аноним",
+            "created_at": now,
+        }
+
     def list_explore(self, *, limit: int = 50, user_id: str | None = None) -> list[dict]:
         limit = max(1, min(limit, 100))
         with get_connection() as conn:
@@ -239,6 +347,11 @@ class CabinetService:
                         FROM track_likes tl
                         WHERE tl.library_id = ul.id
                     ) AS likes_count,
+                    (
+                        SELECT COUNT(*)
+                        FROM track_comments tc
+                        WHERE tc.library_id = ul.id
+                    ) AS comment_count,
                     CASE
                         WHEN ? IS NOT NULL AND EXISTS (
                             SELECT 1 FROM track_likes tl2
@@ -260,6 +373,7 @@ class CabinetService:
         author = (row["display_name"] or "").strip() or "Аноним"
         likes = row["likes_count"] if "likes_count" in row.keys() else row["likes"]
         liked = bool(row["liked_by_me"]) if "liked_by_me" in row.keys() else False
+        comments = row["comment_count"] if "comment_count" in row.keys() else 0
         return {
             "id": row["id"],
             "title": row["title"] or "Без названия",
@@ -272,6 +386,7 @@ class CabinetService:
             "author_avatar_url": row["avatar_url"],
             "listen_url": f"/api/explore/{row['id']}/listen",
             "liked_by_me": liked,
+            "comment_count": int(comments or 0),
         }
 
     def link_generation_to_user(self, *, production_id: str, user_id: str) -> None:

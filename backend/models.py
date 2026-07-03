@@ -274,6 +274,23 @@ class ExploreItem(BaseModel):
     author_avatar_url: str | None = None
     listen_url: str = ""
     liked_by_me: bool = False
+    comment_count: int = 0
+
+
+class TrackCommentItem(BaseModel):
+    id: str
+    text: str
+    author_name: str = "Аноним"
+    created_at: str = ""
+
+
+class TrackCommentCreateRequest(BaseModel):
+    text: str
+
+
+class TrackCommentsResponse(BaseModel):
+    items: list[TrackCommentItem] = Field(default_factory=list)
+    total: int = 0
 
 
 class LikeResponse(BaseModel):

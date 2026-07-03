@@ -48,3 +48,21 @@ def test_explore_listen_not_found():
 def test_explore_like_requires_login():
     response = client.post("/api/explore/nonexistent-id/like")
     assert response.status_code == 401
+
+
+def test_explore_unlike_requires_login():
+    response = client.delete("/api/explore/nonexistent-id/like")
+    assert response.status_code == 401
+
+
+def test_explore_comments_requires_login():
+    response = client.post(
+        "/api/explore/nonexistent-id/comments",
+        json={"text": "Тестовый комментарий"},
+    )
+    assert response.status_code == 401
+
+
+def test_explore_comments_list_not_found():
+    response = client.get("/api/explore/nonexistent-id/comments")
+    assert response.status_code == 400

@@ -37,6 +37,9 @@ from backend.models import (
     ProfileUpdateResponse,
     StyleRequest,
     TelegramAuthRequest,
+    TrackCommentCreateRequest,
+    TrackCommentsResponse,
+    TrackCommentItem,
     TrackVariant,
     UserInfo,
 )
@@ -80,7 +83,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.5.2")
+app = FastAPI(title="SongForge", version="2.5.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -205,7 +208,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.2"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.3"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -320,6 +323,51 @@ async def like_explore_track(
         )
     try:
         return cabinet.like_published_track(user_id=user["id"], library_id=library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/explore/{library_id}/like", response_model=LikeResponse)
+async def unlike_explore_track(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Лайки могут ставить только зарегистрированные пользователи",
+        )
+    try:
+        return cabinet.unlike_published_track(user_id=user["id"], library_id=library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/explore/{library_id}/comments", response_model=TrackCommentsResponse)
+async def get_track_comments(library_id: str, limit: int = 50):
+    try:
+        return cabinet.list_track_comments(library_id=library_id, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/explore/{library_id}/comments", response_model=TrackCommentItem)
+async def post_track_comment(
+    library_id: str,
+    req: TrackCommentCreateRequest,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Комментарии могут оставлять только зарегистрированные пользователи",
+        )
+    try:
+        return cabinet.add_track_comment(
+            user_id=user["id"],
+            library_id=library_id,
+            text=req.text,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
