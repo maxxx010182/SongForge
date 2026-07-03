@@ -1,7 +1,7 @@
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.logger import log
@@ -77,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.6")
+app = FastAPI(title="SongForge", version="2.4.7")
 
 app.add_middleware(
     CORSMiddleware,
@@ -202,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.6"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.7"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -520,12 +520,8 @@ async def download_full_audio(
     if not row["purchased"]:
         raise HTTPException(status_code=403, detail="Сначала купите трек")
     source = audio_access.resolve_source_url(row, variant)
-    lib_title = row["title"] or "Без названия"
-    if variant == 1:
-        lib_title = f"{lib_title} (вариант B)"
-    elif row["music_url_b"]:
-        lib_title = f"{lib_title} (вариант A)"
-    return audio_access.stream_download(source, title=lib_title)
+    log.info("Download redirect: user=%s gen=%s", user["id"], production_id)
+    return RedirectResponse(url=source, status_code=302)
 
 
 @app.get("/api/audio/download/library/{library_id}")
@@ -540,10 +536,8 @@ async def download_library_audio(
         raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
     if not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
-    return audio_access.stream_download(
-        row["audio_url"],
-        title=row["title"] or "Без названия",
-    )
+    log.info("Download redirect: user=%s library=%s", user["id"], library_id)
+    return RedirectResponse(url=row["audio_url"], status_code=302)
 
 
 @app.post("/api/dev/topup", response_model=DevTopupResponse)

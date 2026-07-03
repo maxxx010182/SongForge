@@ -1,4 +1,4 @@
-SongForge - obnovit server (v2.4.6)
+SongForge - obnovit server (v2.4.7)
 ===================================
 Vydelit ODNU stroku -> Ctrl+C -> vstaviti v terminal.
 
@@ -12,14 +12,14 @@ ssh root@195.19.20.245
 ---------------
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-V kontse: === Gotovo! v2.4.6 ===
+V kontse: === Gotovo! v2.4.7 ===
 
 
 3) Proverit (po zhelaniyu)
 --------------------------
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.4.6"
+Otvet: "version":"2.4.7"
 
 
 4) Vyiti
