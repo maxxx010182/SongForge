@@ -123,8 +123,13 @@ class AudioAccessService:
 
     @staticmethod
     def _content_disposition(filename: str) -> str:
-        ascii_name = re.sub(r"[^\w\s.-]", "", filename).strip() or "song.mp3"
-        encoded = quote(filename)
+        # Starlette encodes headers as latin-1 — only ASCII in filename="
+        ascii_name = re.sub(r"[^A-Za-z0-9._-]", "_", filename).strip("._")
+        if not ascii_name.lower().endswith(".mp3"):
+            ascii_name = f"{ascii_name}.mp3" if ascii_name else "song.mp3"
+        if not ascii_name:
+            ascii_name = "song.mp3"
+        encoded = quote(filename, safe="")
         return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
     def stream_download(self, source_url: str, *, title: str) -> StreamingResponse:
