@@ -77,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.1")
+app = FastAPI(title="SongForge", version="2.4.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -202,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.1"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.2"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -670,6 +670,58 @@ async def start_music(
         producer.clear_actor()
 
 
+def _tracks_from_db_row(row) -> list[dict]:
+    tracks: list[dict] = []
+    pairs = [
+        ("music_url_a", "image_url_a", "duration_a"),
+        ("music_url_b", "image_url_b", "duration_b"),
+    ]
+    for idx, (url_key, image_key, duration_key) in enumerate(pairs):
+        url = row[url_key] if row[url_key] else ""
+        if not url:
+            continue
+        tracks.append(
+            {
+                "id": str(idx),
+                "audio_url": url,
+                "image_url": row[image_key] or "",
+                "duration": float(row[duration_key] or 0),
+            }
+        )
+    return tracks
+
+
+def _music_status_from_db(
+    *,
+    task_id: str,
+    row,
+    production_id: str,
+) -> MusicStatusResponse | None:
+    if not row or row["status"] != "success":
+        return None
+    if not (row["music_url_a"] or row["music_url_b"]):
+        return None
+    purchased, prepaid = _generation_flags(production_id)
+    safe_tracks = _sanitize_status_tracks(
+        _tracks_from_db_row(row),
+        production_id=production_id,
+        purchased=purchased,
+        prepaid=prepaid,
+    )
+    if not safe_tracks:
+        return None
+    return MusicStatusResponse(
+        success=True,
+        task_id=task_id,
+        state="success",
+        progress_hint="Готово!",
+        tracks=safe_tracks,
+        production_id=production_id,
+        purchased=purchased,
+        prepaid=prepaid,
+    )
+
+
 def _sanitize_status_tracks(
     tracks: list[dict],
     *,
@@ -695,6 +747,7 @@ async def music_status(
     try:
         production = history.get_by_task(task_id) or {}
         production_id = production.get("id", "")
+        row = None
         if production_id:
             row = audio_access.get_generation_row(production_id)
             audio_access.assert_access(
@@ -702,6 +755,13 @@ async def music_status(
                 user_id=user["id"] if user else None,
                 guest_id=guest_id,
             )
+            cached = _music_status_from_db(
+                task_id=task_id,
+                row=row,
+                production_id=production_id,
+            )
+            if cached:
+                return cached
 
         status = apipass.get_status(task_id)
         state = status["state"]

@@ -120,7 +120,7 @@ class ApiPassClient:
             f"{APIPASS_BASE}/recordInfo",
             headers={"Authorization": f"Bearer {APIPASS_API_KEY}"},
             params={"taskId": task_id},
-            timeout=20,
+            timeout=45,
         )
         response.raise_for_status()
         inner = response.json().get("data", {})
