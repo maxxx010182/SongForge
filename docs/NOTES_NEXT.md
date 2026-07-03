@@ -23,11 +23,12 @@
 
 **Причина:** `showGenerating()` вызывался до запроса; при 403 `handleGuestLimitError()` бросал исключение **до** `hideGenerating()`.
 
-**Сделано (v2.5.8):**
-- [x] При 403 — сначала `hideGenerating()`, потом модалка оплаты
-- [x] Проверка баланса **до** показа экрана генерации (`blockSongGenerationIfNeeded`)
-- [x] При возврате на вкладку «Студия» — сброс «зависшего» UI без `currentTaskId` (`resetStaleGeneratingUI`)
-- [x] `hideGenerating` сбрасывает `genApiPhase` при ошибке
+**Сделано (v2.5.8+):**
+- [x] При 0 нот (и без пробной) — **генерация не стартует**: ни запрос, ни экран ожидания (`blockSongGenerationIfNeeded` + блок в `showGenerating`)
+- [x] Кнопки «Создать песню» неактивны, пока нельзя генерировать (`updateStudioGenerateButtons`)
+- [x] При 403 с сервера — сначала `hideGenerating()`, потом оплата
+- [x] `resetStaleGeneratingUI` — только страховка для старых сессий / если UI уже успел «зависнуть»
+- [x] Исключение: **1 пробная генерация** на аккаунт разрешена при 0 нот (по продукту)
 
 **Файл:** `index.html` — `runMusicGeneration`, `createSongExpert`, `switchToView`
 
