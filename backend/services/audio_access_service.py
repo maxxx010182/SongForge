@@ -128,13 +128,26 @@ class AudioAccessService:
         return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
     def stream_download(self, source_url: str, *, title: str) -> StreamingResponse:
+        upstream_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": "*/*",
+        }
         try:
-            upstream = requests.get(source_url, stream=True, timeout=120)
+            upstream = requests.get(
+                source_url,
+                stream=True,
+                timeout=120,
+                headers=upstream_headers,
+            )
             upstream.raise_for_status()
         except requests.RequestException as exc:
             raise HTTPException(
                 status_code=502,
-                detail="Не удалось загрузить файл",
+                detail="Не удалось загрузить файл с сервера музыки",
             ) from exc
 
         content_type = upstream.headers.get("Content-Type", "audio/mpeg")

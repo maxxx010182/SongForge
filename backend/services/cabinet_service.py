@@ -77,6 +77,13 @@ class CabinetService:
             ).fetchall()
         return [self._generation_to_history_item(r) for r in rows]
 
+    def get_library_item(self, *, user_id: str, library_id: str):
+        with get_connection() as conn:
+            return conn.execute(
+                "SELECT * FROM user_library WHERE id = ? AND user_id = ?",
+                (library_id, user_id),
+            ).fetchone()
+
     def list_library(self, user_id: str) -> list[dict]:
         with get_connection() as conn:
             rows = conn.execute(

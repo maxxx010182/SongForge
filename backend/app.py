@@ -77,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.4")
+app = FastAPI(title="SongForge", version="2.4.5")
 
 app.add_middleware(
     CORSMiddleware,
@@ -202,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.4"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.5"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -526,6 +526,24 @@ async def download_full_audio(
     elif row["music_url_b"]:
         lib_title = f"{lib_title} (вариант A)"
     return audio_access.stream_download(source, title=lib_title)
+
+
+@app.get("/api/audio/download/library/{library_id}")
+async def download_library_audio(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
+    if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    return audio_access.stream_download(
+        row["audio_url"],
+        title=row["title"] or "Без названия",
+    )
 
 
 @app.post("/api/dev/topup", response_model=DevTopupResponse)

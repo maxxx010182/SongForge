@@ -1,0 +1,35 @@
+SongForge - obnovit server
+==========================
+Fayl: C:\Users\makc0\Desktop\SongForge\DEPLOY.txt
+Otkryt cherez Provodnik ili Cursor (levaya panel). Kopirovat PO ODNOMY stroke.
+
+
+Shag 1 - podklyuchitsya
+-----------------------
+ssh root@195.19.20.245
+
+
+Shag 2 - obnovit sait
+---------------------
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+
+V kontse dolzhno byt: Gotovo! v2.4.5
+
+
+Shag 3 - proverit (po zhelaniyu)
+--------------------------------
+curl http://127.0.0.1:8000/api/health
+
+
+Shag 4 - vyyti
+--------------
+exit
+
+
+Shag 5 - v brauzere na saite
+----------------------------
+Ctrl+F5
+
+
+Sait: http://195.19.20.245:8000/
