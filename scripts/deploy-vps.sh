@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 10
+# deploy-script-version: 11
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
@@ -61,7 +61,7 @@ ensure_venv() {
   fi
 }
 
-echo "=== SongForge deploy ==="
+echo "=== SongForge deploy (deploy-script-version: 11) ==="
 mkdir -p "$DIR"
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
