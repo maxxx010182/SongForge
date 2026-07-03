@@ -1,0 +1,16 @@
+=== PODKLYUCHIT K SERVERU ===
+ssh root@195.19.20.245
+
+=== OBNOVIT SAIT ===
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+=== PROVERIT VERSIYU (dolzhno byt 2.4.6) ===
+curl http://127.0.0.1:8000/api/health
+
+=== VYITI ===
+exit
+
+=== V BRAUZERE ===
+Ctrl+F5
+
+Sait: http://195.19.20.245:8000/
