@@ -6,7 +6,7 @@
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.4.11"
+EXPECTED_VERSION="2.5.0"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {

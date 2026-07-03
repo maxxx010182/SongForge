@@ -32,3 +32,14 @@ def test_me_without_session():
     assert response.status_code == 200
     data = response.json()
     assert data["logged_in"] is False
+
+
+def test_explore_public():
+    response = client.get("/api/explore")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_explore_listen_not_found():
+    response = client.get("/api/explore/nonexistent-id/listen")
+    assert response.status_code == 404

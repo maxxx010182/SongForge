@@ -132,6 +132,28 @@ class AudioAccessService:
         encoded = quote(filename, safe="")
         return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
+    def stream_playback(self, source_url: str) -> StreamingResponse:
+        try:
+            upstream = requests.get(source_url, stream=True, timeout=60)
+            upstream.raise_for_status()
+        except requests.RequestException as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Не удалось загрузить аудио",
+            ) from exc
+
+        content_type = upstream.headers.get("Content-Type", "audio/mpeg")
+
+        def iter_body():
+            try:
+                for chunk in upstream.iter_content(chunk_size=32_768):
+                    if chunk:
+                        yield chunk
+            finally:
+                upstream.close()
+
+        return StreamingResponse(iter_body(), media_type=content_type)
+
     def stream_download(self, source_url: str, *, title: str) -> Response:
         upstream_headers = {
             "User-Agent": (

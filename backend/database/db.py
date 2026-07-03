@@ -131,6 +131,7 @@ def init_db() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_user_library_user_id ON user_library(user_id)"
         )
+        _migrate_user_library_columns(conn)
 
         conn.execute(
             """
@@ -166,6 +167,19 @@ def init_db() -> None:
             )
             """
         )
+
+def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(user_library)")}
+    if "published_at" not in existing:
+        conn.execute("ALTER TABLE user_library ADD COLUMN published_at TEXT")
+    if "likes" not in existing:
+        conn.execute(
+            "ALTER TABLE user_library ADD COLUMN likes INTEGER NOT NULL DEFAULT 0"
+        )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_user_library_published ON user_library(published_at)"
+    )
+
 
 def _migrate_users_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(users)")}

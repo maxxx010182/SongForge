@@ -107,9 +107,97 @@ class CabinetService:
                 "lyrics": r["lyrics"] or "",
                 "genre": r["genre"] or "",
                 "purchased_at": r["purchased_at"],
+                "published_at": r["published_at"],
+                "likes": int(r["likes"] or 0),
             }
             for r in rows
         ]
+
+    def publish_library_track(self, *, user_id: str, library_id: str) -> dict:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM user_library WHERE id = ? AND user_id = ?",
+                (library_id, user_id),
+            ).fetchone()
+            if not row:
+                raise ValueError("Трек не найден в фонотеке")
+            if row["published_at"]:
+                raise ValueError("Трек уже опубликован")
+            now = utc_now()
+            conn.execute(
+                "UPDATE user_library SET published_at = ? WHERE id = ?",
+                (now, library_id),
+            )
+        return {"success": True, "published_at": now, "message": "Трек опубликован"}
+
+    def unpublish_library_track(self, *, user_id: str, library_id: str) -> dict:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM user_library WHERE id = ? AND user_id = ?",
+                (library_id, user_id),
+            ).fetchone()
+            if not row:
+                raise ValueError("Трек не найден в фонотеке")
+            if not row["published_at"]:
+                raise ValueError("Трек не опубликован")
+            conn.execute(
+                "UPDATE user_library SET published_at = NULL WHERE id = ?",
+                (library_id,),
+            )
+        return {"success": True, "published_at": None, "message": "Трек снят с публикации"}
+
+    def delete_library_track(self, *, user_id: str, library_id: str) -> bool:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM user_library WHERE id = ? AND user_id = ?",
+                (library_id, user_id),
+            ).fetchone()
+            if not row:
+                raise ValueError("Трек не найден в фонотеке")
+            conn.execute("DELETE FROM user_library WHERE id = ?", (library_id,))
+        return True
+
+    def get_published_library_item(self, library_id: str):
+        with get_connection() as conn:
+            return conn.execute(
+                """
+                SELECT ul.*, u.display_name, u.avatar_url
+                FROM user_library ul
+                LEFT JOIN users u ON u.id = ul.user_id
+                WHERE ul.id = ? AND ul.published_at IS NOT NULL
+                """,
+                (library_id,),
+            ).fetchone()
+
+    def list_explore(self, *, limit: int = 50) -> list[dict]:
+        limit = max(1, min(limit, 100))
+        with get_connection() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT ul.*, u.display_name, u.avatar_url
+                FROM user_library ul
+                LEFT JOIN users u ON u.id = ul.user_id
+                WHERE ul.published_at IS NOT NULL
+                ORDER BY ul.likes DESC, ul.published_at DESC
+                LIMIT {limit}
+                """,
+            ).fetchall()
+        return [self._explore_item_from_row(r) for r in rows]
+
+    def _explore_item_from_row(self, row) -> dict:
+        author = (row["display_name"] or "").strip() or "Аноним"
+        return {
+            "id": row["id"],
+            "title": row["title"] or "Без названия",
+            "genre": row["genre"] or "",
+            "image_url": row["image_url"] or "",
+            "duration": row["duration"] or 0,
+            "likes": int(row["likes"] or 0),
+            "published_at": row["published_at"] or "",
+            "author_name": author,
+            "author_avatar_url": row["avatar_url"],
+            "listen_url": f"/api/explore/{row['id']}/listen",
+        }
 
     def link_generation_to_user(self, *, production_id: str, user_id: str) -> None:
         with get_connection() as conn:

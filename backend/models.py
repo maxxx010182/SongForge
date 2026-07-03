@@ -258,6 +258,27 @@ class LibraryItem(BaseModel):
     lyrics: str = ""
     genre: str = ""
     purchased_at: str = ""
+    published_at: str | None = None
+    likes: int = 0
+
+
+class ExploreItem(BaseModel):
+    id: str
+    title: str
+    genre: str = ""
+    image_url: str = ""
+    duration: float = 0
+    likes: int = 0
+    published_at: str = ""
+    author_name: str = "Аноним"
+    author_avatar_url: str | None = None
+    listen_url: str = ""
+
+
+class PublishResponse(BaseModel):
+    success: bool
+    published_at: str | None = None
+    message: str = ""
 
 
 class PurchaseResponse(BaseModel):

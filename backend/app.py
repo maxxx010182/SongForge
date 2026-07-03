@@ -17,8 +17,10 @@ from backend.models import (
     EmailVerifyRequest,
     FullAudioResponse,
     HistoryItem,
+    ExploreItem,
     HistoryPreviewResponse,
     LibraryItem,
+    PublishResponse,
     LyricsRequest,
     MeResponse,
     MusicRequest,
@@ -202,7 +204,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.11"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.0"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -254,6 +256,61 @@ async def get_library(user: dict | None = Depends(get_optional_user)):
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
     return cabinet.list_library(user["id"])
+
+
+@app.post("/api/library/{library_id}/publish", response_model=PublishResponse)
+async def publish_library_track(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        return cabinet.publish_library_track(user_id=user["id"], library_id=library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/library/{library_id}/unpublish", response_model=PublishResponse)
+async def unpublish_library_track(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        return cabinet.unpublish_library_track(user_id=user["id"], library_id=library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/library/{library_id}")
+async def delete_library_track(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        cabinet.delete_library_track(user_id=user["id"], library_id=library_id)
+        return {"success": True}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/explore", response_model=list[ExploreItem])
+async def get_explore(limit: int = 50):
+    return cabinet.list_explore(limit=limit)
+
+
+@app.get("/api/explore/{library_id}/listen")
+async def listen_explore_track(library_id: str):
+    row = cabinet.get_published_library_item(library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Публичный трек не найден")
+    if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    return audio_access.stream_playback(row["audio_url"])
 
 
 def _expose_email_auth_code() -> bool:

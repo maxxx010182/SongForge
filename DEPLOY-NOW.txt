@@ -1,5 +1,6 @@
-SongForge - obnovit server (v2.4.11)
+SongForge - obnovit server (v2.5.0)
 ===================================
+Obnovleno: 3 iyulya 2026
 Vydelit ODNU stroku -> Ctrl+C -> vstaviti v terminal.
 
 
@@ -12,16 +13,14 @@ ssh root@195.19.20.245
 ---------------
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-V kontse: === Gotovo! v2.4.11 ===
+V kontse: === Gotovo! v2.5.0 ===
 
 
 3) Proverit (po zhelaniyu)
 --------------------------
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.4.11"
-
-ESLI version 2.4.9 ili nizhe — skachivanie ne rabotaet. Povtorite shag 2.
+Otvet: "version":"2.5.0"
 
 
 4) Vyiti
@@ -32,3 +31,12 @@ exit
 5) V brauzere: Ctrl+F5
 
 Sait: http://195.19.20.245:8000/
+
+Chto novogo v 2.5.0:
+  - Logotip s notoy (SongForgeLogo.png)
+  - Menyu «...» v fonoteke: Skachat, Opublikovat, Tekst, Udalit
+  - Lenta v «Issledovat» i vнизу na «Sozdat»
+
+ESLI otkryvaetsya staryy tekst v Notepad:
+  - Zakroyte VSE okna Notepad
+  - Snova nazhmite yarlyk «OTKRYT-DEPOY» na rabochem stole
