@@ -273,6 +273,15 @@ class ExploreItem(BaseModel):
     author_name: str = "Аноним"
     author_avatar_url: str | None = None
     listen_url: str = ""
+    liked_by_me: bool = False
+
+
+class LikeResponse(BaseModel):
+    success: bool
+    likes: int = 0
+    liked: bool = True
+    already_liked: bool = False
+    message: str = ""
 
 
 class PublishResponse(BaseModel):

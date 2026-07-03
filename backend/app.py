@@ -18,6 +18,7 @@ from backend.models import (
     FullAudioResponse,
     HistoryItem,
     ExploreItem,
+    LikeResponse,
     HistoryPreviewResponse,
     LibraryItem,
     PublishResponse,
@@ -79,7 +80,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.5.1")
+app = FastAPI(title="SongForge", version="2.5.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,7 +205,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.1"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.2"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -299,8 +300,28 @@ async def delete_library_track(
 
 
 @app.get("/api/explore", response_model=list[ExploreItem])
-async def get_explore(limit: int = 50):
-    return cabinet.list_explore(limit=limit)
+async def get_explore(
+    limit: int = 50,
+    user: dict | None = Depends(get_optional_user),
+):
+    user_id = user["id"] if user else None
+    return cabinet.list_explore(limit=limit, user_id=user_id)
+
+
+@app.post("/api/explore/{library_id}/like", response_model=LikeResponse)
+async def like_explore_track(
+    library_id: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Лайки могут ставить только зарегистрированные пользователи",
+        )
+    try:
+        return cabinet.like_published_track(user_id=user["id"], library_id=library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/explore/{library_id}/listen")

@@ -155,6 +155,20 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS track_likes (
+                user_id TEXT NOT NULL,
+                library_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (user_id, library_id)
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_track_likes_library ON track_likes(library_id)"
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS showcase_tracks (
                 id TEXT PRIMARY KEY,
                 generation_id TEXT NOT NULL,

@@ -169,34 +169,109 @@ class CabinetService:
                 (library_id,),
             ).fetchone()
 
-    def list_explore(self, *, limit: int = 50) -> list[dict]:
+    def _sync_library_likes_count(self, conn, library_id: str) -> int:
+        count = conn.execute(
+            "SELECT COUNT(*) AS c FROM track_likes WHERE library_id = ?",
+            (library_id,),
+        ).fetchone()["c"]
+        conn.execute(
+            "UPDATE user_library SET likes = ? WHERE id = ?",
+            (int(count), library_id),
+        )
+        return int(count)
+
+    def like_published_track(self, *, user_id: str, library_id: str) -> dict:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT id FROM user_library
+                WHERE id = ? AND published_at IS NOT NULL
+                """,
+                (library_id,),
+            ).fetchone()
+            if not row:
+                raise ValueError("Публичный трек не найден")
+
+            existing = conn.execute(
+                """
+                SELECT 1 FROM track_likes
+                WHERE user_id = ? AND library_id = ?
+                """,
+                (user_id, library_id),
+            ).fetchone()
+            if existing:
+                likes = self._sync_library_likes_count(conn, library_id)
+                return {
+                    "success": True,
+                    "likes": likes,
+                    "liked": True,
+                    "already_liked": True,
+                    "message": "Вы уже поставили лайк этому треку",
+                }
+
+            conn.execute(
+                """
+                INSERT INTO track_likes (user_id, library_id, created_at)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, library_id, utc_now()),
+            )
+            likes = self._sync_library_likes_count(conn, library_id)
+        return {
+            "success": True,
+            "likes": likes,
+            "liked": True,
+            "already_liked": False,
+            "message": "Лайк добавлен",
+        }
+
+    def list_explore(self, *, limit: int = 50, user_id: str | None = None) -> list[dict]:
         limit = max(1, min(limit, 100))
         with get_connection() as conn:
             rows = conn.execute(
                 f"""
-                SELECT ul.*, u.display_name, u.avatar_url
+                SELECT
+                    ul.*,
+                    u.display_name,
+                    u.avatar_url,
+                    (
+                        SELECT COUNT(*)
+                        FROM track_likes tl
+                        WHERE tl.library_id = ul.id
+                    ) AS likes_count,
+                    CASE
+                        WHEN ? IS NOT NULL AND EXISTS (
+                            SELECT 1 FROM track_likes tl2
+                            WHERE tl2.library_id = ul.id AND tl2.user_id = ?
+                        ) THEN 1
+                        ELSE 0
+                    END AS liked_by_me
                 FROM user_library ul
                 LEFT JOIN users u ON u.id = ul.user_id
                 WHERE ul.published_at IS NOT NULL
-                ORDER BY ul.likes DESC, ul.published_at DESC
+                ORDER BY likes_count DESC, ul.published_at DESC
                 LIMIT {limit}
                 """,
+                (user_id, user_id),
             ).fetchall()
         return [self._explore_item_from_row(r) for r in rows]
 
     def _explore_item_from_row(self, row) -> dict:
         author = (row["display_name"] or "").strip() or "Аноним"
+        likes = row["likes_count"] if "likes_count" in row.keys() else row["likes"]
+        liked = bool(row["liked_by_me"]) if "liked_by_me" in row.keys() else False
         return {
             "id": row["id"],
             "title": row["title"] or "Без названия",
             "genre": row["genre"] or "",
             "image_url": row["image_url"] or "",
             "duration": row["duration"] or 0,
-            "likes": int(row["likes"] or 0),
+            "likes": int(likes or 0),
             "published_at": row["published_at"] or "",
             "author_name": author,
             "author_avatar_url": row["avatar_url"],
             "listen_url": f"/api/explore/{row['id']}/listen",
+            "liked_by_me": liked,
         }
 
     def link_generation_to_user(self, *, production_id: str, user_id: str) -> None:

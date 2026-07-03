@@ -43,3 +43,8 @@ def test_explore_public():
 def test_explore_listen_not_found():
     response = client.get("/api/explore/nonexistent-id/listen")
     assert response.status_code == 404
+
+
+def test_explore_like_requires_login():
+    response = client.post("/api/explore/nonexistent-id/like")
+    assert response.status_code == 401
