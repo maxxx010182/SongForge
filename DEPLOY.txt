@@ -14,7 +14,7 @@ Shag 2 - obnovit sait
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 
-V kontse dolzhno byt: Gotovo! v2.4.5
+V kontse dolzhno byt: Gotovo! v2.4.6
 
 
 Shag 3 - proverit (po zhelaniyu)

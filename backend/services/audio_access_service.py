@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 import requests
 from fastapi import HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from backend.database.db import get_connection
 from backend.settings import PREVIEW_LIMIT_SEC, PREVIEW_MAX_BYTES
@@ -127,7 +127,7 @@ class AudioAccessService:
         encoded = quote(filename)
         return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
-    def stream_download(self, source_url: str, *, title: str) -> StreamingResponse:
+    def stream_download(self, source_url: str, *, title: str) -> Response:
         upstream_headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -139,30 +139,28 @@ class AudioAccessService:
         try:
             upstream = requests.get(
                 source_url,
-                stream=True,
                 timeout=120,
                 headers=upstream_headers,
             )
             upstream.raise_for_status()
+            content = upstream.content
         except requests.RequestException as exc:
             raise HTTPException(
                 status_code=502,
                 detail="Не удалось загрузить файл с сервера музыки",
             ) from exc
 
+        if not content:
+            raise HTTPException(status_code=502, detail="Пустой файл с сервера музыки")
+
         content_type = upstream.headers.get("Content-Type", "audio/mpeg")
         filename = self._download_filename(title)
 
-        def iter_body():
-            try:
-                for chunk in upstream.iter_content(chunk_size=32_768):
-                    if chunk:
-                        yield chunk
-            finally:
-                upstream.close()
-
-        return StreamingResponse(
-            iter_body(),
+        return Response(
+            content=content,
             media_type=content_type,
-            headers={"Content-Disposition": self._content_disposition(filename)},
+            headers={
+                "Content-Disposition": self._content_disposition(filename),
+                "Content-Length": str(len(content)),
+            },
         )
