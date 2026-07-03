@@ -8,6 +8,14 @@ class HistoryService:
     def __init__(self) -> None:
         init_db()
 
+    @staticmethod
+    def _generation_exists(conn, production_id: str) -> bool:
+        row = conn.execute(
+            "SELECT id FROM generations WHERE id = ?",
+            (production_id,),
+        ).fetchone()
+        return row is not None
+
     def save_production(
         self,
         *,
@@ -21,10 +29,41 @@ class HistoryService:
         user_id: str | None = None,
         guest_id: str | None = None,
     ) -> None:
+        plan_json = dumps_json(plan.model_dump())
         with get_connection() as conn:
+            if self._generation_exists(conn, production_id):
+                conn.execute(
+                    """
+                    UPDATE generations SET
+                        idea = ?,
+                        optimized_idea = ?,
+                        title = ?,
+                        lyrics = ?,
+                        style = ?,
+                        plan_json = ?,
+                        status = ?,
+                        user_id = COALESCE(?, user_id),
+                        guest_id = COALESCE(?, guest_id)
+                    WHERE id = ?
+                    """,
+                    (
+                        idea,
+                        optimized_idea,
+                        title,
+                        lyrics,
+                        style,
+                        plan_json,
+                        "planned",
+                        user_id,
+                        guest_id,
+                        production_id,
+                    ),
+                )
+                return
+
             conn.execute(
                 """
-                INSERT OR REPLACE INTO generations (
+                INSERT INTO generations (
                     id, created_at, idea, optimized_idea, title, lyrics, style,
                     plan_json, status, user_id, guest_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -37,7 +76,7 @@ class HistoryService:
                     title,
                     lyrics,
                     style,
-                    dumps_json(plan.model_dump()),
+                    plan_json,
                     "planned",
                     user_id,
                     guest_id,
@@ -57,29 +96,54 @@ class HistoryService:
         user_id: str | None = None,
         guest_id: str | None = None,
     ) -> None:
+        plan_json = dumps_json(plan.model_dump())
         with get_connection() as conn:
+            if self._generation_exists(conn, production_id):
+                conn.execute(
+                    """
+                    UPDATE generations SET
+                        task_id = ?,
+                        idea = ?,
+                        title = ?,
+                        lyrics = ?,
+                        style = ?,
+                        plan_json = ?,
+                        status = ?,
+                        user_id = COALESCE(?, user_id),
+                        guest_id = COALESCE(?, guest_id)
+                    WHERE id = ?
+                    """,
+                    (
+                        task_id,
+                        idea,
+                        title,
+                        lyrics,
+                        style,
+                        plan_json,
+                        "generating",
+                        user_id,
+                        guest_id,
+                        production_id,
+                    ),
+                )
+                return
+
             conn.execute(
                 """
-                INSERT OR REPLACE INTO generations (
+                INSERT INTO generations (
                     id, task_id, created_at, idea, title, lyrics, style,
                     plan_json, status, user_id, guest_id
-                ) VALUES (
-                    ?, ?, COALESCE(
-                        (SELECT created_at FROM generations WHERE id = ?),
-                        ?
-                    ), ?, ?, ?, ?, ?, ?, ?, ?
-                )
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     production_id,
                     task_id,
-                    production_id,
                     utc_now(),
                     idea,
                     title,
                     lyrics,
                     style,
-                    dumps_json(plan.model_dump()),
+                    plan_json,
                     "generating",
                     user_id,
                     guest_id,

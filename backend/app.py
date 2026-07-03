@@ -83,7 +83,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.5.5")
+app = FastAPI(title="SongForge", version="2.5.6")
 
 app.add_middleware(
     CORSMiddleware,
@@ -157,8 +157,6 @@ def _begin_generation(
         guest_id=guest_id,
         production_id=production_id,
     )
-    if mode == "paid" and production_id:
-        generation_quota.mark_note_charged(production_id)
     return mode, balance
 
 
@@ -208,7 +206,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.5"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.6"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -818,6 +816,8 @@ async def start_music(
             vocal_hint=req.vocal_hint,
             backing_vocal=req.backing_vocal,
         )
+        if mode == "paid" and req.production_id:
+            generation_quota.mark_note_charged(req.production_id)
         return {
             "success": True,
             "task_id": task_id,
