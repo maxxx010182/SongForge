@@ -19,7 +19,9 @@ V kontse: === Gotovo! v2.4.11 ===
 --------------------------
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.4.7"
+Otvet: "version":"2.4.11"
+
+ESLI version 2.4.9 ili nizhe — skachivanie ne rabotaet. Povtorite shag 2.
 
 
 4) Vyiti
