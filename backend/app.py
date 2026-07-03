@@ -77,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.3")
+app = FastAPI(title="SongForge", version="2.4.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -202,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.3"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.4"}
 
 
 @app.get("/api/me", response_model=MeResponse)
