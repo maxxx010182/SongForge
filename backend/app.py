@@ -79,7 +79,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.11")
+app = FastAPI(title="SongForge", version="2.5.0")
 
 app.add_middleware(
     CORSMiddleware,
