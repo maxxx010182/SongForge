@@ -49,6 +49,33 @@ class GuestService:
     def can_generate(self, guest_id: str) -> bool:
         return self.remaining(guest_id) > 0
 
+    def mark_exhausted(self, guest_id: str) -> None:
+        """Закрыть гостевую пробную попытку (например, после выхода из аккаунта)."""
+        now = utc_now()
+        limit = GUEST_GENERATION_LIMIT
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT guest_id FROM guest_sessions WHERE guest_id = ?",
+                (guest_id,),
+            ).fetchone()
+            if row:
+                conn.execute(
+                    """
+                    UPDATE guest_sessions
+                    SET generations_used = ?, last_seen_at = ?
+                    WHERE guest_id = ?
+                    """,
+                    (limit, now, guest_id),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO guest_sessions (guest_id, generations_used, created_at, last_seen_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (guest_id, limit, now, now),
+                )
+
     def consume_generation(self, guest_id: str) -> None:
         now = utc_now()
         with get_connection() as conn:

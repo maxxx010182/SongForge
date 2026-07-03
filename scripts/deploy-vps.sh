@@ -6,7 +6,7 @@
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.5.3"
+EXPECTED_VERSION="2.5.4"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -101,7 +101,26 @@ for f in app.py index.html requirements.txt backend/app.py SongForgeLogo.png; do
   fi
 done
 
+ensure_env_key() {
+  local key="$1"
+  local value="$2"
+  local env_file="$DIR/.env"
+  if [ ! -f "$env_file" ]; then
+    if [ -f "$DIR/.env.example" ]; then
+      cp "$DIR/.env.example" "$env_file"
+    else
+      touch "$env_file"
+    fi
+  fi
+  if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+    sed -i "s/^${key}=.*/${key}=${value}/" "$env_file"
+  else
+    echo "${key}=${value}" >> "$env_file"
+  fi
+}
+
 echo "[2/7] Зависимости..."
+ensure_env_key DEV_TOPUP_ENABLED true
 ensure_venv
 ./venv/bin/pip install -q -r requirements.txt 2>/dev/null || ./venv/bin/pip install -r requirements.txt
 

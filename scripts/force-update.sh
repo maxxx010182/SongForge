@@ -3,7 +3,7 @@
 set -e
 DIR="${HOME}/SongForge"
 GH_API="https://api.github.com/repos/maxxx010182/SongForge/contents"
-EXPECTED_VERSION="2.5.3"
+EXPECTED_VERSION="2.5.4"
 
 mkdir -p "$DIR/backend" "$DIR/assets"
 cd "$DIR"

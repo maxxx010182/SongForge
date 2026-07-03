@@ -32,6 +32,16 @@ def test_me_without_session():
     assert response.status_code == 200
     data = response.json()
     assert data["logged_in"] is False
+    assert data["guest_remaining"] == 0
+
+
+def test_create_song_requires_login():
+    response = client.post(
+        "/api/create-song",
+        json={"idea": "Тестовая песня про закат"},
+    )
+    assert response.status_code == 403
+    assert "аккаунт" in response.json().get("detail", "").lower()
 
 
 def test_explore_public():

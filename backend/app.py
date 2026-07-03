@@ -83,7 +83,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.5.3")
+app = FastAPI(title="SongForge", version="2.5.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -208,7 +208,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.3"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.4"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -219,7 +219,7 @@ async def get_me(
     if user:
         remaining = generation_quota.user_trial_remaining(user["id"])
     else:
-        remaining = guest_service.remaining(guest_id)
+        remaining = 0
     return MeResponse(
         logged_in=bool(user),
         user=_user_info(user) if user else None,
@@ -491,7 +491,11 @@ async def upload_profile_avatar(
 async def auth_logout(
     response: Response,
     sf_session: str | None = Cookie(default=None),
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
 ):
+    if user:
+        guest_service.mark_exhausted(guest_id)
     if sf_session:
         auth_service.logout(sf_session)
     response.delete_cookie(AuthService.COOKIE_NAME, path="/")
