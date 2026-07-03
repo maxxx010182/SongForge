@@ -77,7 +77,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.4.2")
+app = FastAPI(title="SongForge", version="2.4.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -202,7 +202,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.4.2"}
+    return {"ok": True, "service": "SongForge", "version": "2.4.3"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -503,6 +503,29 @@ async def get_full_audio_url(
         audio_url=source,
         title=row["title"] or "Без названия",
     )
+
+
+@app.get("/api/audio/download/{production_id}/{variant}")
+async def download_full_audio(
+    production_id: str,
+    variant: int,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
+    audio_access.assert_access(row, user_id=user["id"], guest_id=None)
+    if not row["purchased"]:
+        raise HTTPException(status_code=403, detail="Сначала купите трек")
+    source = audio_access.resolve_source_url(row, variant)
+    lib_title = row["title"] or "Без названия"
+    if variant == 1:
+        lib_title = f"{lib_title} (вариант B)"
+    elif row["music_url_b"]:
+        lib_title = f"{lib_title} (вариант A)"
+    return audio_access.stream_download(source, title=lib_title)
 
 
 @app.post("/api/dev/topup", response_model=DevTopupResponse)

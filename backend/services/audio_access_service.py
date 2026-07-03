@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from urllib.parse import quote
+
 import requests
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
@@ -111,4 +114,42 @@ class AudioAccessService:
             iter_limited(),
             media_type=content_type,
             headers=headers,
+        )
+
+    @staticmethod
+    def _download_filename(title: str) -> str:
+        cleaned = re.sub(r"[^\wа-яА-ЯёЁ\s-]", "", title or "").strip()
+        return (cleaned or "song") + ".mp3"
+
+    @staticmethod
+    def _content_disposition(filename: str) -> str:
+        ascii_name = re.sub(r"[^\w\s.-]", "", filename).strip() or "song.mp3"
+        encoded = quote(filename)
+        return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
+
+    def stream_download(self, source_url: str, *, title: str) -> StreamingResponse:
+        try:
+            upstream = requests.get(source_url, stream=True, timeout=120)
+            upstream.raise_for_status()
+        except requests.RequestException as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Не удалось загрузить файл",
+            ) from exc
+
+        content_type = upstream.headers.get("Content-Type", "audio/mpeg")
+        filename = self._download_filename(title)
+
+        def iter_body():
+            try:
+                for chunk in upstream.iter_content(chunk_size=32_768):
+                    if chunk:
+                        yield chunk
+            finally:
+                upstream.close()
+
+        return StreamingResponse(
+            iter_body(),
+            media_type=content_type,
+            headers={"Content-Disposition": self._content_disposition(filename)},
         )
