@@ -76,6 +76,8 @@ class PromptBuilder:
             else None
         )
 
+        ui_genre_locked = bool(genre.strip())
+        ui_artist_locked = bool(artist_ref.strip())
         analysis = self._analyst.analyze(
             idea,
             genre=genre,
@@ -86,8 +88,8 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
             style_mode=style_mode,
             custom_description=custom_description,
-            locked_genre=parsed.has_locked_genre,
-            locked_artist=parsed.has_locked_artist,
+            locked_genre=parsed.has_locked_genre or ui_genre_locked,
+            locked_artist=parsed.has_locked_artist or ui_artist_locked,
         )
         payload = self._composer.compose(
             analysis,

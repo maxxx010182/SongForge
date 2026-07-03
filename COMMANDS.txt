@@ -11,7 +11,7 @@ tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
 cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
 bash scripts/deploy-vps.sh
 
-=== PROVERIT VERSIYU (2.5.4) ===
+=== PROVERIT VERSIYU (2.5.5) ===
 curl http://127.0.0.1:8000/api/health
 
 === VYITI ===

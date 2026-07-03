@@ -170,6 +170,7 @@ class LyricsRequest(BaseModel):
 class StyleRequest(BaseModel):
     genre: str
     mood: str
+    idea: str = ""
     artist_ref: str = ""
     vocal: str = "auto"
     backing: bool = False

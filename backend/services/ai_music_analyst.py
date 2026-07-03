@@ -70,10 +70,14 @@ class AiMusicAnalyst:
             user_text = idea.strip()
             if genre.strip():
                 hints.append(f"Жанр от пользователя: {genre.strip()}")
+                hints.append(
+                    "ОБЯЗАТЕЛЬНО: жанр выбран в настройках студии. "
+                    "Не меняй на Pop, Ballad или другой жанр — сохрани выбранный."
+                )
                 if locked_genre:
                     hints.append(
-                        "ОБЯЗАТЕЛЬНО: пользователь явно указал жанр в идее. "
-                        "Не меняй жанр на Pop/Ballad даже при романтической теме."
+                        "Дополнительно: жанр также указан в тексте идеи — "
+                        "сохрани его без ослабления."
                     )
             if mood.strip():
                 hints.append(f"Настроение от пользователя: {mood.strip()}")

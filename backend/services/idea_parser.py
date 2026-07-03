@@ -61,6 +61,9 @@ _MOOD_KEYWORDS: list[tuple[str, str]] = [
     ("агресс", "dark"),
     ("спокой", "calm"),
     ("ностальг", "nostalgic"),
+    ("эпич", "adventurous"),
+    ("эпическ", "adventurous"),
+    ("epic", "adventurous"),
 ]
 
 _ARTIST_PATTERNS: list[re.Pattern[str]] = [
@@ -342,13 +345,26 @@ def merge_parsed_with_request(
     vocal_hint: str = "",
     backing_vocal: bool = False,
 ) -> tuple[str, str, str, str, bool, str, ParsedIdea]:
-    """Idea text wins when parser found a value; UI params fill gaps."""
-    effective_genre = parsed.genre or genre.strip()
-    effective_artist = parsed.artist_ref or artist_ref.strip()
-    effective_mood = parsed.mood or mood.strip()
-    effective_vocal = parsed.vocal_hint or vocal_hint.strip()
-    effective_backing = parsed.backing_vocal or backing_vocal
+    """Настройки панели (жанр, настроение, референс) важнее текста идеи."""
+    effective_genre = genre.strip() if genre.strip() else parsed.genre
+    effective_artist = artist_ref.strip() if artist_ref.strip() else parsed.artist_ref
+    effective_mood = mood.strip() if mood.strip() else parsed.mood
+    effective_vocal = vocal_hint.strip() if vocal_hint.strip() and vocal_hint.strip() != "auto" else (parsed.vocal_hint or vocal_hint.strip())
+    effective_backing = backing_vocal or parsed.backing_vocal
     backing_gender = parsed.backing_vocal_gender
+
+    if genre.strip():
+        parsed.genre = effective_genre
+        if "genre" not in parsed.locked_fields:
+            parsed.locked_fields.append("genre")
+    if artist_ref.strip():
+        parsed.artist_ref = effective_artist
+        if "artist" not in parsed.locked_fields:
+            parsed.locked_fields.append("artist")
+    if mood.strip():
+        parsed.mood = effective_mood
+        if "mood" not in parsed.locked_fields:
+            parsed.locked_fields.append("mood")
 
     genre_en = ""
     if effective_genre:

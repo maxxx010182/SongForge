@@ -18,6 +18,7 @@ _MOOD_ENERGY: dict[str, str] = {
     "spiritual": "medium",
     "experimental": "medium",
     "adventurous": "high",
+    "epic": "high",
 }
 
 _GENRE_ANTI_POP: dict[str, str] = {

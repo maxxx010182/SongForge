@@ -1309,6 +1309,7 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
             var data=await res.json();
             currentProduction=data;
             currentGeneratedLyrics=data.lyrics||'';
+            renderProducerPlan(data);
         }else{
             var err=await res.json().catch(function(){return{};});
             if(!instrumentalMode){
@@ -1351,20 +1352,19 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     }
 });
 
-document.getElementById('regenLyricsBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;var lyrics=await generateLyrics(idea);currentGeneratedLyrics=lyrics;document.getElementById('lyricsDisplay').textContent=lyrics;document.getElementById('lyricsEditor').value=lyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
+document.getElementById('regenLyricsBtn').addEventListener('click',async function(){var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);}else{currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;}}catch(e){currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;}document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
 
 document.getElementById('editLyricsBtn').addEventListener('click',function(){var disp=document.getElementById('lyricsDisplay'),ed=document.getElementById('lyricsEditor'),btn=document.getElementById('editLyricsBtn');if(ed.classList.contains('hidden')){disp.classList.add('hidden');ed.classList.remove('hidden');btn.innerHTML='<i class="fa-regular fa-floppy-disk mr-1"></i>Сохранить';}else{currentGeneratedLyrics=ed.value;disp.textContent=currentGeneratedLyrics;disp.classList.remove('hidden');ed.classList.add('hidden');btn.innerHTML='<i class="fa-regular fa-pen-to-square mr-1"></i>Редактировать';}});
 
 async function buildStylePrompt(){
     var artistRef=document.getElementById('artistRef')?document.getElementById('artistRef').value.trim():'';
-    var genreEn=genreMap[selectedGenre]||selectedGenre;
-    var moodEn=moodMap[selectedMood]||selectedMood;
+    var idea=currentIdea||document.getElementById('ideaInput').value.trim();
     var customDesc=expertStyleMode==='custom'?getCustomDescription():'';
     try{
-        var sr=await fetch('/api/generate-style',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({genre:genreEn,mood:moodEn,artist_ref:artistRef,vocal:selectedVocal,backing:backingVocal,style_mode:expertStyleMode,custom_description:customDesc})});
-        if(sr.ok){var sd=await sr.json();return sd.style||genreEn+', '+moodEn;}
+        var sr=await fetch('/api/generate-style',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({genre:selectedGenre,mood:selectedMood,idea:idea,artist_ref:artistRef,vocal:selectedVocal,backing:backingVocal,style_mode:expertStyleMode,custom_description:customDesc})});
+        if(sr.ok){var sd=await sr.json();return sd.style||(genreMap[selectedGenre]||selectedGenre)+', '+(moodMap[selectedMood]||selectedMood);}
     }catch(e){}
-    var s=genreEn+', '+moodEn;
+    var s=(genreMap[selectedGenre]||selectedGenre)+', '+(moodMap[selectedMood]||selectedMood);
     if(backingVocal)s+=', with backing vocals, harmonies';
     if(selectedVocal==='duet')s+=', male and female duet vocals';
     return s;

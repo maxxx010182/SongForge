@@ -83,7 +83,7 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 
-app = FastAPI(title="SongForge", version="2.5.4")
+app = FastAPI(title="SongForge", version="2.5.5")
 
 app.add_middleware(
     CORSMiddleware,
@@ -208,7 +208,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.4"}
+    return {"ok": True, "service": "SongForge", "version": "2.5.5"}
 
 
 @app.get("/api/me", response_model=MeResponse)
@@ -1029,11 +1029,13 @@ async def generate_lyrics_endpoint(
     req: LyricsRequest,
     guest_id: str = Depends(get_guest_id),
 ):
-    plan = prompt_builder._fallback_plan(req.prompt, vocal_hint=req.vocal)
-    plan.genre = req.genre
-    plan.mood = req.mood
-    plan.vocal = req.vocal
     try:
+        plan = prompt_builder.build_plan(
+            req.prompt,
+            genre=req.genre,
+            mood=req.mood,
+            vocal_hint=req.vocal,
+        )
         lyrics = prompt_builder.generate_lyrics(req.prompt, plan)
         return {"success": True, "lyrics": lyrics}
     except Exception as exc:
@@ -1046,20 +1048,18 @@ async def generate_style_endpoint(
     req: StyleRequest,
     guest_id: str = Depends(get_guest_id),
 ):
-    custom_mode = req.style_mode == "custom" and req.custom_description.strip()
-    if custom_mode:
+    idea = (req.idea or req.custom_description or "Song").strip()
+    try:
         plan = prompt_builder.build_plan(
-            req.custom_description,
+            idea,
+            genre=req.genre,
+            mood=req.mood,
+            artist_ref=req.artist_ref,
             vocal_hint=req.vocal,
-            style_mode="custom",
+            backing_vocal=req.backing,
+            style_mode=req.style_mode,
             custom_description=req.custom_description,
         )
-    else:
-        plan = prompt_builder._fallback_plan("", vocal_hint=req.vocal)
-        plan.genre = req.genre
-        plan.mood = req.mood
-        plan.vocal = req.vocal
-    try:
         style = prompt_builder.build_style_via_ai(
             plan,
             artist_ref=req.artist_ref,
@@ -1073,7 +1073,10 @@ async def generate_style_endpoint(
         return {"success": True, "style": truncate(style, 950)}
     except Exception as exc:
         log.exception("legacy style failed")
-        style = f"{req.genre}, {req.mood}"
+        from backend.services.genre_resolver import resolve_genre
+
+        genre_en, _ = resolve_genre(req.genre, idea)
+        style = f"{genre_en}, {req.mood}"
         return {"success": False, "style": style}
 
 
