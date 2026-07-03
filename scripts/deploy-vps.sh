@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 9
+# deploy-script-version: 10
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
@@ -94,7 +94,7 @@ sync_from_src "$SRC" "$DIR"
 find "$DIR/scripts" -name '*.sh' -exec strip_crlf {} \; 2>/dev/null || true
 rm -rf "$TMP"
 
-for f in app.py index.html requirements.txt backend/app.py; do
+for f in app.py index.html requirements.txt backend/app.py SongForgeLogo.png; do
   if [ ! -s "$f" ]; then
     echo "ОШИБКА: после синхронизации нет файла $f"
     exit 1
@@ -114,8 +114,12 @@ if ! grep -qF "$EXPECTED_VERSION" backend/app.py; then
   grep version backend/app.py | head -3 || true
   exit 1
 fi
-if ! grep -q 'data:image/png;base64,' index.html; then
-  echo "ОШИБКА: index.html без встроенного логотипа (base64)"
+if ! grep -q 'SongForgeLogo.png' index.html; then
+  echo "ОШИБКА: index.html не ссылается на SongForgeLogo.png"
+  exit 1
+fi
+if [ ! -s SongForgeLogo.png ]; then
+  echo "ОШИБКА: нет файла SongForgeLogo.png в корне проекта"
   exit 1
 fi
 ./venv/bin/python -c "

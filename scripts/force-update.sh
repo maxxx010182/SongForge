@@ -54,8 +54,12 @@ if ! grep -q "$EXPECTED_VERSION" backend/app.py; then
   echo "ОШИБКА: на диске не версия $EXPECTED_VERSION"
   exit 1
 fi
-if ! grep -q 'data:image/png;base64,' index.html; then
-  echo "ОШИБКА: index.html без встроенного логотипа"
+if ! grep -q 'SongForgeLogo.png' index.html; then
+  echo "ОШИБКА: index.html не ссылается на SongForgeLogo.png"
+  exit 1
+fi
+if [ ! -s SongForgeLogo.png ]; then
+  echo "ОШИБКА: нет файла SongForgeLogo.png"
   exit 1
 fi
 echo "  index.html: $(wc -c < index.html) байт — OK"
