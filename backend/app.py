@@ -161,7 +161,27 @@ async def require_admin_user(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if not admin:
-        raise HTTPException(status_code=403, detail="Нет прав администратора")
+        from backend.settings import ADMIN_BOOTSTRAP_EMAILS
+
+        email = (user.get("email") or "").strip().lower()
+        if not ADMIN_BOOTSTRAP_EMAILS:
+            detail = (
+                "Нет прав администратора: на сервере пустой ADMIN_BOOTSTRAP_EMAILS "
+                f"в ~/SongForge/.env (вы вошли как {email}). "
+                "Добавьте email в .env и выполните: pm2 restart songforge"
+            )
+        elif email not in ADMIN_BOOTSTRAP_EMAILS:
+            detail = (
+                f"Нет прав администратора: вы вошли как {email}, "
+                "но этого адреса нет в ADMIN_BOOTSTRAP_EMAILS на сервере. "
+                "Исправьте .env и: pm2 restart songforge"
+            )
+        else:
+            detail = (
+                f"Нет прав администратора (вход: {email}). "
+                "Email в .env указан — перезапустите приложение: pm2 restart songforge"
+            )
+        raise HTTPException(status_code=403, detail=detail)
     return {
         **user,
         "admin_id": admin["id"],

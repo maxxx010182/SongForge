@@ -1,3 +1,72 @@
+SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
+Obnovleno: iyul 2026 | versiya: 2.9.0
+Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
+
+
+========================================
+POLNAYA INSTRUKCIYA: OBNOVIT SERVER
+========================================
+
+SHAG 1. Otkryt PowerShell ili cmd na Windows
+
+SHAG 2. Podklyuchitsya k serveru (skopirovat ODNU stroku):
+
+ssh root@195.19.20.245
+
+Vvesti parol servera.
+
+
+SHAG 3. Obnovit sait (skopirovat ODNU stroku, vstaviti, Enter):
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+Zhdat okonchaniya. V kontse dolzhno byt:
+
+=== Gotovo! v2.9.0 ===
+
+
+SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
+
+curl http://127.0.0.1:8000/api/health
+
+Otvet: "version":"2.9.0"
+
+
+SHAG 5. (odin raz) Admin-panel — vash email v .env
+
+Otkryt fajl na servere:
+
+nano ~/SongForge/.env
+
+Dobavit stroku (zamenit na SVОJ email):
+
+ADMIN_BOOTSTRAP_EMAILS=vas@email.ru
+
+Sohranit: Ctrl+O, Enter. Vyhod: Ctrl+X.
+
+Esli menyali .env — OBYAZATELNO perezapusk (na servere PM2, ne systemctl):
+
+pm2 restart songforge
+
+
+SHAG 6. Vyiti s servera:
+
+exit
+
+
+SHAG 7. V brauzere na Windows
+
+Sait: http://195.19.20.245:8000/
+Zhat Ctrl+F5 (bez kesha)
+
+Admin: http://195.19.20.245:8000/admin
+(Snachala voyti na glavnoj pod tem zhe email)
+
+
+========================================
+KOMANDY PO OTDELNOSTI (kak ranshe)
+========================================
+
 === PODKLYUCHIT K SERVERU ===
 ssh root@195.19.20.245
 
@@ -11,8 +80,19 @@ tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
 cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
 bash scripts/deploy-vps.sh
 
-=== PROVERIT VERSIYU (2.9.0) ===
+=== PROVERIT VERSIYU ===
 curl http://127.0.0.1:8000/api/health
+
+=== ADMIN: redaktirovat .env ===
+nano ~/SongForge/.env
+
+=== ADMIN: perezapusk posle .env ===
+pm2 restart songforge
+
+=== ADMIN: diagnostika (pochemu net prav) ===
+cd ~/SongForge
+./venv/bin/python scripts/admin_bootstrap_check.py
+grep ADMIN_BOOTSTRAP .env
 
 === VYITI ===
 exit
@@ -21,3 +101,4 @@ exit
 Ctrl+F5
 
 Sait: http://195.19.20.245:8000/
+Admin: http://195.19.20.245:8000/admin

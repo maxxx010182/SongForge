@@ -142,6 +142,19 @@
         .studio-quality-tips summary:hover{color:#eab308}
         .studio-quality-tips summary::-webkit-details-marker{display:none}
         .studio-quality-tips ul{padding:0 1rem 1rem;margin:0;font-size:.75rem;color:#71717a;line-height:1.7;list-style:disc;padding-left:1.75rem}
+        .announce-card{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
+        .announce-card.subtle{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);color:#a1a1aa}
+        .sidebar-tips-list{margin:0;padding-left:1.1rem;font-size:.78rem;color:#a1a1aa;line-height:1.65;list-style:disc}
+        .sidebar-tips-list li{margin-bottom:.35rem}
+        .sidebar-track-item{transition:background .2s;border:1px solid transparent}
+        .sidebar-track-item:hover{border-color:rgba(234,179,8,.15)}
+        .sidebar-track-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#18181b}
+        .sidebar-rank{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(234,179,8,.15);color:#eab308;flex-shrink:0}
+        .sidebar-rank.rank-1{background:linear-gradient(135deg,#fef08a,#eab308);color:#422006}
+        .sidebar-rank.rank-2{background:linear-gradient(135deg,#f4f4f5,#a1a1aa);color:#18181b}
+        .sidebar-rank.rank-3{background:linear-gradient(135deg,#fdba74,#ea580c);color:#431407}
+        .sidebar-section-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#71717a;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+        .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:.25rem 0}
         .auth-tab-btn{padding:.45rem .9rem;border-radius:.9rem;font-size:.8rem;border:1px solid rgba(255,255,255,.1);color:#a1a1aa}
         .auth-tab-btn.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#eab308}
     </style>
@@ -175,44 +188,34 @@
     </div>
 </header>
 
-<div class="flex flex-col lg:flex-row gap-6 my-8">
+<div class="flex flex-col lg:flex-row lg:items-start gap-6 my-8">
 
-<!-- ЛЕВАЯ ПАНЕЛЬ -->
-<div class="lg:w-72 shrink-0 order-2 lg:order-1">
-    <div class="glass-panel p-6 sticky top-24 space-y-6">
+<!-- ЛЕВАЯ ПАНЕЛЬ: лента, советы, чарт -->
+<div id="leftSidebar" class="w-full lg:w-72 shrink-0 order-2 lg:order-1">
+    <div class="glass-panel p-6 space-y-6">
         <div>
-            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-lightbulb text-yellow-400"></i>Идея дня</div>
-            <button id="randomIdeaBtn" class="w-full bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-3 rounded-2xl text-sm font-medium hover:bg-yellow-400/30 transition flex items-center justify-center gap-2">
-                <i class="fa-regular fa-dice-d6"></i> Вдохновение
-            </button>
-            <p id="randomIdeaPreview" class="text-xs text-zinc-500 mt-2 text-center line-clamp-2">Нажми, чтобы получить идею</p>
-        </div>
-        <div>
-            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-chart-simple"></i>Жанры</div>
-            <div class="flex flex-wrap gap-2" id="genrePopularList">
-                <div data-genre="Pop" class="genre-chip text-xs py-1.5">Pop</div>
-                <div data-genre="Rock" class="genre-chip text-xs py-1.5">Rock</div>
-                <div data-genre="Реп" class="genre-chip text-xs py-1.5">Реп</div>
-                <div data-genre="Electronic" class="genre-chip text-xs py-1.5">Electronic</div>
-                <div data-genre="Lo-Fi" class="genre-chip text-xs py-1.5">Lo-Fi</div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-bell text-yellow-400"></i>Сообщения</span></div>
+            <div class="space-y-2">
+                <div class="announce-card"><strong class="text-yellow-400/90">Ранний доступ.</strong> Платформа в бета-режиме — делитесь идеями, мы улучшаем студию каждую неделю.</div>
+                <div class="announce-card subtle">1 пробная генерация после входа: 2 варианта по 30 сек. Полные треки — за ноты в фонотеку.</div>
             </div>
         </div>
         <div>
-            <div class="text-xs uppercase text-zinc-500 tracking-wider mb-3 flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ сообщества</div>
-            <div id="communityTopList" class="space-y-2">
-                <div class="flex justify-between items-center text-sm"><span>Ocean Dreams</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
-                <div class="flex justify-between items-center text-sm"><span>Heart on Fire</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
-                <div class="flex justify-between items-center text-sm"><span>Tokyo Lights</span><button class="text-yellow-400 text-xs hover:underline">Похожее</button></div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-lightbulb text-amber-400"></i>Советы студии</span></div>
+            <ul class="sidebar-tips-list">
+                <li>Расширенный режим + детальный бриф — ближе к «эфирному» звуку</li>
+                <li>Укажите жанр, BPM, вокал и референс артиста (не копию мелодии)</li>
+                <li>Два варианта A/B — выберите лучший и уточните описание при повторе</li>
+                <li>Референс = «в духе», AI-продюсер = быстрый черновик на пробу</li>
+            </ul>
+        </div>
+        <div>
+            <div class="sidebar-section-title">
+                <span class="flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ чарта</span>
+                <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 normal-case tracking-normal text-xs hover:underline">Все →</a>
             </div>
+            <div id="homeExploreSidebar" class="space-y-2"></div>
         </div>
-        <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
-            <div class="font-semibold text-sm">🎵 Полные версии</div>
-            <div class="text-xs text-zinc-400 mt-1"><span class="text-yellow-400 font-bold">1 нота = 199₽</span> — 2 варианта навсегда в фонотеке.</div>
-            <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить ноты</button>
-        </div>
-        <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
-            <i class="fa-regular fa-comment text-yellow-400"></i> Спросить помощника
-        </button>
     </div>
 </div>
 
@@ -814,40 +817,58 @@
         </div>
     </div>
 
-    <!-- Популярные треки -->
-    <div id="homeTrends" class="mt-8">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">Популярные треки</h3>
-            <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 text-sm">Все →</a>
-        </div>
-        <div id="homeExploreGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
-    </div>
 </div>
 
-<!-- ПРАВАЯ ПАНЕЛЬ: плеер -->
-<div class="lg:w-80 shrink-0 hidden lg:block order-3">
-    <div class="glass-panel p-6 sticky top-24">
-        <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
-        <div class="bg-zinc-900/70 rounded-2xl overflow-hidden">
-            <div class="h-48 bg-zinc-900 relative overflow-hidden">
-                <img id="playerCover" src="https://picsum.photos/id/1015/400/300" alt="" class="w-full h-full object-cover">
-            </div>
-            <div class="p-4">
-                <div class="text-amber-300 text-xs" id="playerSubtitle">Топ чарта</div>
-                <div class="font-semibold" id="playingTitle">—</div>
-                <div class="text-xs text-zinc-500" id="playerAuthor">СоздайСвоюПесню</div>
-                <div class="flex gap-2 mt-3">
-                    <button id="playerPlayPause" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-play text-white"></i></button>
-                    <button id="playerStop" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-stop text-white"></i></button>
+<!-- ПРАВАЯ ПАНЕЛЬ: плеер + инструменты -->
+<div id="rightSidebar" class="w-full lg:w-80 shrink-0 order-3">
+    <div class="glass-panel p-6 space-y-6">
+        <div>
+            <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
+            <div class="bg-zinc-900/70 rounded-2xl overflow-hidden">
+                <div class="h-36 sm:h-40 lg:h-48 bg-zinc-900 relative overflow-hidden">
+                    <img id="playerCover" src="https://picsum.photos/id/1015/400/300" alt="" class="w-full h-full object-cover">
+                </div>
+                <div class="p-4">
+                    <div class="text-amber-300 text-xs" id="playerSubtitle">Топ чарта</div>
+                    <div class="font-semibold" id="playingTitle">—</div>
+                    <div class="text-xs text-zinc-500" id="playerAuthor">СоздайСвоюПесню</div>
+                    <div class="flex gap-2 mt-3">
+                        <button id="playerPlayPause" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-play text-white"></i></button>
+                        <button id="playerStop" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-stop text-white"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="mt-6">
-            <div class="text-xs text-zinc-400 mb-2">💡 Совет</div>
-            <div class="text-sm leading-relaxed text-zinc-400">Добавляй в описание детали: «пение птиц», «ночной город», «гитарное соло» — студия их учитывает.</div>
+        <hr class="sidebar-divider">
+        <div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-dice-d6 text-yellow-400"></i>Идея дня</span></div>
+            <button id="randomIdeaBtn" class="w-full bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-3 rounded-2xl text-sm font-medium hover:bg-yellow-400/30 transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-dice-d6"></i> Вдохновение
+            </button>
+            <p id="randomIdeaPreview" class="text-xs text-zinc-500 mt-2 text-center line-clamp-2">Нажми, чтобы получить идею</p>
         </div>
-        <button onclick="switchToView('payment')" class="w-full mt-4 bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-2 rounded-xl text-sm hover:bg-yellow-400/30 transition">💳 Купить ноты</button>
-        <!-- Админ-кнопка появится здесь после 5 кликов по логотипу -->
+        <div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-chart-simple"></i>Жанры</span></div>
+            <div class="flex flex-wrap gap-2" id="genrePopularList">
+                <div data-genre="Pop" class="genre-chip text-xs py-1.5">Pop</div>
+                <div data-genre="Rock" class="genre-chip text-xs py-1.5">Rock</div>
+                <div data-genre="Реп" class="genre-chip text-xs py-1.5">Реп</div>
+                <div data-genre="Electronic" class="genre-chip text-xs py-1.5">Electronic</div>
+                <div data-genre="Lo-Fi" class="genre-chip text-xs py-1.5">Lo-Fi</div>
+            </div>
+        </div>
+        <div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-fire text-orange-400"></i>Похожее на хиты</span></div>
+            <div id="communityTopList" class="space-y-2 text-sm"></div>
+        </div>
+        <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
+            <div class="font-semibold text-sm">🎵 Полные версии</div>
+            <div class="text-xs text-zinc-400 mt-1"><span class="text-yellow-400 font-bold">1 нота = 199₽</span> — 2 варианта навсегда в фонотеке.</div>
+            <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить ноты</button>
+        </div>
+        <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
+            <i class="fa-regular fa-comment text-yellow-400"></i> Спросить помощника
+        </button>
         <div id="adminPlaceholder"></div>
     </div>
 </div>
@@ -1125,7 +1146,7 @@ function switchAuthTab(tab){var emailTab=document.getElementById('authTabEmail')
 async function submitAuthEmail(){var email=document.getElementById('authEmailInput').value.trim();if(!email){alert('Введите email');return;}if(authEmailStep==='request'){var res=await fetch('/api/auth/email/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){alert(data.detail||'Не удалось отправить код');return;}authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';var hint=document.getElementById('authDevCodeHint');if(data.dev_code&&hint){hint.textContent='Ваш код: '+data.dev_code+' (на почту пока не приходит)';hint.classList.remove('hidden');}showToast(data.message||(data.dev_code?'Код на экране':'Код отправлен на email'));return;}var code=document.getElementById('authCodeInput').value.trim();var vres=await fetch('/api/auth/email/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code}),...fetchOpts});var vdata=await vres.json().catch(function(){return{};});if(!vres.ok){alert(vdata.detail||'Неверный код');return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');}
 async function logoutUser(){await fetch('/api/auth/logout',{method:'POST',...fetchOpts});session.loggedIn=false;session.user=null;user.balance=0;try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);d.balance=0;localStorage.setItem('создайсвоюпесню_user',JSON.stringify(d));}}catch(e){}await fetchMe();renderLibrary();renderHistory();updateBalanceUI();showToast('Вы вышли из аккаунта');}
 function switchLibraryTab(tab){libraryTab=tab==='history'?'history':'library';if(libraryTab==='library')libraryPage=0;else historyPage=0;document.getElementById('libTabLibrary').classList.toggle('active',libraryTab==='library');document.getElementById('libTabHistory').classList.toggle('active',libraryTab==='history');document.getElementById('libraryTabContent').classList.toggle('hidden',libraryTab!=='library');document.getElementById('historyTabContent').classList.toggle('hidden',libraryTab!=='history');if(libraryTab==='history'){fetchHistory().then(renderHistory);}else renderLibrary();}
-function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var ht=document.getElementById('homeTrends');if(ht)ht.classList.remove('hidden');var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view!=='create'&&ht)ht.classList.add('hidden');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
+function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
 function applyServerBalance(bal){if(bal==null||bal===undefined)return;if(session.loggedIn&&session.user)session.user.balance=bal;updateBalanceUI();}
 function handleGuestLimitError(detail,opts){opts=opts||{};var msg=detail||'Войдите в аккаунт, чтобы продолжить';if(/нот|Купите|Пробная генерация уже/i.test(msg)){if(session.loggedIn)openCreditPurchaseModal();else openAuthModal();}else{openAuthModal();}if(!opts.noThrow)throw new Error(msg);return msg;}
 function canStartSongGeneration(){if(!session.loggedIn)return'auth';if(session.guestRemaining>0)return'ok';if(getBalance()>=1)return'ok';return'payment';}
@@ -1244,7 +1265,10 @@ async function loadCommentsModal(trackId){var listEl=document.getElementById('co
 async function submitComment(){if(!commentsModalTrackId)return;if(!session.loggedIn){showToast('Комментарии могут оставлять только зарегистрированные пользователи');openAuthModal();return;}var input=document.getElementById('commentsModalInput');var text=(input&&input.value||'').trim();if(text.length<2){showToast('Комментарий слишком короткий');return;}var btn=document.getElementById('commentsModalSubmit');if(btn){btn.disabled=true;btn.textContent='Отправка…';}try{var res=await fetch('/api/explore/'+encodeURIComponent(commentsModalTrackId)+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(res.status===401){showToast(data.detail||'Войдите в аккаунт');openAuthModal();return;}if(!res.ok){alert(data.detail||'Не удалось отправить комментарий');return;}if(input)input.value='';showToast('Комментарий добавлен');await loadCommentsModal(commentsModalTrackId);await fetchExploreTracks();renderExplore();renderHomeExplore();}catch(e){alert('Ошибка сети');}finally{if(btn){btn.disabled=false;btn.textContent='Отправить';}}}
 function playExploreTrack(id){var t=(session.exploreTracks||[]).find(function(x){return String(x.id)===String(id);});if(!t)return;playAudio(t.listen_url,t.title,t.image_url,t.author_name||'Аноним');}
 function renderExplore(){var eg=document.getElementById('exploreGrid');if(!eg)return;var tracks=session.exploreTracks||[];if(!tracks.length){eg.innerHTML='<div class="col-span-full text-center py-16 glass-panel"><div class="text-4xl mb-3">🌟</div><div class="text-lg font-semibold mb-2">Пока пусто</div><div class="text-sm text-zinc-500 max-w-md mx-auto">Опубликуйте трек из фонотеки — он появится на МузПлощадке. Ставьте лайки, чтобы поднять трек в рейтинге.</div></div>';return;}eg.innerHTML=tracks.map(function(t,i){return exploreCardHtml(t,{rank:i+1});}).join('');bindExplorePlayButtons(eg);}
-function renderHomeExplore(){var heg=document.getElementById('homeExploreGrid');if(!heg)return;var tracks=(session.exploreTracks||[]).slice(0,4);if(!tracks.length){heg.innerHTML='<div class="col-span-full text-center py-8 glass-panel cursor-pointer" onclick="switchToView(\'explore\')"><div class="text-2xl mb-2">🌟</div><div class="text-sm font-medium text-zinc-400">Опубликуйте трек из фонотеки — он попадёт на МузПлощадку</div></div>';return;}heg.innerHTML=tracks.map(function(t,i){return exploreCardHtml(t,{rank:i+1});}).join('');bindExplorePlayButtons(heg);}
+function sidebarTrackHtml(t,rank){var cover=t.image_url||t.imageUrl||'https://picsum.photos/id/29/280/280';var rc=rank<=3?' rank-'+rank:'';return'<button type="button" class="sidebar-track-item w-full flex items-center gap-2.5 p-2 rounded-xl text-left" data-sidebar-play="'+escHtml(String(t.id))+'"><span class="sidebar-rank'+rc+'">'+rank+'</span><img src="'+escHtml(cover)+'" alt="" class="sidebar-track-thumb" loading="lazy"><span class="min-w-0 flex-1"><span class="block text-sm font-medium truncate text-zinc-200">'+escHtml(t.title||'Без названия')+'</span><span class="block text-[11px] text-zinc-500 truncate">'+escHtml(t.author_name||'Аноним')+'</span></span><i class="fa-solid fa-play text-yellow-400/80 text-xs shrink-0"></i></button>';}
+function bindSidebarTrackButtons(root){root=root||document;root.querySelectorAll('[data-sidebar-play]').forEach(function(btn){btn.addEventListener('click',function(){playExploreTrack(btn.getAttribute('data-sidebar-play'));});});}
+function renderCommunityTop(){var list=document.getElementById('communityTopList');if(!list)return;var tracks=(session.exploreTracks||[]).slice(0,3);if(!tracks.length){list.innerHTML='<p class="text-xs text-zinc-500 leading-relaxed">Пока нет хитов — опубликуйте трек из фонотеки на МузПлощадку.</p>';return;}list.innerHTML=tracks.map(function(t){return'<div class="flex justify-between items-center gap-2"><span class="truncate text-zinc-300">'+escHtml(t.title||'—')+'</span><button type="button" class="community-similar-btn text-yellow-400 text-xs hover:underline shrink-0" data-title="'+escHtml(t.title||'')+'">Похожее</button></div>';}).join('');list.querySelectorAll('.community-similar-btn').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.getAttribute('data-title')||'';document.getElementById('ideaInput').value='Создай песню в стиле «'+title+'», атмосферную и запоминающуюся';switchToView('create');document.getElementById('ideaInput').focus();});});}
+function renderHomeExplore(){var side=document.getElementById('homeExploreSidebar');var tracks=(session.exploreTracks||[]).slice(0,3);if(side){if(!tracks.length){side.innerHTML='<div class="text-center py-4 px-2 rounded-xl border border-dashed border-white/10 cursor-pointer" onclick="switchToView(\'explore\')"><div class="text-xl mb-1">🌟</div><div class="text-xs text-zinc-500 leading-relaxed">Опубликуйте трек — он попадёт в чарт</div></div>';}else{side.innerHTML=tracks.map(function(t,i){return sidebarTrackHtml(t,i+1);}).join('');bindSidebarTrackButtons(side);}}renderCommunityTop();}
 function bindPlayerDefaultFromChart(){var tracks=session.exploreTracks||[];var top=tracks[0]||null;if(!top){playerDefaultTrack=null;return;}playerDefaultTrack={id:top.id,title:top.title,cover:top.image_url||'https://picsum.photos/id/29/280/280',url:top.listen_url,author:top.author_name||'Аноним'};if(!currentAudio)applyPlayerDefaultDisplay();}
 function applyPlayerDefaultDisplay(){if(!playerDefaultTrack)return;var pt=document.getElementById('playingTitle');var ps=document.getElementById('playerSubtitle');var pa=document.getElementById('playerAuthor');if(pt)pt.textContent=playerDefaultTrack.title;if(ps)ps.textContent='Топ чарта';if(pa)pa.textContent=playerDefaultTrack.author;setPlayerCover(playerDefaultTrack.cover);}
 function playPlayerDefault(){if(!playerDefaultTrack||!playerDefaultTrack.url)return;playAudio(playerDefaultTrack.url,playerDefaultTrack.title,playerDefaultTrack.cover,playerDefaultTrack.author);}
@@ -1327,7 +1351,7 @@ function initChips(){
   updateIdeaFieldUI();
 }
 
-function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});document.querySelectorAll('#communityTopList button').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.closest('.flex')&&btn.closest('.flex').querySelector('span')&&btn.closest('.flex').querySelector('span').textContent||'';document.getElementById('ideaInput').value='Создай песню в стиле "'+title+'", атмосферную и запоминающуюся';switchToView('create');});});}
+function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});}
 
 document.getElementById('modeProducerCard').addEventListener('click',function(){setStudioMode('producer');});
 document.getElementById('modeExpertCard').addEventListener('click',function(){setStudioMode('expert');});
