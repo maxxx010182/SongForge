@@ -360,3 +360,31 @@ class PaymentOrderStatusResponse(BaseModel):
 class FullAudioResponse(BaseModel):
     audio_url: str
     title: str = ""
+
+
+class AdminMeResponse(BaseModel):
+    role: str
+    permissions: list[str]
+    email: str | None = None
+    display_name: str = ""
+
+
+class AdminDashboardResponse(BaseModel):
+    users_total: int = 0
+    users_week: int = 0
+    generations_24h: dict = {}
+    generations_stuck: int = 0
+    generations_active: int = 0
+    orders_paid_24h: dict = {}
+    tracks_published: int = 0
+    alerts: list[dict] = []
+
+
+class AdminBalanceAdjustRequest(BaseModel):
+    delta: int
+    reason: str
+
+
+class AdminGrantRequest(BaseModel):
+    email: str
+    role: str = "support"

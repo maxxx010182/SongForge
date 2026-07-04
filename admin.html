@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ — СоздайСвоюПесню</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;color:#e4e4e7;min-height:100vh}
+a{color:#eab308}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+.hdr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #27272a}
+.hdr h1{font-size:1.25rem;font-weight:600}
+.badge{font-size:.75rem;padding:4px 10px;border-radius:999px;background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.card{background:#18181b;border:1px solid #27272a;border-radius:12px;padding:14px}
+.card .n{font-size:1.5rem;font-weight:700;color:#fafafa}
+.card .l{font-size:.72rem;color:#71717a;margin-top:4px}
+.alert{padding:12px 14px;border-radius:10px;margin-bottom:12px;font-size:.85rem}
+.alert.critical{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.35);color:#fca5a5}
+.alert.warning{background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:#fde047}
+.sec{margin-bottom:28px}
+.sec h2{font-size:.95rem;margin-bottom:12px;color:#a1a1aa;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #27272a}
+th{color:#71717a;font-weight:500}
+tr:hover td{background:#141416}
+.muted{color:#71717a}
+.btn{display:inline-block;padding:8px 14px;border-radius:8px;border:none;font-size:.82rem;cursor:pointer;background:#27272a;color:#e4e4e7}
+.btn:hover{background:#3f3f46}
+.btn.primary{background:#eab308;color:#000;font-weight:600}
+.btn.primary:hover{background:#facc15}
+input,select,textarea{background:#09090b;border:1px solid #3f3f46;border-radius:8px;color:#fafafa;padding:8px 10px;font-size:.85rem;width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-bottom:12px}
+.row>*{flex:1;min-width:140px}
+.denied{text-align:center;padding:80px 20px}
+.denied h2{margin-bottom:12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:6px 12px;border-radius:8px;border:1px solid #3f3f46;background:transparent;color:#a1a1aa;cursor:pointer;font-size:.8rem}
+.tab.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.4);color:#eab308}
+.panel{display:none}
+.panel.active{display:block}
+pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:10px;border-radius:8px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate" class="denied">
+    <h2>Проверка доступа…</h2>
+    <p class="muted" id="gateMsg">Войдите на сайте под email из ADMIN_BOOTSTRAP_EMAILS, затем откройте /admin снова.</p>
+    <p style="margin-top:16px"><a href="/">← На главную (вход)</a></p>
+  </div>
+  <div id="app" class="hidden">
+    <header class="hdr">
+      <div>
+        <h1>Админ-панель</h1>
+        <div class="muted" style="font-size:.8rem;margin-top:4px" id="adminWho"></div>
+      </div>
+      <span class="badge" id="roleBadge"></span>
+    </header>
+    <div id="alerts"></div>
+    <div class="grid" id="stats"></div>
+    <div class="tabs" id="navTabs"></div>
+    <div id="panelDash" class="panel active sec"><p class="muted">Обновление каждые 60 сек. Зависшие — статус generating дольше 10 минут.</p></div>
+    <div id="panelGen" class="panel sec">
+      <h2>Генерации</h2>
+      <div class="row">
+        <select id="genFilter"><option value="">Все</option><option value="generating">generating</option><option value="success">success</option><option value="error">error</option></select>
+        <button class="btn" type="button" id="genReload">Обновить</button>
+      </div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Название</th><th>Статус</th><th>User</th><th>task_id</th></tr></thead><tbody id="genBody"></tbody></table></div>
+    </div>
+    <div id="panelUsers" class="panel sec">
+      <h2>Пользователи</h2>
+      <div class="row">
+        <input id="userQ" placeholder="email, имя или UUID" />
+        <button class="btn" type="button" id="userSearch">Найти</button>
+      </div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Имя</th><th>Нот</th><th>Пробная</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div>
+    </div>
+    <div id="panelAdmins" class="panel sec">
+      <h2>Администраторы</h2>
+      <div class="row">
+        <input id="grantEmail" placeholder="email пользователя (уже входил на сайт)" />
+        <select id="grantRole"><option value="support">support</option><option value="moderator">moderator</option><option value="finance">finance</option><option value="admin">admin</option><option value="readonly">readonly</option></select>
+        <button class="btn primary" type="button" id="grantBtn">Выдать роль</button>
+      </div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Роль</th><th>Последний вход</th></tr></thead><tbody id="admBody"></tbody></table></div>
+    </div>
+    <div id="panelAudit" class="panel sec">
+      <h2>Журнал действий</h2>
+      <button class="btn" type="button" id="auditReload" style="margin-bottom:12px">Обновить</button>
+      <div style="overflow-x:auto"><table><thead><tr><th>Время</th><th>Кто</th><th>Действие</th><th>Цель</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<script>
+var me=null;var fetchOpts={credentials:'include'};
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+function has(p){return me&&me.permissions&&me.permissions.indexOf(p)>=0;}
+async function api(path,opts){opts=opts||{};var r=await fetch(path,Object.assign({credentials:'include'},opts));var d=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(d.detail||r.statusText);return d;}
+function showGate(msg){document.getElementById('gate').classList.remove('hidden');document.getElementById('app').classList.add('hidden');if(msg)document.getElementById('gateMsg').textContent=msg;}
+function renderStats(d){
+  var h='<div class="card"><div class="n">'+d.users_total+'</div><div class="l">Пользователей</div></div>';
+  h+='<div class="card"><div class="n">'+d.users_week+'</div><div class="l">За 7 дней</div></div>';
+  h+='<div class="card"><div class="n">'+((d.generations_24h&&d.generations_24h.success)||0)+'</div><div class="l">Успех 24ч</div></div>';
+  h+='<div class="card"><div class="n">'+d.generations_stuck+'</div><div class="l">Зависло</div></div>';
+  h+='<div class="card"><div class="n">'+((d.orders_paid_24h&&d.orders_paid_24h.count)||0)+'</div><div class="l">Оплат 24ч</div></div>';
+  document.getElementById('stats').innerHTML=h;
+  var al=d.alerts||[];document.getElementById('alerts').innerHTML=al.map(function(a){return'<div class="alert '+esc(a.level)+'">'+esc(a.message)+'</div>';}).join('');
+}
+async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);}
+async function loadGen(){var st=document.getElementById('genFilter').value;var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';var rows=await api('/api/admin/generations'+q);document.getElementById('genBody').innerHTML=rows.map(function(g){
+  return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
+}).join('')||'<tr><td colspan="5" class="muted">Пусто</td></tr>';}
+async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
+  document.getElementById('userBody').innerHTML=rows.map(function(u){
+    return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-id="'+esc(u.id)+'" data-bal="'+u.balance+'" type="button">± ноты</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">Не найдено</td></tr>';
+  document.querySelectorAll('#userBody button').forEach(function(btn){btn.onclick=function(){
+    var delta=prompt('Изменение баланса (+10 или -5):','10');if(delta==null)return;
+    var reason=prompt('Причина (обязательно):','поддержка');if(!reason)return;
+    api('/api/admin/users/'+btn.dataset.id+'/balance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta:parseInt(delta,10),reason:reason})}).then(function(){alert('Готово');searchUsers();loadDash();}).catch(function(e){alert(e.message);});
+  };});
+}
+async function loadAdmins(){var rows=await api('/api/admin/admins');document.getElementById('admBody').innerHTML=rows.map(function(a){
+  return'<tr><td>'+esc(a.email)+'</td><td>'+esc(a.role)+'</td><td class="muted">'+esc((a.last_access_at||'').slice(0,16))+'</td></tr>';
+}).join('');}
+async function loadAudit(){var rows=await api('/api/admin/audit?limit=80');document.getElementById('auditBody').innerHTML=rows.map(function(a){
+  return'<tr><td class="muted">'+esc((a.created_at||'').slice(0,19))+'</td><td>'+esc(a.admin_email)+'</td><td>'+esc(a.action)+'</td><td class="muted">'+esc(a.target_id||'')+'</td></tr>';
+}).join('')||'<tr><td colspan="4" class="muted">Пусто</td></tr>';}
+function switchTab(id){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});document.getElementById(id).classList.add('active');}
+function buildNav(){
+  var tabs=[{id:'panelDash',label:'Обзор',perm:'dashboard:read',load:loadDash}];
+  if(has('generations:read'))tabs.push({id:'panelGen',label:'Генерации',load:loadGen});
+  if(has('users:read'))tabs.push({id:'panelUsers',label:'Пользователи'});
+  if(has('admins:manage'))tabs.push({id:'panelAdmins',label:'Команда',load:loadAdmins});
+  if(has('system:read'))tabs.push({id:'panelAudit',label:'Журнал',load:loadAudit});
+  document.getElementById('navTabs').innerHTML=tabs.map(function(t,i){
+    return'<button type="button" class="tab'+(i===0?' active':'')+'" data-panel="'+t.id+'">'+t.label+'</button>';
+  }).join('');
+  document.querySelectorAll('.tab').forEach(function(btn){btn.onclick=function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');switchTab(btn.dataset.panel);
+    var t=tabs.find(function(x){return x.id===btn.dataset.panel;});if(t&&t.load)t.load();
+  };});
+}
+async function init(){
+  try{
+    me=await api('/api/admin/me');
+  }catch(e){
+    showGate(e.message==='Войдите в аккаунт на сайте'?'Сначала войдите на главной странице (/), затем вернитесь сюда.':(e.message||'Доступ запрещён'));
+    return;
+  }
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('roleBadge').textContent=me.role;
+  document.getElementById('adminWho').textContent=(me.display_name||'')+(me.email?' · '+me.email:'');
+  buildNav();
+  loadDash();
+  if(!has('admins:manage'))document.getElementById('panelAdmins').innerHTML='<p class="muted">Раздел только для super_admin</p>';
+  document.getElementById('genReload').onclick=loadGen;
+  document.getElementById('userSearch').onclick=searchUsers;
+  document.getElementById('auditReload').onclick=loadAudit;
+  document.getElementById('grantBtn').onclick=function(){
+    api('/api/admin/admins/grant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('grantEmail').value,role:document.getElementById('grantRole').value})}).then(function(){alert('Роль выдана');loadAdmins();}).catch(function(e){alert(e.message);});
+  };
+  setInterval(loadDash,60000);
+}
+init();
+</script>
+</body>
+</html>

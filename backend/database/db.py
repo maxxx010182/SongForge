@@ -155,6 +155,41 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL UNIQUE,
+                role TEXT NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                invited_by TEXT,
+                created_at TEXT NOT NULL,
+                last_access_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_users_role ON admin_users(role)"
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admin_audit_log (
+                id TEXT PRIMARY KEY,
+                admin_user_id TEXT NOT NULL,
+                action TEXT NOT NULL,
+                target_type TEXT,
+                target_id TEXT,
+                details_json TEXT,
+                ip_address TEXT,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_log(created_at)"
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS track_likes (
                 user_id TEXT NOT NULL,
                 library_id TEXT NOT NULL,

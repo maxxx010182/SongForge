@@ -60,3 +60,17 @@ TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
     "true",
     "yes",
 }
+
+# --- Админ-панель (/admin) ---
+# Только эти email при первом входе в /admin становятся super_admin (через запятую).
+ADMIN_BOOTSTRAP_EMAILS: frozenset[str] = frozenset(
+    e.strip().lower()
+    for e in os.getenv("ADMIN_BOOTSTRAP_EMAILS", "").split(",")
+    if e.strip()
+)
+# Пусто = без ограничения по IP. Иначе только перечисленные IP (через запятую).
+ADMIN_IP_ALLOWLIST: frozenset[str] = frozenset(
+    ip.strip()
+    for ip in os.getenv("ADMIN_IP_ALLOWLIST", "").split(",")
+    if ip.strip()
+)

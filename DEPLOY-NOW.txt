@@ -1,4 +1,4 @@
-SongForge - obnovit server (v2.5.10)
+SongForge - obnovit server (v2.9.0)
 ===================================
 Obnovleno: 3 iyulya 2026
 Vydelit ODNU stroku -> Ctrl+C -> vstaviti v terminal.
@@ -16,7 +16,7 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 Dolzhno byt:
   deploy-vps.sh: versiya 11 — OK
   deploy-script-version: 11
-  === Gotovo! v2.5.10 ===
+  === Gotovo! v2.9.0 ===
 
 
 2b) Esli oshibka pro base64 (staryy skript s CDN)

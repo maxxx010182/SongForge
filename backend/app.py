@@ -1,5 +1,5 @@
 import requests
-from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Response, UploadFile
+from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,6 +36,10 @@ from backend.models import (
     ProfileUpdateRequest,
     ProfileUpdateResponse,
     StyleRequest,
+    AdminBalanceAdjustRequest,
+    AdminDashboardResponse,
+    AdminGrantRequest,
+    AdminMeResponse,
     TelegramAuthRequest,
     TrackCommentCreateRequest,
     TrackCommentsResponse,
@@ -43,6 +47,7 @@ from backend.models import (
     TrackVariant,
     UserInfo,
 )
+from backend.services.admin_service import AdminService
 from backend.services.ai_producer import AiProducer
 from backend.services.apipass_client import ApiPassClient
 from backend.services.audio_access_service import AudioAccessService
@@ -82,8 +87,9 @@ profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
+admin_service = AdminService()
 
-app = FastAPI(title="SongForge", version="2.5.10")
+app = FastAPI(title="SongForge", version="2.9.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -132,6 +138,35 @@ def get_optional_user(
     sf_session: str | None = Cookie(default=None),
 ) -> dict | None:
     return auth_service.get_user_by_session(sf_session)
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return ""
+
+
+async def require_admin_user(
+    request: Request,
+    user: dict | None = Depends(get_optional_user),
+) -> dict:
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт на сайте")
+    ip = _client_ip(request)
+    try:
+        admin = admin_service.resolve_admin(user, ip=ip)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if not admin:
+        raise HTTPException(status_code=403, detail="Нет прав администратора")
+    return {
+        **user,
+        "admin_id": admin["id"],
+        "admin_role": admin["role"],
+    }
 
 
 def _user_info(user: dict) -> UserInfo:
@@ -196,6 +231,15 @@ async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
 
 
+@app.get("/admin")
+async def get_admin_page():
+    """Отдельная админ-панель. Не ссылаемся с главной — URL только для команды."""
+    path = ROOT_DIR / "admin.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path)
+
+
 @app.get("/SongForgeLogo.png")
 async def get_logo():
     path = ROOT_DIR / "SongForgeLogo.png"
@@ -206,7 +250,115 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.5.10"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.0"}
+
+
+@app.get("/api/admin/me", response_model=AdminMeResponse)
+async def admin_me(admin_user: dict = Depends(require_admin_user)):
+    role = admin_user["admin_role"]
+    return AdminMeResponse(
+        role=role,
+        permissions=admin_service.list_permissions(role),
+        email=admin_user.get("email"),
+        display_name=admin_user.get("display_name") or "",
+    )
+
+
+@app.get("/api/admin/dashboard", response_model=AdminDashboardResponse)
+async def admin_dashboard(admin_user: dict = Depends(require_admin_user)):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "dashboard:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return AdminDashboardResponse(**admin_service.get_dashboard())
+
+
+@app.get("/api/admin/generations")
+async def admin_list_generations(
+    status: str | None = None,
+    limit: int = 50,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "generations:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return admin_service.list_generations(status=status, limit=limit)
+
+
+@app.get("/api/admin/users/search")
+async def admin_search_users(
+    q: str,
+    limit: int = 30,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "users:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return admin_service.search_users(q=q, limit=limit)
+
+
+@app.post("/api/admin/users/{user_id}/balance")
+async def admin_adjust_balance(
+    user_id: str,
+    req: AdminBalanceAdjustRequest,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        result = admin_service.adjust_balance(
+            admin_id=admin_user["admin_id"],
+            admin_role=admin_user["admin_role"],
+            target_user_id=user_id,
+            delta=int(req.delta),
+            reason=req.reason,
+            ip=_client_ip(request),
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"success": True, **result}
+
+
+@app.get("/api/admin/admins")
+async def admin_list_admins(admin_user: dict = Depends(require_admin_user)):
+    try:
+        return admin_service.list_admins(admin_role=admin_user["admin_role"])
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/admins/grant")
+async def admin_grant_role(
+    req: AdminGrantRequest,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        return admin_service.grant_admin(
+            admin_id=admin_user["admin_id"],
+            admin_role=admin_user["admin_role"],
+            target_email=req.email,
+            role=req.role,
+            ip=_client_ip(request),
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/admin/audit")
+async def admin_audit_log(
+    limit: int = 100,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        return admin_service.list_audit(admin_role=admin_user["admin_role"], limit=limit)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @app.get("/api/me", response_model=MeResponse)
