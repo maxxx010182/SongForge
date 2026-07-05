@@ -21,6 +21,7 @@ class ProduceRequest(BaseModel):
     backing_vocal: bool = False
     style_mode: str = "presets"
     custom_description: str = ""
+    lyrics_engine: str = "classic"
 
 
 class MusicAnalysis(BaseModel):
@@ -135,6 +136,7 @@ class CreateSongRequest(BaseModel):
     backing_vocal: bool = False
     style_mode: str = "presets"
     custom_description: str = ""
+    lyrics_engine: str = "classic"
 
 
 class CreateSongResponse(BaseModel):

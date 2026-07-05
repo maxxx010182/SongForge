@@ -2,6 +2,7 @@ from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.idea_parser import merge_parsed_with_request, parse_idea
+from backend.services.suno_package_composer import SunoPackageComposer
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
@@ -12,6 +13,7 @@ from backend.utils.suno_payload import (
     sanitize_negative_tags,
     sanitize_suno_title,
 )
+from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT_WEIRDNESS
 from backend.utils.text import (
     clean_text,
     ensure_russian_vocal_style,
@@ -42,6 +44,7 @@ class PromptBuilder:
         self._translator = ReferenceTranslator(yandex)
         self._analyst = AiMusicAnalyst(yandex)
         self._composer = AiPromptComposer(yandex)
+        self._package = SunoPackageComposer(yandex)
 
     def build(
         self,
@@ -55,8 +58,10 @@ class PromptBuilder:
         backing_vocal: bool = False,
         style_mode: str = "presets",
         custom_description: str = "",
+        lyrics_engine: str = "classic",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Parse idea → Reference → Analyst → Composer → Suno payload."""
+        use_unified = lyrics_engine == "unified" and not instrumental
         custom_mode = style_mode == "custom" and custom_description.strip()
         parse_text = idea.strip()
         if custom_mode:
@@ -110,14 +115,44 @@ class PromptBuilder:
             locked_genre=parsed.has_locked_genre or ui_genre_locked,
             locked_artist=parsed.has_locked_artist or ui_artist_locked,
         )
-        payload = self._composer.compose(
-            analysis,
-            analyst_idea,
-            reference=reference,
-            vocal_hint=vocal_hint,
-            backing_vocal=backing_vocal,
-            backing_vocal_gender=backing_gender,
-        )
+
+        package = None
+        if use_unified:
+            package = self._package.compose(
+                analyst_idea,
+                analysis,
+                reference=reference,
+                vocal_hint=vocal_hint,
+                backing_vocal=backing_vocal,
+                backing_vocal_gender=backing_gender,
+                custom_description=custom_description,
+            )
+
+        if package:
+            payload = self._payload_from_unified_package(
+                package,
+                analysis,
+                backing_vocal=backing_vocal,
+            )
+            log.info(
+                "Unified lyrics engine: source=%s title=%r style_len=%s lyrics_len=%s",
+                package.source,
+                payload.title,
+                len(payload.style),
+                len(payload.lyrics),
+            )
+        else:
+            if use_unified:
+                log.warning("Unified engine failed — falling back to classic pipeline")
+            payload = self._composer.compose(
+                analysis,
+                analyst_idea,
+                reference=reference,
+                vocal_hint=vocal_hint,
+                backing_vocal=backing_vocal,
+                backing_vocal_gender=backing_gender,
+            )
+
         plan = self._analysis_to_plan(analysis, payload, parsed=parsed)
         plan = apply_user_to_plan(
             plan,
@@ -127,40 +162,95 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
         )
 
-        payload.style = enforce_style(
-            payload.style,
-            plan,
-            reference=reference,
-            backing_vocal=backing_vocal,
-            backing_vocal_gender=backing_gender,
-        )
-        if custom_mode:
-            user_style = truncate(clean_text(custom_description.strip()), 120)
-            merged = (
-                f"{user_style}, {payload.style}"
-                if payload.style.strip()
-                else user_style
+        if package:
+            if custom_mode:
+                user_style = truncate(clean_text(custom_description.strip()), 120)
+                merged = (
+                    f"{user_style}, {payload.style}"
+                    if payload.style.strip()
+                    else user_style
+                )
+                payload.style = ensure_russian_vocal_style(merged)
+            payload.style = compact_suno_style(payload.style)
+            payload.title = sanitize_suno_title(payload.title, analyst_idea)
+            payload.negative_tags = sanitize_negative_tags(
+                payload.negative_tags, payload.style, plan.genre
             )
-            payload.style = (
-                ensure_russian_vocal_style(merged) if not instrumental else merged
-            )
-
-        payload.style = compact_suno_style(payload.style)
-        payload.title = sanitize_suno_title(payload.title, analyst_idea)
-        payload.negative_tags = sanitize_negative_tags(
-            payload.negative_tags, payload.style, plan.genre
-        )
-        payload.vocal_gender = plan.vocal_gender
-        payload.style_weight = plan.style_weight
-        payload.weirdness_constraint = plan.weirdness_constraint
-        payload.audio_weight = plan.audio_weight
-
-        if plan.instrumental:
-            payload.lyrics = ""
         else:
-            payload.lyrics = self.generate_lyrics(idea, plan)
+            payload.style = enforce_style(
+                payload.style,
+                plan,
+                reference=reference,
+                backing_vocal=backing_vocal,
+                backing_vocal_gender=backing_gender,
+            )
+            if custom_mode:
+                user_style = truncate(clean_text(custom_description.strip()), 120)
+                merged = (
+                    f"{user_style}, {payload.style}"
+                    if payload.style.strip()
+                    else user_style
+                )
+                payload.style = (
+                    ensure_russian_vocal_style(merged) if not instrumental else merged
+                )
+
+            payload.style = compact_suno_style(payload.style)
+            payload.title = sanitize_suno_title(payload.title, analyst_idea)
+            payload.negative_tags = sanitize_negative_tags(
+                payload.negative_tags, payload.style, plan.genre
+            )
+            payload.vocal_gender = plan.vocal_gender
+            payload.style_weight = plan.style_weight
+            payload.weirdness_constraint = plan.weirdness_constraint
+            payload.audio_weight = plan.audio_weight
+
+            if plan.instrumental:
+                payload.lyrics = ""
+            else:
+                payload.lyrics = self.generate_lyrics(idea, plan)
 
         return plan, payload
+
+    def _payload_from_unified_package(
+        self,
+        package,
+        analysis: MusicAnalysis,
+        *,
+        backing_vocal: bool = False,
+    ) -> SunoPromptPayload:
+        genre_key = analysis.genre.lower().split()[0]
+        style_weight = AiPromptComposer.STYLE_WEIGHT.get(
+            genre_key, DEFAULT_STYLE_WEIGHT
+        )
+        weirdness = (
+            DEFAULT_WEIRDNESS
+            if analysis.commercial_intent == "commercial"
+            else 0.50
+        )
+        negative_tags = self._composer._build_negative_tags(analysis.genre)
+        negative_tags = AiPromptComposer._apply_vocal_negatives(
+            negative_tags,
+            analysis.vocal,
+            backing_vocal,
+        )
+
+        vocal_gender = ""
+        if analysis.vocal == "female":
+            vocal_gender = "f"
+        elif analysis.vocal == "male":
+            vocal_gender = "m"
+
+        return SunoPromptPayload(
+            title=package.title,
+            lyrics=package.lyrics,
+            style=package.style,
+            vocal_gender=vocal_gender,
+            negative_tags=negative_tags,
+            style_weight=style_weight,
+            weirdness_constraint=weirdness,
+            audio_weight=DEFAULT_AUDIO_WEIGHT,
+        )
 
     def build_plan(
         self,

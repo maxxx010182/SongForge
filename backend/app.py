@@ -89,7 +89,7 @@ audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
 
-app = FastAPI(title="SongForge", version="2.9.6")
+app = FastAPI(title="SongForge", version="2.9.7")
 
 app.add_middleware(
     CORSMiddleware,
@@ -275,7 +275,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.6"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.7"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -897,6 +897,7 @@ async def produce_song(
             backing_vocal=req.backing_vocal,
             style_mode=req.style_mode,
             custom_description=req.custom_description,
+            lyrics_engine=req.lyrics_engine,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -936,6 +937,7 @@ async def create_song(
             backing_vocal=req.backing_vocal,
             style_mode=req.style_mode,
             custom_description=req.custom_description,
+            lyrics_engine=req.lyrics_engine,
         )
         if mode == "paid" and result.production_id:
             generation_quota.mark_note_charged(result.production_id)

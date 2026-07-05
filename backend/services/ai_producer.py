@@ -33,6 +33,7 @@ class AiProducer:
         backing_vocal: bool = False,
         style_mode: str = "presets",
         custom_description: str = "",
+        lyrics_engine: str = "classic",
     ) -> ProduceResponse:
         idea = idea.strip()
         custom_mode = style_mode == "custom" and custom_description.strip()
@@ -51,6 +52,7 @@ class AiProducer:
             backing_vocal=backing_vocal,
             style_mode=style_mode,
             custom_description=custom_description,
+            lyrics_engine=lyrics_engine,
         )
         plan.optimized_idea = idea
 
@@ -175,6 +177,7 @@ class AiProducer:
         backing_vocal: bool = False,
         style_mode: str = "presets",
         custom_description: str = "",
+        lyrics_engine: str = "classic",
     ) -> CreateSongResponse:
         produced = self.produce(
             idea,
@@ -186,6 +189,7 @@ class AiProducer:
             backing_vocal=backing_vocal,
             style_mode=style_mode,
             custom_description=custom_description,
+            lyrics_engine=lyrics_engine,
         )
         task_id = self.start_music(
             production_id=produced.production_id,
