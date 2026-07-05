@@ -93,6 +93,16 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
       <button class="btn" type="button" id="auditReload" style="margin-bottom:12px">Обновить</button>
       <div style="overflow-x:auto"><table><thead><tr><th>Время</th><th>Кто</th><th>Действие</th><th>Цель</th></tr></thead><tbody id="auditBody"></tbody></table></div>
     </div>
+    <div id="panelShowcase" class="panel sec">
+      <h2>Витрина — оживление МузПлощадки</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:14px">Персоны, лайки и комментарии для ваших опубликованных треков. Обычные пользователи этого не видят.</p>
+      <div class="row" style="margin-bottom:18px">
+        <div class="card" style="flex:0 0 180px"><div class="n" id="personaCount">0</div><div class="l">Персон в пуле</div></div>
+        <button class="btn primary" type="button" id="personaCreateBtn">Создать 20 персон</button>
+        <button class="btn" type="button" id="showcaseReload">Обновить треки</button>
+      </div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Трек</th><th>Автор</th><th>Лайки</th><th>Комменты</th><th>Действия</th></tr></thead><tbody id="showcaseBody"></tbody></table></div>
+    </div>
   </div>
 </div>
 <script>
@@ -130,10 +140,66 @@ async function loadAdmins(){var rows=await api('/api/admin/admins');document.get
 async function loadAudit(){var rows=await api('/api/admin/audit?limit=80');document.getElementById('auditBody').innerHTML=rows.map(function(a){
   return'<tr><td class="muted">'+esc((a.created_at||'').slice(0,19))+'</td><td>'+esc(a.admin_email)+'</td><td>'+esc(a.action)+'</td><td class="muted">'+esc(a.target_id||'')+'</td></tr>';
 }).join('')||'<tr><td colspan="4" class="muted">Пусто</td></tr>';}
+var showcasePersonas=[];
+async function loadPersonas(){var d=await api('/api/admin/showcase/personas?limit=120');showcasePersonas=d.items||[];document.getElementById('personaCount').textContent=String(d.total||0);}
+function showcaseActionButtons(t){
+  return'<button class="btn" type="button" data-act="likes5" data-id="'+esc(t.id)+'">+5 ❤</button> '
+    +'<button class="btn" type="button" data-act="likes10" data-id="'+esc(t.id)+'">+10 ❤</button> '
+    +'<button class="btn" type="button" data-act="comment" data-id="'+esc(t.id)+'">Коммент</button> '
+    +'<button class="btn" type="button" data-act="title" data-id="'+esc(t.id)+'" data-title="'+esc(t.title)+'">Название</button> '
+    +'<button class="btn" type="button" data-act="author" data-id="'+esc(t.id)+'" data-author="'+esc(t.author_name)+'">Автор</button> '
+    +'<button class="btn" type="button" data-act="clear" data-id="'+esc(t.id)+'">Сброс seed</button>';
+}
+async function loadShowcase(){await loadPersonas();var d=await api('/api/admin/showcase/tracks?limit=80');var items=d.items||[];
+  document.getElementById('showcaseBody').innerHTML=items.map(function(t){
+    var likes=String(t.likes||0)+(t.seed_likes?(' <span class="muted">(+'+t.seed_likes+' seed)</span>'):'');
+    var comments=String(t.comments||0)+(t.seed_comments?(' <span class="muted">(+'+t.seed_comments+' seed)</span>'):'');
+    return'<tr><td>'+esc(t.title)+'</td><td>'+esc(t.author_name)+'</td><td>'+likes+'</td><td>'+comments+'</td><td style="white-space:nowrap">'+showcaseActionButtons(t)+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">Нет опубликованных треков. Опубликуйте песню на МузПлощадке.</td></tr>';
+  document.querySelectorAll('#showcaseBody button').forEach(function(btn){btn.onclick=function(){handleShowcaseAction(btn);};});
+}
+async function handleShowcaseAction(btn){
+  var id=btn.dataset.id;var act=btn.dataset.act;
+  try{
+    if(act==='likes5'||act==='likes10'){
+      var n=act==='likes5'?5:10;
+      var r=await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/likes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count:n})});
+      alert('Добавлено лайков: '+r.added+'. Всего: '+r.likes);
+      loadShowcase();return;
+    }
+    if(act==='comment'){
+      if(!showcasePersonas.length){alert('Сначала создайте персон');return;}
+      var personaId=showcasePersonas[Math.floor(Math.random()*showcasePersonas.length)].id;
+      var pick=showcasePersonas.find(function(p){return p.id===personaId;});
+      var who=pick?pick.display_name:'персона';
+      var text=prompt('Комментарий от «'+who+'» (можно отредактировать):','Классный трек, зацепило!');
+      if(!text)return;
+      await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({persona_id:personaId,text:text})});
+      alert('Комментарий добавлен');loadShowcase();return;
+    }
+    if(act==='title'){
+      var title=prompt('Новое название трека:',btn.dataset.title||'');if(!title)return;
+      await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/title',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title})});
+      loadShowcase();return;
+    }
+    if(act==='author'){
+      var author=prompt('Новое имя автора (display name):',btn.dataset.author||'');if(!author)return;
+      await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/author',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:author})});
+      loadShowcase();return;
+    }
+    if(act==='clear'){
+      if(!confirm('Удалить все seed-лайки и seed-комментарии с этого трека?'))return;
+      var clr=await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/seed',{method:'DELETE'});
+      alert('Удалено: '+clr.likes_removed+' лайков, '+clr.comments_removed+' комментов');
+      loadShowcase();return;
+    }
+  }catch(e){alert(e.message||'Ошибка');}
+}
 function switchTab(id){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});document.getElementById(id).classList.add('active');}
 function buildNav(){
   var tabs=[{id:'panelDash',label:'Обзор',perm:'dashboard:read',load:loadDash}];
   if(has('generations:read'))tabs.push({id:'panelGen',label:'Генерации',load:loadGen});
+  if(has('showcase:write'))tabs.push({id:'panelShowcase',label:'Витрина',load:loadShowcase});
   if(has('users:read'))tabs.push({id:'panelUsers',label:'Пользователи'});
   if(has('admins:manage'))tabs.push({id:'panelAdmins',label:'Команда',load:loadAdmins});
   if(has('system:read'))tabs.push({id:'panelAudit',label:'Журнал',load:loadAudit});
@@ -165,6 +231,14 @@ async function init(){
   document.getElementById('grantBtn').onclick=function(){
     api('/api/admin/admins/grant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('grantEmail').value,role:document.getElementById('grantRole').value})}).then(function(){alert('Роль выдана');loadAdmins();}).catch(function(e){alert(e.message);});
   };
+  if(has('showcase:write')){
+    document.getElementById('personaCreateBtn').onclick=function(){
+      api('/api/admin/showcase/personas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count:20})}).then(function(r){alert('Создано персон: '+(r.created?r.created.length:0)+'. Всего: '+r.total);loadShowcase();}).catch(function(e){alert(e.message);});
+    };
+    document.getElementById('showcaseReload').onclick=loadShowcase;
+  }else{
+    document.getElementById('panelShowcase').innerHTML='<p class="muted">Раздел только для admin / super_admin</p>';
+  }
   setInterval(loadDash,60000);
 }
 init();

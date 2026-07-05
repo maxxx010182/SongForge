@@ -390,3 +390,26 @@ class AdminBalanceAdjustRequest(BaseModel):
 class AdminGrantRequest(BaseModel):
     email: str
     role: str = "support"
+
+
+class AdminCreatePersonasRequest(BaseModel):
+    names: list[str] = Field(default_factory=list)
+    count: int = 20
+
+
+class AdminSeedLikesRequest(BaseModel):
+    count: int = 10
+
+
+class AdminSeedCommentRequest(BaseModel):
+    persona_id: str
+    text: str
+    created_at: str = ""
+
+
+class AdminUpdateTrackTitleRequest(BaseModel):
+    title: str
+
+
+class AdminUpdateAuthorNameRequest(BaseModel):
+    display_name: str

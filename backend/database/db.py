@@ -216,6 +216,7 @@ def init_db() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_track_comments_library ON track_comments(library_id)"
         )
+        _migrate_engagement_columns(conn)
 
         conn.execute(
             """
@@ -262,6 +263,24 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
                 WHERE user_id IS NOT NULL AND user_id != ''
             )
             """
+        )
+    if "is_persona" not in existing:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN is_persona INTEGER NOT NULL DEFAULT 0"
+        )
+
+
+def _migrate_engagement_columns(conn: sqlite3.Connection) -> None:
+    like_cols = {row[1] for row in conn.execute("PRAGMA table_info(track_likes)")}
+    if "is_seed" not in like_cols:
+        conn.execute(
+            "ALTER TABLE track_likes ADD COLUMN is_seed INTEGER NOT NULL DEFAULT 0"
+        )
+
+    comment_cols = {row[1] for row in conn.execute("PRAGMA table_info(track_comments)")}
+    if "is_seed" not in comment_cols:
+        conn.execute(
+            "ALTER TABLE track_comments ADD COLUMN is_seed INTEGER NOT NULL DEFAULT 0"
         )
 
 

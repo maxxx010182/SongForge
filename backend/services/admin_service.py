@@ -28,6 +28,7 @@ PERMISSIONS: dict[str, frozenset[str]] = {
     "payments:read": frozenset({"super_admin", "admin", "finance", "readonly"}),
     "payments:write": frozenset({"super_admin", "finance"}),
     "moderation:write": frozenset({"super_admin", "admin", "moderator"}),
+    "showcase:write": frozenset({"super_admin", "admin"}),
     "admins:manage": frozenset({"super_admin"}),
     "system:read": frozenset({"super_admin", "admin"}),
     "system:write": frozenset({"super_admin"}),
@@ -225,9 +226,12 @@ class AdminService:
                 """
                 SELECT id, email, display_name, balance, created_at, trial_generations_used
                 FROM users
-                WHERE LOWER(COALESCE(email, '')) LIKE ?
+                WHERE COALESCE(is_persona, 0) = 0
+                  AND (
+                    LOWER(COALESCE(email, '')) LIKE ?
                    OR LOWER(display_name) LIKE ?
                    OR id = ?
+                  )
                 ORDER BY created_at DESC
                 LIMIT ?
                 """,

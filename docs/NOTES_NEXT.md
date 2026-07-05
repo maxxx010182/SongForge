@@ -721,6 +721,27 @@
 
 ---
 
+## Админ-витрина — оживление МузПлощадки *(июль 2026)*
+
+**Цель:** seed-лайки и комменты от персон для своих треков (не для реальных пользователей).
+
+**Сделано (v2.9.14):**
+- [x] `users.is_persona`, `track_likes.is_seed`, `track_comments.is_seed`
+- [x] `ShowcaseAdminService` + `/api/admin/showcase/*`
+- [x] Вкладка «Витрина» в `admin.html`
+- [x] Персоны не в поиске пользователей, не логинятся
+- [x] Тесты `tests/test_showcase_admin.py`
+
+**v2 (следующая сессия):**
+- [ ] Пакет «Оживить трек» (12 лайков + 3 коммента, шаблоны текстов)
+- [ ] Выбор персоны в UI комментария (не random)
+- [ ] Запись в `admin_audit_log` для showcase-действий
+- [ ] super_admin: фильтр «только мои / все треки» в UI
+
+**Файлы:** `backend/services/showcase_admin_service.py`, `admin.html`, `backend/database/db.py`
+
+---
+
 ## Не в scope ближайшей правки (напоминание)
 
 - Реальная отправка email-кодов (SMTP) — отдельная задача

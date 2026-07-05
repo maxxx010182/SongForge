@@ -27,6 +27,7 @@ class AuthService:
                 FROM sessions s
                 JOIN users u ON u.id = s.user_id
                 WHERE s.token = ? AND s.expires_at > ?
+                  AND COALESCE(u.is_persona, 0) = 0
                 """,
                 (token, now),
             ).fetchone()

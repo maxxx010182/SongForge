@@ -39,6 +39,11 @@ from backend.models import (
     AdminBalanceAdjustRequest,
     AdminDashboardResponse,
     AdminGrantRequest,
+    AdminCreatePersonasRequest,
+    AdminSeedLikesRequest,
+    AdminSeedCommentRequest,
+    AdminUpdateTrackTitleRequest,
+    AdminUpdateAuthorNameRequest,
     AdminMeResponse,
     TelegramAuthRequest,
     TrackCommentCreateRequest,
@@ -48,6 +53,7 @@ from backend.models import (
     UserInfo,
 )
 from backend.services.admin_service import AdminService
+from backend.services.showcase_admin_service import ShowcaseAdminService
 from backend.services.ai_producer import AiProducer
 from backend.services.apipass_client import ApiPassClient
 from backend.services.audio_access_service import AudioAccessService
@@ -88,8 +94,9 @@ generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
+showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.13")
+app = FastAPI(title="SongForge", version="2.9.14")
 
 app.add_middleware(
     CORSMiddleware,
@@ -282,7 +289,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.13"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.14"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -391,6 +398,155 @@ async def admin_audit_log(
         return admin_service.list_audit(admin_role=admin_user["admin_role"], limit=limit)
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+def _assert_showcase_permission(admin_user: dict) -> None:
+    admin_service.assert_permission(admin_user["admin_role"], "showcase:write")
+
+
+@app.get("/api/admin/showcase/personas")
+async def admin_list_personas(
+    limit: int = 100,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    personas = showcase_admin.list_personas(limit=limit)
+    return {"items": personas, "total": showcase_admin.persona_count()}
+
+
+@app.post("/api/admin/showcase/personas")
+async def admin_create_personas(
+    req: AdminCreatePersonasRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        created = showcase_admin.create_personas(names=req.names, count=req.count)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"success": True, "created": created, "total": showcase_admin.persona_count()}
+
+
+@app.get("/api/admin/showcase/tracks")
+async def admin_list_showcase_tracks(
+    limit: int = 50,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        items = showcase_admin.list_showcase_tracks(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            limit=limit,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return {"items": items}
+
+
+@app.post("/api/admin/showcase/tracks/{library_id}/likes")
+async def admin_seed_likes(
+    library_id: str,
+    req: AdminSeedLikesRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        return showcase_admin.add_seed_likes(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+            count=req.count,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/showcase/tracks/{library_id}/comments")
+async def admin_seed_comment(
+    library_id: str,
+    req: AdminSeedCommentRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        return showcase_admin.add_seed_comment(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+            persona_id=req.persona_id,
+            text=req.text,
+            created_at=req.created_at or None,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/admin/showcase/tracks/{library_id}/title")
+async def admin_update_track_title(
+    library_id: str,
+    req: AdminUpdateTrackTitleRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        return showcase_admin.update_track_title(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+            title=req.title,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/admin/showcase/tracks/{library_id}/author")
+async def admin_update_track_author(
+    library_id: str,
+    req: AdminUpdateAuthorNameRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        return showcase_admin.update_author_display_name(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+            display_name=req.display_name,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.delete("/api/admin/showcase/tracks/{library_id}/seed")
+async def admin_clear_seed_engagement(
+    library_id: str,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        return showcase_admin.clear_seed_engagement(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/me", response_model=MeResponse)
