@@ -3,43 +3,146 @@
 from __future__ import annotations
 
 import random
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
 from backend.services.cabinet_service import CabinetService
 
-PERSONA_NAME_POOL = (
-    "Марина",
-    "Алексей",
-    "Катя",
-    "Денис",
-    "Оля",
-    "Игорь",
-    "Настя",
-    "Павел",
-    "Юля",
-    "Роман",
-    "Лена",
-    "Сергей",
-    "Вика",
-    "Артём",
-    "Миша",
-    "Соня",
-    "Кирилл",
-    "Алина",
-    "Макс",
-    "Даша",
-    "Никита",
-    "Полина",
-    "Егор",
-    "Аня",
-    "Влад",
-    "Кристина",
-    "Тимур",
-    "Зоя",
-    "Глеб",
-    "Ира",
+# Готовые «живые» ники — как на реальной площадке, не «Марина» / «Алексей».
+PERSONA_NICKNAMES = (
+    "Величайший из величайших",
+    "Бешенный",
+    "Мракобес",
+    "Викуся",
+    "Ночной волк",
+    "Сладкая ягода",
+    "Грустный джаз",
+    "Рок-феникс",
+    "Тихий гений",
+    "Битмейкер из подвала",
+    "Король припева",
+    "Меломан 3000",
+    "Сонный кот",
+    "Дерзкий бит",
+    "Поэт с крыши",
+    "Звёздная пыль",
+    "Лунный свет",
+    "Огненный такт",
+    "Северный ветер",
+    "Южный хип-хоп",
+    "Кибер-скрипач",
+    "Виниловая душа",
+    "Басовый монстр",
+    "Хрупкий голос",
+    "Громкий шёпот",
+    "Старый панк",
+    "Молодой джаз",
+    "Рэп-философ",
+    "Инди-фея",
+    "Синт-поп мечтатель",
+    "Акустический бродяга",
+    "Электро-сова",
+    "Ритм-охотник",
+    "Мелодия в кармане",
+    "Хит за хитом",
+    "Слушатель №1",
+    "Голос из тумана",
+    "Соло на закате",
+    "Барабанный дождь",
+    "Гитарный призрак",
+    "Пианист без пианино",
+    "Вокалист с балкона",
+    "Чилловый котёнок",
+    "Драйвовый зайчик",
+    "Мрачный оптимист",
+    "Весёлый пессимист",
+    "Королева куплетов",
+    "Принц бриджа",
+    "Дедушка фанк",
+    "Тётя диско",
+    "Капитан хоруса",
+    "Пилот автотюна",
+    "Шёпот в наушниках",
+    "Громкость на максимум",
+    "Тихий шторм",
+    "Солнечный рефрен",
+    "Дождливый вайб",
+    "Снежный бит",
+    "Песочный рок",
+    "Морской ритм",
+    "Горный эхо",
+    "Лесной мотив",
+    "Городской фольк",
+    "Деревенский рэп",
+    "Космический диджей",
+    "Земной мелодист",
+    "Небесный бас",
+    "Подземный хит",
+    "Вечный слушатель",
+    "Первый фанат",
+    "Последний романтик",
+    "Середина ноты",
+    "Полтакт",
+    "Целая октава",
+)
+
+PERSONA_ADJECTIVES = (
+    "Бешеный",
+    "Тихий",
+    "Ночной",
+    "Сладкий",
+    "Злой",
+    "Весёлый",
+    "Грустный",
+    "Дерзкий",
+    "Ленивый",
+    "Бодрый",
+    "Мрачный",
+    "Солнечный",
+    "Лунный",
+    "Огненный",
+    "Ледяной",
+    "Космический",
+    "Деревенский",
+    "Городской",
+    "Старый",
+    "Молодой",
+    "Вечный",
+    "Случайный",
+    "Настоящий",
+    "Секретный",
+    "Громкий",
+    "Тихий",
+)
+
+PERSONA_NOUNS = (
+    "меломан",
+    "рокер",
+    "поэт",
+    "битмейкер",
+    "вокалист",
+    "гитарист",
+    "барабанщик",
+    "скрипач",
+    "фанат",
+    "слушатель",
+    "диджей",
+    "композитор",
+    "импровизатор",
+    "романтик",
+    "панк",
+    "джазмен",
+    "рэпер",
+    "синтезаторщик",
+    "охотник за хитами",
+    "коллекционер винилов",
+    "ночной совёнок",
+    "дневной жаворонок",
+    "король припева",
+    "принц бриджа",
+    "фея куплетов",
 )
 
 SEED_LIKE_CAP_PER_TRACK = 100
@@ -110,6 +213,49 @@ class ShowcaseAdminService:
             ).fetchone()
         return int(row["c"] if row else 0)
 
+    @staticmethod
+    def _compose_persona_nicknames(*, want: int) -> list[str]:
+        """Собрать уникальный список креативных ников для новых персон."""
+        want = max(1, min(want, 50))
+        pool = list(PERSONA_NICKNAMES)
+        random.shuffle(pool)
+        chosen: list[str] = []
+        seen: set[str] = set()
+
+        def add(name: str) -> bool:
+            cleaned = re.sub(r"\s+", " ", (name or "").strip())
+            if len(cleaned) < 2 or len(cleaned) > 40:
+                return False
+            key = cleaned.casefold()
+            if key in seen:
+                return False
+            seen.add(key)
+            chosen.append(cleaned)
+            return True
+
+        for nick in pool:
+            if len(chosen) >= want:
+                break
+            add(nick)
+
+        attempts = 0
+        while len(chosen) < want and attempts < want * 40:
+            attempts += 1
+            adj = random.choice(PERSONA_ADJECTIVES)
+            noun = random.choice(PERSONA_NOUNS)
+            pattern = random.randint(0, 3)
+            if pattern == 0:
+                candidate = f"{adj} {noun}"
+            elif pattern == 1:
+                candidate = f"{noun.capitalize()} {adj.lower()}"
+            elif pattern == 2:
+                candidate = f"{adj} {noun} {random.randint(2, 99)}"
+            else:
+                candidate = f"{random.choice(PERSONA_NICKNAMES)} {random.randint(2, 9)}"
+            add(candidate)
+
+        return chosen
+
     def create_personas(
         self,
         *,
@@ -119,22 +265,11 @@ class ShowcaseAdminService:
         chosen: list[str] = []
         if names:
             for raw in names:
-                name = (raw or "").strip()
+                name = re.sub(r"\s+", " ", (raw or "").strip())
                 if name and name not in chosen:
                     chosen.append(name)
         else:
-            pool = list(PERSONA_NAME_POOL)
-            random.shuffle(pool)
-            want = max(1, min(count, 50))
-            chosen = pool[:want]
-            idx = 0
-            while len(chosen) < want:
-                base = pool[idx % len(pool)]
-                suffix = random.randint(2, 99)
-                candidate = f"{base}{suffix}"
-                if candidate not in chosen:
-                    chosen.append(candidate)
-                idx += 1
+            chosen = self._compose_persona_nicknames(want=count)
 
         created: list[dict] = []
         now = utc_now()
@@ -143,8 +278,7 @@ class ShowcaseAdminService:
                 existing = conn.execute(
                     """
                     SELECT id FROM users
-                    WHERE COALESCE(is_persona, 0) = 1
-                      AND LOWER(display_name) = LOWER(?)
+                    WHERE LOWER(display_name) = LOWER(?)
                     """,
                     (display_name,),
                 ).fetchone()

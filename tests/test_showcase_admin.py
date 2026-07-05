@@ -45,6 +45,11 @@ def test_personas_and_seed_likes_for_own_track():
     created = svc.create_personas(count=5)
     assert len(created) == 5
     assert svc.persona_count() >= 5
+    plain_names = {"марина", "алексей", "катя", "денис", "оля", "игорь"}
+    for row in created:
+        name = (row["display_name"] or "").strip()
+        assert len(name) >= 2
+        assert name.casefold() not in plain_names
 
     library_id = _seed_published_track(owner_id=owner_id)
     result = svc.add_seed_likes(

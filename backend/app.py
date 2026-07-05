@@ -97,7 +97,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.15")
+app = FastAPI(title="SongForge", version="2.9.16")
 
 app.add_middleware(
     CORSMiddleware,
@@ -290,7 +290,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.15"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.16"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
