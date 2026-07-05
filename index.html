@@ -172,9 +172,14 @@
         .sidebar-rank.rank-3{background:linear-gradient(135deg,#fdba74,#ea580c);color:#431407}
         .sidebar-section-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#71717a;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
         .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:.25rem 0}
+        .layout-columns{display:flex;flex-direction:column;gap:1.5rem;margin:2rem 0}
+        .sidebar-tips-slot{min-height:7.25rem;max-height:7.25rem;overflow:hidden}
+        .sidebar-chart-slot{min-height:32rem}
+        .sidebar-community-slot{min-height:4.75rem}
         @media(min-width:1024px){
-            .sidebar-column{align-self:flex-start;position:sticky;top:5.5rem}
-            .sidebar-panel{height:auto}
+            .layout-columns{display:grid;grid-template-columns:18rem minmax(0,1fr) 20rem;align-items:start;gap:1.5rem}
+            .sidebar-column{align-self:start;position:relative;top:0}
+            .sidebar-panel{min-height:46rem;max-height:calc(100vh - 6.5rem);overflow-y:auto;overflow-x:hidden}
         }
         .auth-tab-btn{padding:.45rem .9rem;border-radius:.9rem;font-size:.8rem;border:1px solid rgba(255,255,255,.1);color:#a1a1aa}
         .auth-tab-btn.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#eab308}
@@ -209,7 +214,7 @@
     </div>
 </header>
 
-<div class="flex flex-col lg:flex-row lg:items-start gap-6 my-8">
+<div class="layout-columns">
 
 <!-- ЛЕВАЯ ПАНЕЛЬ: лента, советы, чарт -->
 <div id="leftSidebar" class="sidebar-column w-full lg:w-72 shrink-0 order-2 lg:order-1">
@@ -221,11 +226,11 @@
                 <div class="announce-card subtle">1 пробная генерация после входа: 2 варианта по 30 сек. Полные треки — за ноты в фонотеку.</div>
             </div>
         </div>
-        <div>
+        <div class="sidebar-tips-slot">
             <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-lightbulb text-amber-400"></i>Советы студии</span></div>
             <ul id="studioTipsList" class="sidebar-tips-list"></ul>
         </div>
-        <div class="pt-1">
+        <div class="sidebar-chart-slot pt-1">
             <div class="sidebar-section-title">
                 <span class="flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ чарта</span>
                 <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 normal-case tracking-normal text-xs hover:underline">Все →</a>
@@ -238,8 +243,8 @@
 <!-- ЦЕНТР -->
 <div class="flex-1 min-w-0 order-1 lg:order-2">
 
-    <!-- Hero -->
-    <div class="hero-glow relative rounded-3xl p-8 mb-8 overflow-hidden border border-white/5">
+    <!-- Hero (только вкладка «Студия») -->
+    <div id="mainHero" class="hero-glow relative rounded-3xl p-8 mb-8 overflow-hidden border border-white/5">
         <div class="music-wave absolute top-6 right-6"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
         <div class="flex items-center gap-3 mb-4">
             <div class="px-4 py-1.5 bg-white/10 rounded-full text-xs flex items-center gap-2">
@@ -873,7 +878,7 @@
                 <div data-genre="Lo-Fi" class="genre-chip text-xs py-1.5">Lo-Fi</div>
             </div>
         </div>
-        <div>
+        <div class="sidebar-community-slot">
             <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-fire text-orange-400"></i>Похожее на хиты</span></div>
             <div id="communityTopList" class="space-y-2 text-sm"></div>
         </div>
@@ -1162,7 +1167,7 @@ function switchAuthTab(tab){var emailTab=document.getElementById('authTabEmail')
 async function submitAuthEmail(){var email=document.getElementById('authEmailInput').value.trim();if(!email){alert('Введите email');return;}if(authEmailStep==='request'){var res=await fetch('/api/auth/email/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){alert(data.detail||'Не удалось отправить код');return;}authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';var hint=document.getElementById('authDevCodeHint');if(data.dev_code&&hint){hint.textContent='Ваш код: '+data.dev_code+' (на почту пока не приходит)';hint.classList.remove('hidden');}showToast(data.message||(data.dev_code?'Код на экране':'Код отправлен на email'));return;}var code=document.getElementById('authCodeInput').value.trim();var vres=await fetch('/api/auth/email/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code}),...fetchOpts});var vdata=await vres.json().catch(function(){return{};});if(!vres.ok){alert(vdata.detail||'Неверный код');return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');}
 async function logoutUser(){await fetch('/api/auth/logout',{method:'POST',...fetchOpts});session.loggedIn=false;session.user=null;user.balance=0;try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);d.balance=0;localStorage.setItem('создайсвоюпесню_user',JSON.stringify(d));}}catch(e){}await fetchMe();renderLibrary();renderHistory();updateBalanceUI();showToast('Вы вышли из аккаунта');}
 function switchLibraryTab(tab){libraryTab=tab==='history'?'history':'library';if(libraryTab==='library')libraryPage=0;else historyPage=0;document.getElementById('libTabLibrary').classList.toggle('active',libraryTab==='library');document.getElementById('libTabHistory').classList.toggle('active',libraryTab==='history');document.getElementById('libraryTabContent').classList.toggle('hidden',libraryTab!=='library');document.getElementById('historyTabContent').classList.toggle('hidden',libraryTab!=='history');if(libraryTab==='history'){fetchHistory().then(renderHistory);}else renderLibrary();}
-function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');document.querySelectorAll('.header-nav-link').forEach(function(a){a.classList.remove('active');});var hl=document.querySelector('.header-nav a[data-nav="'+view+'"]');if(hl)hl.classList.add('active');}
+function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');var hero=document.getElementById('mainHero');if(hero)hero.classList.toggle('hidden',view!=='create');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');document.querySelectorAll('.header-nav-link').forEach(function(a){a.classList.remove('active');});var hl=document.querySelector('.header-nav a[data-nav="'+view+'"]');if(hl)hl.classList.add('active');}
 function applyServerBalance(bal){if(bal==null||bal===undefined)return;if(session.loggedIn&&session.user)session.user.balance=bal;updateBalanceUI();}
 function handleGuestLimitError(detail,opts){opts=opts||{};var msg=detail||'Войдите в аккаунт, чтобы продолжить';if(/нот|Купите|Пробная генерация уже/i.test(msg)){if(session.loggedIn)openCreditPurchaseModal();else openAuthModal();}else{openAuthModal();}if(!opts.noThrow)throw new Error(msg);return msg;}
 function canStartSongGeneration(){if(!session.loggedIn)return'auth';if(session.guestRemaining>0)return'ok';if(getBalance()>=1)return'ok';return'payment';}
