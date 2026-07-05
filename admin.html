@@ -73,11 +73,18 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
     </div>
     <div id="panelUsers" class="panel sec">
       <h2>Пользователи</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:10px">После ручной оплаты в бете: «+пакет» или точное ± нот. Причина попадёт в журнал.</p>
       <div class="row">
         <input id="userQ" placeholder="email, имя или UUID" />
         <button class="btn" type="button" id="userSearch">Найти</button>
       </div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Имя</th><th>Нот</th><th>Пробная</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Имя</th><th>Нот</th><th>Пробная</th><th>Действия</th></tr></thead><tbody id="userBody"></tbody></table></div>
+    </div>
+    <div id="panelPayments" class="panel sec">
+      <h2>Ожидают оплаты (бета)</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:12px">Пользователь создал заказ на сайте. После перевода нажмите «Начислить» — ноты и статус paid.</p>
+      <button class="btn" type="button" id="ordersReload" style="margin-bottom:12px">Обновить</button>
+      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Email</th><th>Пакет</th><th>К оплате β</th><th>Заказ</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
     </div>
     <div id="panelAdmins" class="panel sec">
       <h2>Администраторы</h2>
@@ -124,14 +131,33 @@ async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d)
 async function loadGen(){var st=document.getElementById('genFilter').value;var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';var rows=await api('/api/admin/generations'+q);document.getElementById('genBody').innerHTML=rows.map(function(g){
   return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
 }).join('')||'<tr><td colspan="5" class="muted">Пусто</td></tr>';}
+function grantUserPackage(userId,notes,label){
+  var reason=prompt('Причина / № перевода / order_id:','beta_manual:'+label);if(!reason)return;
+  api('/api/admin/users/'+encodeURIComponent(userId)+'/balance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta:notes,reason:reason})}).then(function(){alert('Выдано '+notes+' нот');searchUsers();loadDash();}).catch(function(e){alert(e.message);});
+}
 async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
   document.getElementById('userBody').innerHTML=rows.map(function(u){
-    return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-id="'+esc(u.id)+'" data-bal="'+u.balance+'" type="button">± ноты</button></td></tr>';
+    return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td style="white-space:nowrap">'
+      +'<button class="btn" type="button" data-grant="'+esc(u.id)+'" data-n="1">+1</button> '
+      +'<button class="btn" type="button" data-grant="'+esc(u.id)+'" data-n="3">+3</button> '
+      +'<button class="btn" type="button" data-grant="'+esc(u.id)+'" data-n="5">+5</button> '
+      +'<button class="btn" type="button" data-grant="'+esc(u.id)+'" data-n="10">+10</button> '
+      +'<button class="btn" data-id="'+esc(u.id)+'" type="button">±</button></td></tr>';
   }).join('')||'<tr><td colspan="5" class="muted">Не найдено</td></tr>';
-  document.querySelectorAll('#userBody button').forEach(function(btn){btn.onclick=function(){
+  document.querySelectorAll('#userBody button[data-grant]').forEach(function(btn){btn.onclick=function(){grantUserPackage(btn.dataset.grant,parseInt(btn.dataset.n,10),'notes_'+btn.dataset.n);};});
+  document.querySelectorAll('#userBody button[data-id]').forEach(function(btn){btn.onclick=function(){
     var delta=prompt('Изменение баланса (+10 или -5):','10');if(delta==null)return;
     var reason=prompt('Причина (обязательно):','поддержка');if(!reason)return;
     api('/api/admin/users/'+btn.dataset.id+'/balance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta:parseInt(delta,10),reason:reason})}).then(function(){alert('Готово');searchUsers();loadDash();}).catch(function(e){alert(e.message);});
+  };});
+}
+async function loadPendingOrders(){var d=await api('/api/admin/orders/pending?limit=80');var rows=d.items||[];
+  document.getElementById('ordersBody').innerHTML=rows.map(function(o){
+    return'<tr><td class="muted">'+esc((o.created_at||'').slice(0,16))+'</td><td>'+esc(o.email||o.user_id)+'</td><td>'+o.notes_amount+' нот</td><td>'+(o.beta_price_rub||o.price_rub)+'₽</td><td class="muted" style="font-size:.7rem">'+esc((o.id||'').slice(0,8))+'…</td><td><button class="btn primary" type="button" data-oid="'+esc(o.id)+'">Начислить</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" class="muted">Нет ожидающих заказов</td></tr>';
+  document.querySelectorAll('#ordersBody button[data-oid]').forEach(function(btn){btn.onclick=function(){
+    if(!confirm('Начислить ноты по заказу '+btn.dataset.oid+'?'))return;
+    api('/api/admin/orders/'+encodeURIComponent(btn.dataset.oid)+'/confirm',{method:'POST'}).then(function(r){alert('Начислено '+r.notes_added+' нот. Баланс: '+r.balance);loadPendingOrders();loadDash();}).catch(function(e){alert(e.message);});
   };});
 }
 async function loadAdmins(){var rows=await api('/api/admin/admins');document.getElementById('admBody').innerHTML=rows.map(function(a){
@@ -211,6 +237,7 @@ function buildNav(){
   if(has('generations:read'))tabs.push({id:'panelGen',label:'Генерации',load:loadGen});
   if(has('showcase:write'))tabs.push({id:'panelShowcase',label:'Витрина',load:loadShowcase});
   if(has('users:read'))tabs.push({id:'panelUsers',label:'Пользователи'});
+  if(has('payments:read'))tabs.push({id:'panelPayments',label:'Оплаты β',load:loadPendingOrders});
   if(has('admins:manage'))tabs.push({id:'panelAdmins',label:'Команда',load:loadAdmins});
   if(has('system:read'))tabs.push({id:'panelAudit',label:'Журнал',load:loadAudit});
   document.getElementById('navTabs').innerHTML=tabs.map(function(t,i){
@@ -237,6 +264,7 @@ async function init(){
   if(!has('admins:manage'))document.getElementById('panelAdmins').innerHTML='<p class="muted">Раздел только для super_admin</p>';
   document.getElementById('genReload').onclick=loadGen;
   document.getElementById('userSearch').onclick=searchUsers;
+  if(document.getElementById('ordersReload'))document.getElementById('ordersReload').onclick=loadPendingOrders;
   document.getElementById('auditReload').onclick=loadAudit;
   document.getElementById('grantBtn').onclick=function(){
     api('/api/admin/admins/grant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('grantEmail').value,role:document.getElementById('grantRole').value})}).then(function(){alert('Роль выдана');loadAdmins();}).catch(function(e){alert(e.message);});

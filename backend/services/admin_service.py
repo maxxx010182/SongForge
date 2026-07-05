@@ -26,7 +26,7 @@ PERMISSIONS: dict[str, frozenset[str]] = {
     "generations:read": frozenset({"super_admin", "admin", "support", "readonly"}),
     "generations:write": frozenset({"super_admin", "admin", "support"}),
     "payments:read": frozenset({"super_admin", "admin", "finance", "readonly"}),
-    "payments:write": frozenset({"super_admin", "finance"}),
+    "payments:write": frozenset({"super_admin", "admin", "finance"}),
     "moderation:write": frozenset({"super_admin", "admin", "moderator"}),
     "showcase:write": frozenset({"super_admin", "admin"}),
     "admins:manage": frozenset({"super_admin"}),
@@ -236,6 +236,33 @@ class AdminService:
                 LIMIT ?
                 """,
                 (term, term, q.strip(), limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def list_pending_payment_orders(
+        self, *, admin_role: str, limit: int = 50
+    ) -> list[dict]:
+        self.assert_permission(admin_role, "payments:read")
+        limit = max(1, min(limit, 100))
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    o.id,
+                    o.user_id,
+                    o.package_id,
+                    o.notes_amount,
+                    o.price_rub,
+                    o.created_at,
+                    u.email,
+                    u.display_name
+                FROM payment_orders o
+                LEFT JOIN users u ON u.id = o.user_id
+                WHERE o.status = 'pending'
+                ORDER BY o.created_at DESC
+                LIMIT ?
+                """,
+                (limit,),
             ).fetchall()
         return [dict(r) for r in rows]
 

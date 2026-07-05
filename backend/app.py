@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.database.db import get_connection
 from backend.logger import log
 from backend.models import (
     ConsultantRequest,
@@ -99,7 +100,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.18")
+app = FastAPI(title="SongForge", version="2.9.19")
 
 app.add_middleware(
     CORSMiddleware,
@@ -316,7 +317,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.18"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.19"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -385,6 +386,61 @@ async def admin_adjust_balance(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"success": True, **result}
+
+
+@app.get("/api/admin/orders/pending")
+async def admin_list_pending_orders(
+    limit: int = 50,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        items = admin_service.list_pending_payment_orders(
+            admin_role=admin_user["admin_role"],
+            limit=limit,
+        )
+        for row in items:
+            row["beta_price_rub"] = payment_service.beta_discounted_price(
+                int(row["price_rub"])
+            )
+        return {"items": items}
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.post("/api/admin/orders/{order_id}/confirm")
+async def admin_confirm_manual_order(
+    order_id: str,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "payments:write")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    result = payment_service.mark_paid(
+        order_id=order_id,
+        provider_payment_id=f"manual:{admin_user['admin_id'][:8]}",
+    )
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail="Заказ не найден или уже оплачен",
+        )
+    with get_connection() as conn:
+        admin_service._write_audit(
+            conn,
+            admin_user_id=admin_user["admin_id"],
+            action="payments.manual_confirm",
+            target_type="payment_order",
+            target_id=order_id,
+            details={
+                "notes_added": result["notes_added"],
+                "user_id": result["user_id"],
+                "balance": result["balance"],
+            },
+            ip=_client_ip(request),
+        )
     return {"success": True, **result}
 
 
@@ -1023,6 +1079,11 @@ async def list_payment_packages():
     return payment_service.list_packages()
 
 
+@app.get("/api/payment/beta-config")
+async def payment_beta_config():
+    return payment_service.beta_config()
+
+
 @app.post("/api/payment/create-order", response_model=PaymentOrderResponse)
 async def create_payment_order(
     req: CreatePaymentOrderRequest,
@@ -1042,6 +1103,7 @@ async def create_payment_order(
             payment_url=order.get("payment_url"),
             provider=order.get("provider", PAYMENT_PROVIDER),
             message=order.get("message", ""),
+            beta_price_rub=order.get("beta_price_rub"),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

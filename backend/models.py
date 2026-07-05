@@ -357,6 +357,7 @@ class PaymentOrderResponse(BaseModel):
     payment_url: str | None = None
     provider: str = "stub"
     message: str = ""
+    beta_price_rub: int | None = None
 
 
 class PaymentOrderStatusResponse(BaseModel):
