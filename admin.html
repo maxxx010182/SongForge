@@ -193,7 +193,7 @@ async function handleShowcaseAction(btn){
       loadShowcase();return;
     }
     if(act==='author'){
-      var author=prompt('Новое имя автора (display name):',btn.dataset.author||'');if(!author)return;
+      var author=prompt('Имя автора на МузПлощадке (только этот трек). Пусто — сброс к нику владельца:',btn.dataset.author||'');if(author===null)return;
       await api('/api/admin/showcase/tracks/'+encodeURIComponent(id)+'/author',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:author})});
       loadShowcase();return;
     }

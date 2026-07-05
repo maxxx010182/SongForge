@@ -152,8 +152,8 @@
         .studio-quality-tips ul{padding:0 1rem 1rem;margin:0;font-size:.75rem;color:#71717a;line-height:1.7;list-style:disc;padding-left:1.75rem}
         .announce-card{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
         .announce-card.subtle{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);color:#a1a1aa}
-        .sidebar-tips-list{margin:0;padding-left:1.1rem;font-size:.78rem;color:#a1a1aa;line-height:1.35;list-style:disc;height:7.6rem;overflow:hidden}
-        .sidebar-tips-list li{margin-bottom:.35rem;min-height:1.75rem;max-height:1.75rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+        .sidebar-tips-list{margin:0;padding:.15rem 0 0;font-size:.78rem;color:#a1a1aa;line-height:1.45;list-style:none;min-height:4.25rem;overflow:hidden}
+        .sidebar-tips-list li{margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
         .sidebar-track-item{transition:background .2s;border:1px solid transparent}
         .sidebar-track-item:hover{border-color:rgba(234,179,8,.15)}
         .sidebar-track-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#18181b}
@@ -175,7 +175,7 @@
         .sidebar-section-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#71717a;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
         .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:.25rem 0}
         .layout-columns{display:flex;flex-direction:column;gap:1.5rem;margin:2rem 0}
-        .sidebar-tips-slot{height:10rem;flex-shrink:0}
+        .sidebar-tips-slot{min-height:5.5rem;flex-shrink:0}
         .sidebar-chart-slot{min-height:31rem;flex-shrink:0}
         @media(min-width:1024px){
             .layout-columns{display:grid;grid-template-columns:20rem minmax(0,1fr) 20rem;align-items:start;gap:1.5rem}
@@ -1400,7 +1400,7 @@ function initChips(){
 }
 
 var studioTipsPool=['Расширенный режим + детальный бриф — ближе к «эфирному» звуку','Укажите жанр, BPM, вокал и референс артиста (не копию мелодии)','Два варианта A/B — выберите лучший и уточните описание при повторе','Референс = «в духе», AI-продюсер = быстрый черновик на пробу','AI-продюсер — быстрый старт: 1–3 предложения о сюжете достаточно','Для топ-качества опишите темп, инструменты и настроение в Расширенном','Можно отредактировать текст песни перед созданием трека','Не закрывайте страницу — генерация музыки обычно примерно 3–5 минут','1 пробная генерация после входа: 2 превью по 30 секунд','Полная песня — 1 нота: оба варианта попадают в фонотеку','Пример брифа: «меланхоличный synth-pop, 95 BPM, женский вокал»','Референс артиста задаёт атмосферу, а не копию чужой мелодии','Опубликуйте лучший трек на МузПлощадку — он может попасть в чарт','Слушайте топ чарта слева — клик по обложке запускает превью','Жанр в идее помогает, но в AI-продюсере можно описать только сюжет','Повторите генерацию с уточнённым брифом, если варианты не зашли'];
-var studioTipsOffset=0,studioTipsTimer=null,STUDIO_TIPS_VISIBLE=4,STUDIO_TIPS_ROTATE_MS=20000;
+var studioTipsOffset=0,studioTipsTimer=null,STUDIO_TIPS_VISIBLE=1,STUDIO_TIPS_ROTATE_MS=15000;
 function renderStudioTips(){var list=document.getElementById('studioTipsList');if(!list)return;var html='';for(var i=0;i<STUDIO_TIPS_VISIBLE;i++){html+='<li>'+studioTipsPool[(studioTipsOffset+i)%studioTipsPool.length]+'</li>';}list.style.opacity='0';setTimeout(function(){list.innerHTML=html;list.style.opacity='1';},120);}
 function startStudioTipsRotation(){renderStudioTips();if(studioTipsTimer)clearInterval(studioTipsTimer);studioTipsTimer=setInterval(function(){studioTipsOffset=(studioTipsOffset+1)%studioTipsPool.length;renderStudioTips();},STUDIO_TIPS_ROTATE_MS);}
 function initSidebarActions(){document.querySelectorAll('#genrePopularList .genre-chip').forEach(function(chip){chip.addEventListener('click',function(){document.getElementById('ideaInput').value='Создай трек в жанре '+chip.dataset.genre+', энергичный и современный';switchToView('create');document.getElementById('ideaInput').focus();});});var ideas=["Треп про первый снег и тёплые воспоминания","Электронная баллада о потерянном времени","Рок-композиция про бесконечную дорогу","Lo-fi бит для учёбы под дождём","Поп-песня о внезапной любви в метро","Синтвейв трек про ночной город в огнях","Хип-хоп об упорстве и новом старте","Ambient медитация под северное сияние"];document.getElementById('randomIdeaBtn').addEventListener('click',function(){var idea=ideas[Math.floor(Math.random()*ideas.length)];document.getElementById('ideaInput').value=idea;document.getElementById('randomIdeaPreview').textContent=idea;switchToView('create');document.getElementById('ideaInput').focus();});startStudioTipsRotation();}

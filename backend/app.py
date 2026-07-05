@@ -99,7 +99,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.17")
+app = FastAPI(title="SongForge", version="2.9.18")
 
 app.add_middleware(
     CORSMiddleware,
@@ -211,7 +211,7 @@ def _user_info(user: dict) -> UserInfo:
 
 
 def _public_track_payload(library_id: str, row) -> PublicTrackResponse:
-    author = (row["display_name"] or "").strip() or "Аноним"
+    author = cabinet.resolve_public_author_name(row)
     title = (row["title"] or "").strip() or "Без названия"
     return PublicTrackResponse(
         id=library_id,
@@ -316,7 +316,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.17"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.18"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)

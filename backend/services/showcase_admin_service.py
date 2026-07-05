@@ -343,7 +343,8 @@ class ShowcaseAdminService:
                     ul.title,
                     ul.user_id AS author_user_id,
                     ul.published_at,
-                    u.display_name AS author_name,
+                    ul.published_author_name,
+                    u.display_name AS owner_display_name,
                     (
                         SELECT COUNT(*) FROM track_likes tl
                         WHERE tl.library_id = ul.id
@@ -376,7 +377,8 @@ class ShowcaseAdminService:
             {
                 "id": r["id"],
                 "title": r["title"] or "Без названия",
-                "author_name": (r["author_name"] or "").strip() or "Аноним",
+                "author_name": self._cabinet.resolve_public_author_name(r),
+                "owner_display_name": (r["owner_display_name"] or "").strip() or "",
                 "author_user_id": r["author_user_id"],
                 "likes": int(r["likes"] or 0),
                 "seed_likes": int(r["seed_likes"] or 0),
@@ -535,16 +537,25 @@ class ShowcaseAdminService:
         library_id: str,
         display_name: str,
     ) -> dict:
-        name = (display_name or "").strip()
-        if len(name) < 2:
-            raise ValueError("Имя слишком короткое")
-        if len(name) > 60:
-            raise ValueError("Имя не длиннее 60 символов")
+        """Переименовать автора только на этом треке (МузПлощадка), не в профиле."""
+        raw = (display_name or "").strip()
+        if raw:
+            if len(raw) < 2:
+                raise ValueError("Имя слишком короткое")
+            if len(raw) > 60:
+                raise ValueError("Имя не длиннее 60 символов")
+            stored = raw
+        else:
+            stored = None
 
         with get_connection() as conn:
             track = self._get_published_track(conn, library_id)
             self._assert_showcase_access(
                 track, admin_user_id=admin_user_id, admin_role=admin_role
+            )
+            conn.execute(
+                "UPDATE user_library SET published_author_name = ? WHERE id = ?",
+                (stored, library_id),
             )
             owner = conn.execute(
                 """
@@ -553,16 +564,14 @@ class ShowcaseAdminService:
                 """,
                 (track["user_id"],),
             ).fetchone()
-            if not owner:
-                raise ValueError("Владелец трека не найден")
-            conn.execute(
-                "UPDATE users SET display_name = ? WHERE id = ?",
-                (name, owner["id"]),
-            )
+        owner_name = (owner["display_name"] or "").strip() if owner else ""
+        public_name = stored or owner_name or "Аноним"
         return {
             "success": True,
-            "author_user_id": owner["id"],
-            "display_name": name,
+            "author_user_id": track["user_id"],
+            "display_name": public_name,
+            "published_author_name": stored,
+            "owner_display_name": owner_name,
         }
 
     def clear_seed_engagement(

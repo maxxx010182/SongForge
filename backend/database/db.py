@@ -241,6 +241,8 @@ def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE user_library ADD COLUMN likes INTEGER NOT NULL DEFAULT 0"
         )
+    if "published_author_name" not in existing:
+        conn.execute("ALTER TABLE user_library ADD COLUMN published_author_name TEXT")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_user_library_published ON user_library(published_at)"
     )

@@ -97,6 +97,56 @@ def test_personas_and_seed_likes_for_own_track():
         conn.execute("DELETE FROM users WHERE id = ?", (owner_id,))
 
 
+def test_admin_author_rename_only_affects_track():
+    init_db()
+    svc = ShowcaseAdminService()
+    owner_id = f"owner-{uuid.uuid4()}"
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO users (id, email, display_name, balance, created_at)
+            VALUES (?, 'owner@test.local', 'РеальныйНик', 0, '2026-07-05T10:00:00')
+            """,
+            (owner_id,),
+        )
+
+    library_id = _seed_published_track(owner_id=owner_id)
+    result = svc.update_author_display_name(
+        admin_user_id=owner_id,
+        admin_role="admin",
+        library_id=library_id,
+        display_name="ПсевдонимНаПлощадке",
+    )
+    assert result["display_name"] == "ПсевдонимНаПлощадке"
+    assert result["published_author_name"] == "ПсевдонимНаПлощадке"
+    assert result["owner_display_name"] == "РеальныйНик"
+
+    with get_connection() as conn:
+        owner = conn.execute(
+            "SELECT display_name FROM users WHERE id = ?",
+            (owner_id,),
+        ).fetchone()
+        lib = conn.execute(
+            "SELECT published_author_name FROM user_library WHERE id = ?",
+            (library_id,),
+        ).fetchone()
+
+    assert owner["display_name"] == "РеальныйНик"
+    assert lib["published_author_name"] == "ПсевдонимНаПлощадке"
+
+    tracks = svc.list_showcase_tracks(
+        admin_user_id=owner_id, admin_role="admin", limit=10
+    )
+    row = next(t for t in tracks if t["id"] == library_id)
+    assert row["author_name"] == "ПсевдонимНаПлощадке"
+    assert row["owner_display_name"] == "РеальныйНик"
+
+    with get_connection() as conn:
+        conn.execute("DELETE FROM user_library WHERE id = ?", (library_id,))
+        conn.execute("DELETE FROM users WHERE id = ?", (owner_id,))
+
+
 def test_non_owner_cannot_boost_without_super_admin():
     init_db()
     svc = ShowcaseAdminService()

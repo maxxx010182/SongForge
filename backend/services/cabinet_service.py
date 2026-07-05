@@ -9,6 +9,22 @@ class CabinetService:
     def __init__(self) -> None:
         init_db()
 
+    @staticmethod
+    def resolve_public_author_name(row) -> str:
+        """Имя автора на МузПлощадке: override на треке или ник владельца."""
+        keys = row.keys() if hasattr(row, "keys") else ()
+        override = ""
+        if "published_author_name" in keys:
+            override = (row["published_author_name"] or "").strip()
+        if override:
+            return override
+        for field in ("display_name", "author_name"):
+            if field in keys:
+                name = (row[field] or "").strip()
+                if name:
+                    return name
+        return "Аноним"
+
     def _generation_to_history_item(self, row) -> dict:
         plan = json.loads(row["plan_json"] or "{}")
         genre = plan.get("genre", "")
@@ -370,7 +386,7 @@ class CabinetService:
         return [self._explore_item_from_row(r) for r in rows]
 
     def _explore_item_from_row(self, row) -> dict:
-        author = (row["display_name"] or "").strip() or "Аноним"
+        author = self.resolve_public_author_name(row)
         likes = row["likes_count"] if "likes_count" in row.keys() else row["likes"]
         liked = bool(row["liked_by_me"]) if "liked_by_me" in row.keys() else False
         comments = row["comment_count"] if "comment_count" in row.keys() else 0
