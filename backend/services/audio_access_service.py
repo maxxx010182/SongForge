@@ -132,9 +132,29 @@ class AudioAccessService:
         encoded = quote(filename, safe="")
         return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
-    def stream_playback(self, source_url: str) -> StreamingResponse:
+    def stream_playback(
+        self,
+        source_url: str,
+        *,
+        range_header: str | None = None,
+    ) -> StreamingResponse:
+        upstream_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": "*/*",
+        }
+        if range_header:
+            upstream_headers["Range"] = range_header
         try:
-            upstream = requests.get(source_url, stream=True, timeout=60)
+            upstream = requests.get(
+                source_url,
+                stream=True,
+                timeout=60,
+                headers=upstream_headers,
+            )
             upstream.raise_for_status()
         except requests.RequestException as exc:
             raise HTTPException(
@@ -143,6 +163,8 @@ class AudioAccessService:
             ) from exc
 
         content_type = upstream.headers.get("Content-Type", "audio/mpeg")
+        if not content_type or not content_type.isascii():
+            content_type = "audio/mpeg"
 
         def iter_body():
             try:
@@ -152,7 +174,19 @@ class AudioAccessService:
             finally:
                 upstream.close()
 
-        return StreamingResponse(iter_body(), media_type=content_type)
+        out_headers: dict[str, str] = {"Accept-Ranges": "bytes"}
+        for key in ("Content-Range", "Content-Length"):
+            val = upstream.headers.get(key)
+            if val:
+                out_headers[key] = val
+
+        status_code = upstream.status_code if upstream.status_code in {200, 206} else 200
+        return StreamingResponse(
+            iter_body(),
+            status_code=status_code,
+            media_type=content_type,
+            headers=out_headers,
+        )
 
     def stream_download(self, source_url: str, *, title: str) -> Response:
         upstream_headers = {

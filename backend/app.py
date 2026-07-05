@@ -100,7 +100,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.21")
+app = FastAPI(title="SongForge", version="2.9.22")
 
 app.add_middleware(
     CORSMiddleware,
@@ -317,7 +317,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.21"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.22"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -762,6 +762,25 @@ async def unpublish_library_track(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/library/{library_id}/listen")
+async def listen_library_track(
+    library_id: str,
+    request: Request,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
+    if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    return audio_access.stream_playback(
+        row["audio_url"],
+        range_header=request.headers.get("range"),
+    )
+
+
 @app.delete("/api/library/{library_id}")
 async def delete_library_track(
     library_id: str,
@@ -855,13 +874,16 @@ async def get_public_track(library_id: str):
 
 
 @app.get("/api/explore/{library_id}/listen")
-async def listen_explore_track(library_id: str):
+async def listen_explore_track(library_id: str, request: Request):
     row = cabinet.get_published_library_item(library_id)
     if not row:
         raise HTTPException(status_code=404, detail="Публичный трек не найден")
     if not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
-    return audio_access.stream_playback(row["audio_url"])
+    return audio_access.stream_playback(
+        row["audio_url"],
+        range_header=request.headers.get("range"),
+    )
 
 
 def _expose_email_auth_code() -> bool:

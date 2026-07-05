@@ -27,6 +27,11 @@ def test_download_library_requires_login():
     assert response.status_code == 401
 
 
+def test_library_listen_requires_login():
+    response = client.get("/api/library/test-library-id/listen")
+    assert response.status_code == 401
+
+
 def test_me_without_session():
     response = client.get("/api/me")
     assert response.status_code == 200
