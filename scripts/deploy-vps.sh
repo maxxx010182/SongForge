@@ -6,7 +6,7 @@
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.9.29"
+EXPECTED_VERSION="2.9.30"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -133,12 +133,8 @@ if ! grep -qF "$EXPECTED_VERSION" backend/app.py; then
   grep version backend/app.py | head -3 || true
   exit 1
 fi
-if ! grep -qE 'data:image/png;base64|/assets/logo-header' index.html; then
-  echo "ОШИБКА: index.html не содержит логотип (base64 или /assets/logo-header)"
-  exit 1
-fi
-if [ ! -s assets/logo-header.png ] || [ ! -s assets/logo-gen.png ]; then
-  echo "ОШИБКА: нет assets/logo-header.png или assets/logo-gen.png"
+if ! grep -q 'headerBrand' index.html; then
+  echo "ОШИБКА: index.html не содержит headerBrand"
   exit 1
 fi
 ./venv/bin/python -c "
