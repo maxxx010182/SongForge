@@ -498,7 +498,6 @@
     <div id="paymentPanel" class="hidden">
         <h2 class="text-2xl font-title font-semibold mb-2">Пакеты нот</h2>
         <p class="text-zinc-500 text-sm mb-5">1 нота = 1 генерация = 2 варианта песни • Полные версии (до 4 мин)</p>
-        <div id="paymentBetaBanner" class="hidden mb-4 p-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 text-sm text-amber-100/90 leading-relaxed"></div>
         <button id="returnToVariantsBtn" class="hidden w-full mb-4 bg-white/10 hover:bg-white/20 border border-yellow-400/30 py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2">
             <i class="fa-solid fa-arrow-left"></i> Вернуться к вариантам песни
         </button>
@@ -1116,7 +1115,7 @@ var session={loggedIn:false,user:null,guestRemaining:0,guestLimit:1,history:[],s
 var fetchOpts={credentials:'include'};
 var libraryTab='library';var LIBRARY_PAGE_SIZE=9;var libraryPage=0;var historyPage=0;var explorePage=0;
 var authEmailStep='request';
-var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,paymentBetaConfig=null,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_PRODUCER="Например: лиричная поп-песня о встрече после долгой разлуки...";
 var IDEA_PLACEHOLDER_EXPERT="Пример: меланхоличный synth-pop, 95 BPM, женский вокал, фортепиано + синтезатор, атмосфера как у Billie Eilish, текст о расставании на расстоянии";
 var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты, настроение и характер композиции...";
@@ -1331,16 +1330,12 @@ function bindPlayerDefaultFromChart(){var tracks=session.exploreTracks||[];var t
 function applyPlayerDefaultDisplay(){if(!playerDefaultTrack)return;var pt=document.getElementById('playingTitle');var ps=document.getElementById('playerSubtitle');var pa=document.getElementById('playerAuthor');if(pt)pt.textContent=playerDefaultTrack.title;if(ps)ps.textContent='Топ чарта';if(pa)pa.textContent=playerDefaultTrack.author;setPlayerCover(playerDefaultTrack.cover);}
 function playPlayerDefault(){if(!playerDefaultTrack||!playerDefaultTrack.url)return;playAudio(playerDefaultTrack.url,playerDefaultTrack.title,playerDefaultTrack.cover,playerDefaultTrack.author);}
 
-async function loadPaymentBetaConfig(){try{var res=await fetch('/api/payment/beta-config');if(res.ok)paymentBetaConfig=await res.json();}catch(e){paymentBetaConfig=null;}}
-function renderPaymentBetaBanner(){var el=document.getElementById('paymentBetaBanner');if(!el)return;if(!paymentBetaConfig||!paymentBetaConfig.manual_payment){el.classList.add('hidden');return;}el.classList.remove('hidden');el.innerHTML='<strong class="text-amber-300">Бета: −'+paymentBetaConfig.discount_percent+'% на все пакеты</strong><br>Оплата вручную — после перевода ноты начисляем в течение нескольких часов.<br><span class="text-zinc-400 text-xs">'+escHtml(paymentBetaConfig.payment_details||'')+' • '+escHtml(paymentBetaConfig.contact||'')+'</span>';}
 async function renderPackets() {
-    if(!paymentBetaConfig)await loadPaymentBetaConfig();
-    renderPaymentBetaBanner();
-    var packets = (paymentBetaConfig&&paymentBetaConfig.packages)?paymentBetaConfig.packages.map(function(p){return{price:p.price_rub_beta||p.price_rub,priceFull:p.price_rub,songs:p.notes,label:p.label,discount:p.discount};}):[
-        { price: 199, priceFull: 199, songs: 1, label: "Попробовать", discount: "" },
-        { price: 499, priceFull: 499, songs: 3, label: "Популярный", discount: "−16%" },
-        { price: 799, priceFull: 799, songs: 5, label: "Творческий", discount: "−20%" },
-        { price: 1199, priceFull: 1199, songs: 10, label: "Продюсер", discount: "−40%" }
+    var packets = [
+        { price: 199, songs: 1, label: "Попробовать", discount: "" },
+        { price: 499, songs: 3, label: "Популярный", discount: "−16%" },
+        { price: 799, songs: 5, label: "Творческий", discount: "−20%" },
+        { price: 1199, songs: 10, label: "Продюсер", discount: "−40%" }
     ];
     function genWord(n) {
         if (n === 1) return 'нота';
@@ -1352,15 +1347,14 @@ async function renderPackets() {
         if (n >= 2 && n <= 4) return 'песни';
         return 'песен';
     }
-    var beta=paymentBetaConfig&&paymentBetaConfig.manual_payment;
     var container = document.getElementById('packetsContainer');
     container.innerHTML = packets.map(function(p) {
         var drafts = p.songs * 2;
-        var priceHtml=beta&&p.priceFull>p.price?'<div class="text-right"><div class="text-2xl font-semibold text-amber-300">'+p.price+'₽</div><div class="text-xs text-zinc-500 line-through">'+p.priceFull+'₽</div></div>':'<div class="text-2xl font-semibold">'+p.price+'₽</div>';
         return '<div data-price="' + p.price + '" data-songs="' + p.songs + '" class="packet-item glass-panel p-5 flex justify-between items-center cursor-pointer hover:border-yellow-400/40 border border-transparent transition">' +
             '<div><span class="font-bold text-lg">' + p.songs + ' ' + genWord(p.songs) + '</span>' +
-            '<div class="text-xs text-zinc-500">' + p.label + (p.discount ? ' • <span class="text-emerald-400">' + p.discount + '</span>' : '') + (beta?' • <span class="text-amber-400">бета</span>':'') + '</div>' +
-            '<div class="text-xs text-zinc-600">= ' + drafts + ' ' + songWord(drafts) + '</div></div>' + priceHtml + '</div>';
+            '<div class="text-xs text-zinc-500">' + p.label + (p.discount ? ' • <span class="text-emerald-400">' + p.discount + '</span>' : '') + '</div>' +
+            '<div class="text-xs text-zinc-600">= ' + drafts + ' ' + songWord(drafts) + '</div></div>' +
+            '<div class="text-2xl font-semibold">' + p.price + '₽</div></div>';
     }).join('');
     document.querySelectorAll('.packet-item').forEach(function(el) {
         el.addEventListener('click', function() {
@@ -1516,7 +1510,7 @@ document.getElementById('createSongBtn').addEventListener('click',createSongWith
 document.getElementById('createDemoBtn').addEventListener('click',createSongExpert);
 
 function closePaymentCheckout(){document.getElementById('paymentCheckoutModal').classList.add('hidden');}
-async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();return;}var pkgId='notes_'+activePacket.songs;try{var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});var data=await res.json().catch(function(){return{}});if(!res.ok){alert(data.detail||'Не удалось создать заказ');return;}if(data.payment_url){window.location.href=data.payment_url;return;}var paySum=data.beta_price_rub!=null?data.beta_price_rub:activePacket.price;document.getElementById('paymentCheckoutText').textContent=data.message||'Заказ создан. Оплата подключается.';document.getElementById('paymentCheckoutOrder').textContent='Заказ '+data.order_id+' • '+activePacket.songs+' нот • '+paySum+'₽';document.getElementById('paymentCheckoutModal').classList.remove('hidden');}catch(e){alert('Ошибка сети при создании заказа');}}
+async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();return;}var pkgId='notes_'+activePacket.songs;try{var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});var data=await res.json().catch(function(){return{}});if(!res.ok){alert(data.detail||'Не удалось создать заказ');return;}if(data.payment_url){window.location.href=data.payment_url;return;}document.getElementById('paymentCheckoutText').textContent=data.message||'Заказ создан. Оплата подключается.';document.getElementById('paymentCheckoutOrder').textContent='Заказ '+data.order_id+' • '+activePacket.songs+' нот • '+activePacket.price+'₽';document.getElementById('paymentCheckoutModal').classList.remove('hidden');}catch(e){alert('Ошибка сети при создании заказа');}}
 document.getElementById('paymentConfirmBtn').addEventListener('click',startPaymentCheckout);
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
 document.getElementById('profileNameSaveBtn').addEventListener('click',saveProfileName);

@@ -38,21 +38,6 @@ PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
 PRODAMUS_SECRET = os.getenv("PRODAMUS_SECRET", "")
 PRODAMUS_SHOP_ID = os.getenv("PRODAMUS_SHOP_ID", "")
 
-# Ручная оплата в бете (пока PAYMENT_PROVIDER=stub)
-BETA_MANUAL_PAYMENT_ENABLED = os.getenv(
-    "BETA_MANUAL_PAYMENT_ENABLED", "true"
-).lower() in {"1", "true", "yes"}
-BETA_DISCOUNT_PERCENT = max(
-    0, min(90, int(os.getenv("BETA_DISCOUNT_PERCENT", "50") or 50))
-)
-BETA_PAYMENT_CONTACT = os.getenv(
-    "BETA_PAYMENT_CONTACT", "Telegram: укажите в .env"
-).strip()
-BETA_PAYMENT_DETAILS = os.getenv(
-    "BETA_PAYMENT_DETAILS",
-    "СБП или перевод на карту — реквизиты укажите в BETA_PAYMENT_DETAILS в .env",
-).strip()
-
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 
 AUTH_DEV_CODE_ENABLED = os.getenv("AUTH_DEV_CODE_ENABLED", "false").lower() in {
@@ -71,18 +56,6 @@ DEV_TOPUP_ENABLED = os.getenv("DEV_TOPUP_ENABLED", "false").lower() in {
     "yes",
 }
 TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
-    "1",
-    "true",
-    "yes",
-}
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-TELEGRAM_ADMIN_CHAT_IDS: frozenset[str] = frozenset(
-    cid.strip()
-    for cid in os.getenv("TELEGRAM_ADMIN_CHAT_IDS", "").split(",")
-    if cid.strip()
-)
-# Long polling для кнопок оплаты (на HTTP без HTTPS). С доменом+HTTPS: false + setWebhook.
-TELEGRAM_PAYMENT_POLLING = os.getenv("TELEGRAM_PAYMENT_POLLING", "true").lower() in {
     "1",
     "true",
     "yes",

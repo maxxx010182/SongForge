@@ -67,7 +67,6 @@ from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
 from backend.services.payment_service import PaymentService
-from backend.services.telegram_payment_service import TelegramPaymentNotifier
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
@@ -98,21 +97,10 @@ profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
-telegram_payment = TelegramPaymentNotifier(payment_service)
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.20")
-
-
-@app.on_event("startup")
-async def _startup_telegram_payment() -> None:
-    telegram_payment.start_background()
-
-
-@app.on_event("shutdown")
-async def _shutdown_telegram_payment() -> None:
-    TelegramPaymentNotifier.stop_background()
+app = FastAPI(title="SongForge", version="2.9.21")
 
 app.add_middleware(
     CORSMiddleware,
@@ -329,7 +317,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.20"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.21"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -398,61 +386,6 @@ async def admin_adjust_balance(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"success": True, **result}
-
-
-@app.get("/api/admin/orders/pending")
-async def admin_list_pending_orders(
-    limit: int = 50,
-    admin_user: dict = Depends(require_admin_user),
-):
-    try:
-        items = admin_service.list_pending_payment_orders(
-            admin_role=admin_user["admin_role"],
-            limit=limit,
-        )
-        for row in items:
-            row["beta_price_rub"] = payment_service.beta_discounted_price(
-                int(row["price_rub"])
-            )
-        return {"items": items}
-    except PermissionError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-@app.post("/api/admin/orders/{order_id}/confirm")
-async def admin_confirm_manual_order(
-    order_id: str,
-    request: Request,
-    admin_user: dict = Depends(require_admin_user),
-):
-    try:
-        admin_service.assert_permission(admin_user["admin_role"], "payments:write")
-    except PermissionError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    result = payment_service.mark_paid(
-        order_id=order_id,
-        provider_payment_id=f"manual:{admin_user['admin_id'][:8]}",
-    )
-    if not result:
-        raise HTTPException(
-            status_code=400,
-            detail="Заказ не найден или уже оплачен",
-        )
-    with get_connection() as conn:
-        admin_service._write_audit(
-            conn,
-            admin_user_id=admin_user["admin_id"],
-            action="payments.manual_confirm",
-            target_type="payment_order",
-            target_id=order_id,
-            details={
-                "notes_added": result["notes_added"],
-                "user_id": result["user_id"],
-                "balance": result["balance"],
-            },
-            ip=_client_ip(request),
-        )
     return {"success": True, **result}
 
 
@@ -1091,24 +1024,6 @@ async def list_payment_packages():
     return payment_service.list_packages()
 
 
-@app.get("/api/payment/beta-config")
-async def payment_beta_config():
-    return payment_service.beta_config()
-
-
-@app.post("/api/telegram/webhook")
-async def telegram_webhook(request: Request):
-    """Webhook Telegram Bot API (кнопка «Начислить» в бета-оплате)."""
-    if not telegram_payment.is_enabled():
-        raise HTTPException(status_code=404, detail="Telegram не настроен")
-    try:
-        update = await request.json()
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="Невалидный JSON") from exc
-    telegram_payment.process_update(update)
-    return {"ok": True}
-
-
 @app.post("/api/payment/create-order", response_model=PaymentOrderResponse)
 async def create_payment_order(
     req: CreatePaymentOrderRequest,
@@ -1121,22 +1036,6 @@ async def create_payment_order(
             user_id=user["id"],
             package_id=req.package_id,
         )
-        if (
-            order.get("provider") == "stub"
-            and order.get("beta_price_rub") is not None
-        ):
-            with get_connection() as conn:
-                user_row = conn.execute(
-                    "SELECT email, display_name FROM users WHERE id = ?",
-                    (user["id"],),
-                ).fetchone()
-            telegram_payment.notify_new_order(
-                order_id=order["order_id"],
-                package_id=req.package_id,
-                user_email=user_row["email"] if user_row else None,
-                display_name=user_row["display_name"] if user_row else None,
-                beta_price_rub=int(order["beta_price_rub"]),
-            )
         return PaymentOrderResponse(
             order_id=order["order_id"],
             status=order["status"],
@@ -1144,7 +1043,6 @@ async def create_payment_order(
             payment_url=order.get("payment_url"),
             provider=order.get("provider", PAYMENT_PROVIDER),
             message=order.get("message", ""),
-            beta_price_rub=order.get("beta_price_rub"),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

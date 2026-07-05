@@ -10,10 +10,6 @@ from typing import Any
 
 from backend.database.db import get_connection, utc_now
 from backend.settings import (
-    BETA_DISCOUNT_PERCENT,
-    BETA_MANUAL_PAYMENT_ENABLED,
-    BETA_PAYMENT_CONTACT,
-    BETA_PAYMENT_DETAILS,
     PAYMENT_PROVIDER,
     PRODAMUS_SECRET,
     PRODAMUS_SHOP_ID,
@@ -53,52 +49,6 @@ PACKAGES: dict[str, dict[str, Any]] = {
 
 
 class PaymentService:
-    @staticmethod
-    def beta_discounted_price(price_rub: int) -> int:
-        if not BETA_MANUAL_PAYMENT_ENABLED or BETA_DISCOUNT_PERCENT <= 0:
-            return int(price_rub)
-        return max(1, int(round(price_rub * (100 - BETA_DISCOUNT_PERCENT) / 100)))
-
-    def beta_config(self) -> dict:
-        packages = []
-        for pkg in PACKAGES.values():
-            full = int(pkg["price_rub"])
-            beta = self.beta_discounted_price(full)
-            packages.append(
-                {
-                    **pkg,
-                    "price_rub_full": full,
-                    "price_rub_beta": beta,
-                }
-            )
-        return {
-            "manual_payment": BETA_MANUAL_PAYMENT_ENABLED
-            and (PAYMENT_PROVIDER or "stub") == "stub",
-            "discount_percent": BETA_DISCOUNT_PERCENT,
-            "contact": BETA_PAYMENT_CONTACT,
-            "payment_details": BETA_PAYMENT_DETAILS,
-            "packages": packages,
-        }
-
-    def manual_payment_message(
-        self,
-        *,
-        order_id: str,
-        package: dict,
-        user_email: str | None,
-    ) -> str:
-        beta_price = self.beta_discounted_price(int(package["price_rub"]))
-        email_hint = (user_email or "").strip() or "ваш email на сайте"
-        return (
-            f"Бета-акция −{BETA_DISCOUNT_PERCENT}%: {package['notes']} нот за {beta_price}₽ "
-            f"(вместо {package['price_rub']}₽).\n\n"
-            f"1. Переведите {beta_price}₽: {BETA_PAYMENT_DETAILS}\n"
-            f"2. В комментарии к переводу укажите: {order_id}\n"
-            f"   или напишите нам: {BETA_PAYMENT_CONTACT}\n"
-            f"   (email аккаунта: {email_hint})\n\n"
-            f"Ноты начислим вручную после проверки платежа (обычно в течение нескольких часов)."
-        )
-
     def list_packages(self) -> list[dict]:
         return list(PACKAGES.values())
 
@@ -111,14 +61,7 @@ class PaymentService:
         now = utc_now()
         provider = PAYMENT_PROVIDER or "stub"
 
-        user_email = None
         with get_connection() as conn:
-            user_row = conn.execute(
-                "SELECT email FROM users WHERE id = ?",
-                (user_id,),
-            ).fetchone()
-            if user_row:
-                user_email = user_row["email"]
             conn.execute(
                 """
                 INSERT INTO payment_orders (
@@ -144,22 +87,13 @@ class PaymentService:
             provider=provider,
         )
 
-        message = self._status_message(provider, payment_url)
-        if provider == "stub" and BETA_MANUAL_PAYMENT_ENABLED:
-            message = self.manual_payment_message(
-                order_id=order_id,
-                package=package,
-                user_email=user_email,
-            )
-
         return {
             "order_id": order_id,
             "status": "pending",
             "package": package,
             "payment_url": payment_url,
             "provider": provider,
-            "message": message,
-            "beta_price_rub": self.beta_discounted_price(int(package["price_rub"])),
+            "message": self._status_message(provider, payment_url),
         }
 
     def get_order(self, *, user_id: str, order_id: str) -> dict:
@@ -246,7 +180,6 @@ class PaymentService:
         if provider == "prodamus":
             if not PRODAMUS_SHOP_ID:
                 return None
-            # Заготовка: финальный URL соберётся после согласования с Продамус
             return (
                 f"{SITE_URL}/pay/checkout?order_id={order_id}"
                 f"&provider=prodamus&amount={package['price_rub']}"

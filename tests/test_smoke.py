@@ -84,12 +84,13 @@ def test_explore_public():
     assert isinstance(response.json(), list)
 
 
-def test_payment_beta_config():
-    response = client.get("/api/payment/beta-config")
+def test_payment_packages():
+    response = client.get("/api/payment/packages")
     assert response.status_code == 200
     data = response.json()
-    assert "packages" in data
-    assert "discount_percent" in data
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert "price_rub" in data[0]
 
 
 def test_explore_listen_not_found():
