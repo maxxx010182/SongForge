@@ -7,6 +7,11 @@ from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
 from backend.services.yandex_client import YandexClient
 from backend.logger import log
+from backend.utils.suno_payload import (
+    compact_suno_style,
+    sanitize_negative_tags,
+    sanitize_suno_title,
+)
 from backend.utils.text import (
     clean_text,
     ensure_russian_vocal_style,
@@ -130,18 +135,22 @@ class PromptBuilder:
             backing_vocal_gender=backing_gender,
         )
         if custom_mode:
-            user_style = truncate(clean_text(custom_description.strip()), 500)
+            user_style = truncate(clean_text(custom_description.strip()), 120)
             merged = (
                 f"{user_style}, {payload.style}"
                 if payload.style.strip()
                 else user_style
             )
-            payload.style = truncate(
-                ensure_russian_vocal_style(merged) if not instrumental else merged,
-                950,
+            payload.style = (
+                ensure_russian_vocal_style(merged) if not instrumental else merged
             )
+
+        payload.style = compact_suno_style(payload.style)
+        payload.title = sanitize_suno_title(payload.title, analyst_idea)
+        payload.negative_tags = sanitize_negative_tags(
+            payload.negative_tags, payload.style, plan.genre
+        )
         payload.vocal_gender = plan.vocal_gender
-        payload.negative_tags = plan.negative_tags
         payload.style_weight = plan.style_weight
         payload.weirdness_constraint = plan.weirdness_constraint
         payload.audio_weight = plan.audio_weight

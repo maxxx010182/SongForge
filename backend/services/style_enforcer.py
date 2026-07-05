@@ -118,4 +118,6 @@ def enforce_style(
     if not plan.instrumental:
         base = ensure_russian_vocal_style(base)
 
-    return truncate(base or "modern commercial production", 950)
+    from backend.utils.suno_payload import compact_suno_style
+
+    return compact_suno_style(base or "modern commercial production")

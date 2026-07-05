@@ -506,6 +506,22 @@
 
 ## Ошибка генерации ApiPass / Suno — UNKNOWN_ERR_2129 *(июль 2026)*
 
+### Разбор реального запроса (Тюмень / stadium rap-rock, июль 2026)
+
+**Симптом:** дважды подряд `UNKNOWN_ERR_2129`, в журнале ApiPass «неуспешно».
+
+**Проблемы в теле запроса (не «случайный сбой»):**
+
+| Поле | Было | Лимит Suno §1.3 | Проблема |
+|------|------|-----------------|----------|
+| `title` | `[Crowd noise, stadium ambience]` | короткое имя | AI взял **первую ремарку из текста**, не название песни |
+| `style` | ~800+ символов, дубли | **≤ 200** | `enforce_style` + custom + hip-hop теги раздули строку |
+| `negativeTags` | `distortion, screaming, unwanted noise` | — | **Конфликт** со stadium / distorted guitar / crowd |
+
+**Исправление (v2.9.6):** `backend/utils/suno_payload.py` — `compact_suno_style`, `sanitize_suno_title`, `sanitize_negative_tags`; финальная проверка в `apipass_client.create_task`.
+
+---
+
 **Симптом:** после 1–3+ минут ожидания модалка «Не удалось создать песню» с текстом:
 `Service temporarily unavailable. Please try again later.（错误码: UNKNOWN_ERR_2129）`
 
