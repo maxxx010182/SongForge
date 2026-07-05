@@ -32,6 +32,9 @@ def test_update_theme_and_reject_unknown():
     updated = svc.update_theme(user_id=user_id, theme="olive")
     assert updated["theme"] == "olive"
 
+    updated = svc.update_theme(user_id=user_id, theme="obsidian")
+    assert updated["theme"] == "obsidian"
+
     try:
         svc.update_theme(user_id=user_id, theme="neon")
         raised = False
