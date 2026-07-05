@@ -46,12 +46,13 @@
 
 **Бэкенд без проверки:** `POST /api/produce`, `POST /api/generate-lyrics` — только `guest_id`, без сессии и баланса.
 
-**Нужно (следующая правка UI + API):**
-- [ ] Та же логика, что у музыки: `canStartSongGeneration()` → `'auth'` / `'payment'` / `'ok'`
-- [ ] В `updateStudioGenerateButtons()` добавить `#generateTextBtn`; при блокировке — серые кнопки + tooltip как у «Создать песню»
-- [ ] В начале клика `#generateTextBtn` и `#regenLyricsBtn` — `blockSongGenerationIfNeeded()` (или общий хелпер)
-- [ ] На бэкенде: отклонять `/api/produce` и `/api/generate-lyrics` с 401/403 по тем же правилам, что `/api/create-song` (иначе обход через DevTools)
-- [ ] Исключение как у музыки: **1 пробная генерация** на аккаунт при 0 нот — текст тоже разрешён (часть одного пайплайна)
+**Сделано (v2.9.31+):**
+- [x] Та же логика, что у музыки: `canStartSongGeneration()` → `'auth'` / `'payment'` / `'ok'`
+- [x] В `updateStudioGenerateButtons()` добавить `#generateTextBtn`, `#regenLyricsBtn`; при блокировке — серые кнопки + tooltip
+- [x] В начале клика `#generateTextBtn` и `#regenLyricsBtn` — `blockSongGenerationIfNeeded()`
+- [x] На бэкенде: `/api/produce` и `/api/generate-lyrics` с `_assert_can_generate` (401/403)
+- [x] Убран клиентский fallback с фейковым текстом при ошибке API
+- [x] Исключение как у музыки: **1 пробная генерация** на аккаунт при 0 нот — текст тоже разрешён
 
 **Файлы:** `index.html` — `generateTextBtn`, `regenLyricsBtn`, `updateStudioGenerateButtons`; `backend/app.py` — `produce_song`, `generate_lyrics_endpoint`
 
@@ -174,17 +175,17 @@
 
 **Новое замечание владельца (июль 2026):** на первом экране **слишком много текста** — ломаем пользователя до старта. Нужно **кратко, чётко, визуально проще**, клиентоориентированно.
 
-**Нужно (следующая правка UI):**
-- [ ] `#modeProducerCard` / `#modeExpertCard` — заголовок + 1 строка + макс. 2 пункта или бейджи (без простыней)
-- [ ] `#ideaInputHint` — одна короткая строка, разная по режиму
-- [ ] `#studioQualityTips` — убрать с главного экрана или сильно урезать (детали → FAQ/онбординг)
-- [ ] `#expertModeContent` — вступление в 1 строку
-- [ ] Placeholder `#ideaInput` — разный для producer vs expert
-- [ ] **Расширенный:** `IDEA_PLACEHOLDER_EXPERT`, `IDEA_HINT_EXPERT` — короче, **без BPM/synth-pop/R&B в подсказках**
-- [ ] **Расширенный:** `#customDescriptionInput` + пример под полем — по-русски, 1 короткая фраза
-- [ ] **Расширенный:** `#artistRef` placeholder — упростить (русский тон, без простыни имён)
-- [ ] Честность: продюсер = проба, расширенный = контроль и лучший звук
-- [ ] Тон: для клиента, не технарский; EN-жаргон только в FAQ при необходимости
+**Сделано (v2.9.31, §13b):**
+- [x] `#modeProducerCard` / `#modeExpertCard` — заголовок + 1 строка + бейджи
+- [x] `#ideaInputHint` — одна короткая строка, разная по режиму
+- [x] `#studioQualityTips` — убран с главного экрана
+- [x] `#expertModeContent` — вступление в 1 строку
+- [x] Placeholder `#ideaInput` — разный для producer vs expert
+- [x] **Расширенный:** `IDEA_PLACEHOLDER_EXPERT`, `IDEA_HINT_EXPERT` — короче, без BPM/synth-pop
+- [x] **Расширенный:** `#customDescriptionInput` + пример — по-русски
+- [x] **Расширенный:** `#artistRef` placeholder — «В духе Зиверт или Басты…»
+- [x] `studioTipsPool`, `funFacts` — вычищен EN-жаргон
+- [x] Честность и клиентский тон сохранены
 
 **ТЗ и черновик направления:** `SONGFORGE-КОНТЕКСТ.txt` §13b
 

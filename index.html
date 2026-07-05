@@ -334,28 +334,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 text-xs">
                 <div id="modeProducerCard" class="studio-mode-card active" role="button" tabindex="0">
                     <div class="font-semibold studio-mode-title mb-1">⚡ AI-продюсер</div>
-                    <p class="text-zinc-400 leading-relaxed text-sm">Быстрый старт: одна кнопка — AI сам подберёт стиль и текст. Подходит, чтобы попробовать идею и получить черновик. Не ждите здесь премиум-звучания уровня чарта — AI решает за вас.</p>
+                    <p class="text-zinc-300 text-sm leading-snug mb-2">Опиши идею в паре фраз — AI сделает песню сам. Быстро, на пробу.</p>
+                    <div class="flex flex-wrap gap-1.5"><span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">Быстро</span><span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">Черновик</span></div>
                 </div>
                 <div id="modeExpertCard" class="studio-mode-card" role="button" tabindex="0">
                     <div class="font-semibold studio-mode-title mb-1">🎛 Расширенный режим</div>
-                    <p class="text-zinc-400 leading-relaxed text-sm">Для тех, кто хочет результат ближе к эфирному качеству. Вы сами задаёте жанр, вокал, инструменты, референсы и описание звучания. Чем подробнее бриф — тем точнее трек.</p>
+                    <p class="text-zinc-300 text-sm leading-snug mb-2">Ты задаёшь жанр, звук и текст — больше контроля, сильнее результат.</p>
+                    <div class="flex flex-wrap gap-1.5"><span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">Детальный бриф</span><span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-400">Лучший звук</span></div>
                 </div>
             </div>
 
             <label id="ideaInputLabel" class="block text-xs text-zinc-400 mb-2">Опиши идею песни</label>
             <textarea id="ideaInput" rows="4" class="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: лиричная поп-песня о встрече после долгой разлуки..."></textarea>
-            <p id="ideaInputHint" class="text-xs text-zinc-500 mt-2 leading-relaxed">Достаточно 1–3 предложений о сюжете. Для серьёзного звука переключитесь на Расширенный режим.</p>
-            <details id="studioQualityTips" class="studio-quality-tips">
-                <summary>Как получить лучший результат</summary>
-                <ul>
-                    <li>AI-продюсер = быстро и просто, результат «на пробу»</li>
-                    <li>Расширенный + детальный бриф = шанс на эстрадное качество</li>
-                    <li>Укажите: жанр, инструменты, вокал, BPM, референсы, атмосферу</li>
-                    <li>Референс — это «звучит в духе», не копия чужой песни</li>
-                    <li>Можно отредактировать текст перед созданием трека</li>
-                    <li>Два варианта — выберите лучший и доработайте описание при повторе</li>
-                </ul>
-            </details>
+            <p id="ideaInputHint" class="text-xs text-zinc-500 mt-2 leading-relaxed">1–3 предложения о сюжете — достаточно.</p>
 
             <div id="producerModeContent" class="mt-4">
                 <button id="createSongBtn" class="w-full upgrade-btn py-4 rounded-2xl flex items-center justify-center gap-3 text-lg shadow-2xl shadow-yellow-500/20">
@@ -365,7 +356,7 @@
             </div>
 
             <div id="expertModeContent" class="hidden mt-4">
-                <p class="text-xs text-zinc-500 mb-4">Настрой параметры вручную или опиши звучание своими словами — затем сгенерируй текст и создай песню.</p>
+                <p class="text-xs text-zinc-500 mb-4">Жанр и вокал ниже → сгенерируй текст → создай песню.</p>
                 <div class="expert-style-tabs mb-4">
                     <button type="button" id="styleModePresetsBtn" class="expert-style-tab active">📋 Списки</button>
                     <button type="button" id="styleModeCustomBtn" class="expert-style-tab">✍️ Своими словами</button>
@@ -380,7 +371,7 @@
                 <div id="expertCustomBlock" class="hidden">
                     <label class="block text-xs text-zinc-400 mb-2">✍️ Описание звучания своими словами</label>
                     <textarea id="customDescriptionInput" rows="3" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition resize-none" placeholder="Опиши, что хочешь получить своими словами..."></textarea>
-                    <p class="text-xs text-zinc-500 mt-2 leading-relaxed">Например: грустный R&amp;B dance, мужским голосом о романтичных отношениях на расстоянии</p>
+                    <p class="text-xs text-zinc-500 mt-2 leading-relaxed">Например: медленный рэп с гитарой, тёплый мужской голос</p>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-6">
                     <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="backingVocalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Бэк-вокал</span></label>
@@ -388,7 +379,7 @@
                 </div>
                 <div class="mt-4">
                     <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания</label>
-                    <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="Например: звучание как у The Weeknd, Billie Eilish или Басты — но без копирования">
+                    <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="В духе Зиверт или Басты — без копирования мелодии">
                 </div>
                 <button id="generateTextBtn" class="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-pen-to-square"></i> Сгенерировать текст песни
@@ -1180,11 +1171,11 @@ var libraryTab='library';var LIBRARY_PAGE_SIZE=9;var libraryPage=0;var historyPa
 var authEmailStep='request';
 var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_PRODUCER="Например: лиричная поп-песня о встрече после долгой разлуки...";
-var IDEA_PLACEHOLDER_EXPERT="Пример: меланхоличный synth-pop, 95 BPM, женский вокал, фортепиано + синтезатор, атмосфера как у Billie Eilish, текст о расставании на расстоянии";
-var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты, настроение и характер композиции...";
-var IDEA_HINT_PRODUCER="Достаточно 1–3 предложений о сюжете. Для серьёзного звука переключитесь на Расширенный режим.";
-var IDEA_HINT_EXPERT="Для топ-качества опишите максимально конкретно: жанр и поджанр, темп (BPM), инструменты, тип вокала, настроение, референсы артистов (без копирования мелодий).";
-var IDEA_HINT_INSTR="Опишите атмосферу, инструменты и характер композиции — без текста песни.";
+var IDEA_PLACEHOLDER_EXPERT="Например: грустная поп-песня о расставании, спокойный женский голос";
+var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты и характер композиции — без текста песни.";
+var IDEA_HINT_PRODUCER="1–3 предложения о сюжете — достаточно.";
+var IDEA_HINT_EXPERT="О чём песня и какой настрой — жанр и вокал выберите ниже.";
+var IDEA_HINT_INSTR="Опишите атмосферу и инструменты — без текста песни.";
 
 var genreMap={
   "Поп":"pop, catchy, radio-ready, modern production",
@@ -1276,7 +1267,7 @@ function canStartSongGeneration(){if(!session.loggedIn)return'auth';if(session.g
 function blockSongGenerationIfNeeded(){var gate=canStartSongGeneration();if(gate==='ok')return true;if(gate==='auth'){openAuthModal();showToast('Войдите в аккаунт, чтобы создать песню');}else{openCreditPurchaseModal();showToast('Купите ноты, чтобы создать новую песню');}return false;}
 function resetStaleGeneratingUI(){var block=document.getElementById('generatingBlock');if(!block||block.classList.contains('hidden'))return;if(currentTaskId)return;hideGenerating(null,{success:false});genApiPhase='idle';}
 
-async function generateLyrics(idea){try{var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});throw new Error('forbidden');}if(!res.ok)throw new Error();var d=await res.json();return d.lyrics||"Текст не получен.";}catch(e){if(e&&e.message==='forbidden')throw e;var moodRu={"uplifting":"Энергичный и яркий","melancholy":"Задумчивый и глубокий","romantic":"Тёплый и нежный","dark":"Мрачный и интенсивный"};return "[Куплет 1]\n"+idea.slice(0,55)+"\nСлова ложатся в такт\n"+(moodRu[selectedMood]||"")+" "+selectedGenre+" трек\n\n[Припев]\nЭто твой трек — твоя волна\nСквозь "+selectedGenre+" звучит она\nВсё что внутри выходит в свет\nТвоя песня — твой ответ\n\n[Куплет 2]\nАтмосфера вокруг\nГолос "+(vocalMap[selectedVocal]||"звучит")+" — слышишь звук?\nКаждый бит — это шаг вперёд\n"+selectedGenre+" тебя несёт\n\n[Аутро]\nТвой трек. Твой момент. Навсегда.";}}
+async function generateLyrics(idea){var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});throw new Error('forbidden');}if(!res.ok){var err2=await res.json().catch(function(){return{};});throw new Error((err2&&err2.detail)||'Не удалось сгенерировать текст');}var d=await res.json();return d.lyrics||'Текст не получен.';}
 
 var POLL_INTERVAL_MS=3000;var POLL_MAX_ATTEMPTS=160;var POLL_GRACE_ATTEMPTS=30;var PREVIEW_LIMIT_SEC=30;var PLAYER_COVER_DEFAULT='https://picsum.photos/id/1015/400/300';
 function trackListenUrl(track,idx,productionId,purchased,prepaid){if(!track)return'';if(purchased||prepaid)return track.audio_url||'';return track.preview_url||('/api/audio/preview/'+productionId+'/'+idx);}
@@ -1284,7 +1275,7 @@ function tracksToListenUrls(tracks,productionId,purchased,prepaid){var out=[];fo
 async function fetchFullAudioUrl(productionId,variantIdx){var res=await fetch('/api/audio/full/'+encodeURIComponent(productionId)+'/'+variantIdx,fetchOpts);var data=await res.json().catch(function(){return{}});if(!res.ok)throw new Error(data.detail||'Не удалось получить файл');return data.audio_url;}
 function setPlayerCover(url){var img=document.getElementById('playerCover');if(!img)return;var src=(url&&String(url).trim())?url:PLAYER_COVER_DEFAULT;img.src=src;img.onerror=function(){img.onerror=null;img.src=PLAYER_COVER_DEFAULT;};}
 var genMsgs=[["Продюсер анализирует идею...","Подбираем оптимальные параметры"],["Создаём твой лучший трек...","Обычно примерно 3–5 минут"],["Создаём твой лучший трек...","Готовим 2 варианта песни"],["Создаём твой лучший трек...","Финальная обработка микса..."],["Создаём твой лучший трек...","Почти готово — ещё немного"]];
-var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня — около 300 слов текста","🎤 Музыка активирует те же зоны мозга, что и вкусная еда","🥁 Сердце подстраивается под ритм — это энтрейнмент","🎹 Бетховен писал шедевры, будучи почти глухим","⚡ Студия анализирует стиль тысяч хитов для твоей песни","🌍 Музыка — универсальный язык культур","🎼 Продюсер подбирает темп и инструменты под твою идею","🎧 Мы создаём два варианта — выбери лучший","🎶 Рифма и ритм усиливают запоминаемость мелодии","🎙 Структура [Verse]/[Chorus] помогает песне звучать цельно","🔊 Коммерческий микс — отдельный этап после записи","🌙 Lo-Fi родился из сэмплов старых джазовых пластинок","🥁 BPM задаёт настроение не хуже мелодии","🎹 Синтезаторы в поп-музыке — с конца 60-х","🎤 Дуэт мужской и женский вокал — отдельная настройка в студии","📝 Текст песни пишется отдельно от аранжировки","🎵 1 нота = 2 полных варианта трека навсегда","🌊 Ambient часто используют частоты ниже 200 Гц для «объёма»","🎸 Электрогитара в роке обычно записывают два дубля в стерео","🎤 Припев обычно повторяется 3–4 раза — так песня запоминается","🎹 Минор чаще ассоциируется с грустью, мажор — с радостью","⚡ Написание текста бесплатно — платите только за полные треки","🎧 Превью всегда 30 секунд — полная версия после покупки","🎶 Продюсер подбирает жанр, BPM и атмосферу из вашей идеи","🎵 Первые секунды трека решают, дослушают ли до конца","🎤 Бэк-вокал и гармонии добавляют «радиозвучание»","🎹 У каждого жанра свой типичный диапазон BPM","🌟 Скоро — публикация треков и голосование в сообществе"];
+var funFacts=["🎵 Первая компьютерная музыка создана в 1951 году","🎸 Средняя поп-песня — около 300 слов текста","🎤 Музыка активирует те же зоны мозга, что и вкусная еда","🥁 Сердце подстраивается под ритм — это энтрейнмент","🎹 Бетховен писал шедевры, будучи почти глухим","⚡ Студия анализирует стиль тысяч хитов для твоей песни","🌍 Музыка — универсальный язык культур","🎼 Продюсер подбирает темп и инструменты под твою идею","🎧 Мы создаём два варианта — выбери лучший","🎶 Рифма и ритм усиливают запоминаемость мелодии","🎙 Структура куплет–припев помогает песне звучать цельно","🔊 Коммерческий микс — отдельный этап после записи","🌙 Лоу-фай родился из сэмплов старых джазовых пластинок","🥁 Темп задаёт настроение не хуже мелодии","🎹 Синтезаторы в поп-музыке — с конца 60-х","🎤 Дуэт мужской и женский вокал — отдельная настройка в студии","📝 Текст песни пишется отдельно от аранжировки","🎵 1 нота = 2 полных варианта трека навсегда","🌊 Атмосферная музыка часто использует низкие частоты для «объёма»","🎸 Электрогитара в роке обычно записывают два дубля в стерео","🎤 Припев обычно повторяется 3–4 раза — так песня запоминается","🎹 Минор чаще ассоциируется с грустью, мажор — с радостью","🎧 Превью всегда 30 секунд — полная версия после покупки","🎶 Продюсер подбирает жанр, темп и атмосферу из вашей идеи","🎵 Первые секунды трека решают, дослушают ли до конца","🎤 Бэк-вокал и гармонии добавляют «радиозвучание»","🎹 У каждого жанра свой типичный темп","🌟 Скоро — публикация треков и голосование в сообществе"];
 var funFactTimer=null;var genStartTime=0;var lastFunFactIdx=-1;var genApiPhase='idle';
 
 function pollTickSub(n){var subs=genMsgs.map(function(m){return m[1];});return subs[Math.max(0,(n-1)%subs.length)]||'Обычно примерно 3–5 минут';}
@@ -1352,7 +1343,7 @@ function openCreditPurchaseModal(){document.getElementById('creditPurchaseModal'
 function closeCreditPurchaseModal(){document.getElementById('creditPurchaseModal').classList.add('hidden');}
 function showResultModal(data,urls,tracks){stopModalPreview();var purchased=!!data.purchased;var prepaid=!!data.prepaid;lastResult={urls:urls,tracks:tracks||[],title:data.title||'Ваша песня',lyrics:currentGeneratedLyrics,cover:(tracks[0]&&tracks[0].image_url)||'https://picsum.photos/id/29/280/280',selected:null,savedVariants:purchased?[true,true]:[false,false],savedTrackIds:[],generationId:data.production_id||data.generationId||Date.now(),prepaid:prepaid,purchased:purchased};fetchMe().then(function(){if(session.loggedIn){fetchHistory();if(purchased){fetchServerLibrary().then(renderLibrary);}else if(prepaid){ensurePrepaidInLibrary();}}});document.getElementById('modalSongTitle').textContent=lastResult.title;document.getElementById('modalLyrics').classList.add('hidden');['variantA','variantB'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('selected');});['variantATimer','variantBTimer'].forEach(function(id,i){var t=document.getElementById(id);if(t)t.textContent=resultTimerLabel(i);});resetListenButtons();updateModalCreditsBalance();updateResultModalUI();document.getElementById('variantAListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(0);};document.getElementById('variantBListen').onclick=function(e){e.stopPropagation();toggleVariantPreview(1);};document.getElementById('variantA').onclick=function(){selectResultVariant(0);};document.getElementById('variantB').onclick=function(){selectResultVariant(1);};document.getElementById('modalOpenLibraryBtn').onclick=function(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');switchToView('library');};document.getElementById('modalStudioBtn').onclick=goToStudioFromResult;document.getElementById('modalShowLyricsBtn').onclick=function(){var ml=document.getElementById('modalLyrics');if(ml.classList.contains('hidden')){ml.textContent=lastResult.lyrics||'Текст недоступен';ml.classList.remove('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-eye-slash mr-1"></i> Скрыть текст';}else{ml.classList.add('hidden');document.getElementById('modalShowLyricsBtn').innerHTML='<i class="fa-regular fa-file-lines mr-1"></i> Посмотреть текст';}};document.getElementById('resultModal').classList.remove('hidden');updatePaymentReturnBtn();}
 
-function setStudioMode(mode){studioMode=mode==='expert'?'expert':'producer';var producerCard=document.getElementById('modeProducerCard');var expertCard=document.getElementById('modeExpertCard');var producerContent=document.getElementById('producerModeContent');var expertContent=document.getElementById('expertModeContent');var badge=document.getElementById('studioModeBadge');var panel=document.getElementById('studioMainPanel');var ideaLabel=document.getElementById('ideaInputLabel');if(producerCard)producerCard.classList.toggle('active',studioMode==='producer');if(expertCard)expertCard.classList.toggle('active',studioMode==='expert');if(producerContent)producerContent.classList.toggle('hidden',studioMode!=='producer');if(expertContent)expertContent.classList.toggle('hidden',studioMode!=='expert');if(badge)badge.textContent=studioMode==='producer'?'Быстрый режим':'Расширенный режим';if(panel){panel.classList.toggle('border-yellow-400/20',studioMode==='producer');panel.classList.toggle('border-white/10',studioMode==='expert');}if(ideaLabel)ideaLabel.textContent=studioMode==='expert'?'Опиши идею и звучание':'Опиши идею песни';updateIdeaFieldUI();}
+function setStudioMode(mode){studioMode=mode==='expert'?'expert':'producer';var producerCard=document.getElementById('modeProducerCard');var expertCard=document.getElementById('modeExpertCard');var producerContent=document.getElementById('producerModeContent');var expertContent=document.getElementById('expertModeContent');var badge=document.getElementById('studioModeBadge');var panel=document.getElementById('studioMainPanel');var ideaLabel=document.getElementById('ideaInputLabel');if(producerCard)producerCard.classList.toggle('active',studioMode==='producer');if(expertCard)expertCard.classList.toggle('active',studioMode==='expert');if(producerContent)producerContent.classList.toggle('hidden',studioMode!=='producer');if(expertContent)expertContent.classList.toggle('hidden',studioMode!=='expert');if(badge)badge.textContent=studioMode==='producer'?'Быстрый режим':'Расширенный режим';if(panel){panel.classList.toggle('border-yellow-400/20',studioMode==='producer');panel.classList.toggle('border-white/10',studioMode==='expert');}if(ideaLabel)ideaLabel.textContent=studioMode==='expert'?'О чём песня и какой настрой':'Опиши идею песни';updateIdeaFieldUI();}
 function getCustomDescription(){var el=document.getElementById('customDescriptionInput');return el?el.value.trim():'';}
 function buildSongPayload(idea){var vocalMapReq={female:'female',male:'male',duet:'duet',auto:'auto'};var customDesc=expertStyleMode==='custom'?getCustomDescription():'';var usePresets=expertStyleMode!=='custom';var lyricsEngine=studioMode==='expert'&&!instrumentalMode?'unified':'classic';return{idea:idea,genre:usePresets?selectedGenre:'',mood:usePresets?selectedMood:'',artist_ref:(document.getElementById('artistRef')&&document.getElementById('artistRef').value.trim())||'',instrumental:!!(document.getElementById('instrumentalCheckbox')&&document.getElementById('instrumentalCheckbox').checked),vocal_hint:vocalMapReq[selectedVocal]||'auto',backing_vocal:!!(document.getElementById('backingVocalCheckbox')&&document.getElementById('backingVocalCheckbox').checked),style_mode:expertStyleMode,custom_description:customDesc,lyrics_engine:lyricsEngine};}
 function setExpertStyleMode(mode){expertStyleMode=mode==='custom'?'custom':'presets';var presetsBtn=document.getElementById('styleModePresetsBtn');var customBtn=document.getElementById('styleModeCustomBtn');var presetsBlock=document.getElementById('expertPresetsBlock');var customBlock=document.getElementById('expertCustomBlock');if(presetsBtn)presetsBtn.classList.toggle('active',expertStyleMode==='presets');if(customBtn)customBtn.classList.toggle('active',expertStyleMode==='custom');if(presetsBlock)presetsBlock.classList.toggle('hidden',expertStyleMode==='custom');if(customBlock)customBlock.classList.toggle('hidden',expertStyleMode!=='custom');}
@@ -1490,7 +1481,7 @@ function initChips(){
   updateIdeaFieldUI();
 }
 
-var studioTipsPool=['Расширенный режим + детальный бриф — ближе к «эфирному» звуку','Укажите жанр, BPM, вокал и референс артиста (не копию мелодии)','Два варианта A/B — выберите лучший и уточните описание при повторе','Референс = «в духе», AI-продюсер = быстрый черновик на пробу','AI-продюсер — быстрый старт: 1–3 предложения о сюжете достаточно','Для топ-качества опишите темп, инструменты и настроение в Расширенном','Можно отредактировать текст песни перед созданием трека','Не закрывайте страницу — генерация музыки обычно примерно 3–5 минут','1 пробная генерация после входа: 2 превью по 30 секунд','Полная песня — 1 нота: оба варианта попадают в фонотеку','Пример брифа: «меланхоличный synth-pop, 95 BPM, женский вокал»','Референс артиста задаёт атмосферу, а не копию чужой мелодии','Опубликуйте лучший трек на МузПлощадку — он может попасть в чарт','Слушайте топ чарта слева — клик по обложке запускает превью','Жанр в идее помогает, но в AI-продюсере можно описать только сюжет','Повторите генерацию с уточнённым брифом, если варианты не зашли'];
+var studioTipsPool=['Расширенный режим и детальный бриф — звук ближе к готовому релизу','Укажите жанр, вокал и референс артиста — без копии чужой мелодии','Два варианта A/B — выберите лучший и уточните описание при повторе','Референс = «в духе», AI-продюсер = быстрый черновик на пробу','AI-продюсер — быстрый старт: 1–3 предложения о сюжете достаточно','Для лучшего звука опишите темп, инструменты и настроение в Расширенном','Можно отредактировать текст песни перед созданием трека','Не закрывайте страницу — генерация музыки обычно примерно 3–5 минут','1 пробная генерация после входа: 2 превью по 30 секунд','Полная песня — 1 нота: оба варианта попадают в фонотеку','Пример брифа: «грустная поп-песня, спокойный женский голос»','Референс артиста задаёт атмосферу, а не копию чужой мелодии','Опубликуйте лучший трек — он может попасть в чарт','Слушайте топ чарта слева — клик по обложке запускает превью','Жанр в идее помогает, но в AI-продюсере можно описать только сюжет','Повторите генерацию с уточнённым описанием, если варианты не зашли'];
 var studioTipsOffset=0,studioTipsTimer=null,STUDIO_TIPS_VISIBLE=1,STUDIO_TIPS_ROTATE_MS=15000;
 function renderStudioTips(){var list=document.getElementById('studioTipsList');if(!list)return;var html='';for(var i=0;i<STUDIO_TIPS_VISIBLE;i++){html+='<li>'+studioTipsPool[(studioTipsOffset+i)%studioTipsPool.length]+'</li>';}list.style.opacity='0';setTimeout(function(){list.innerHTML=html;list.style.opacity='1';},120);}
 function startStudioTipsRotation(){renderStudioTips();if(studioTipsTimer)clearInterval(studioTipsTimer);studioTipsTimer=setInterval(function(){studioTipsOffset=(studioTipsOffset+1)%studioTipsPool.length;renderStudioTips();},STUDIO_TIPS_ROTATE_MS);}
@@ -1523,36 +1514,27 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
             renderProducerPlan(data);
         }else{
             var err=await res.json().catch(function(){return{};});
-            if(res.status===403){handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';updateStudioGenerateButtons();return;}
-            if(!instrumentalMode){
-                currentGeneratedLyrics=await generateLyrics(idea);
-                currentProduction=null;
-                showToast('Текст сгенерирован, но план стиля не готов — нажмите «Создать песню» ещё раз');
-            }else{
-                currentGeneratedLyrics='';
-                currentProduction=null;
-                alert((err&&err.detail)||'Не удалось подготовить инструментал');
-                btn.disabled=false;
-                btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
-                return;
-            }
-        }
-    }catch(e){
-        if(!instrumentalMode){
-            currentGeneratedLyrics=await generateLyrics(idea);
-            currentProduction=null;
-            showToast('Текст сгенерирован без плана — при создании песни план будет собран автоматически');
-        }else{
+            if(res.status===403){handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';updateStudioGenerateButtons();return;}
             currentGeneratedLyrics='';
             currentProduction=null;
-            alert('Ошибка подготовки инструментала');
+            alert((err&&err.detail)||'Не удалось подготовить текст и план стиля. Попробуйте ещё раз.');
             btn.disabled=false;
-            btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
+            btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';
+            updateStudioGenerateButtons();
             return;
         }
+    }catch(e){
+        if(e&&e.message==='forbidden'){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';updateStudioGenerateButtons();return;}
+        currentGeneratedLyrics='';
+        currentProduction=null;
+        alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');
+        btn.disabled=false;
+        btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';
+        updateStudioGenerateButtons();
+        return;
     }
     btn.disabled=false;
-    btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Только сгенерировать текст';
+    btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';
     if(instrumentalMode){
         document.getElementById('lyricsBlock').classList.add('hidden');
         document.getElementById('step3Block').classList.remove('hidden');
@@ -1564,7 +1546,7 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     }
 });
 
-document.getElementById('regenLyricsBtn').addEventListener('click',async function(){if(!blockSongGenerationIfNeeded())return;var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}else{currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;}}catch(e){if(e&&e.message==='forbidden'){btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}currentGeneratedLyrics=await generateLyrics(idea);currentProduction=null;}document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
+document.getElementById('regenLyricsBtn').addEventListener('click',async function(){if(!blockSongGenerationIfNeeded())return;var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}else{var err2=await res.json().catch(function(){return{};});alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
 
 document.getElementById('editLyricsBtn').addEventListener('click',function(){var disp=document.getElementById('lyricsDisplay'),ed=document.getElementById('lyricsEditor'),btn=document.getElementById('editLyricsBtn');if(ed.classList.contains('hidden')){disp.classList.add('hidden');ed.classList.remove('hidden');btn.innerHTML='<i class="fa-regular fa-floppy-disk mr-1"></i>Сохранить';}else{currentGeneratedLyrics=ed.value;disp.textContent=currentGeneratedLyrics;disp.classList.remove('hidden');ed.classList.add('hidden');btn.innerHTML='<i class="fa-regular fa-pen-to-square mr-1"></i>Редактировать';}});
 
