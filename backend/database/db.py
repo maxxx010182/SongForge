@@ -268,6 +268,61 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE users ADD COLUMN is_persona INTEGER NOT NULL DEFAULT 0"
         )
+    if "nickname_confirmed" not in existing:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN nickname_confirmed INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.execute(
+            """
+            UPDATE users
+            SET nickname_confirmed = 1
+            WHERE COALESCE(is_persona, 0) = 0
+            """
+        )
+        _dedupe_real_user_display_names(conn)
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_display_name_unique
+            ON users(LOWER(display_name))
+            WHERE COALESCE(is_persona, 0) = 0
+              AND display_name IS NOT NULL
+              AND TRIM(display_name) != ''
+            """
+        )
+
+
+def _dedupe_real_user_display_names(conn: sqlite3.Connection) -> None:
+    """Развести дубли display_name у реальных пользователей перед UNIQUE-индексом."""
+    rows = conn.execute(
+        """
+        SELECT id, display_name
+        FROM users
+        WHERE COALESCE(is_persona, 0) = 0
+        ORDER BY created_at ASC, id ASC
+        """
+    ).fetchall()
+    seen: dict[str, str] = {}
+    for row in rows:
+        raw = (row["display_name"] or "").strip()
+        if not raw:
+            continue
+        key = raw.casefold()
+        if key not in seen:
+            seen[key] = row["id"]
+            continue
+        base = raw
+        suffix = 2
+        while suffix < 1000:
+            candidate = f"{base}_{suffix}"
+            cand_key = candidate.casefold()
+            if cand_key not in seen:
+                conn.execute(
+                    "UPDATE users SET display_name = ? WHERE id = ?",
+                    (candidate, row["id"]),
+                )
+                seen[cand_key] = row["id"]
+                break
+            suffix += 1
 
 
 def _migrate_engagement_columns(conn: sqlite3.Connection) -> None:

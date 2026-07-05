@@ -89,6 +89,16 @@ def test_explore_listen_not_found():
     assert response.status_code == 404
 
 
+def test_public_track_not_found():
+    response = client.get("/api/explore/nonexistent-id/public")
+    assert response.status_code == 404
+
+
+def test_track_short_link_not_found():
+    response = client.get("/t/nonexistent-id", follow_redirects=False)
+    assert response.status_code == 404
+
+
 def test_explore_like_requires_login():
     response = client.post("/api/explore/nonexistent-id/like")
     assert response.status_code == 401

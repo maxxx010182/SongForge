@@ -210,6 +210,17 @@ class UserInfo(BaseModel):
     display_name: str = ""
     balance: int = 0
     avatar_url: str | None = None
+    nickname_confirmed: bool = False
+
+
+class PublicTrackResponse(BaseModel):
+    id: str
+    title: str = ""
+    author_name: str = "Аноним"
+    image_url: str = ""
+    listen_url: str = ""
+    likes: int = 0
+    share_url: str = ""
 
 
 class ProfileUpdateRequest(BaseModel):

@@ -1,7 +1,7 @@
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.logger import log
@@ -35,6 +35,7 @@ from backend.models import (
     PurchaseResponse,
     ProfileUpdateRequest,
     ProfileUpdateResponse,
+    PublicTrackResponse,
     StyleRequest,
     AdminBalanceAdjustRequest,
     AdminDashboardResponse,
@@ -65,7 +66,7 @@ from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.history import HistoryService
 from backend.services.payment_service import PaymentService
-from backend.services.profile_service import ProfileService
+from backend.services.profile_service import DisplayNameTakenError, ProfileService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.yandex_client import YandexClient
 from backend.settings import (
@@ -76,6 +77,7 @@ from backend.settings import (
     LEGACY_API_ENABLED,
     PAYMENT_PROVIDER,
     ROOT_DIR,
+    SITE_URL,
     TELEGRAM_AUTH_ENABLED,
     UPLOADS_DIR,
 )
@@ -97,7 +99,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.16")
+app = FastAPI(title="SongForge", version="2.9.17")
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,6 +206,21 @@ def _user_info(user: dict) -> UserInfo:
         display_name=user.get("display_name") or "",
         balance=int(user.get("balance") or 0),
         avatar_url=user.get("avatar_url"),
+        nickname_confirmed=bool(int(user.get("nickname_confirmed") or 0)),
+    )
+
+
+def _public_track_payload(library_id: str, row) -> PublicTrackResponse:
+    author = (row["display_name"] or "").strip() or "Аноним"
+    title = (row["title"] or "").strip() or "Без названия"
+    return PublicTrackResponse(
+        id=library_id,
+        title=title,
+        author_name=author,
+        image_url=row["image_url"] or "",
+        listen_url=f"/api/explore/{library_id}/listen",
+        likes=int(row["likes"] or 0),
+        share_url=f"{SITE_URL}/t/{library_id}",
     )
 
 
@@ -280,6 +297,15 @@ async def get_admin_page():
     return FileResponse(path)
 
 
+@app.get("/t/{library_id}")
+async def track_share_short_link(library_id: str):
+    """Короткая ссылка для шаринга — как YouTube / Instagram."""
+    row = cabinet.get_published_library_item(library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден или снят с публикации")
+    return RedirectResponse(url=f"/?track={library_id}", status_code=302)
+
+
 @app.get("/SongForgeLogo.png")
 async def get_logo():
     path = ROOT_DIR / "SongForgeLogo.png"
@@ -290,7 +316,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.16"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.17"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -819,6 +845,14 @@ async def post_track_comment(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/explore/{library_id}/public", response_model=PublicTrackResponse)
+async def get_public_track(library_id: str):
+    row = cabinet.get_published_library_item(library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден или снят с публикации")
+    return _public_track_payload(library_id, row)
+
+
 @app.get("/api/explore/{library_id}/listen")
 async def listen_explore_track(library_id: str):
     row = cabinet.get_published_library_item(library_id)
@@ -897,6 +931,23 @@ async def auth_telegram(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/profile/nickname-available")
+async def check_nickname_available(
+    display_name: str,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    try:
+        available = profile_service.is_nickname_available(
+            user_id=user["id"],
+            display_name=display_name,
+        )
+        return {"available": available}
+    except ValueError as exc:
+        return {"available": False, "reason": str(exc)}
+
+
 @app.patch("/api/profile", response_model=ProfileUpdateResponse)
 async def update_profile(
     req: ProfileUpdateRequest,
@@ -910,6 +961,8 @@ async def update_profile(
             display_name=req.display_name,
         )
         return ProfileUpdateResponse(success=True, user=_user_info(updated))
+    except DisplayNameTakenError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

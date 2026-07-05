@@ -23,7 +23,8 @@ class AuthService:
         with get_connection() as conn:
             row = conn.execute(
                 """
-                SELECT u.id, u.email, u.display_name, u.balance, u.created_at, u.avatar_url
+                SELECT u.id, u.email, u.display_name, u.balance, u.created_at, u.avatar_url,
+                       COALESCE(u.nickname_confirmed, 0) AS nickname_confirmed
                 FROM sessions s
                 JOIN users u ON u.id = s.user_id
                 WHERE s.token = ? AND s.expires_at > ?
@@ -56,7 +57,11 @@ class AuthService:
         email = email.strip().lower()
         with get_connection() as conn:
             row = conn.execute(
-                "SELECT id, email, display_name, balance, created_at, avatar_url FROM users WHERE email = ?",
+                """
+                SELECT id, email, display_name, balance, created_at, avatar_url,
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
+                FROM users WHERE email = ?
+                """,
                 (email,),
             ).fetchone()
             if row:
@@ -66,8 +71,9 @@ class AuthService:
             now = utc_now()
             conn.execute(
                 """
-                INSERT INTO users (id, email, display_name, balance, created_at)
-                VALUES (?, ?, ?, 0, ?)
+                INSERT INTO users (
+                    id, email, display_name, balance, created_at, nickname_confirmed
+                ) VALUES (?, ?, ?, 0, ?, 0)
                 """,
                 (user_id, email, email.split("@")[0], now),
             )
@@ -85,6 +91,7 @@ class AuthService:
                 "display_name": email.split("@")[0],
                 "balance": 0,
                 "created_at": now,
+                "nickname_confirmed": 0,
             }
 
     def request_email_code(self, email: str) -> str:
@@ -151,8 +158,9 @@ class AuthService:
                 user_id = str(uuid.uuid4())
                 conn.execute(
                     """
-                    INSERT INTO users (id, email, display_name, balance, created_at)
-                    VALUES (?, NULL, ?, 0, ?)
+                    INSERT INTO users (
+                        id, email, display_name, balance, created_at, nickname_confirmed
+                    ) VALUES (?, NULL, ?, 0, ?, 0)
                     """,
                     (user_id, display, now),
                 )
@@ -171,7 +179,11 @@ class AuthService:
                 )
 
             user_row = conn.execute(
-                "SELECT id, email, display_name, balance, created_at, avatar_url FROM users WHERE id = ?",
+                """
+                SELECT id, email, display_name, balance, created_at, avatar_url,
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
+                FROM users WHERE id = ?
+                """,
                 (user_id,),
             ).fetchone()
 

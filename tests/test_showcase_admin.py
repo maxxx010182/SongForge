@@ -104,13 +104,16 @@ def test_non_owner_cannot_boost_without_super_admin():
     other_id = f"other-{uuid.uuid4()}"
 
     with get_connection() as conn:
-        for uid, email in ((owner_id, "o@test.local"), (other_id, "x@test.local")):
+        for uid, email, name in (
+            (owner_id, "o@test.local", "OwnerTest"),
+            (other_id, "x@test.local", "OtherTest"),
+        ):
             conn.execute(
                 """
                 INSERT INTO users (id, email, display_name, balance, created_at)
-                VALUES (?, ?, 'U', 0, '2026-07-05T10:00:00')
+                VALUES (?, ?, ?, 0, '2026-07-05T10:00:00')
                 """,
-                (uid, email),
+                (uid, email, name),
             )
 
     library_id = _seed_published_track(owner_id=owner_id)

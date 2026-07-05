@@ -11,6 +11,11 @@ _MIME_EXT = {
     "image/png": ".png",
     "image/webp": ".webp",
 }
+_DISPLAY_NAME_FORBIDDEN = re.compile(r"[@<>]")
+
+
+class DisplayNameTakenError(ValueError):
+    """Ник уже занят другим пользователем или персоной."""
 
 
 class ProfileService:
@@ -22,16 +27,56 @@ class ProfileService:
     def _normalize_display_name(name: str) -> str:
         cleaned = re.sub(r"\s+", " ", name.strip())
         if len(cleaned) < 2:
-            raise ValueError("Имя должно быть от 2 до 40 символов")
+            raise ValueError("Ник — от 2 до 40 символов")
         if len(cleaned) > 40:
-            raise ValueError("Имя не длиннее 40 символов")
+            raise ValueError("Ник не длиннее 40 символов")
+        if _DISPLAY_NAME_FORBIDDEN.search(cleaned):
+            raise ValueError("Ник не должен содержать @ и служебные символы")
         return cleaned
+
+    def _is_display_name_taken(
+        self,
+        conn,
+        *,
+        display_name: str,
+        exclude_user_id: str | None = None,
+    ) -> bool:
+        params: list = [display_name]
+        extra = ""
+        if exclude_user_id:
+            extra = " AND id != ?"
+            params.append(exclude_user_id)
+        row = conn.execute(
+            f"""
+            SELECT id FROM users
+            WHERE LOWER(display_name) = LOWER(?)
+            {extra}
+            LIMIT 1
+            """,
+            params,
+        ).fetchone()
+        return row is not None
+
+    def is_nickname_available(
+        self,
+        *,
+        user_id: str,
+        display_name: str,
+    ) -> bool:
+        name = self._normalize_display_name(display_name)
+        with get_connection() as conn:
+            if self._is_display_name_taken(
+                conn, display_name=name, exclude_user_id=user_id
+            ):
+                return False
+        return True
 
     def get_user(self, user_id: str) -> dict | None:
         with get_connection() as conn:
             row = conn.execute(
                 """
-                SELECT id, email, display_name, balance, created_at, avatar_url
+                SELECT id, email, display_name, balance, created_at, avatar_url,
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
                 FROM users WHERE id = ?
                 """,
                 (user_id,),
@@ -41,8 +86,24 @@ class ProfileService:
     def update_display_name(self, *, user_id: str, display_name: str) -> dict:
         name = self._normalize_display_name(display_name)
         with get_connection() as conn:
+            persona = conn.execute(
+                "SELECT id FROM users WHERE id = ? AND COALESCE(is_persona, 0) = 1",
+                (user_id,),
+            ).fetchone()
+            if persona:
+                raise ValueError("Персоны не редактируют профиль")
+
+            if self._is_display_name_taken(
+                conn, display_name=name, exclude_user_id=user_id
+            ):
+                raise DisplayNameTakenError("Этот ник уже занят — придумайте другой")
+
             cur = conn.execute(
-                "UPDATE users SET display_name = ? WHERE id = ?",
+                """
+                UPDATE users
+                SET display_name = ?, nickname_confirmed = 1
+                WHERE id = ?
+                """,
                 (name, user_id),
             )
             if cur.rowcount == 0:
