@@ -150,8 +150,8 @@
         .studio-quality-tips ul{padding:0 1rem 1rem;margin:0;font-size:.75rem;color:#71717a;line-height:1.7;list-style:disc;padding-left:1.75rem}
         .announce-card{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
         .announce-card.subtle{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);color:#a1a1aa}
-        .sidebar-tips-list{margin:0;padding-left:1.1rem;font-size:.78rem;color:#a1a1aa;line-height:1.65;list-style:disc}
-        .sidebar-tips-list li{margin-bottom:.35rem}
+        .sidebar-tips-list{margin:0;padding-left:1.1rem;font-size:.78rem;color:#a1a1aa;line-height:1.35;list-style:disc;height:7.6rem;overflow:hidden}
+        .sidebar-tips-list li{margin-bottom:.35rem;min-height:1.75rem;max-height:1.75rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
         .sidebar-track-item{transition:background .2s;border:1px solid transparent}
         .sidebar-track-item:hover{border-color:rgba(234,179,8,.15)}
         .sidebar-track-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#18181b}
@@ -173,11 +173,12 @@
         .sidebar-section-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#71717a;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
         .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:.25rem 0}
         .layout-columns{display:flex;flex-direction:column;gap:1.5rem;margin:2rem 0}
-        .sidebar-tips-slot{min-height:7.25rem}
-        .sidebar-chart-slot{min-height:31rem}
+        .sidebar-tips-slot{height:10rem;flex-shrink:0}
+        .sidebar-chart-slot{min-height:31rem;flex-shrink:0}
         @media(min-width:1024px){
-            .layout-columns{display:grid;grid-template-columns:18rem minmax(0,1fr) 20rem;align-items:start;gap:1.5rem}
+            .layout-columns{display:grid;grid-template-columns:20rem minmax(0,1fr) 20rem;align-items:start;gap:1.5rem}
             .sidebar-column{align-self:start}
+            .sidebar-panel{min-height:50rem;display:flex;flex-direction:column}
         }
         .auth-tab-btn{padding:.45rem .9rem;border-radius:.9rem;font-size:.8rem;border:1px solid rgba(255,255,255,.1);color:#a1a1aa}
         .auth-tab-btn.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#eab308}
@@ -196,8 +197,8 @@
     </div>
     <nav class="header-nav justify-self-center order-3 md:order-none">
         <a href="#" data-nav="create" onclick="switchToView('create');return false;" class="header-nav-link active"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Студия</a>
-        <a href="#" data-nav="library" onclick="switchToView('library');return false;" class="header-nav-link"><i class="fa-solid fa-trophy mr-1"></i>Фонотека</a>
-        <a href="#" data-nav="explore" onclick="switchToView('explore');return false;" class="header-nav-link"><i class="fa-solid fa-tower-broadcast mr-1"></i>МузПлощадка</a>
+        <a href="#" data-nav="library" onclick="switchToView('library');return false;" class="header-nav-link"><i class="fa-solid fa-tower-broadcast mr-1"></i>Фонотека</a>
+        <a href="#" data-nav="explore" onclick="switchToView('explore');return false;" class="header-nav-link"><i class="fa-solid fa-trophy mr-1"></i>МузПлощадка</a>
         <a href="#" data-nav="profile" onclick="switchToView('profile');return false;" class="header-nav-link"><i class="fa-regular fa-user mr-1"></i>Профиль</a>
         <a href="#" data-nav="payment" onclick="switchToView('payment');return false;" class="header-nav-link"><i class="fa-regular fa-gem mr-1"></i>Пакеты</a>
     </nav>
@@ -215,7 +216,7 @@
 <div class="layout-columns">
 
 <!-- ЛЕВАЯ ПАНЕЛЬ: лента, советы, чарт -->
-<div id="leftSidebar" class="sidebar-column w-full lg:w-72 shrink-0 order-2 lg:order-1">
+<div id="leftSidebar" class="sidebar-column w-full shrink-0 order-2 lg:order-1">
     <div class="sidebar-panel glass-panel p-6 flex flex-col gap-6">
         <div>
             <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-newspaper text-yellow-400"></i>Афиша</span></div>
@@ -418,7 +419,8 @@
     <div id="explorePanel" class="hidden">
         <h2 class="text-2xl font-title font-semibold mb-1">МузПлощадка</h2>
         <p class="text-xs text-zinc-500 mb-5">Популярные треки сообщества — слушайте, ставьте лайки и комментируйте</p>
-        <div id="exploreGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+        <div id="exploreGrid" class="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4"></div>
+        <div id="explorePagination" class="lib-pagination hidden"></div>
     </div>
 
     <!-- ПРОФИЛЬ -->
@@ -839,7 +841,7 @@
 </div>
 
 <!-- ПРАВАЯ ПАНЕЛЬ: плеер + инструменты -->
-<div id="rightSidebar" class="sidebar-column w-full lg:w-80 shrink-0 order-3">
+<div id="rightSidebar" class="sidebar-column w-full shrink-0 order-3">
     <div class="sidebar-panel glass-panel p-6 flex flex-col gap-6">
         <div>
             <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
@@ -898,8 +900,8 @@
 <!-- Нижняя навигация -->
 <div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 py-2 px-6 z-50 flex justify-around lg:hidden bottom-nav">
     <a data-nav="create" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl active-nav"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><span class="text-[11px]">Студия</span></a>
-    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[11px]">Фонотека</span></a>
-    <a data-nav="explore" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-tower-broadcast text-xl"></i><span class="text-[11px]">МузПлощадка</span></a>
+    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-tower-broadcast text-xl"></i><span class="text-[11px]">Фонотека</span></a>
+    <a data-nav="explore" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[11px]">МузПлощадка</span></a>
     <a data-nav="profile" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[11px]">Кабинет</span></a>
     <a data-nav="payment" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[11px]">Пакеты</span></a>
     <a data-nav="legal" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-file-lines text-xl"></i><span class="text-[11px]">Инфо</span></a>
@@ -1090,7 +1092,7 @@
 var user={balance:0,tracks:[]};
 var session={loggedIn:false,user:null,guestRemaining:0,guestLimit:1,history:[],serverLibrary:[],exploreTracks:[],devTools:false,paymentProvider:'stub'};
 var fetchOpts={credentials:'include'};
-var libraryTab='library';var LIBRARY_PAGE_SIZE=9;var libraryPage=0;var historyPage=0;
+var libraryTab='library';var LIBRARY_PAGE_SIZE=9;var libraryPage=0;var historyPage=0;var explorePage=0;
 var authEmailStep='request';
 var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:199,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_PRODUCER="Например: лиричная поп-песня о встрече после долгой разлуки...";
@@ -1261,10 +1263,13 @@ function libraryTrackCardHtml(t){var variantBadge=t.variant?' <span class="text-
 function renderListPagination(elId,total,page,pageSize,onPageChange,btnPrefix){var el=document.getElementById(elId);if(!el)return;if(total<=pageSize){el.innerHTML='';el.classList.add('hidden');return;}el.classList.remove('hidden');var pages=Math.max(1,Math.ceil(total/pageSize));var from=page*pageSize+1;var to=Math.min(total,(page+1)*pageSize);var prevDisabled=page<=0;var nextDisabled=page>=pages-1;el.innerHTML='<button type="button" class="lib-page-btn" id="'+btnPrefix+'Prev" '+(prevDisabled?'disabled':'')+'><i class="fa-solid fa-chevron-left mr-1"></i>Предыдущие</button><span class="lib-page-info">'+from+'–'+to+' из '+total+'</span><button type="button" class="lib-page-btn" id="'+btnPrefix+'Next" '+(nextDisabled?'disabled':'')+'>Следующие<i class="fa-solid fa-chevron-right ml-1"></i></button>';var prevBtn=document.getElementById(btnPrefix+'Prev');var nextBtn=document.getElementById(btnPrefix+'Next');if(prevBtn&&!prevDisabled)prevBtn.addEventListener('click',function(){onPageChange(page-1);});if(nextBtn&&!nextDisabled)nextBtn.addEventListener('click',function(){onPageChange(page+1);});}
 function clampLibraryPage(total){var pages=Math.max(1,Math.ceil(total/LIBRARY_PAGE_SIZE));if(libraryPage>=pages)libraryPage=pages-1;if(libraryPage<0)libraryPage=0;return pages;}
 function clampHistoryPage(total){var pages=Math.max(1,Math.ceil(total/LIBRARY_PAGE_SIZE));if(historyPage>=pages)historyPage=pages-1;if(historyPage<0)historyPage=0;return pages;}
+function clampExplorePage(total){var pages=Math.max(1,Math.ceil(total/LIBRARY_PAGE_SIZE));if(explorePage>=pages)explorePage=pages-1;if(explorePage<0)explorePage=0;return pages;}
 function setLibraryPage(next){libraryPage=next;renderLibrary();var anchor=document.getElementById('libraryTabContent');if(anchor&&anchor.scrollIntoView)anchor.scrollIntoView({behavior:'smooth',block:'start'});}
 function setHistoryPage(next){historyPage=next;renderHistory();var anchor=document.getElementById('historyTabContent');if(anchor&&anchor.scrollIntoView)anchor.scrollIntoView({behavior:'smooth',block:'start'});}
+function setExplorePage(next){explorePage=next;renderExplore();var anchor=document.getElementById('explorePanel');if(anchor&&anchor.scrollIntoView)anchor.scrollIntoView({behavior:'smooth',block:'start'});}
 function renderLibraryPagination(total){renderListPagination('libraryPagination',total,libraryPage,LIBRARY_PAGE_SIZE,function(p){setLibraryPage(p);},'libPage');}
 function renderHistoryPagination(total){renderListPagination('historyPagination',total,historyPage,LIBRARY_PAGE_SIZE,function(p){setHistoryPage(p);},'histPage');}
+function renderExplorePagination(total){renderListPagination('explorePagination',total,explorePage,LIBRARY_PAGE_SIZE,function(p){setExplorePage(p);},'expPage');}
 function renderLibrary(){var c=document.getElementById('libraryTracksList');if(!c)return;var tracks=session.loggedIn?session.serverLibrary.map(function(t){return{id:t.id,title:t.title,variant:t.variant,generationId:t.generation_id,genre:t.genre,duration:formatDurationSec(t.duration),audioUrl:t.audio_url,cover:t.image_url||'https://picsum.photos/id/29/280/280',lyrics:t.lyrics||'',publishedAt:t.published_at,likes:t.likes||0,server:true};}):user.tracks;var pagEl=document.getElementById('libraryPagination');if(!tracks.length){c.innerHTML='<div class="text-center text-zinc-500 col-span-full py-12">'+(session.loggedIn?'Купленные песни появятся здесь после оплаты (1 нота за оба варианта)':'Здесь будут песни после скачивания (1 нота за оба варианта)')+'</div>';if(pagEl){pagEl.innerHTML='';pagEl.classList.add('hidden');}libraryPage=0;return;}var pages=clampLibraryPage(tracks.length);var start=libraryPage*LIBRARY_PAGE_SIZE;var pageTracks=tracks.slice(start,start+LIBRARY_PAGE_SIZE);c.innerHTML=pageTracks.map(libraryTrackCardHtml).join('');renderLibraryPagination(tracks.length);bindLibraryEvents();}
 function bindLibraryEvents(){document.querySelectorAll('.lib-play-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var t=btn.dataset.server==='1'?session.serverLibrary.find(function(x){return String(x.id)===String(btn.dataset.id);}):getTrackById(btn.dataset.id);if(t)playAudio(t.audio_url||t.audioUrl,t.title,t.image_url||t.cover);});});document.querySelectorAll('.lib-more-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();toggleLibMoreMenu(btn);});});document.querySelectorAll('.lib-menu-download').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();closeAllLibMenus();var t=btn.dataset.server==='1'?session.serverLibrary.find(function(x){return String(x.id)===String(btn.dataset.id);}):getTrackById(btn.dataset.id);if(!t)return;if(btn.dataset.server==='1')downloadTrack(null,0,t.title,{libraryId:t.id});else{var genId=t.generation_id||t.generationId;if(genId)downloadTrack(genId,variantIndexFromLabel(t.variant),t.title,{directUrl:t.audio_url||t.audioUrl});else alert('Не удалось скачать — обновите страницу (Ctrl+F5)');}});});document.querySelectorAll('.lib-menu-publish').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();togglePublishTrack(btn.dataset.id,btn.dataset.published==='1');});});document.querySelectorAll('.lib-menu-lyrics').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();closeAllLibMenus();var t=btn.dataset.server==='1'?session.serverLibrary.find(function(x){return String(x.id)===String(btn.dataset.id);}):getTrackById(btn.dataset.id);if(t)showLyricsModal(t.title,t.lyrics||'');});});document.querySelectorAll('.lib-menu-delete').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();closeAllLibMenus();deleteTrack(btn.dataset.id,btn.dataset.server==='1');});});}
 function historyItemHtml(h){var cover=h.image_url_a||'https://picsum.photos/id/29/280/280';return'<div class="glass-panel p-4 flex gap-3 items-center"><img src="'+escHtml(cover)+'" class="w-16 h-16 rounded-xl object-cover shrink-0" alt=""><div class="flex-1 min-w-0"><div class="font-medium text-sm truncate">'+escHtml(h.title)+'</div><div class="text-xs text-zinc-500 truncate">'+escHtml(h.genre||'')+' • '+escHtml((h.created_at||'').slice(0,10))+'</div><div class="text-[10px] text-amber-400/80 mt-1">Превью 30 сек • не куплено</div></div><div class="flex flex-col gap-2 shrink-0"><button type="button" class="hist-preview-btn bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl text-xs" data-id="'+h.id+'">▶ A</button><button type="button" class="hist-preview-btn bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl text-xs" data-id="'+h.id+'" data-variant="b">▶ B</button><button type="button" class="hist-buy-btn upgrade-btn px-3 py-2 rounded-xl text-xs" data-id="'+h.id+'">Купить в фонотеку</button></div></div>';}
@@ -1283,7 +1288,7 @@ function closeCommentsModal(){commentsModalTrackId=null;document.getElementById(
 async function loadCommentsModal(trackId){var listEl=document.getElementById('commentsModalList');var countEl=document.getElementById('commentsModalCount');try{var res=await fetch('/api/explore/'+encodeURIComponent(trackId)+'/comments',fetchOpts);var data=await res.json().catch(function(){return{items:[]};});if(!res.ok){listEl.innerHTML='<div class="text-zinc-500 text-center py-6">'+(data.detail||'Не удалось загрузить комментарии')+'</div>';if(countEl)countEl.textContent='';return;}var items=data.items||[];var total=data.total!=null?data.total:items.length;if(countEl)countEl.textContent=total?(total+' '+pluralRu(total,['комментарий','комментария','комментариев'])):'Пока без комментариев';if(!items.length){listEl.innerHTML='<div class="text-zinc-500 text-center py-6">Пока нет комментариев — будьте первым!</div>';return;}listEl.innerHTML=items.map(function(c){return'<div class="explore-comment-item"><div class="flex justify-between gap-2 mb-1"><span class="font-medium text-zinc-200 text-sm">'+escHtml(c.author_name||'Аноним')+'</span><span class="text-[10px] text-zinc-600 shrink-0">'+escHtml(formatCommentDate(c.created_at))+'</span></div><div class="text-zinc-400 leading-relaxed">'+escHtml(c.text)+'</div></div>';}).join('');}catch(e){listEl.innerHTML='<div class="text-zinc-500 text-center py-6">Ошибка загрузки</div>';}}
 async function submitComment(){if(!commentsModalTrackId)return;if(!session.loggedIn){showToast('Комментарии могут оставлять только зарегистрированные пользователи');openAuthModal();return;}var input=document.getElementById('commentsModalInput');var text=(input&&input.value||'').trim();if(text.length<2){showToast('Комментарий слишком короткий');return;}var btn=document.getElementById('commentsModalSubmit');if(btn){btn.disabled=true;btn.textContent='Отправка…';}try{var res=await fetch('/api/explore/'+encodeURIComponent(commentsModalTrackId)+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(res.status===401){showToast(data.detail||'Войдите в аккаунт');openAuthModal();return;}if(!res.ok){alert(data.detail||'Не удалось отправить комментарий');return;}if(input)input.value='';showToast('Комментарий добавлен');await loadCommentsModal(commentsModalTrackId);await fetchExploreTracks();renderExplore();renderHomeExplore();}catch(e){alert('Ошибка сети');}finally{if(btn){btn.disabled=false;btn.textContent='Отправить';}}}
 function playExploreTrack(id){var t=(session.exploreTracks||[]).find(function(x){return String(x.id)===String(id);});if(!t)return;playAudio(t.listen_url,t.title,t.image_url,t.author_name||'Аноним');}
-function renderExplore(){var eg=document.getElementById('exploreGrid');if(!eg)return;var tracks=session.exploreTracks||[];if(!tracks.length){eg.innerHTML='<div class="col-span-full text-center py-16 glass-panel"><div class="text-4xl mb-3">🌟</div><div class="text-lg font-semibold mb-2">Пока пусто</div><div class="text-sm text-zinc-500 max-w-md mx-auto">Опубликуйте трек из фонотеки — он появится на МузПлощадке. Ставьте лайки, чтобы поднять трек в рейтинге.</div></div>';return;}eg.innerHTML=tracks.map(function(t,i){return exploreCardHtml(t,{rank:i+1});}).join('');bindExplorePlayButtons(eg);}
+function renderExplore(){var eg=document.getElementById('exploreGrid');var pagEl=document.getElementById('explorePagination');if(!eg)return;var tracks=session.exploreTracks||[];if(!tracks.length){eg.innerHTML='<div class="col-span-full text-center py-16 glass-panel"><div class="text-4xl mb-3">🌟</div><div class="text-lg font-semibold mb-2">Пока пусто</div><div class="text-sm text-zinc-500 max-w-md mx-auto">Опубликуйте трек из фонотеки — он появится на МузПлощадке. Ставьте лайки, чтобы поднять трек в рейтинге.</div></div>';if(pagEl){pagEl.innerHTML='';pagEl.classList.add('hidden');}explorePage=0;return;}clampExplorePage(tracks.length);var start=explorePage*LIBRARY_PAGE_SIZE;var pageTracks=tracks.slice(start,start+LIBRARY_PAGE_SIZE);eg.innerHTML=pageTracks.map(function(t,i){return exploreCardHtml(t,{rank:start+i+1});}).join('');renderExplorePagination(tracks.length);bindExplorePlayButtons(eg);}
 function sidebarTrackHtml(t,rank){var cover=t.image_url||t.imageUrl||'https://picsum.photos/id/29/280/280';var rc=rank<=3?' rank-'+rank:'';return'<button type="button" class="sidebar-track-item w-full flex items-center gap-2.5 p-2 rounded-xl text-left" data-sidebar-play="'+escHtml(String(t.id))+'"><span class="sidebar-rank'+rc+'">'+rank+'</span><img src="'+escHtml(cover)+'" alt="" class="sidebar-track-thumb" loading="lazy"><span class="min-w-0 flex-1"><span class="block text-sm font-medium truncate text-zinc-200">'+escHtml(t.title||'Без названия')+'</span><span class="block text-[11px] text-zinc-500 truncate">'+escHtml(t.author_name||'Аноним')+'</span></span><i class="fa-solid fa-play text-yellow-400/80 text-xs shrink-0"></i></button>';}
 function sidebarChartTrackHtml(t,rank){var cover=t.image_url||t.imageUrl||'https://picsum.photos/id/29/280/280';var rc=rank<=3?' rank-'+rank:'';var likes=t.likes_count!=null?t.likes_count:(t.likes||0);var likesLine=likes>0?'<span class="sidebar-chart-likes"><i class="fa-regular fa-heart mr-1"></i>'+likes+'</span>':'';return'<button type="button" class="sidebar-chart-card w-full rounded-2xl text-left" data-sidebar-play="'+escHtml(String(t.id))+'"><div class="sidebar-chart-cover-wrap"><img src="'+escHtml(cover)+'" alt="" class="sidebar-chart-cover-img" loading="lazy"><span class="sidebar-rank sidebar-rank-cover'+rc+'">'+rank+'</span><span class="sidebar-chart-play-overlay"><i class="fa-solid fa-play"></i></span></div><div class="sidebar-chart-meta px-3 py-2.5"><div class="font-semibold text-sm truncate text-zinc-100">'+escHtml(t.title||'Без названия')+'</div><div class="flex items-center justify-between gap-2 mt-0.5"><span class="text-xs text-zinc-400 truncate">'+escHtml(t.author_name||'Аноним')+'</span>'+likesLine+'</div></div></button>';}
 function bindSidebarTrackButtons(root){root=root||document;root.querySelectorAll('[data-sidebar-play]').forEach(function(btn){btn.addEventListener('click',function(){playExploreTrack(btn.getAttribute('data-sidebar-play'));});});}

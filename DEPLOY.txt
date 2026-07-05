@@ -1,4 +1,4 @@
-SongForge - obnovit server do v2.9.11
+SongForge - obnovit server do v2.9.12
 ====================================
 Fayl: C:\Users\makc0\Desktop\SongForge\DEPLOY.txt
 Otkryt cherez Provodnik ili Cursor. Kopirovat PO ODNOMY stroke.
@@ -14,7 +14,7 @@ Shag 2 - obnovit sait
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 
-V kontse dolzhno byt: Gotovo! v2.9.11
+V kontse dolzhno byt: Gotovo! v2.9.12
 
 
 Shag 3 - proverit
@@ -22,7 +22,7 @@ Shag 3 - proverit
 curl http://127.0.0.1:8000/api/health
 
 
-Otvet: "version":"2.9.11"
+Otvet: "version":"2.9.12"
 
 
 Shag 4 - vyyti
@@ -37,8 +37,9 @@ Ctrl+F5
 
 Sait: http://195.19.20.245:8000/
 
-Chto novogo v 2.9.11:
-- Ubrany vnutrennie skrollbary u bokovyh kolonok
+Chto novogo v 2.9.12:
+- Bokovye kolonki odinakovoj shiriny i vysoty, fiks. sovety studii
+- MuzPloshadka: 3 v ryad, paginaciya 9 trekov; ikonki fonoteka/ploshadka
 - v2.9.10: grid + privyazka k verhu (bez otdelnoj prokrutki panelej)
 - v2.9.9: shapka, aktivnaya vkladka
 - v2.9.7: edinyj AI-paket v rasshirennom rezhime
