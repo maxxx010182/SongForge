@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.9.19
+Obnovleno: iyul 2026 | versiya: 2.9.20
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -22,14 +22,14 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.9.19 ===
+=== Gotovo! v2.9.20 ===
 
 
 SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.9.19"
+Otvet: "version":"2.9.20"
 
 
 SHAG 5. (odin raz) Admin-panel — vash email v .env
@@ -47,6 +47,25 @@ Sohranit: Ctrl+O, Enter. Vyhod: Ctrl+X.
 Esli menyali .env — OBYAZATELNO perezapusk (na servere PM2, ne systemctl):
 
 pm2 restart songforge
+
+
+========================================
+BETA-OPLATA: TELEGRAM (odin raz)
+========================================
+
+1. Sozdat bota u @BotFather, poluchit token
+2. Uznat svoj chat_id u @userinfobot
+3. V .env na servere dobavit:
+
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_ADMIN_CHAT_IDS=123456789
+TELEGRAM_PAYMENT_POLLING=true
+
+4. pm2 restart songforge
+5. Napishite botu /start v Telegram (odin raz)
+
+Posle etogo pri zakaze na sajte — soobshchenie v TG s knopkoj "Nachislit".
+Bez HTTPS polling rabotaet sam; s domenom+HTTPS mozhno webhook.
 
 
 SHAG 6. Vyiti s servera:

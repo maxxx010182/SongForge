@@ -75,6 +75,18 @@ TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
     "true",
     "yes",
 }
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_ADMIN_CHAT_IDS: frozenset[str] = frozenset(
+    cid.strip()
+    for cid in os.getenv("TELEGRAM_ADMIN_CHAT_IDS", "").split(",")
+    if cid.strip()
+)
+# Long polling для кнопок оплаты (на HTTP без HTTPS). С доменом+HTTPS: false + setWebhook.
+TELEGRAM_PAYMENT_POLLING = os.getenv("TELEGRAM_PAYMENT_POLLING", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 # --- Админ-панель (/admin) ---
 # Только эти email при первом входе в /admin становятся super_admin (через запятую).

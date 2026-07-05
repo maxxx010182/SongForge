@@ -751,6 +751,12 @@
 - [x] `.env`: `BETA_PAYMENT_CONTACT`, `BETA_PAYMENT_DETAILS`, `BETA_DISCOUNT_PERCENT`
 - [x] Плеер: полоса перемотки + таймер (превью — до 30 сек)
 
+**v2.9.20 — Telegram для бета-оплаты:**
+- [x] При создании заказа — сообщение админу в Telegram с кнопкой «Начислить N нот»
+- [x] Подтверждение с телефона без админки (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_IDS`)
+- [x] Long polling на HTTP-сервере; webhook `/api/telegram/webhook` при HTTPS
+- [x] Аудит `payments.telegram_confirm`
+
 **v2.9.18:**
 - [x] Витрина «Автор» — меняет `published_author_name` **только у трека**, профиль владельца не трогает
 - [x] Советы студии: 1 совет за раз, ротация каждые 15 сек (без наложения)
