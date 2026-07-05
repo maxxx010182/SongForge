@@ -44,6 +44,40 @@ def test_create_song_requires_login():
     assert "аккаунт" in response.json().get("detail", "").lower()
 
 
+def test_produce_requires_login():
+    response = client.post(
+        "/api/produce",
+        json={"idea": "Тестовая песня про закат"},
+    )
+    assert response.status_code == 403
+    assert "аккаунт" in response.json().get("detail", "").lower()
+
+
+def test_generate_lyrics_requires_login():
+    response = client.post(
+        "/api/generate-lyrics",
+        json={
+            "prompt": "Тестовая песня про закат",
+            "genre": "pop",
+            "mood": "uplifting",
+        },
+    )
+    assert response.status_code == 403
+    assert "аккаунт" in response.json().get("detail", "").lower()
+
+
+def test_consultant_available_without_legacy_flag():
+    response = client.post(
+        "/api/consultant/chat",
+        json={"message": "Сколько стоят ноты?"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data.get("reply")
+    assert "временно недоступен" not in data["reply"].lower()
+    assert data["success"] is True
+
+
 def test_explore_public():
     response = client.get("/api/explore")
     assert response.status_code == 200

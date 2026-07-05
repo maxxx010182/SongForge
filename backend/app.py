@@ -89,7 +89,7 @@ audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
 
-app = FastAPI(title="SongForge", version="2.9.0")
+app = FastAPI(title="SongForge", version="2.9.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -199,6 +199,11 @@ def _user_info(user: dict) -> UserInfo:
     )
 
 
+def _assert_can_generate(*, user: dict | None, guest_id: str) -> None:
+    """Проверка права на генерацию без списания нот (текст / produce)."""
+    generation_quota.resolve_mode(user=user, guest_id=guest_id)
+
+
 def _begin_generation(
     *,
     user: dict | None,
@@ -270,7 +275,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.0"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.2"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -875,7 +880,12 @@ async def dev_topup(
 async def produce_song(
     req: ProduceRequest,
     guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
 ):
+    try:
+        _assert_can_generate(user=user, guest_id=guest_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
         return producer.produce(
             req.idea,
@@ -1180,11 +1190,6 @@ async def consultant_chat(
     req: ConsultantRequest,
     guest_id: str = Depends(get_guest_id),
 ):
-    if not LEGACY_API_ENABLED:
-        return ConsultantResponse(
-            success=False,
-            reply="Консультант временно недоступен.",
-        )
     try:
         reply = consultant.reply(req.message, req.context)
         return ConsultantResponse(success=True, reply=reply)
@@ -1200,7 +1205,12 @@ async def consultant_chat(
 async def generate_lyrics_endpoint(
     req: LyricsRequest,
     guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
 ):
+    try:
+        _assert_can_generate(user=user, guest_id=guest_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
         plan = prompt_builder.build_plan(
             req.prompt,

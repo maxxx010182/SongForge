@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.9.0
+Obnovleno: iyul 2026 | versiya: 2.9.2
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -22,14 +22,14 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.9.0 ===
+=== Gotovo! v2.9.2 ===
 
 
 SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.9.0"
+Otvet: "version":"2.9.2"
 
 
 SHAG 5. (odin raz) Admin-panel — vash email v .env
@@ -38,7 +38,7 @@ Otkryt fajl na servere:
 
 nano ~/SongForge/.env
 
-Dobavit stroku (zamenit na SVОJ email):
+Dobavit stroku (zamenit na SVOJ email):
 
 ADMIN_BOOTSTRAP_EMAILS=vas@email.ru
 
