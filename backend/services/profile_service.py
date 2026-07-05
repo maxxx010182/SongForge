@@ -12,7 +12,7 @@ _MIME_EXT = {
     "image/webp": ".webp",
 }
 _DISPLAY_NAME_FORBIDDEN = re.compile(r"[@<>]")
-VALID_THEMES = frozenset({"classic", "burgundy"})
+VALID_THEMES = frozenset({"classic", "burgundy", "olive"})
 DEFAULT_THEME = "burgundy"
 
 
