@@ -9,10 +9,40 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        body{background:#09090b;font-family:'Inter',sans-serif}
+        :root{--sf-bg-deep:#0e0a0b;--sf-burgundy:#3a1f24;--sf-graphite:#1a1518;--sf-smoke:rgba(58,31,36,0.55);--sf-glass:rgba(22,14,17,0.72);--sf-glass-border:rgba(58,31,36,0.42)}
+        html{min-height:100%}
+        body{
+            position:relative;
+            font-family:'Inter',sans-serif;
+            color:#e8e4e2;
+            background-color:var(--sf-bg-deep);
+            background-image:
+                radial-gradient(ellipse 90% 55% at 15% 12%,var(--sf-smoke),transparent 58%),
+                radial-gradient(ellipse 70% 45% at 88% 22%,rgba(26,21,24,0.75),transparent 52%),
+                radial-gradient(ellipse 75% 50% at 55% 92%,rgba(58,31,36,0.38),transparent 55%),
+                radial-gradient(ellipse 45% 40% at 42% 48%,rgba(232,53,26,0.05),transparent 68%),
+                linear-gradient(168deg,#1a1214 0%,#120a0c 38%,#0e0a0b 72%,#1a1014 100%);
+            background-attachment:fixed;
+            min-height:100vh;
+        }
+        body::before{
+            content:'';
+            position:fixed;
+            inset:0;
+            pointer-events:none;
+            z-index:0;
+            opacity:0.22;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            mix-blend-mode:overlay;
+        }
         .font-title{font-family:'Space Grotesk',monospace;letter-spacing:-0.02em}
-        .glass-panel{background:rgba(18,18,24,0.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.06);border-radius:2rem}
-        .hero-glow{background:radial-gradient(ellipse at 30% 40%,rgba(234,179,8,0.15),transparent 70%)}
+        .glass-panel{background:var(--sf-glass);backdrop-filter:blur(18px);border:1px solid var(--sf-glass-border);border-radius:2rem;box-shadow:0 4px 32px rgba(0,0,0,0.25)}
+        .hero-glow{
+            background:
+                radial-gradient(ellipse at 22% 35%,rgba(58,31,36,0.55),transparent 62%),
+                radial-gradient(ellipse at 78% 65%,rgba(26,21,24,0.5),transparent 55%),
+                radial-gradient(ellipse at 50% 100%,rgba(58,31,36,0.25),transparent 50%);
+        }
         .neon-text{text-shadow:0 0 10px rgb(234 179 8),0 0 20px rgb(234 179 8)}
         .music-wave{display:flex;align-items:flex-end;gap:3px;height:28px}
         .bar{width:4px;background:#eab308;border-radius:2px;height:20%;animation:wave 1.2s ease infinite}
@@ -41,7 +71,7 @@
         .step-badge.done{background:#eab308;color:#09090b;border-color:#eab308}
         @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(234,179,8,0.5)}70%{box-shadow:0 0 0 14px rgba(234,179,8,0)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
         .pulse-logo{animation:pulse-ring 1.4s infinite}
-        .logo-slot{position:relative;width:100%;height:100%;background:#0a0a0a}
+        .logo-slot{position:relative;width:100%;height:100%;background:#120a0c}
         .logo-slot .logo-img{display:block;width:100%;height:100%;object-fit:contain}
         .chat-bubble-user{background:rgba(234,179,8,0.12);border-radius:1.2rem 1.2rem 0.2rem 1.2rem}
         .chat-bubble-ai{background:rgba(255,255,255,0.05);border-radius:1.2rem 1.2rem 1.2rem 0.2rem}
@@ -150,8 +180,8 @@
         .studio-quality-tips summary:hover{color:#eab308}
         .studio-quality-tips summary::-webkit-details-marker{display:none}
         .studio-quality-tips ul{padding:0 1rem 1rem;margin:0;font-size:.75rem;color:#71717a;line-height:1.7;list-style:disc;padding-left:1.75rem}
-        .announce-card{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
-        .announce-card.subtle{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);color:#a1a1aa}
+        .announce-card{background:rgba(58,31,36,.32);border:1px solid rgba(58,31,36,.55);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
+        .announce-card.subtle{background:rgba(26,21,24,.45);border-color:rgba(58,31,36,.35);color:#a1a1aa}
         .sidebar-tips-list{margin:0;padding:.15rem 0 0;font-size:.78rem;color:#a1a1aa;line-height:1.45;list-style:none;min-height:4.25rem;overflow:hidden}
         .sidebar-tips-list li{margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
         .player-seek{width:100%;height:4px;accent-color:#eab308;cursor:pointer;margin-top:.75rem}
@@ -188,11 +218,11 @@
         .auth-tab-btn.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#eab308}
     </style>
 </head>
-<body class="bg-zinc-950 text-zinc-200">
+<body class="text-zinc-200">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 <!-- HEADER -->
-<header class="border-b border-zinc-800 py-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+<header class="border-b border-[#3a1f24]/50 py-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
     <div class="flex items-center gap-3 justify-self-start">
         <div id="headerLogo" class="logo-slot w-9 h-9 rounded-2xl overflow-hidden cursor-pointer shrink-0 ring-1 ring-yellow-400/20">
             <img src="/SongForgeLogo.png" alt="СоздайСвоюПесню" class="logo-img">
