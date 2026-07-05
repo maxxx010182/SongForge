@@ -173,13 +173,11 @@
         .sidebar-section-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#71717a;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
         .sidebar-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:.25rem 0}
         .layout-columns{display:flex;flex-direction:column;gap:1.5rem;margin:2rem 0}
-        .sidebar-tips-slot{min-height:7.25rem;max-height:7.25rem;overflow:hidden}
-        .sidebar-chart-slot{min-height:32rem}
-        .sidebar-community-slot{min-height:4.75rem}
+        .sidebar-tips-slot{min-height:7.25rem}
+        .sidebar-chart-slot{min-height:31rem}
         @media(min-width:1024px){
             .layout-columns{display:grid;grid-template-columns:18rem minmax(0,1fr) 20rem;align-items:start;gap:1.5rem}
-            .sidebar-column{align-self:start;position:relative;top:0}
-            .sidebar-panel{min-height:46rem;max-height:calc(100vh - 6.5rem);overflow-y:auto;overflow-x:hidden}
+            .sidebar-column{align-self:start}
         }
         .auth-tab-btn{padding:.45rem .9rem;border-radius:.9rem;font-size:.8rem;border:1px solid rgba(255,255,255,.1);color:#a1a1aa}
         .auth-tab-btn.active{background:rgba(234,179,8,.12);border-color:rgba(234,179,8,.35);color:#eab308}
@@ -878,7 +876,7 @@
                 <div data-genre="Lo-Fi" class="genre-chip text-xs py-1.5">Lo-Fi</div>
             </div>
         </div>
-        <div class="sidebar-community-slot">
+        <div>
             <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-fire text-orange-400"></i>Похожее на хиты</span></div>
             <div id="communityTopList" class="space-y-2 text-sm"></div>
         </div>
