@@ -103,6 +103,11 @@ class GenerationQuotaService:
                 "SELECT balance FROM users WHERE id = ?",
                 (user_id,),
             ).fetchone()
+            if production_id:
+                conn.execute(
+                    "UPDATE generations SET note_charged = 1 WHERE id = ?",
+                    (production_id,),
+                )
 
         return int(new_row["balance"]) if new_row else 0
 

@@ -89,7 +89,7 @@ audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
 
-app = FastAPI(title="SongForge", version="2.9.12")
+app = FastAPI(title="SongForge", version="2.9.13")
 
 app.add_middleware(
     CORSMiddleware,
@@ -251,6 +251,13 @@ def _generation_flags(production_id: str) -> tuple[bool, bool]:
     return bool(row.get("purchased")), bool(row.get("note_charged"))
 
 
+def _generation_flags_after_success(production_id: str) -> tuple[bool, bool]:
+    """После успешной музыки: prepaid → фонотека без повторного списания."""
+    if production_id:
+        cabinet.complete_prepaid_generation(production_id)
+    return _generation_flags(production_id)
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
@@ -275,7 +282,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.12"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.13"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -1058,7 +1065,7 @@ def _music_status_from_db(
         return None
     if not (row["music_url_a"] or row["music_url_b"]):
         return None
-    purchased, prepaid = _generation_flags(production_id)
+    purchased, prepaid = _generation_flags_after_success(production_id)
     safe_tracks = _sanitize_status_tracks(
         _tracks_from_db_row(row),
         production_id=production_id,
@@ -1126,9 +1133,7 @@ async def music_status(
 
         if state == "success" and tracks:
             history.update_task_result(task_id=task_id, status="success", tracks=tracks)
-            if production_id:
-                cabinet.complete_prepaid_generation(production_id)
-            purchased, prepaid = _generation_flags(production_id)
+            purchased, prepaid = _generation_flags_after_success(production_id)
             safe_tracks = _sanitize_status_tracks(
                 tracks,
                 production_id=production_id,
