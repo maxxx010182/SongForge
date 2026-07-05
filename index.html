@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <script>(function(){var k='создайсвоюпесню_theme',d='burgundy',t;try{t=localStorage.getItem(k);}catch(e){}if(t!=='classic'&&t!=='burgundy')t=d;document.documentElement.setAttribute('data-theme',t);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СоздайСвоюПесню — Создай свою песню за минуту</title>
@@ -9,40 +10,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
-        :root{--sf-bg-deep:#0e0a0b;--sf-burgundy:#3a1f24;--sf-graphite:#1a1518;--sf-smoke:rgba(58,31,36,0.55);--sf-glass:rgba(22,14,17,0.72);--sf-glass-border:rgba(58,31,36,0.42)}
+        :root{--sf-glass:rgba(18,18,24,0.7);--sf-glass-border:rgba(255,255,255,0.06);--sf-header-border:rgba(39,39,42,0.85);--sf-logo-bg:#0a0a0a;--sf-noise-opacity:0.12}
         html{min-height:100%}
-        body{
-            position:relative;
-            font-family:'Inter',sans-serif;
-            color:#e8e4e2;
-            background-color:var(--sf-bg-deep);
-            background-image:
-                radial-gradient(ellipse 90% 55% at 15% 12%,var(--sf-smoke),transparent 58%),
-                radial-gradient(ellipse 70% 45% at 88% 22%,rgba(26,21,24,0.75),transparent 52%),
-                radial-gradient(ellipse 75% 50% at 55% 92%,rgba(58,31,36,0.38),transparent 55%),
-                radial-gradient(ellipse 45% 40% at 42% 48%,rgba(232,53,26,0.05),transparent 68%),
-                linear-gradient(168deg,#1a1214 0%,#120a0c 38%,#0e0a0b 72%,#1a1014 100%);
-            background-attachment:fixed;
-            min-height:100vh;
-        }
-        body::before{
-            content:'';
-            position:fixed;
-            inset:0;
-            pointer-events:none;
-            z-index:0;
-            opacity:0.22;
-            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-            mix-blend-mode:overlay;
-        }
+        html[data-theme="classic"]{--sf-glass:rgba(18,18,24,0.7);--sf-glass-border:rgba(255,255,255,0.06);--sf-header-border:rgba(39,39,42,0.85);--sf-logo-bg:#0a0a0a;--sf-noise-opacity:0.1}
+        html[data-theme="burgundy"]{--sf-glass:rgba(22,14,17,0.72);--sf-glass-border:rgba(58,31,36,0.42);--sf-header-border:rgba(58,31,36,0.5);--sf-logo-bg:#120a0c;--sf-noise-opacity:0.22}
+        body{position:relative;font-family:'Inter',sans-serif;color:#e8e4e2;background-attachment:fixed;min-height:100vh}
+        html[data-theme="classic"] body{background-color:#09090b;background-image:radial-gradient(ellipse 85% 55% at 28% 32%,rgba(234,179,8,0.1),transparent 68%),linear-gradient(180deg,#09090b,#0a0a0c)}
+        html[data-theme="burgundy"] body{background-color:#0e0a0b;background-image:radial-gradient(ellipse 90% 55% at 15% 12%,rgba(58,31,36,0.55),transparent 58%),radial-gradient(ellipse 70% 45% at 88% 22%,rgba(26,21,24,0.75),transparent 52%),radial-gradient(ellipse 75% 50% at 55% 92%,rgba(58,31,36,0.38),transparent 55%),radial-gradient(ellipse 45% 40% at 42% 48%,rgba(232,53,26,0.05),transparent 68%),linear-gradient(168deg,#1a1214 0%,#120a0c 38%,#0e0a0b 72%,#1a1014 100%)}
+        body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:var(--sf-noise-opacity);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");mix-blend-mode:overlay}
         .font-title{font-family:'Space Grotesk',monospace;letter-spacing:-0.02em}
         .glass-panel{background:var(--sf-glass);backdrop-filter:blur(18px);border:1px solid var(--sf-glass-border);border-radius:2rem;box-shadow:0 4px 32px rgba(0,0,0,0.25)}
-        .hero-glow{
-            background:
-                radial-gradient(ellipse at 22% 35%,rgba(58,31,36,0.55),transparent 62%),
-                radial-gradient(ellipse at 78% 65%,rgba(26,21,24,0.5),transparent 55%),
-                radial-gradient(ellipse at 50% 100%,rgba(58,31,36,0.25),transparent 50%);
-        }
+        html[data-theme="classic"] .hero-glow{background:radial-gradient(ellipse at 30% 40%,rgba(234,179,8,0.15),transparent 70%)}
+        html[data-theme="burgundy"] .hero-glow{background:radial-gradient(ellipse at 22% 35%,rgba(58,31,36,0.55),transparent 62%),radial-gradient(ellipse at 78% 65%,rgba(26,21,24,0.5),transparent 55%),radial-gradient(ellipse at 50% 100%,rgba(58,31,36,0.25),transparent 50%)}
+        .site-header{border-color:var(--sf-header-border)!important}
+        .logo-slot{background:var(--sf-logo-bg)}
+        html[data-theme="classic"] .announce-card{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22)}
+        html[data-theme="classic"] .announce-card.subtle{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}
+        html[data-theme="burgundy"] .announce-card{background:rgba(58,31,36,.32);border:1px solid rgba(58,31,36,.55)}
+        html[data-theme="burgundy"] .announce-card.subtle{background:rgba(26,21,24,.45);border-color:rgba(58,31,36,.35)}
+        .theme-option{border:1px solid rgba(255,255,255,.1);border-radius:1rem;padding:.7rem .75rem;cursor:pointer;text-align:left;transition:all .2s;background:rgba(255,255,255,.03)}
+        .theme-option:hover{border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.05)}
+        .theme-option.active{border-color:rgba(234,179,8,.55);background:rgba(234,179,8,.08);box-shadow:0 0 0 1px rgba(234,179,8,.12)}
+        .theme-option-preview{height:2.35rem;border-radius:.65rem;margin-bottom:.45rem;border:1px solid rgba(255,255,255,.08)}
+        .theme-option-preview.preview-classic{background:radial-gradient(ellipse at 30% 40%,rgba(234,179,8,.35),transparent 70%),linear-gradient(135deg,#18181b,#09090b)}
+        .theme-option-preview.preview-burgundy{background:radial-gradient(ellipse at 20% 30%,rgba(58,31,36,.9),transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(26,21,24,.85),transparent 50%),linear-gradient(160deg,#1a1214,#0e0a0b)}
         .neon-text{text-shadow:0 0 10px rgb(234 179 8),0 0 20px rgb(234 179 8)}
         .music-wave{display:flex;align-items:flex-end;gap:3px;height:28px}
         .bar{width:4px;background:#eab308;border-radius:2px;height:20%;animation:wave 1.2s ease infinite}
@@ -71,7 +62,7 @@
         .step-badge.done{background:#eab308;color:#09090b;border-color:#eab308}
         @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(234,179,8,0.5)}70%{box-shadow:0 0 0 14px rgba(234,179,8,0)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
         .pulse-logo{animation:pulse-ring 1.4s infinite}
-        .logo-slot{position:relative;width:100%;height:100%;background:#120a0c}
+        .logo-slot{position:relative;width:100%;height:100%}
         .logo-slot .logo-img{display:block;width:100%;height:100%;object-fit:contain}
         .chat-bubble-user{background:rgba(234,179,8,0.12);border-radius:1.2rem 1.2rem 0.2rem 1.2rem}
         .chat-bubble-ai{background:rgba(255,255,255,0.05);border-radius:1.2rem 1.2rem 1.2rem 0.2rem}
@@ -180,8 +171,8 @@
         .studio-quality-tips summary:hover{color:#eab308}
         .studio-quality-tips summary::-webkit-details-marker{display:none}
         .studio-quality-tips ul{padding:0 1rem 1rem;margin:0;font-size:.75rem;color:#71717a;line-height:1.7;list-style:disc;padding-left:1.75rem}
-        .announce-card{background:rgba(58,31,36,.32);border:1px solid rgba(58,31,36,.55);border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
-        .announce-card.subtle{background:rgba(26,21,24,.45);border-color:rgba(58,31,36,.35);color:#a1a1aa}
+        .announce-card{border-radius:1rem;padding:.85rem 1rem;font-size:.8rem;line-height:1.55;color:#d4d4d8}
+        .announce-card.subtle{color:#a1a1aa}
         .sidebar-tips-list{margin:0;padding:.15rem 0 0;font-size:.78rem;color:#a1a1aa;line-height:1.45;list-style:none;min-height:4.25rem;overflow:hidden}
         .sidebar-tips-list li{margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
         .player-seek{width:100%;height:4px;accent-color:#eab308;cursor:pointer;margin-top:.75rem}
@@ -222,7 +213,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 <!-- HEADER -->
-<header class="border-b border-[#3a1f24]/50 py-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+<header class="site-header border-b py-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
     <div class="flex items-center gap-3 justify-self-start">
         <div id="headerLogo" class="logo-slot w-9 h-9 rounded-2xl overflow-hidden cursor-pointer shrink-0 ring-1 ring-yellow-400/20">
             <img src="/SongForgeLogo.png" alt="СоздайСвоюПесню" class="logo-img">
@@ -486,6 +477,12 @@
                     </div>
                     <div id="profileSettingsMsg" class="text-xs text-zinc-500 min-h-[1rem]"></div>
                 </div>
+            </div>
+            <div id="profileThemeBlock" class="mt-4 pt-4 border-t border-zinc-800 text-left mb-5">
+                <div class="text-xs uppercase text-zinc-500 tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-palette text-yellow-400"></i>Тема оформления</div>
+                <p id="profileThemeHint" class="text-xs text-zinc-500 mb-3 leading-relaxed">Фон сайта и стеклянные карточки. Сохраняется в аккаунте.</p>
+                <div id="profileThemeGrid" class="grid grid-cols-2 gap-2"></div>
+                <div id="profileThemeMsg" class="text-xs text-zinc-500 min-h-[1rem] mt-2"></div>
             </div>
             <div class="text-4xl font-bold text-yellow-400" id="profileBalance">0</div>
             <div class="text-zinc-400 mb-1">нот на балансе</div>
@@ -1198,13 +1195,22 @@ var moodMap={
   "experimental":"experimental, unusual, avant-garde, creative"
 };
 
+var SF_THEME_KEY='создайсвоюпесню_theme',SF_DEFAULT_THEME='burgundy',SF_THEMES=[{id:'classic',label:'Классика',desc:'Тёмный zinc + золото'},{id:'burgundy',label:'Бордо',desc:'Smoke · cinema'}];
+function isValidThemeId(id){return SF_THEMES.some(function(t){return t.id===id;});}
+function getStoredTheme(){try{var t=localStorage.getItem(SF_THEME_KEY);if(isValidThemeId(t))return t;}catch(e){}return SF_DEFAULT_THEME;}
+function applyTheme(themeId){var id=isValidThemeId(themeId)?themeId:SF_DEFAULT_THEME;document.documentElement.setAttribute('data-theme',id);try{localStorage.setItem(SF_THEME_KEY,id);}catch(e){}renderThemePicker();}
+function updateThemeHint(){var hint=document.getElementById('profileThemeHint');if(!hint)return;hint.textContent=session.loggedIn?'Фон сайта и стеклянные карточки. Сохраняется в аккаунте.':'Фон сайта и стеклянные карточки. На этом устройстве — войдите, чтобы синхронизировать.';}
+function renderThemePicker(){var grid=document.getElementById('profileThemeGrid');if(!grid)return;var cur=document.documentElement.getAttribute('data-theme')||getStoredTheme();grid.innerHTML=SF_THEMES.map(function(t){return'<button type="button" class="theme-option'+(t.id===cur?' active':'')+'" data-theme-id="'+t.id+'"><div class="theme-option-preview preview-'+t.id+'"></div><div class="text-sm font-medium text-zinc-200">'+escHtml(t.label)+'</div><div class="text-[11px] text-zinc-500 mt-0.5">'+escHtml(t.desc)+'</div></button>';}).join('');grid.querySelectorAll('[data-theme-id]').forEach(function(btn){btn.addEventListener('click',function(){selectTheme(btn.getAttribute('data-theme-id'));});});}
+async function selectTheme(themeId){if(!isValidThemeId(themeId))return;var msg=document.getElementById('profileThemeMsg');applyTheme(themeId);if(msg){msg.textContent='';msg.className='text-xs text-zinc-500 min-h-[1rem] mt-2';}if(!session.loggedIn){if(msg){msg.textContent='Тема применена на этом устройстве';msg.className='text-xs text-emerald-400 min-h-[1rem] mt-2';}showToast('Тема: '+SF_THEMES.find(function(t){return t.id===themeId;}).label);return;}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:themeId}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(msg){msg.textContent=data.detail||'Не удалось сохранить тему';msg.className='text-xs text-red-400 min-h-[1rem] mt-2';}return;}if(data.user){session.user=data.user;applyTheme(data.user.theme||themeId);}if(msg){msg.textContent='Тема сохранена';msg.className='text-xs text-emerald-400 min-h-[1rem] mt-2';}showToast('Тема обновлена');}catch(e){if(msg){msg.textContent='Ошибка сети';msg.className='text-xs text-red-400 min-h-[1rem] mt-2';}}}
+function syncThemeFromSession(){var t=session.loggedIn&&session.user&&session.user.theme;if(isValidThemeId(t))applyTheme(t);else applyTheme(getStoredTheme());updateThemeHint();}
+function initProfileThemes(){renderThemePicker();updateThemeHint();}
 function saveData(){if(session.loggedIn)return;localStorage.setItem('создайсвоюпесню_user',JSON.stringify({balance:user.balance,tracks:user.tracks}));updateBalanceUI();}
 function loadLocalData(){try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);user.balance=d.balance!=null?d.balance:0;user.tracks=d.tracks||[];}}catch(e){}}
 function getBalance(){return session.loggedIn&&session.user?session.user.balance:0;}
 function updateStudioGenerateButtons(){var gate=canStartSongGeneration();var can=gate==='ok';var tip=can?'':(gate==='auth'?'Войдите в аккаунт':'Купите ноты — пробная генерация уже использована');['createSongBtn','createDemoBtn','generateTextBtn','regenLyricsBtn'].forEach(function(id){var btn=document.getElementById(id);if(!btn)return;btn.disabled=!can;btn.classList.toggle('opacity-50',!can);btn.classList.toggle('cursor-not-allowed',!can);btn.title=tip;});}
 function updateBalanceUI(){var b=getBalance(),t=notesWord(b);var hb=document.getElementById('headerBalance');if(hb)hb.textContent=t;var pb=document.getElementById('profileBalance');if(pb)pb.textContent=b;updateModalCreditsBalance();updateProfileAuthUI();updateStudioGenerateButtons();}
 function updateAvatarUI(){var url=session.loggedIn&&session.user?session.user.avatar_url:'';var pImg=document.getElementById('profileAvatarImg');var pFb=document.getElementById('profileAvatarFallback');var hImg=document.getElementById('headerAvatarImg');var hIcon=document.getElementById('headerAvatarIcon');if(url){if(pImg){pImg.src=url;pImg.classList.remove('hidden');}if(pFb)pFb.classList.add('hidden');if(hImg){hImg.src=url;hImg.classList.remove('hidden');}if(hIcon)hIcon.classList.add('hidden');}else{if(pImg){pImg.removeAttribute('src');pImg.classList.add('hidden');}if(pFb)pFb.classList.remove('hidden');if(hImg){hImg.removeAttribute('src');hImg.classList.add('hidden');}if(hIcon)hIcon.classList.remove('hidden');}}
-function updateProfileAuthUI(){var guestBlock=document.getElementById('profileGuestBlock');var userBlock=document.getElementById('profileUserBlock');var guestText=document.getElementById('guestLimitText');var userTrial=document.getElementById('userTrialHint');if(session.loggedIn&&session.user){if(guestBlock)guestBlock.classList.add('hidden');if(userBlock)userBlock.classList.remove('hidden');var dn=document.getElementById('profileDisplayName');var em=document.getElementById('profileEmail');var ni=document.getElementById('profileNameInput');if(dn)dn.textContent=session.user.display_name||'Пользователь';if(em)em.textContent=session.user.email||'';if(ni&&document.activeElement!==ni)ni.value=session.user.display_name||'';if(userTrial){if(session.guestRemaining>0)userTrial.textContent='Пробная генерация: '+session.guestRemaining+' из '+session.guestLimit+'. Дальше — 1 нота за песню.';else userTrial.textContent='Пробная использована. Новая песня — 1 нота (списывается при создании, оба варианта в фонотеке).';}updateAvatarUI();}else{if(guestBlock)guestBlock.classList.remove('hidden');if(userBlock)userBlock.classList.add('hidden');if(guestText)guestText.textContent='Войдите в аккаунт — 1 пробная генерация на аккаунт. Без входа создать песню нельзя.';if(userTrial)userTrial.textContent='';updateAvatarUI();}}
+function updateProfileAuthUI(){var guestBlock=document.getElementById('profileGuestBlock');var userBlock=document.getElementById('profileUserBlock');var guestText=document.getElementById('guestLimitText');var userTrial=document.getElementById('userTrialHint');if(session.loggedIn&&session.user){if(guestBlock)guestBlock.classList.add('hidden');if(userBlock)userBlock.classList.remove('hidden');var dn=document.getElementById('profileDisplayName');var em=document.getElementById('profileEmail');var ni=document.getElementById('profileNameInput');if(dn)dn.textContent=session.user.display_name||'Пользователь';if(em)em.textContent=session.user.email||'';if(ni&&document.activeElement!==ni)ni.value=session.user.display_name||'';if(userTrial){if(session.guestRemaining>0)userTrial.textContent='Пробная генерация: '+session.guestRemaining+' из '+session.guestLimit+'. Дальше — 1 нота за песню.';else userTrial.textContent='Пробная использована. Новая песня — 1 нота (списывается при создании, оба варианта в фонотеке).';}updateAvatarUI();}else{if(guestBlock)guestBlock.classList.remove('hidden');if(userBlock)userBlock.classList.add('hidden');if(guestText)guestText.textContent='Войдите в аккаунт — 1 пробная генерация на аккаунт. Без входа создать песню нельзя.';if(userTrial)userTrial.textContent='';updateAvatarUI();}updateThemeHint();renderThemePicker();}
 async function saveProfileName(){if(!session.loggedIn){openAuthModal();return;}var input=document.getElementById('profileNameInput');var msg=document.getElementById('profileSettingsMsg');var btn=document.getElementById('profileNameSaveBtn');var name=(input?input.value:'').trim();if(name.length<2){if(msg){msg.textContent='Ник — от 2 до 40 символов';msg.className='text-xs text-red-400';}return;}if(btn){btn.disabled=true;btn.textContent='...';}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(msg){msg.textContent=data.detail||(res.status===409?'Этот ник уже занят':'Не удалось сохранить');msg.className='text-xs text-red-400';}return;}if(data.user){session.user=data.user;updateProfileAuthUI();}if(msg){msg.textContent='Ник сохранён';msg.className='text-xs text-emerald-400';}showToast('Профиль обновлён');}catch(e){if(msg){msg.textContent='Ошибка сети';msg.className='text-xs text-red-400';}}finally{if(btn){btn.disabled=false;btn.textContent='Сохранить';}}}
 async function uploadProfileAvatar(file){if(!session.loggedIn||!file){openAuthModal();return;}if(file.size>2*1024*1024){showToast('Файл слишком большой (макс. 2 МБ)');return;}var fd=new FormData();fd.append('file',file);try{var res=await fetch('/api/profile/avatar',{method:'POST',body:fd,...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){showToast(data.detail||'Не удалось загрузить фото');return;}if(data.user){session.user=data.user;updateProfileAuthUI();}showToast('Аватар обновлён');}catch(e){showToast('Ошибка загрузки');}}
 function needsNicknameSetup(){return !!(session.loggedIn&&session.user&&!session.user.nickname_confirmed);}
@@ -1216,7 +1222,7 @@ async function sharePublishedTrack(libraryId,title){var url=getTrackShareUrl(lib
 async function openSharedTrack(libraryId){if(!libraryId)return;try{var res=await fetch('/api/explore/'+encodeURIComponent(libraryId)+'/public',fetchOpts);var data=await res.json().catch(function(){return{};});if(!res.ok){showToast(data.detail||'Трек недоступен');return;}switchToView('explore');playAudio(data.listen_url||('/api/explore/'+libraryId+'/listen'),data.title||'Трек',data.image_url||'',data.author_name||'');showToast('«'+(data.title||'Трек')+'» — '+(data.author_name||'Аноним'));}catch(e){showToast('Не удалось открыть трек');}}
 function handleTrackDeepLink(){var p=new URLSearchParams(window.location.search);var id=p.get('track');if(!id)return;openSharedTrack(id);if(window.history&&window.history.replaceState){window.history.replaceState({},'',window.location.pathname);}}
 async function saveNicknameFromModal(){if(!session.loggedIn)return;var input=document.getElementById('nicknameModalInput');var hint=document.getElementById('nicknameModalHint');var btn=document.getElementById('nicknameModalSaveBtn');var name=(input?input.value:'').trim();if(name.length<2){if(hint){hint.textContent='Ник — от 2 до 40 символов';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(btn){btn.disabled=true;btn.textContent='...';}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(hint){hint.textContent=data.detail||(res.status===409?'Этот ник уже занят':'Не удалось сохранить');hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(data.user){session.user=data.user;updateProfileAuthUI();}closeNicknameModal();showToast('Ник сохранён');}catch(e){if(hint){hint.textContent='Ошибка сети';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}}finally{if(btn){btn.disabled=false;btn.textContent='Продолжить';}}}
-async function fetchMe(){try{var res=await fetch('/api/me',fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.devTools=!!data.dev_tools;session.paymentProvider=data.payment_provider||'stub';if(data.user){session.user=data.user;user.balance=data.user.balance;}else{session.user=null;loadLocalData();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();updateBalanceUI();}}
+async function fetchMe(){try{var res=await fetch('/api/me',fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.devTools=!!data.dev_tools;session.paymentProvider=data.payment_provider||'stub';if(data.user){session.user=data.user;user.balance=data.user.balance;syncThemeFromSession();}else{session.user=null;loadLocalData();applyTheme(getStoredTheme());updateThemeHint();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();applyTheme(getStoredTheme());updateBalanceUI();}}
 async function fetchHistory(){if(!session.loggedIn){session.history=[];return;}try{var res=await fetch('/api/history',fetchOpts);if(res.ok)session.history=await res.json();else session.history=[];}catch(e){session.history=[];}}
 async function fetchServerLibrary(){if(!session.loggedIn){session.serverLibrary=[];return;}try{var res=await fetch('/api/library',fetchOpts);if(res.ok)session.serverLibrary=await res.json();else session.serverLibrary=[];}catch(e){session.serverLibrary=[];}}
 async function fetchExploreTracks(limit){limit=limit||50;try{var res=await fetch('/api/explore?limit='+limit,fetchOpts);if(res.ok)session.exploreTracks=await res.json();else session.exploreTracks=[];}catch(e){session.exploreTracks=[];}bindPlayerDefaultFromChart();}
@@ -1701,7 +1707,7 @@ document.getElementById('nicknameModalSaveBtn').addEventListener('click',saveNic
 document.getElementById('logoutBtn').addEventListener('click',logoutUser);
 document.getElementById('commentsModalSubmit').addEventListener('click',submitComment);
 
-loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
+initProfileThemes();loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 </script>
 </body>
 </html>

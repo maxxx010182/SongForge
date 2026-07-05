@@ -24,7 +24,8 @@ class AuthService:
             row = conn.execute(
                 """
                 SELECT u.id, u.email, u.display_name, u.balance, u.created_at, u.avatar_url,
-                       COALESCE(u.nickname_confirmed, 0) AS nickname_confirmed
+                       COALESCE(u.nickname_confirmed, 0) AS nickname_confirmed,
+                       COALESCE(NULLIF(TRIM(u.theme), ''), 'burgundy') AS theme
                 FROM sessions s
                 JOIN users u ON u.id = s.user_id
                 WHERE s.token = ? AND s.expires_at > ?
@@ -59,7 +60,8 @@ class AuthService:
             row = conn.execute(
                 """
                 SELECT id, email, display_name, balance, created_at, avatar_url,
-                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed,
+                       COALESCE(NULLIF(TRIM(theme), ''), 'burgundy') AS theme
                 FROM users WHERE email = ?
                 """,
                 (email,),
@@ -92,6 +94,7 @@ class AuthService:
                 "balance": 0,
                 "created_at": now,
                 "nickname_confirmed": 0,
+                "theme": "burgundy",
             }
 
     def request_email_code(self, email: str) -> str:
@@ -181,7 +184,8 @@ class AuthService:
             user_row = conn.execute(
                 """
                 SELECT id, email, display_name, balance, created_at, avatar_url,
-                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed,
+                       COALESCE(NULLIF(TRIM(theme), ''), 'burgundy') AS theme
                 FROM users WHERE id = ?
                 """,
                 (user_id,),

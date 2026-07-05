@@ -211,6 +211,7 @@ class UserInfo(BaseModel):
     balance: int = 0
     avatar_url: str | None = None
     nickname_confirmed: bool = False
+    theme: str = "burgundy"
 
 
 class PublicTrackResponse(BaseModel):
@@ -224,7 +225,8 @@ class PublicTrackResponse(BaseModel):
 
 
 class ProfileUpdateRequest(BaseModel):
-    display_name: str
+    display_name: str | None = None
+    theme: str | None = None
 
 
 class ProfileUpdateResponse(BaseModel):

@@ -12,6 +12,8 @@ _MIME_EXT = {
     "image/webp": ".webp",
 }
 _DISPLAY_NAME_FORBIDDEN = re.compile(r"[@<>]")
+VALID_THEMES = frozenset({"classic", "burgundy"})
+DEFAULT_THEME = "burgundy"
 
 
 class DisplayNameTakenError(ValueError):
@@ -76,12 +78,35 @@ class ProfileService:
             row = conn.execute(
                 """
                 SELECT id, email, display_name, balance, created_at, avatar_url,
-                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed
+                       COALESCE(nickname_confirmed, 0) AS nickname_confirmed,
+                       COALESCE(NULLIF(TRIM(theme), ''), ?) AS theme
                 FROM users WHERE id = ?
                 """,
-                (user_id,),
+                (DEFAULT_THEME, user_id),
             ).fetchone()
         return dict(row) if row else None
+
+    def update_theme(self, *, user_id: str, theme: str) -> dict:
+        theme_id = (theme or "").strip().lower()
+        if theme_id not in VALID_THEMES:
+            raise ValueError("Неизвестная тема оформления")
+        with get_connection() as conn:
+            persona = conn.execute(
+                "SELECT id FROM users WHERE id = ? AND COALESCE(is_persona, 0) = 1",
+                (user_id,),
+            ).fetchone()
+            if persona:
+                raise ValueError("Персоны не редактируют профиль")
+            cur = conn.execute(
+                "UPDATE users SET theme = ? WHERE id = ?",
+                (theme_id, user_id),
+            )
+            if cur.rowcount == 0:
+                raise ValueError("Пользователь не найден")
+        user = self.get_user(user_id)
+        if not user:
+            raise ValueError("Пользователь не найден")
+        return user
 
     def update_display_name(self, *, user_id: str, display_name: str) -> dict:
         name = self._normalize_display_name(display_name)

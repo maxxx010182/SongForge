@@ -100,7 +100,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.23")
+app = FastAPI(title="SongForge", version="2.9.24")
 
 app.add_middleware(
     CORSMiddleware,
@@ -201,6 +201,11 @@ async def require_admin_user(
 
 
 def _user_info(user: dict) -> UserInfo:
+    from backend.services.profile_service import DEFAULT_THEME, VALID_THEMES
+
+    theme = (user.get("theme") or DEFAULT_THEME).strip().lower()
+    if theme not in VALID_THEMES:
+        theme = DEFAULT_THEME
     return UserInfo(
         id=user["id"],
         email=user.get("email"),
@@ -208,6 +213,7 @@ def _user_info(user: dict) -> UserInfo:
         balance=int(user.get("balance") or 0),
         avatar_url=user.get("avatar_url"),
         nickname_confirmed=bool(int(user.get("nickname_confirmed") or 0)),
+        theme=theme,
     )
 
 
@@ -317,7 +323,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.23"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.24"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -978,11 +984,22 @@ async def update_profile(
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    if req.display_name is None and req.theme is None:
+        raise HTTPException(status_code=400, detail="Укажите, что изменить")
     try:
-        updated = profile_service.update_display_name(
-            user_id=user["id"],
-            display_name=req.display_name,
-        )
+        updated = profile_service.get_user(user["id"])
+        if not updated:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        if req.display_name is not None:
+            updated = profile_service.update_display_name(
+                user_id=user["id"],
+                display_name=req.display_name,
+            )
+        if req.theme is not None:
+            updated = profile_service.update_theme(
+                user_id=user["id"],
+                theme=req.theme,
+            )
         return ProfileUpdateResponse(success=True, user=_user_info(updated))
     except DisplayNameTakenError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
