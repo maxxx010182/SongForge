@@ -413,3 +413,8 @@ class AdminUpdateTrackTitleRequest(BaseModel):
 
 class AdminUpdateAuthorNameRequest(BaseModel):
     display_name: str
+
+
+class AdminBoostTrackRequest(BaseModel):
+    likes: int = 12
+    comments: int = 3

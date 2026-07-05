@@ -25,7 +25,9 @@
         .genre-chip.active{background:#eab308;color:#09090b;border-color:#eab308;font-weight:600}
         .sf-select{width:100%;background:rgba(0,0,0,0.5);border:1px solid rgb(39,39,42);border-radius:0.75rem;padding:0.625rem 2.25rem 0.625rem 1rem;font-size:0.875rem;color:#fff;outline:none;transition:border-color 0.2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1aa' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center}
         .sf-select:focus{border-color:rgba(234,179,8,0.5)}
-        .bottom-nav a{transition:all 0.2s}
+        .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;padding:.5rem 0 max(.5rem,env(safe-area-inset-bottom))}
+        .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;padding:.45rem .1rem;min-width:0;text-align:center;color:#a1a1aa;text-decoration:none;transition:all .2s}
+        .bottom-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
         .bottom-nav a.active-nav{color:#eab308;background:rgba(234,179,8,0.15);border-radius:2rem}
         .header-nav{display:none;align-items:center;justify-content:center;gap:1.25rem;font-size:.875rem;font-weight:500}
         @media(min-width:768px){.header-nav{display:flex}}
@@ -456,7 +458,8 @@
             <div class="text-4xl font-bold text-yellow-400" id="profileBalance">0</div>
             <div class="text-zinc-400 mb-1">нот на балансе</div>
             <div class="text-xs text-zinc-600 mb-6">1 пробная генерация на аккаунт • дальше 1 нота = 1 песня (2 варианта в фонотеку)</div>
-            <button id="profileTopupBtn" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-semibold mb-4"><i class="fa-solid fa-music mr-2"></i>Купить ноты</button>
+            <button id="profileTopupBtn" class="w-full bg-yellow-400 text-black py-4 rounded-2xl font-semibold mb-3"><i class="fa-solid fa-music mr-2"></i>Купить ноты</button>
+            <button type="button" onclick="switchToView('legal')" class="w-full lg:hidden bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-2xl text-sm text-zinc-400 mb-4 transition"><i class="fa-regular fa-file-lines mr-2"></i>Инфо и FAQ</button>
 
             <!-- Реферальная программа -->
             <div class="mt-6 bg-gradient-to-r from-yellow-400/10 to-amber-400/5 border border-yellow-400/20 rounded-2xl p-5 text-left">
@@ -897,14 +900,13 @@
 </div>
 </div>
 
-<!-- Нижняя навигация -->
-<div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 py-2 px-6 z-50 flex justify-around lg:hidden bottom-nav">
-    <a data-nav="create" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl active-nav"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><span class="text-[11px]">Студия</span></a>
-    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-tower-broadcast text-xl"></i><span class="text-[11px]">Фонотека</span></a>
-    <a data-nav="explore" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[11px]">МузПлощадка</span></a>
-    <a data-nav="profile" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[11px]">Кабинет</span></a>
-    <a data-nav="payment" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[11px]">Пакеты</span></a>
-    <a data-nav="legal" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-file-lines text-xl"></i><span class="text-[11px]">Инфо</span></a>
+<!-- Нижняя навигация (5 пунктов — МузПлощадка строго по центру) -->
+<div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 z-50 lg:hidden bottom-nav">
+    <a data-nav="create" class="rounded-2xl active-nav"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><span class="text-[10px] sm:text-[11px]">Студия</span></a>
+    <a data-nav="library" class="rounded-2xl"><i class="fa-solid fa-tower-broadcast text-xl"></i><span class="text-[10px] sm:text-[11px]">Фонотека</span></a>
+    <a data-nav="explore" class="rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[10px] sm:text-[11px]">МузПлощадка</span></a>
+    <a data-nav="profile" class="rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[10px] sm:text-[11px]">Кабинет</span></a>
+    <a data-nav="payment" class="rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[10px] sm:text-[11px]">Пакеты</span></a>
 </div>
 
 <!-- Модалка: ошибка генерации -->

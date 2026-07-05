@@ -387,6 +387,27 @@ class AdminService:
             out.append(item)
         return out
 
+    def log_action(
+        self,
+        *,
+        admin_id: str,
+        action: str,
+        target_type: str | None,
+        target_id: str | None,
+        details: dict | None = None,
+        ip: str = "",
+    ) -> None:
+        with get_connection() as conn:
+            self._write_audit(
+                conn,
+                admin_user_id=admin_id,
+                action=action,
+                target_type=target_type,
+                target_id=target_id,
+                details=details,
+                ip_address=ip,
+            )
+
     @staticmethod
     def _write_audit(
         conn,

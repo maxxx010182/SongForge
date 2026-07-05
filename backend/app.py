@@ -44,6 +44,7 @@ from backend.models import (
     AdminSeedCommentRequest,
     AdminUpdateTrackTitleRequest,
     AdminUpdateAuthorNameRequest,
+    AdminBoostTrackRequest,
     AdminMeResponse,
     TelegramAuthRequest,
     TrackCommentCreateRequest,
@@ -96,7 +97,7 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 
-app = FastAPI(title="SongForge", version="2.9.14")
+app = FastAPI(title="SongForge", version="2.9.15")
 
 app.add_middleware(
     CORSMiddleware,
@@ -289,7 +290,7 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.14"}
+    return {"ok": True, "service": "SongForge", "version": "2.9.15"}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -404,6 +405,25 @@ def _assert_showcase_permission(admin_user: dict) -> None:
     admin_service.assert_permission(admin_user["admin_role"], "showcase:write")
 
 
+def _log_showcase_action(
+    *,
+    admin_user: dict,
+    request: Request,
+    action: str,
+    target_id: str | None = None,
+    target_type: str = "library",
+    details: dict | None = None,
+) -> None:
+    admin_service.log_action(
+        admin_id=admin_user["admin_id"],
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        details=details,
+        ip=_client_ip(request),
+    )
+
+
 @app.get("/api/admin/showcase/personas")
 async def admin_list_personas(
     limit: int = 100,
@@ -420,6 +440,7 @@ async def admin_list_personas(
 @app.post("/api/admin/showcase/personas")
 async def admin_create_personas(
     req: AdminCreatePersonasRequest,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
@@ -429,6 +450,13 @@ async def admin_create_personas(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.personas_create",
+        target_type="showcase",
+        details={"created": len(created), "total": showcase_admin.persona_count()},
+    )
     return {"success": True, "created": created, "total": showcase_admin.persona_count()}
 
 
@@ -449,15 +477,49 @@ async def admin_list_showcase_tracks(
     return {"items": items}
 
 
-@app.post("/api/admin/showcase/tracks/{library_id}/likes")
-async def admin_seed_likes(
+@app.post("/api/admin/showcase/tracks/{library_id}/boost")
+async def admin_boost_track(
     library_id: str,
-    req: AdminSeedLikesRequest,
+    req: AdminBoostTrackRequest,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
         _assert_showcase_permission(admin_user)
-        return showcase_admin.add_seed_likes(
+        result = showcase_admin.boost_track(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            library_id=library_id,
+            likes=req.likes,
+            comments=req.comments,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.boost",
+        target_id=library_id,
+        details={
+            "likes_added": result["likes_added"],
+            "comments_added": result["comments_added"],
+        },
+    )
+    return result
+
+
+@app.post("/api/admin/showcase/tracks/{library_id}/likes")
+async def admin_seed_likes(
+    library_id: str,
+    req: AdminSeedLikesRequest,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        result = showcase_admin.add_seed_likes(
             admin_user_id=admin_user["id"],
             admin_role=admin_user["admin_role"],
             library_id=library_id,
@@ -467,17 +529,26 @@ async def admin_seed_likes(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.likes",
+        target_id=library_id,
+        details={"added": result["added"], "likes": result["likes"]},
+    )
+    return result
 
 
 @app.post("/api/admin/showcase/tracks/{library_id}/comments")
 async def admin_seed_comment(
     library_id: str,
     req: AdminSeedCommentRequest,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
         _assert_showcase_permission(admin_user)
-        return showcase_admin.add_seed_comment(
+        result = showcase_admin.add_seed_comment(
             admin_user_id=admin_user["id"],
             admin_role=admin_user["admin_role"],
             library_id=library_id,
@@ -489,17 +560,26 @@ async def admin_seed_comment(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.comment",
+        target_id=library_id,
+        details={"persona_id": req.persona_id, "text": req.text[:120]},
+    )
+    return result
 
 
 @app.patch("/api/admin/showcase/tracks/{library_id}/title")
 async def admin_update_track_title(
     library_id: str,
     req: AdminUpdateTrackTitleRequest,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
         _assert_showcase_permission(admin_user)
-        return showcase_admin.update_track_title(
+        result = showcase_admin.update_track_title(
             admin_user_id=admin_user["id"],
             admin_role=admin_user["admin_role"],
             library_id=library_id,
@@ -509,17 +589,26 @@ async def admin_update_track_title(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.title",
+        target_id=library_id,
+        details={"title": result["title"]},
+    )
+    return result
 
 
 @app.patch("/api/admin/showcase/tracks/{library_id}/author")
 async def admin_update_track_author(
     library_id: str,
     req: AdminUpdateAuthorNameRequest,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
         _assert_showcase_permission(admin_user)
-        return showcase_admin.update_author_display_name(
+        result = showcase_admin.update_author_display_name(
             admin_user_id=admin_user["id"],
             admin_role=admin_user["admin_role"],
             library_id=library_id,
@@ -529,16 +618,25 @@ async def admin_update_track_author(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.author",
+        target_id=library_id,
+        details={"display_name": result["display_name"]},
+    )
+    return result
 
 
 @app.delete("/api/admin/showcase/tracks/{library_id}/seed")
 async def admin_clear_seed_engagement(
     library_id: str,
+    request: Request,
     admin_user: dict = Depends(require_admin_user),
 ):
     try:
         _assert_showcase_permission(admin_user)
-        return showcase_admin.clear_seed_engagement(
+        result = showcase_admin.clear_seed_engagement(
             admin_user_id=admin_user["id"],
             admin_role=admin_user["admin_role"],
             library_id=library_id,
@@ -547,6 +645,17 @@ async def admin_clear_seed_engagement(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.clear_seed",
+        target_id=library_id,
+        details={
+            "likes_removed": result["likes_removed"],
+            "comments_removed": result["comments_removed"],
+        },
+    )
+    return result
 
 
 @app.get("/api/me", response_model=MeResponse)

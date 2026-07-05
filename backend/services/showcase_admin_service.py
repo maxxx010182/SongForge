@@ -45,6 +45,18 @@ PERSONA_NAME_POOL = (
 SEED_LIKE_CAP_PER_TRACK = 100
 MAX_LIKES_PER_REQUEST = 50
 
+SEED_COMMENT_TEMPLATES = (
+    "Классный трек, зацепило!",
+    "Слушаю на повторе — очень!",
+    "Под настроение самое то.",
+    "Припев запомнился сразу.",
+    "Хочется в плейлист добавить.",
+    "Отличная работа!",
+    "Для подарка идеально подошло бы.",
+    "Голос и аранжировка супер.",
+    "Вайб ловит с первых секунд.",
+)
+
 
 class ShowcaseAdminService:
     def __init__(self) -> None:
@@ -431,4 +443,55 @@ class ShowcaseAdminService:
             "likes_removed": int(likes_removed),
             "comments_removed": int(comments_removed),
             "likes": likes,
+        }
+
+    def boost_track(
+        self,
+        *,
+        admin_user_id: str,
+        admin_role: str,
+        library_id: str,
+        likes: int = 12,
+        comments: int = 3,
+    ) -> dict:
+        likes = max(1, min(int(likes), MAX_LIKES_PER_REQUEST))
+        comments = max(0, min(int(comments), 8))
+
+        if self.persona_count() < max(comments, 3):
+            self.create_personas(count=20)
+
+        like_result = self.add_seed_likes(
+            admin_user_id=admin_user_id,
+            admin_role=admin_role,
+            library_id=library_id,
+            count=likes,
+        )
+
+        persona_rows = self.list_personas(limit=50)
+        random.shuffle(persona_rows)
+        added_comments: list[dict] = []
+        templates = list(SEED_COMMENT_TEMPLATES)
+        random.shuffle(templates)
+
+        for idx in range(comments):
+            if not persona_rows:
+                break
+            persona = persona_rows[idx % len(persona_rows)]
+            text = templates[idx % len(templates)]
+            added_comments.append(
+                self.add_seed_comment(
+                    admin_user_id=admin_user_id,
+                    admin_role=admin_role,
+                    library_id=library_id,
+                    persona_id=persona["id"],
+                    text=text,
+                )
+            )
+
+        return {
+            "success": True,
+            "likes_added": like_result["added"],
+            "likes": like_result["likes"],
+            "comments_added": len(added_comments),
+            "comments": added_comments,
         }
