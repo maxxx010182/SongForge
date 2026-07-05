@@ -38,5 +38,5 @@ Ctrl+F5
 Sait: http://195.19.20.245:8000/
 
 Chto novogo v 2.9.4:
-- Levaya kolonka: Afisha, krupnyj top-3 chart
-- Balans vysoty levoj i pravoj paneli
+- Chart: oblozhka na vsyu shirinu kartochki
+- Sovety studii: rotaciya kazhdye 20 sek
