@@ -27,6 +27,12 @@
         .sf-select:focus{border-color:rgba(234,179,8,0.5)}
         .bottom-nav a{transition:all 0.2s}
         .bottom-nav a.active-nav{color:#eab308;background:rgba(234,179,8,0.15);border-radius:2rem}
+        .header-nav{display:none;align-items:center;justify-content:center;gap:1.25rem;font-size:.875rem;font-weight:500}
+        @media(min-width:768px){.header-nav{display:flex}}
+        .header-nav-link{color:#a1a1aa;transition:all .2s;padding:.4rem .75rem;border-radius:9999px;white-space:nowrap}
+        .header-nav-link:hover{color:#fafafa}
+        .header-nav-link.active{color:#eab308;background:rgba(234,179,8,.12);font-weight:600}
+        .header-nav-link.active:hover{color:#eab308}
         .upgrade-btn{background:linear-gradient(135deg,#eab308,#f59e0b);color:black;font-weight:bold;transition:all 0.2s}
         .upgrade-btn:hover{transform:scale(1.02);box-shadow:0 0 20px rgba(234,179,8,0.4)}
         .step-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(234,179,8,0.15);color:#eab308;font-size:12px;font-weight:700;flex-shrink:0;border:1px solid rgba(234,179,8,0.3)}
@@ -178,21 +184,21 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 <!-- HEADER -->
-<header class="border-b border-zinc-800 py-5 flex flex-wrap items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
+<header class="border-b border-zinc-800 py-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+    <div class="flex items-center gap-3 justify-self-start">
         <div id="headerLogo" class="logo-slot w-9 h-9 rounded-2xl overflow-hidden cursor-pointer shrink-0 ring-1 ring-yellow-400/20">
             <img src="/SongForgeLogo.png" alt="СоздайСвоюПесню" class="logo-img">
         </div>
         <span class="font-title text-3xl font-semibold tracking-tighter neon-text text-yellow-400">СоздайСвоюПесню</span>
     </div>
-    <nav class="hidden md:flex items-center gap-x-6 text-sm font-medium">
-        <a href="#" onclick="switchToView('create');return false;" class="hover:text-yellow-400 transition"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Студия</a>
-        <a href="#" onclick="switchToView('library');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-layer-group mr-1"></i>Фонотека</a>
-        <a href="#" onclick="switchToView('explore');return false;" class="hover:text-yellow-400 transition"><i class="fa-solid fa-tower-broadcast mr-1"></i>МузПлощадка</a>
-        <a href="#" onclick="switchToView('profile');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-user mr-1"></i>Профиль</a>
-        <a href="#" onclick="switchToView('payment');return false;" class="hover:text-yellow-400 transition"><i class="fa-regular fa-gem mr-1"></i>Пакеты</a>
+    <nav class="header-nav justify-self-center order-3 md:order-none">
+        <a href="#" data-nav="create" onclick="switchToView('create');return false;" class="header-nav-link active"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Студия</a>
+        <a href="#" data-nav="library" onclick="switchToView('library');return false;" class="header-nav-link"><i class="fa-solid fa-trophy mr-1"></i>Фонотека</a>
+        <a href="#" data-nav="explore" onclick="switchToView('explore');return false;" class="header-nav-link"><i class="fa-solid fa-tower-broadcast mr-1"></i>МузПлощадка</a>
+        <a href="#" data-nav="profile" onclick="switchToView('profile');return false;" class="header-nav-link"><i class="fa-regular fa-user mr-1"></i>Профиль</a>
+        <a href="#" data-nav="payment" onclick="switchToView('payment');return false;" class="header-nav-link"><i class="fa-regular fa-gem mr-1"></i>Пакеты</a>
     </nav>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 justify-self-end order-2 md:order-none">
         <div class="bg-white/5 px-4 py-2 rounded-3xl text-sm border border-white/10 cursor-pointer hover:border-yellow-400/30 transition" onclick="switchToView('payment')">
             <i class="fa-solid fa-music text-yellow-400 mr-2"></i><span id="headerBalance">0 нот</span>
         </div>
@@ -889,7 +895,7 @@
 <!-- Нижняя навигация -->
 <div class="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 py-2 px-6 z-50 flex justify-around lg:hidden bottom-nav">
     <a data-nav="create" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl active-nav"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i><span class="text-[11px]">Студия</span></a>
-    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-layer-group text-xl"></i><span class="text-[11px]">Фонотека</span></a>
+    <a data-nav="library" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[11px]">Фонотека</span></a>
     <a data-nav="explore" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-solid fa-tower-broadcast text-xl"></i><span class="text-[11px]">МузПлощадка</span></a>
     <a data-nav="profile" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[11px]">Кабинет</span></a>
     <a data-nav="payment" class="flex flex-col items-center gap-1 py-2 px-4 rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[11px]">Пакеты</span></a>
@@ -1156,7 +1162,7 @@ function switchAuthTab(tab){var emailTab=document.getElementById('authTabEmail')
 async function submitAuthEmail(){var email=document.getElementById('authEmailInput').value.trim();if(!email){alert('Введите email');return;}if(authEmailStep==='request'){var res=await fetch('/api/auth/email/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){alert(data.detail||'Не удалось отправить код');return;}authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';var hint=document.getElementById('authDevCodeHint');if(data.dev_code&&hint){hint.textContent='Ваш код: '+data.dev_code+' (на почту пока не приходит)';hint.classList.remove('hidden');}showToast(data.message||(data.dev_code?'Код на экране':'Код отправлен на email'));return;}var code=document.getElementById('authCodeInput').value.trim();var vres=await fetch('/api/auth/email/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code}),...fetchOpts});var vdata=await vres.json().catch(function(){return{};});if(!vres.ok){alert(vdata.detail||'Неверный код');return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');}
 async function logoutUser(){await fetch('/api/auth/logout',{method:'POST',...fetchOpts});session.loggedIn=false;session.user=null;user.balance=0;try{var raw=localStorage.getItem('создайсвоюпесню_user');if(raw){var d=JSON.parse(raw);d.balance=0;localStorage.setItem('создайсвоюпесню_user',JSON.stringify(d));}}catch(e){}await fetchMe();renderLibrary();renderHistory();updateBalanceUI();showToast('Вы вышли из аккаунта');}
 function switchLibraryTab(tab){libraryTab=tab==='history'?'history':'library';if(libraryTab==='library')libraryPage=0;else historyPage=0;document.getElementById('libTabLibrary').classList.toggle('active',libraryTab==='library');document.getElementById('libTabHistory').classList.toggle('active',libraryTab==='history');document.getElementById('libraryTabContent').classList.toggle('hidden',libraryTab!=='library');document.getElementById('historyTabContent').classList.toggle('hidden',libraryTab!=='history');if(libraryTab==='history'){fetchHistory().then(renderHistory);}else renderLibrary();}
-function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');}
+function switchToView(view){['create','library','explore','profile','payment','legal'].forEach(function(v){var el=document.getElementById(v+'Panel');if(el)el.classList.add('hidden');});var vp=document.getElementById(view+'Panel');if(vp)vp.classList.remove('hidden');if(view==='create')resetStaleGeneratingUI();if(view==='library'){if(libraryTab==='history')fetchHistory().then(renderHistory);else renderLibrary();}if(view==='explore')fetchExploreTracks().then(function(){renderExplore();});if(view==='profile')updateBalanceUI();if(view==='payment'){renderPackets();updatePaymentReturnBtn();}document.querySelectorAll('.bottom-nav a').forEach(function(a){a.classList.remove('active-nav');});var al=document.querySelector('.bottom-nav a[data-nav="'+view+'"]');if(al)al.classList.add('active-nav');document.querySelectorAll('.header-nav-link').forEach(function(a){a.classList.remove('active');});var hl=document.querySelector('.header-nav a[data-nav="'+view+'"]');if(hl)hl.classList.add('active');}
 function applyServerBalance(bal){if(bal==null||bal===undefined)return;if(session.loggedIn&&session.user)session.user.balance=bal;updateBalanceUI();}
 function handleGuestLimitError(detail,opts){opts=opts||{};var msg=detail||'Войдите в аккаунт, чтобы продолжить';if(/нот|Купите|Пробная генерация уже/i.test(msg)){if(session.loggedIn)openCreditPurchaseModal();else openAuthModal();}else{openAuthModal();}if(!opts.noThrow)throw new Error(msg);return msg;}
 function canStartSongGeneration(){if(!session.loggedIn)return'auth';if(session.guestRemaining>0)return'ok';if(getBalance()>=1)return'ok';return'payment';}
