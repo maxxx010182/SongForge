@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 
 LOGOS = {
+    "favicon": ROOT / "assets" / "logo-64.png",
     "header": ROOT / "assets" / "logo-header.png",
     "header2x": ROOT / "assets" / "logo-header@2x.png",
     "gen": ROOT / "assets" / "logo-gen.png",
@@ -26,7 +27,7 @@ def main() -> None:
 
     html = re.sub(
         r'<link rel="icon" href="[^"]*" type="image/png">',
-        f'<link rel="icon" href="{uris["header"]}" type="image/png">',
+        f'<link rel="icon" href="{uris["favicon"]}" type="image/png">',
         html,
         count=1,
     )

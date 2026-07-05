@@ -3,7 +3,7 @@
 set -e
 DIR="${HOME}/SongForge"
 GH_API="https://api.github.com/repos/maxxx010182/SongForge/contents"
-EXPECTED_VERSION="2.9.27"
+EXPECTED_VERSION="2.9.28"
 
 mkdir -p "$DIR/backend" "$DIR/assets"
 cd "$DIR"
@@ -54,12 +54,12 @@ if ! grep -q "$EXPECTED_VERSION" backend/app.py; then
   echo "ОШИБКА: на диске не версия $EXPECTED_VERSION"
   exit 1
 fi
-if ! grep -q 'SongForgeLogo.png' index.html; then
-  echo "ОШИБКА: index.html не ссылается на SongForgeLogo.png"
+if ! grep -qE 'data:image/png;base64|/assets/logo-header' index.html; then
+  echo "ОШИБКА: index.html не содержит логотип (base64 или /assets/logo-header)"
   exit 1
 fi
-if [ ! -s SongForgeLogo.png ]; then
-  echo "ОШИБКА: нет файла SongForgeLogo.png"
+if [ ! -s assets/logo-header.png ] || [ ! -s assets/logo-gen.png ]; then
+  echo "ОШИБКА: нет assets/logo-header.png или assets/logo-gen.png"
   exit 1
 fi
 echo "  index.html: $(wc -c < index.html) байт — OK"
