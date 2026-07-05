@@ -504,6 +504,55 @@
 
 ---
 
+## Расширенный режим — план AI-продюсера не совпадает с описанием *(5 июля 2026)*
+
+> **Замечание владельца:** в режиме «Своими словами» детальное EN-описание (rap-rock, stadium, Basta-style vocal…) в блоке решения AI-продюсера превращается в **Pop / Modern Pop, uplifting, BPM 120, vocal auto** — не то, что просил пользователь.
+
+### Корневая причина (разбор кода)
+
+1. **UI** (`buildSongPayload`): даже в `style_mode=custom` на API уходили `genre: "Поп"` и `mood: "uplifting"` (дефолты чипов).
+2. **Backend** (`apply_user_to_plan` / `apply_user_to_analysis`): непустой жанр/настроение из запроса **жёстко перезаписывают** результат `AiMusicAnalyst`.
+3. **Парсер** (`parse_idea`): раньше смотрел только `idea`, не объединение с `custom_description`.
+4. **Отображение** (`renderProducerPlan`): сетка жанр/BPM — это **сжатый MusicAnalysis**, а не дословное описание; при ошибке анализа выглядит как «игнор» текста.
+5. **Suno** (см. `Руководство по интеграции апи суно.txt` §1.3): в custom mode главное — поле **`style`** (до ~200 симв. в доке ApiPass; у нас до 950). План в UI ≠ то, что реально уходит в Suno.
+
+### Сделано (v2.9.5 — hotfix)
+
+- [x] В custom mode UI шлёт `genre: ""`, `mood: ""`
+- [x] `PromptBuilder.build`: парсит `custom_description`, не применяет списки жанра/настроения
+- [x] Текст пользователя **добавляется в `payload.style`** для Suno (приоритет описания)
+- [x] Расширены ключевые слова: rap-rock, stadium, anthem, triumphant, patriotic
+
+### Дальше — гибкость и контроль (v2.10+)
+
+**Продукт / UI**
+
+- [ ] В режиме «Своими словами» в плане показывать блок **«Ваше описание»** (первые 2–3 строки) + «AI уточнил»
+- [ ] Редактируемые поля плана перед «Создать песню» (жанр, BPM, вокал, инструменты)
+- [ ] Подсказка: «Для stadium/rap-rock опишите вокал, продакшн и референс — как в примере из руководства Suno»
+- [ ] Режим **«Передать описание в Suno как есть»** (минимум AI-переинтерпретации)
+
+**Backend / пайплайн**
+
+- [ ] `style_mode=custom` → Analyst с `temperature` ниже + обязательное извлечение subgenre из текста (не Pop fallback)
+- [ ] При `locked_fields` из `parse_idea` не вызывать `apply_user_to_*` для этих полей
+- [ ] Отдельный путь: custom → `style` = нормализованный `custom_description`, lyrics отдельно (Suno §1.3)
+- [ ] Лог: `custom_in` vs `analysis_out` vs `style_sent` — для отладки в админке
+
+**Интеграция Suno / ApiPass**
+
+- [ ] Сверить лимит `style` с ApiPass (200 vs 950) — при необходимости сжимать через GPT **с сохранением** ключевых тегов пользователя
+- [ ] `styleWeight` / `weirdness` из описания (stadium live → выше styleWeight, ниже weirdness)
+- [ ] Документировать в `DEVELOPER_GUIDE`: какой режим Suno (1.3 custom vocal) используем и когда
+
+**Тесты**
+
+- [ ] Интеграционный тест: EN rap-rock custom_description → plan.genre ≠ Pop, style содержит stadium/rap
+
+**Файлы:** `index.html`, `prompt_builder.py`, `ai_music_analyst.py`, `plan_overrides.py`, `apipass_client.py`, `Руководство по интеграции апи суно.txt`
+
+---
+
 ## Правый сайдбар — вдохновение и «похожее на хиты» *(5 июля 2026, план)*
 
 > Запланировать к следующим правкам. Код пока не менять без отдельного заказа.

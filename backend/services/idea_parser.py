@@ -64,6 +64,10 @@ _MOOD_KEYWORDS: list[tuple[str, str]] = [
     ("эпич", "adventurous"),
     ("эпическ", "adventurous"),
     ("epic", "adventurous"),
+    ("triumphant", "adventurous"),
+    ("stadium", "adventurous"),
+    ("anthem", "adventurous"),
+    ("patriotic", "adventurous"),
 ]
 
 _ARTIST_PATTERNS: list[re.Pattern[str]] = [

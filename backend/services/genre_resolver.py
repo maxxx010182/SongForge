@@ -34,7 +34,7 @@ _GENRE_FROM_UI: dict[str, str] = {
 
 _GENRE_HINTS: list[tuple[str, str, tuple[str, ...]]] = [
     ("Hip-Hop", "Modern Hip-Hop", ("рэп", "rap", "хип", "hip-hop", "hip hop", "трэп", "trap", "drill", "дрилл", "битмейк", "808")),
-    ("Rock", "Alternative Rock", ("рок", "rock", "гитар", "metal", "метал", "панк", "punk")),
+    ("Rock", "Rap Rock", ("rap-rock", "rap rock", "rap-rock", "stadium", "anthem", "рок", "rock", "гитар", "metal", "метал", "панк", "punk")),
     ("Electronic", "Modern Electronic", ("электрон", "electronic", "edm", "техно", "techno", "хаус", "house", "синт", "synth")),
     ("Ballad", "Emotional Ballad", ("баллад", "ballad", "лирич", "нежн", "трогательн")),
     ("Lo-Fi", "Chill Lo-Fi", ("лофи", "lo-fi", "lofi", "чилл", "chill", "расслаб")),
@@ -51,7 +51,7 @@ _MOOD_HINTS: list[tuple[str, tuple[str, ...]]] = [
     ("romantic", ("любов", "романт", "romantic", "нежн", "свидан")),
     ("dark", ("мрач", "тёмн", "dark", "агресс", "злост", "ярост")),
     ("uplifting", ("радост", "счаст", "энерг", "happy", "upbeat", "весел", "праздн", "мотив")),
-    ("adventurous", ("эпич", "эпическ", "epic", "adventur", "героич", "триумф")),
+    ("adventurous", ("эпич", "эпическ", "epic", "adventur", "героич", "триумф", "triumphant", "stadium", "anthem", "patriotic")),
     ("calm", ("спокой", "мирн", "calm", "peace", "медита", "тишин")),
     ("nostalgic", ("ностальг", "воспомин", "прошл", "детств")),
 ]

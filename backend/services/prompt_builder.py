@@ -52,7 +52,19 @@ class PromptBuilder:
         custom_description: str = "",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Parse idea → Reference → Analyst → Composer → Suno payload."""
-        parsed = parse_idea(idea)
+        custom_mode = style_mode == "custom" and custom_description.strip()
+        parse_text = idea.strip()
+        if custom_mode:
+            parse_text = (
+                f"{idea.strip()}\n{custom_description.strip()}".strip()
+                if idea.strip()
+                else custom_description.strip()
+            )
+            # Списки жанра/настроения скрыты — не перебивать текст пользователя.
+            genre = ""
+            mood = ""
+
+        parsed = parse_idea(parse_text or idea)
         (
             genre,
             mood,
@@ -70,8 +82,10 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
         )
 
+        analyst_idea = parse_text or idea
+
         reference = (
-            self._translator.translate(artist_ref, idea=idea)
+            self._translator.translate(artist_ref, idea=analyst_idea)
             if artist_ref.strip()
             else None
         )
@@ -79,7 +93,7 @@ class PromptBuilder:
         ui_genre_locked = bool(genre.strip())
         ui_artist_locked = bool(artist_ref.strip())
         analysis = self._analyst.analyze(
-            idea,
+            analyst_idea,
             genre=genre,
             mood=mood,
             reference=reference,
@@ -93,7 +107,7 @@ class PromptBuilder:
         )
         payload = self._composer.compose(
             analysis,
-            idea,
+            analyst_idea,
             reference=reference,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
@@ -115,6 +129,17 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
             backing_vocal_gender=backing_gender,
         )
+        if custom_mode:
+            user_style = truncate(clean_text(custom_description.strip()), 500)
+            merged = (
+                f"{user_style}, {payload.style}"
+                if payload.style.strip()
+                else user_style
+            )
+            payload.style = truncate(
+                ensure_russian_vocal_style(merged) if not instrumental else merged,
+                950,
+            )
         payload.vocal_gender = plan.vocal_gender
         payload.negative_tags = plan.negative_tags
         payload.style_weight = plan.style_weight
