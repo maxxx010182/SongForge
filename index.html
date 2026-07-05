@@ -149,6 +149,10 @@
         .sidebar-track-item{transition:background .2s;border:1px solid transparent}
         .sidebar-track-item:hover{border-color:rgba(234,179,8,.15)}
         .sidebar-track-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#18181b}
+        .sidebar-chart-track{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:background .2s,border-color .2s;min-height:5.25rem}
+        .sidebar-chart-track:hover{background:rgba(234,179,8,.07);border-color:rgba(234,179,8,.22)}
+        .sidebar-chart-thumb{width:4.25rem;height:4.25rem;border-radius:.85rem;object-fit:cover;flex-shrink:0;background:#18181b;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+        .sidebar-chart-likes{font-size:.68rem;color:#eab308;margin-top:.15rem}
         .sidebar-rank{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(234,179,8,.15);color:#eab308;flex-shrink:0}
         .sidebar-rank.rank-1{background:linear-gradient(135deg,#fef08a,#eab308);color:#422006}
         .sidebar-rank.rank-2{background:linear-gradient(135deg,#f4f4f5,#a1a1aa);color:#18181b}
@@ -188,13 +192,13 @@
     </div>
 </header>
 
-<div class="flex flex-col lg:flex-row lg:items-start gap-6 my-8">
+<div class="flex flex-col lg:flex-row lg:items-stretch gap-6 my-8">
 
 <!-- ЛЕВАЯ ПАНЕЛЬ: лента, советы, чарт -->
-<div id="leftSidebar" class="w-full lg:w-72 shrink-0 order-2 lg:order-1">
-    <div class="glass-panel p-6 space-y-6">
+<div id="leftSidebar" class="w-full lg:w-72 shrink-0 order-2 lg:order-1 lg:self-stretch">
+    <div class="glass-panel p-6 h-full flex flex-col gap-6">
         <div>
-            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-bell text-yellow-400"></i>Сообщения</span></div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-newspaper text-yellow-400"></i>Афиша</span></div>
             <div class="space-y-2">
                 <div class="announce-card"><strong class="text-yellow-400/90">Ранний доступ.</strong> Платформа в бета-режиме — делитесь идеями, мы улучшаем студию каждую неделю.</div>
                 <div class="announce-card subtle">1 пробная генерация после входа: 2 варианта по 30 сек. Полные треки — за ноты в фонотеку.</div>
@@ -209,12 +213,12 @@
                 <li>Референс = «в духе», AI-продюсер = быстрый черновик на пробу</li>
             </ul>
         </div>
-        <div>
+        <div class="flex-1 flex flex-col min-h-0 pt-1">
             <div class="sidebar-section-title">
                 <span class="flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ чарта</span>
                 <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 normal-case tracking-normal text-xs hover:underline">Все →</a>
             </div>
-            <div id="homeExploreSidebar" class="space-y-2"></div>
+            <div id="homeExploreSidebar" class="flex-1 flex flex-col gap-3 justify-end"></div>
         </div>
     </div>
 </div>
@@ -820,8 +824,8 @@
 </div>
 
 <!-- ПРАВАЯ ПАНЕЛЬ: плеер + инструменты -->
-<div id="rightSidebar" class="w-full lg:w-80 shrink-0 order-3">
-    <div class="glass-panel p-6 space-y-6">
+<div id="rightSidebar" class="w-full lg:w-80 shrink-0 order-3 lg:self-stretch">
+    <div class="glass-panel p-6 h-full flex flex-col gap-6">
         <div>
             <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
             <div class="bg-zinc-900/70 rounded-2xl overflow-hidden">
@@ -1266,9 +1270,10 @@ async function submitComment(){if(!commentsModalTrackId)return;if(!session.logge
 function playExploreTrack(id){var t=(session.exploreTracks||[]).find(function(x){return String(x.id)===String(id);});if(!t)return;playAudio(t.listen_url,t.title,t.image_url,t.author_name||'Аноним');}
 function renderExplore(){var eg=document.getElementById('exploreGrid');if(!eg)return;var tracks=session.exploreTracks||[];if(!tracks.length){eg.innerHTML='<div class="col-span-full text-center py-16 glass-panel"><div class="text-4xl mb-3">🌟</div><div class="text-lg font-semibold mb-2">Пока пусто</div><div class="text-sm text-zinc-500 max-w-md mx-auto">Опубликуйте трек из фонотеки — он появится на МузПлощадке. Ставьте лайки, чтобы поднять трек в рейтинге.</div></div>';return;}eg.innerHTML=tracks.map(function(t,i){return exploreCardHtml(t,{rank:i+1});}).join('');bindExplorePlayButtons(eg);}
 function sidebarTrackHtml(t,rank){var cover=t.image_url||t.imageUrl||'https://picsum.photos/id/29/280/280';var rc=rank<=3?' rank-'+rank:'';return'<button type="button" class="sidebar-track-item w-full flex items-center gap-2.5 p-2 rounded-xl text-left" data-sidebar-play="'+escHtml(String(t.id))+'"><span class="sidebar-rank'+rc+'">'+rank+'</span><img src="'+escHtml(cover)+'" alt="" class="sidebar-track-thumb" loading="lazy"><span class="min-w-0 flex-1"><span class="block text-sm font-medium truncate text-zinc-200">'+escHtml(t.title||'Без названия')+'</span><span class="block text-[11px] text-zinc-500 truncate">'+escHtml(t.author_name||'Аноним')+'</span></span><i class="fa-solid fa-play text-yellow-400/80 text-xs shrink-0"></i></button>';}
+function sidebarChartTrackHtml(t,rank){var cover=t.image_url||t.imageUrl||'https://picsum.photos/id/29/280/280';var rc=rank<=3?' rank-'+rank:'';var likes=t.likes_count!=null?t.likes_count:(t.likes||0);var likesLine=likes>0?'<span class="sidebar-chart-likes"><i class="fa-regular fa-heart mr-1"></i>'+likes+'</span>':'';return'<button type="button" class="sidebar-chart-track w-full flex items-center gap-3 p-3 rounded-2xl text-left" data-sidebar-play="'+escHtml(String(t.id))+'"><span class="sidebar-rank'+rc+'">'+rank+'</span><img src="'+escHtml(cover)+'" alt="" class="sidebar-chart-thumb" loading="lazy"><span class="min-w-0 flex-1"><span class="block text-base font-semibold truncate text-zinc-100">'+escHtml(t.title||'Без названия')+'</span><span class="block text-xs text-zinc-400 truncate mt-0.5">'+escHtml(t.author_name||'Аноним')+'</span>'+likesLine+'</span><span class="w-9 h-9 rounded-xl bg-yellow-400/15 border border-yellow-400/25 flex items-center justify-center shrink-0"><i class="fa-solid fa-play text-yellow-400 text-sm"></i></span></button>';}
 function bindSidebarTrackButtons(root){root=root||document;root.querySelectorAll('[data-sidebar-play]').forEach(function(btn){btn.addEventListener('click',function(){playExploreTrack(btn.getAttribute('data-sidebar-play'));});});}
 function renderCommunityTop(){var list=document.getElementById('communityTopList');if(!list)return;var tracks=(session.exploreTracks||[]).slice(0,3);if(!tracks.length){list.innerHTML='<p class="text-xs text-zinc-500 leading-relaxed">Пока нет хитов — опубликуйте трек из фонотеки на МузПлощадку.</p>';return;}list.innerHTML=tracks.map(function(t){return'<div class="flex justify-between items-center gap-2"><span class="truncate text-zinc-300">'+escHtml(t.title||'—')+'</span><button type="button" class="community-similar-btn text-yellow-400 text-xs hover:underline shrink-0" data-title="'+escHtml(t.title||'')+'">Похожее</button></div>';}).join('');list.querySelectorAll('.community-similar-btn').forEach(function(btn){btn.addEventListener('click',function(){var title=btn.getAttribute('data-title')||'';document.getElementById('ideaInput').value='Создай песню в стиле «'+title+'», атмосферную и запоминающуюся';switchToView('create');document.getElementById('ideaInput').focus();});});}
-function renderHomeExplore(){var side=document.getElementById('homeExploreSidebar');var tracks=(session.exploreTracks||[]).slice(0,3);if(side){if(!tracks.length){side.innerHTML='<div class="text-center py-4 px-2 rounded-xl border border-dashed border-white/10 cursor-pointer" onclick="switchToView(\'explore\')"><div class="text-xl mb-1">🌟</div><div class="text-xs text-zinc-500 leading-relaxed">Опубликуйте трек — он попадёт в чарт</div></div>';}else{side.innerHTML=tracks.map(function(t,i){return sidebarTrackHtml(t,i+1);}).join('');bindSidebarTrackButtons(side);}}renderCommunityTop();}
+function renderHomeExplore(){var side=document.getElementById('homeExploreSidebar');var tracks=(session.exploreTracks||[]).slice(0,3);if(side){if(!tracks.length){side.innerHTML='<div class="flex-1 flex items-center justify-center text-center py-8 px-3 rounded-2xl border border-dashed border-white/10 cursor-pointer min-h-[12rem]" onclick="switchToView(\'explore\')"><div><div class="text-2xl mb-2">🌟</div><div class="text-sm text-zinc-400 leading-relaxed">Опубликуйте трек — он попадёт в чарт</div></div></div>';}else{side.innerHTML=tracks.map(function(t,i){return sidebarChartTrackHtml(t,i+1);}).join('');bindSidebarTrackButtons(side);}}renderCommunityTop();}
 function bindPlayerDefaultFromChart(){var tracks=session.exploreTracks||[];var top=tracks[0]||null;if(!top){playerDefaultTrack=null;return;}playerDefaultTrack={id:top.id,title:top.title,cover:top.image_url||'https://picsum.photos/id/29/280/280',url:top.listen_url,author:top.author_name||'Аноним'};if(!currentAudio)applyPlayerDefaultDisplay();}
 function applyPlayerDefaultDisplay(){if(!playerDefaultTrack)return;var pt=document.getElementById('playingTitle');var ps=document.getElementById('playerSubtitle');var pa=document.getElementById('playerAuthor');if(pt)pt.textContent=playerDefaultTrack.title;if(ps)ps.textContent='Топ чарта';if(pa)pa.textContent=playerDefaultTrack.author;setPlayerCover(playerDefaultTrack.cover);}
 function playPlayerDefault(){if(!playerDefaultTrack||!playerDefaultTrack.url)return;playAudio(playerDefaultTrack.url,playerDefaultTrack.title,playerDefaultTrack.cover,playerDefaultTrack.author);}
