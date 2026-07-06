@@ -129,6 +129,12 @@ grep ADMIN_BOOTSTRAP .env
 === VYITI ===
 exit
 
+=== VOSSTANOVIT PROPAVSHUYU PESNYU (APIPass success, net v adminke) ===
+Smotret: VOSSTANOVLENIE-TREKA.txt (fail v korne proekta)
+cd ~/SongForge
+./venv/bin/python scripts/check_task.py TASK_ID_IZ_APIPASS
+./venv/bin/python scripts/recover_orphan_task.py TASK_ID --email EMAIL --prepaid --fix
+
 === V BRAUZERE ===
 Ctrl+F5
 

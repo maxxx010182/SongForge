@@ -41,7 +41,28 @@ def main() -> None:
             ).fetchone()
 
     if not row:
-        print("В БД нет записи с этим task_id.")
+        if task_id == "last":
+            print("В БД нет ни одной генерации с task_id.")
+            sys.exit(1)
+        print("=== SongForge DB ===")
+        print("  Записи с этим task_id НЕТ (orphan task).")
+        print("\n=== APIPass recordInfo ===")
+        try:
+            status = ApiPassClient().get_status(task_id)
+        except Exception as exc:
+            print(f"  ОШИБКА запроса APIPass: {exc}")
+            sys.exit(1)
+        print(f"  state:         {status['state']}")
+        print(f"  tracks parsed: {len(status.get('tracks') or [])}")
+        ap_state = (status["state"] or "").lower()
+        print("\n=== Диагноз ===")
+        if ap_state == "success" and status.get("tracks"):
+            print(
+                "  APIPass готов, но SongForge не сохранил задачу.\n"
+                "  Восстановление: scripts/recover_orphan_task.py (см. ВОССТАНОВЛЕНИЕ-ТРЕКА.txt)"
+            )
+        else:
+            print("  APIPass не отдал готовые треки — восстановить нельзя.")
         sys.exit(1)
 
     task_id = row["task_id"]
