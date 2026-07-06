@@ -145,7 +145,7 @@
         .lib-published-badge{position:absolute;top:8px;left:8px;background:rgba(var(--sf-accent-rgb),.92);color:var(--sf-accent-on);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;z-index:2}
         .explore-card{overflow:hidden;transition:border-color .2s,transform .2s;cursor:pointer}
         .explore-card:hover{border-color:rgba(var(--sf-accent-rgb),.22);transform:translateY(-1px)}
-        .explore-rank-badge{position:absolute;top:8px;left:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:14px;font-weight:800;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.45);background:linear-gradient(135deg,rgba(234,179,8,.95),rgba(202,138,4,.88));color:#09090b;border:1px solid rgba(255,255,255,.22);font-family:ui-sans-serif,system-ui,sans-serif}
+        .explore-rank-badge{position:absolute;top:4px;left:4px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:11px;font-size:15px;font-weight:800;z-index:3;box-shadow:0 2px 10px rgba(0,0,0,.45);background:linear-gradient(135deg,rgba(234,179,8,.95),rgba(202,138,4,.88));color:#09090b;border:1px solid rgba(255,255,255,.22);font-family:ui-sans-serif,system-ui,sans-serif;pointer-events:none}
         .explore-rank-badge.rank-1{background:linear-gradient(135deg,#fef08a,#eab308);color:#422006;border-color:rgba(255,255,255,.35)}
         .explore-rank-badge.rank-2{background:linear-gradient(135deg,#f4f4f5,#a1a1aa);color:#18181b}
         .explore-rank-badge.rank-3{background:linear-gradient(135deg,#fdba74,#ea580c);color:#431407}
@@ -198,7 +198,7 @@
         .sidebar-chart-card:hover{border-color:rgba(var(--sf-accent-rgb),.28);transform:translateY(-1px)}
         .sidebar-chart-cover-wrap{position:relative;height:7.75rem;background:#18181b}
         .sidebar-chart-cover-img{width:100%;height:100%;object-fit:cover;display:block}
-        .sidebar-rank-cover{top:.55rem;left:.55rem;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+        .sidebar-rank-cover{position:absolute;z-index:3;top:4px;left:4px;width:28px;height:28px;font-size:13px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.45);pointer-events:none}
         .sidebar-chart-play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.12));opacity:0;transition:opacity .2s}
         .sidebar-chart-card:hover .sidebar-chart-play-overlay{opacity:1}
         .sidebar-chart-play-overlay i{width:2.5rem;height:2.5rem;border-radius:9999px;background:rgba(var(--sf-accent-rgb),.92);color:var(--sf-accent-on);display:flex;align-items:center;justify-content:center;font-size:.85rem;padding-left:.15rem;box-shadow:0 4px 16px rgba(0,0,0,.4)}
@@ -294,7 +294,7 @@
         </div>
         <div class="sidebar-chart-slot pt-1">
             <div class="sidebar-section-title">
-                <span class="flex items-center gap-2"><i class="fa-regular fa-crown text-amber-400"></i>Топ чарта</span>
+                <span class="flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-400"></i>Топ чарта</span>
                 <a href="#" onclick="switchToView('explore');return false;" class="text-yellow-400 normal-case tracking-normal text-xs hover:underline">Все →</a>
             </div>
             <div id="homeExploreSidebar" class="flex flex-col gap-3"></div>
@@ -930,14 +930,14 @@
         </div>
         <hr class="sidebar-divider">
         <div>
-            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-dice-d6 text-yellow-400"></i>Идея дня</span></div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-solid fa-lightbulb text-yellow-400"></i>Идея дня</span></div>
             <button id="randomIdeaBtn" class="w-full bg-yellow-400/20 border border-yellow-400/30 text-yellow-300 py-3 rounded-2xl text-sm font-medium hover:bg-yellow-400/30 transition flex items-center justify-center gap-2">
-                <i class="fa-regular fa-dice-d6"></i> Вдохновение
+                <i class="fa-solid fa-shuffle"></i> Вдохновение
             </button>
             <p id="randomIdeaPreview" class="text-xs text-zinc-500 mt-2 text-center line-clamp-2">Нажми, чтобы получить идею</p>
         </div>
         <div>
-            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-chart-simple"></i>Жанры</span></div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-solid fa-compact-disc text-yellow-400"></i>Жанры</span></div>
             <div class="flex flex-wrap gap-2" id="genrePopularList">
                 <div data-genre="Pop" class="genre-chip text-xs py-1.5">Pop</div>
                 <div data-genre="Rock" class="genre-chip text-xs py-1.5">Rock</div>
@@ -947,7 +947,7 @@
             </div>
         </div>
         <div>
-            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-regular fa-fire text-orange-400"></i>Похожее на хиты</span></div>
+            <div class="sidebar-section-title"><span class="flex items-center gap-2"><i class="fa-solid fa-fire text-orange-400"></i>Похожее на хиты</span></div>
             <div id="communityTopList" class="space-y-2 text-sm"></div>
         </div>
         <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
@@ -1151,7 +1151,7 @@
 <!-- FOOTER -->
 <div class="max-w-7xl mx-auto px-4 pb-24 lg:pb-8 mt-10">
     <div class="border-t border-zinc-800 pt-6 text-center text-xs text-zinc-600 space-y-2">
-        <div>© 2026 СоздайСвоюПесню · ИП Мошкин М.А.</div>
+        <div>© 2026 СоздайСвоюПесню</div>
         <div class="flex justify-center gap-4 flex-wrap">
             <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Соглашение</a>
             <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Конфиденциальность</a>
