@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.10.3
+Obnovleno: iyul 2026 | versiya: 2.10.4
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -22,7 +22,7 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.10.3 ===
+=== Gotovo! v2.10.4 ===
 
 Deploy avtomaticheski zapuskaet:
   pm2: songforge        (API)
@@ -33,7 +33,7 @@ SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.10.3"
+Otvet: "version":"2.10.4"
 Opcionalno: "redis":true, "s3":true, "generating":N
 
 
