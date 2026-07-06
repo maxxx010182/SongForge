@@ -106,7 +106,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.1")
+app = FastAPI(title="SongForge", version="2.10.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -332,7 +332,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.1",
+        "version": "2.10.2",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
