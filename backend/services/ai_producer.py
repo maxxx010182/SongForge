@@ -3,6 +3,7 @@ import uuid
 from backend.logger import log
 from backend.models import CreateSongResponse, ProduceResponse, ProductionPlan
 from backend.services.apipass_client import ApiPassClient
+from backend.services.cabinet_service import CabinetService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.plan_overrides import apply_user_to_plan
@@ -91,6 +92,45 @@ class AiProducer:
             style=style,
             message=self.PRODUCER_MESSAGE,
         )
+
+    def resolve_production_for_repeat(self, production_id: str) -> str:
+        """Новая генерация — новый production_id, если предыдущая уже в фонотеке."""
+        if not production_id:
+            return production_id
+        row = self._history.get_by_id(production_id)
+        if not row:
+            return production_id
+        cabinet = CabinetService()
+        repeat = (
+            (row.get("status") or "").lower() == "success"
+            or int(row.get("purchased") or 0)
+            or int(row.get("note_charged") or 0)
+            or cabinet.library_entry_count(production_id) > 0
+        )
+        if not repeat:
+            return production_id
+
+        import json
+
+        new_id = str(uuid.uuid4())
+        plan = ProductionPlan.model_validate(json.loads(row["plan_json"] or "{}"))
+        self._history.save_production(
+            production_id=new_id,
+            idea=row.get("idea") or "",
+            optimized_idea=row.get("optimized_idea") or "",
+            plan=plan,
+            title=row.get("title") or "",
+            lyrics=row.get("lyrics") or "",
+            style=row.get("style") or "",
+            user_id=row.get("user_id"),
+            guest_id=row.get("guest_id"),
+        )
+        log.info(
+            "Repeat music start: forked production %s -> %s",
+            production_id,
+            new_id,
+        )
+        return new_id
 
     def start_music(
         self,

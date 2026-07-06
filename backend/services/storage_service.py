@@ -18,6 +18,9 @@ from backend.settings import (
 )
 
 
+MIN_MIRROR_BYTES = 100_000
+
+
 class StorageService:
     def __init__(self) -> None:
         self._history = HistoryService()
@@ -59,6 +62,10 @@ class StorageService:
         client = self._get_client()
         response = requests.get(source_url, timeout=120)
         response.raise_for_status()
+        if len(response.content) < MIN_MIRROR_BYTES:
+            raise RuntimeError(
+                f"S3 source too small ({len(response.content)} bytes): {source_url}"
+            )
         content_type = response.headers.get("Content-Type", "audio/mpeg")
         client.put_object(
             Bucket=S3_BUCKET,
@@ -70,14 +77,14 @@ class StorageService:
         log.info("S3 uploaded: %s (%s bytes)", key, len(response.content))
         return public
 
-    def mirror_generation(self, production_id: str) -> bool:
+    def mirror_generation(self, production_id: str, *, force: bool = False) -> bool:
         if not self.enabled():
             return False
 
         row = self._history.get_by_id(production_id)
         if not row:
             return False
-        if int(row.get("storage_synced") or 0):
+        if int(row.get("storage_synced") or 0) and not force:
             return True
 
         pairs = [
@@ -103,6 +110,19 @@ class StorageService:
                 return False
 
         if not uploaded:
+            return False
+
+        if row.get("music_url_a") and "a" not in uploaded:
+            log.warning(
+                "S3 mirror partial: production=%s variant A missing",
+                production_id,
+            )
+            return False
+        if row.get("music_url_b") and "b" not in uploaded:
+            log.warning(
+                "S3 mirror partial: production=%s variant B missing",
+                production_id,
+            )
             return False
 
         url_a = uploaded.get("a")

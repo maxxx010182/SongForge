@@ -490,6 +490,66 @@ class CabinetService:
                     (url_b, generation_id),
                 )
 
+    def library_entry_count(self, generation_id: str) -> int:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS c FROM user_library WHERE generation_id = ?",
+                (generation_id,),
+            ).fetchone()
+        return int(row["c"]) if row else 0
+
+    def sync_library_audio_from_generation(self, generation_id: str) -> bool:
+        """Обновить MP3 в фонотеке, если повторная генерация на том же production_id."""
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            if not gen or gen["status"] != "success":
+                return False
+            if self.library_entry_count(generation_id) == 0:
+                return False
+            updated = False
+            pairs = [
+                ("A", gen["music_url_a"], gen["image_url_a"], gen["duration_a"]),
+                ("B", gen["music_url_b"], gen["image_url_b"], gen["duration_b"]),
+            ]
+            for variant, url, image, duration in pairs:
+                if not url:
+                    continue
+                cur = conn.execute(
+                    """
+                    UPDATE user_library
+                    SET audio_url = ?, image_url = ?, duration = ?
+                    WHERE generation_id = ? AND variant = ?
+                    """,
+                    (url, image or "", duration, generation_id, variant),
+                )
+                if cur.rowcount:
+                    updated = True
+        return updated
+
+    def ensure_library_from_generation(self, generation_id: str) -> bool:
+        """Дописать фонотеку, если success и URL есть, а user_library пуст."""
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            if not gen or not gen["user_id"] or gen["status"] != "success":
+                return False
+            if not (gen["music_url_a"] or gen["music_url_b"]):
+                return False
+            if self.library_entry_count(generation_id) > 0:
+                return False
+            self._save_generation_to_library(conn, gen=gen, user_id=gen["user_id"])
+            if gen["note_charged"] or gen["purchased"]:
+                conn.execute(
+                    "UPDATE generations SET purchased = 1, showcase_eligible = 0 WHERE id = ?",
+                    (generation_id,),
+                )
+        return True
+
     def complete_prepaid_generation(self, generation_id: str) -> bool:
         """После успешной музыки: нота уже списана при старте — кладём в фонотеку."""
         with get_connection() as conn:
@@ -499,8 +559,10 @@ class CabinetService:
             ).fetchone()
             if not gen or not gen["user_id"] or not gen["note_charged"]:
                 return False
-            if gen["purchased"] or gen["status"] != "success":
+            if gen["status"] != "success":
                 return False
+            if self.library_entry_count(generation_id) > 0:
+                return self.sync_library_audio_from_generation(generation_id)
             self._save_generation_to_library(conn, gen=gen, user_id=gen["user_id"])
             conn.execute(
                 "UPDATE generations SET purchased = 1, showcase_eligible = 0 WHERE id = ?",

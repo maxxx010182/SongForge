@@ -109,6 +109,15 @@ class HistoryService:
                         style = ?,
                         plan_json = ?,
                         status = ?,
+                        music_url_a = NULL,
+                        music_url_b = NULL,
+                        image_url_a = NULL,
+                        image_url_b = NULL,
+                        duration_a = NULL,
+                        duration_b = NULL,
+                        fail_code = NULL,
+                        fail_msg = NULL,
+                        storage_synced = 0,
                         user_id = COALESCE(?, user_id),
                         guest_id = COALESCE(?, guest_id)
                     WHERE id = ?

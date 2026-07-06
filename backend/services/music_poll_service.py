@@ -79,7 +79,8 @@ class MusicPollService:
                 progress_hint=progress_hint,
             )
             if production_id:
-                self._cabinet.complete_prepaid_generation(production_id)
+                if not self._cabinet.complete_prepaid_generation(production_id):
+                    self._cabinet.sync_library_audio_from_generation(production_id)
                 self._storage.mirror_generation(production_id)
             self._queue.remove_poll(task_id=task_id)
             return "success"

@@ -68,6 +68,8 @@ from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.job_queue import JobQueue
 from backend.services.history import HistoryService
+from backend.services.music_poll_service import MusicPollService
+from backend.services.storage_service import StorageService
 from backend.services.payment_service import PaymentService
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
 from backend.services.prompt_builder import PromptBuilder
@@ -102,8 +104,9 @@ payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
+music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.0")
+app = FastAPI(title="SongForge", version="2.10.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -329,8 +332,9 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.0",
+        "version": "2.10.1",
         "redis": job_queue.ping(),
+        "s3": StorageService().enabled(),
         "generating": history.count_generating(),
     }
 
@@ -1357,6 +1361,12 @@ async def start_music(
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
+    production_id = (req.production_id or "").strip()
+    if production_id:
+        production_id = await run_in_threadpool(
+            lambda: producer.resolve_production_for_repeat(production_id)
+        )
+
     mode = ""
     paid_user_id: str | None = None
     balance: int | None = None
@@ -1364,7 +1374,7 @@ async def start_music(
         mode, balance = _begin_generation(
             user=user,
             guest_id=guest_id,
-            production_id=req.production_id or None,
+            production_id=production_id or None,
         )
         if user and mode == "paid":
             paid_user_id = user["id"]
@@ -1378,7 +1388,7 @@ async def start_music(
         )
         task_id = await run_in_threadpool(
             lambda: producer.start_music(
-                production_id=req.production_id,
+                production_id=production_id,
                 lyrics=req.lyrics,
                 style=req.style,
                 title=req.title,
@@ -1391,16 +1401,16 @@ async def start_music(
                 backing_vocal=req.backing_vocal,
             )
         )
-        if mode == "paid" and req.production_id:
-            generation_quota.mark_note_charged(req.production_id)
+        if mode == "paid" and production_id:
+            generation_quota.mark_note_charged(production_id)
         job_queue.enqueue_poll(
             task_id=task_id,
-            production_id=req.production_id or "",
+            production_id=production_id or "",
         )
         return {
             "success": True,
             "task_id": task_id,
-            "production_id": req.production_id,
+            "production_id": production_id,
             "balance": balance,
             "generation_mode": mode,
         }
@@ -1532,6 +1542,13 @@ async def music_status(
             task_id=task_id,
             production_id=production_id,
         )
+
+        if row and row["status"] != "success":
+            await run_in_threadpool(
+                lambda: music_poll_service.process_task(task_id)
+            )
+            if production_id:
+                row = audio_access.get_generation_row(production_id)
 
         if row:
             if row["status"] == "failed":
