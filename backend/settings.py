@@ -74,3 +74,18 @@ ADMIN_IP_ALLOWLIST: frozenset[str] = frozenset(
     for ip in os.getenv("ADMIN_IP_ALLOWLIST", "").split(",")
     if ip.strip()
 )
+
+# --- Очередь задач (Redis) ---
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0").strip()
+REDIS_ENABLED = os.getenv("REDIS_ENABLED", "true").lower() in {"1", "true", "yes"}
+WORKER_POLL_INTERVAL_SEC = int(os.getenv("WORKER_POLL_INTERVAL_SEC", "3"))
+SQLITE_TIMEOUT_SEC = float(os.getenv("SQLITE_TIMEOUT_SEC", "30"))
+
+# --- S3 (REG.RU Object Storage) ---
+S3_ENABLED = os.getenv("S3_ENABLED", "false").lower() in {"1", "true", "yes"}
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "").strip()
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "").strip()
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "").strip()
+S3_BUCKET = os.getenv("S3_BUCKET", "").strip()
+S3_REGION = os.getenv("S3_REGION", "ru-1").strip()
+S3_PUBLIC_BASE = os.getenv("S3_PUBLIC_BASE", "").strip().rstrip("/")

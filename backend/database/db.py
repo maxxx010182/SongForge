@@ -3,7 +3,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-from backend.settings import DATA_DIR, DB_PATH
+from backend.settings import DATA_DIR, DB_PATH, SQLITE_TIMEOUT_SEC
 
 
 def init_db() -> None:
@@ -353,16 +353,25 @@ def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
         "purchased": "INTEGER NOT NULL DEFAULT 0",
         "showcase_eligible": "INTEGER NOT NULL DEFAULT 1",
         "note_charged": "INTEGER NOT NULL DEFAULT 0",
+        "progress_hint": "TEXT",
+        "storage_synced": "INTEGER NOT NULL DEFAULT 0",
     }
     for column, col_type in additions.items():
         if column not in existing:
             conn.execute(f"ALTER TABLE generations ADD COLUMN {column} {col_type}")
 
 
+def _configure_connection(conn: sqlite3.Connection) -> None:
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute(f"PRAGMA busy_timeout={int(SQLITE_TIMEOUT_SEC * 1000)}")
+
+
 @contextmanager
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT_SEC)
     conn.row_factory = sqlite3.Row
+    _configure_connection(conn)
     try:
         yield conn
         conn.commit()

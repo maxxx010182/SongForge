@@ -6,7 +6,7 @@
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.9.31"
+EXPECTED_VERSION="2.10.0"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -184,6 +184,8 @@ free_port_8000() {
 start_songforge() {
   cd "$DIR"
   pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
+  pm2 delete songforge-worker 2>/dev/null || true
+  pm2 start worker.py --name songforge-worker --interpreter ./venv/bin/python --cwd "$DIR"
   pm2 save
 }
 

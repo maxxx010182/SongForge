@@ -463,6 +463,33 @@ class CabinetService:
             saved_ids.append(lib_id)
         return saved_ids
 
+    def update_library_audio_urls(
+        self,
+        *,
+        generation_id: str,
+        url_a: str | None = None,
+        url_b: str | None = None,
+    ) -> None:
+        with get_connection() as conn:
+            if url_a:
+                conn.execute(
+                    """
+                    UPDATE user_library
+                    SET audio_url = ?
+                    WHERE generation_id = ? AND variant = 'A'
+                    """,
+                    (url_a, generation_id),
+                )
+            if url_b:
+                conn.execute(
+                    """
+                    UPDATE user_library
+                    SET audio_url = ?
+                    WHERE generation_id = ? AND variant = 'B'
+                    """,
+                    (url_b, generation_id),
+                )
+
     def complete_prepaid_generation(self, generation_id: str) -> bool:
         """После успешной музыки: нота уже списана при старте — кладём в фонотеку."""
         with get_connection() as conn:
@@ -502,17 +529,17 @@ class CabinetService:
                 raise ValueError("Генерация ещё не готова")
 
             charge_balance = not bool(gen["note_charged"])
-            if charge_balance and user["balance"] < 1:
-                raise ValueError("Недостаточно нот на балансе")
+            if charge_balance:
+                cur = conn.execute(
+                    "UPDATE users SET balance = balance - 1 WHERE id = ? AND balance >= 1",
+                    (user_id,),
+                )
+                if cur.rowcount == 0:
+                    raise ValueError("Недостаточно нот на балансе")
 
             saved_ids = self._save_generation_to_library(
                 conn, gen=gen, user_id=user_id
             )
-            if charge_balance:
-                conn.execute(
-                    "UPDATE users SET balance = balance - 1 WHERE id = ?",
-                    (user_id,),
-                )
             conn.execute(
                 "UPDATE generations SET purchased = 1, showcase_eligible = 0 WHERE id = ?",
                 (generation_id,),

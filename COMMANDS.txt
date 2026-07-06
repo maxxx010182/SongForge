@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.9.31
+Obnovleno: iyul 2026 | versiya: 2.10.0
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -22,39 +22,66 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.9.31 ===
+=== Gotovo! v2.10.0 ===
+
+Deploy avtomaticheski zapuskaet:
+  pm2: songforge        (API)
+  pm2: songforge-worker (opros Suno + S3)
 
 
 SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.9.31"
+Otvet: "version":"2.10.0"
+Opcionalno: "redis":true, "generating":N
 
 
-SHAG 5. (odin raz) Admin-panel — vash email v .env
+SHAG 5. Redis (odin raz, esli net)
 
-Otkryt fajl na servere:
+apt-get update && apt-get install -y redis-server
+systemctl enable redis-server
+systemctl start redis-server
+redis-cli ping
+Otvet: PONG
+
+
+SHAG 6. S3 REG.RU v .env (odin raz)
 
 nano ~/SongForge/.env
 
-Dobavit stroku (zamenit na SVOJ email):
+Dobavit (svoi znacheniya iz paneli REG.RU):
+
+S3_ENABLED=true
+S3_ENDPOINT=https://...
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+S3_BUCKET=...
+S3_REGION=ru-1
+S3_PUBLIC_BASE=https://...
+
+Posle .env:
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+
+SHAG 7. (odin raz) Admin-panel — vash email v .env
 
 ADMIN_BOOTSTRAP_EMAILS=vas@email.ru
 
-Sohranit: Ctrl+O, Enter. Vyhod: Ctrl+X.
-
-Esli menyali .env — OBYAZATELNO perezapusk (na servere PM2, ne systemctl):
+Esli menyali .env:
 
 pm2 restart songforge
+pm2 restart songforge-worker
 
 
-SHAG 6. Vyiti s servera:
+SHAG 8. Vyiti s servera:
 
 exit
 
 
-SHAG 7. V brauzere na Windows
+SHAG 9. V brauzere na Windows
 
 Sait: http://195.19.20.245:8000/
 Zhat Ctrl+F5 (bez kesha)
@@ -64,7 +91,7 @@ Admin: http://195.19.20.245:8000/admin
 
 
 ========================================
-KOMANDY PO OTDELNOSTI (kak ranshe)
+KOMANDY PO OTDELNOSTI
 ========================================
 
 === PODKLYUCHIT K SERVERU ===
@@ -83,11 +110,16 @@ bash scripts/deploy-vps.sh
 === PROVERIT VERSIYU ===
 curl http://127.0.0.1:8000/api/health
 
+=== PM2: status API + worker ===
+pm2 status
+pm2 logs songforge-worker --lines 30 --nostream
+
 === ADMIN: redaktirovat .env ===
 nano ~/SongForge/.env
 
 === ADMIN: perezapusk posle .env ===
 pm2 restart songforge
+pm2 restart songforge-worker
 
 === ADMIN: diagnostika (pochemu net prav) ===
 cd ~/SongForge

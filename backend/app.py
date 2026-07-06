@@ -3,6 +3,7 @@ from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Resp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from backend.database.db import get_connection
 from backend.logger import log
@@ -65,6 +66,7 @@ from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
 from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
+from backend.services.job_queue import JobQueue
 from backend.services.history import HistoryService
 from backend.services.payment_service import PaymentService
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
@@ -99,8 +101,9 @@ audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
+job_queue = JobQueue()
 
-app = FastAPI(title="SongForge", version="2.9.31")
+app = FastAPI(title="SongForge", version="2.10.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -323,7 +326,13 @@ async def get_logo():
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "service": "SongForge", "version": "2.9.31"}
+    return {
+        "ok": True,
+        "service": "SongForge",
+        "version": "2.10.0",
+        "redis": job_queue.ping(),
+        "generating": history.count_generating(),
+    }
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -1252,23 +1261,31 @@ async def produce_song(
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
-        return producer.produce(
-            req.idea,
-            genre=req.genre,
-            mood=req.mood,
-            artist_ref=req.artist_ref,
-            instrumental=req.instrumental,
-            vocal_hint=req.vocal_hint,
-            backing_vocal=req.backing_vocal,
-            style_mode=req.style_mode,
-            custom_description=req.custom_description,
-            lyrics_engine=req.lyrics_engine,
+        producer.set_actor(
+            user_id=user["id"] if user else None,
+            guest_id=None if user else guest_id,
+        )
+        return await run_in_threadpool(
+            lambda: producer.produce(
+                req.idea,
+                genre=req.genre,
+                mood=req.mood,
+                artist_ref=req.artist_ref,
+                instrumental=req.instrumental,
+                vocal_hint=req.vocal_hint,
+                backing_vocal=req.backing_vocal,
+                style_mode=req.style_mode,
+                custom_description=req.custom_description,
+                lyrics_engine=req.lyrics_engine,
+            )
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("produce failed")
         raise HTTPException(status_code=500, detail="AI-продюсер временно недоступен") from exc
+    finally:
+        producer.clear_actor()
 
 
 @app.post("/api/create-song", response_model=CreateSongResponse)
@@ -1292,20 +1309,27 @@ async def create_song(
             user_id=user["id"] if user else None,
             guest_id=None if user else guest_id,
         )
-        result = producer.create_song(
-            req.idea,
-            genre=req.genre,
-            mood=req.mood,
-            artist_ref=req.artist_ref,
-            instrumental=req.instrumental,
-            vocal_hint=req.vocal_hint,
-            backing_vocal=req.backing_vocal,
-            style_mode=req.style_mode,
-            custom_description=req.custom_description,
-            lyrics_engine=req.lyrics_engine,
+        result = await run_in_threadpool(
+            lambda: producer.create_song(
+                req.idea,
+                genre=req.genre,
+                mood=req.mood,
+                artist_ref=req.artist_ref,
+                instrumental=req.instrumental,
+                vocal_hint=req.vocal_hint,
+                backing_vocal=req.backing_vocal,
+                style_mode=req.style_mode,
+                custom_description=req.custom_description,
+                lyrics_engine=req.lyrics_engine,
+            )
         )
         if mode == "paid" and result.production_id:
             generation_quota.mark_note_charged(result.production_id)
+        if result.task_id:
+            job_queue.enqueue_poll(
+                task_id=result.task_id,
+                production_id=result.production_id,
+            )
         result.balance = balance
         result.generation_mode = mode
         return result
@@ -1352,21 +1376,27 @@ async def start_music(
             user_id=user["id"] if user else None,
             guest_id=None if user else guest_id,
         )
-        task_id = producer.start_music(
-            production_id=req.production_id,
-            lyrics=req.lyrics,
-            style=req.style,
-            title=req.title,
-            plan=req.plan,
-            idea=req.idea,
-            genre=req.genre,
-            mood=req.mood,
-            artist_ref=req.artist_ref,
-            vocal_hint=req.vocal_hint,
-            backing_vocal=req.backing_vocal,
+        task_id = await run_in_threadpool(
+            lambda: producer.start_music(
+                production_id=req.production_id,
+                lyrics=req.lyrics,
+                style=req.style,
+                title=req.title,
+                plan=req.plan,
+                idea=req.idea,
+                genre=req.genre,
+                mood=req.mood,
+                artist_ref=req.artist_ref,
+                vocal_hint=req.vocal_hint,
+                backing_vocal=req.backing_vocal,
+            )
         )
         if mode == "paid" and req.production_id:
             generation_quota.mark_note_charged(req.production_id)
+        job_queue.enqueue_poll(
+            task_id=task_id,
+            production_id=req.production_id or "",
+        )
         return {
             "success": True,
             "task_id": task_id,
@@ -1460,6 +1490,26 @@ def _sanitize_status_tracks(
     return [TrackVariant.model_validate(item) for item in cleaned]
 
 
+def _music_status_failed_from_db(
+    *,
+    task_id: str,
+    row,
+    production_id: str,
+) -> MusicStatusResponse:
+    purchased, prepaid = _generation_flags(production_id)
+    return MusicStatusResponse(
+        success=False,
+        task_id=task_id,
+        state="failed",
+        progress_hint=row["progress_hint"] or "Генерация не удалась",
+        fail_code=row["fail_code"] or "",
+        fail_msg=row["fail_msg"] or "Не удалось создать трек",
+        production_id=production_id,
+        purchased=purchased,
+        prepaid=prepaid,
+    )
+
+
 @app.get("/api/music/status/{task_id}", response_model=MusicStatusResponse)
 async def music_status(
     task_id: str,
@@ -1477,6 +1527,19 @@ async def music_status(
                 user_id=user["id"] if user else None,
                 guest_id=guest_id,
             )
+
+        job_queue.enqueue_poll(
+            task_id=task_id,
+            production_id=production_id,
+        )
+
+        if row:
+            if row["status"] == "failed":
+                return _music_status_failed_from_db(
+                    task_id=task_id,
+                    row=row,
+                    production_id=production_id,
+                )
             cached = _music_status_from_db(
                 task_id=task_id,
                 row=row,
@@ -1485,62 +1548,15 @@ async def music_status(
             if cached:
                 return cached
 
-        status = apipass.get_status(task_id)
-        state = status["state"]
-        tracks = status["tracks"]
-
-        if state == "success" and tracks:
-            history.update_task_result(task_id=task_id, status="success", tracks=tracks)
-            purchased, prepaid = _generation_flags_after_success(production_id)
-            safe_tracks = _sanitize_status_tracks(
-                tracks,
-                production_id=production_id,
-                purchased=purchased,
-                prepaid=prepaid,
-            )
-            return MusicStatusResponse(
-                success=True,
-                task_id=task_id,
-                state=state,
-                progress_hint=status["progress_hint"],
-                tracks=safe_tracks,
-                production_id=production_id,
-                purchased=purchased,
-                prepaid=prepaid,
-            )
-
-        if state in {"fail", "failed"}:
-            history.update_task_result(
-                task_id=task_id,
-                status="failed",
-                tracks=[],
-                fail_code=status.get("fail_code", ""),
-                fail_msg=status.get("fail_msg", ""),
-            )
-            if production_id:
-                generation_quota.refund_if_charged(
-                    production_id=production_id,
-                    user_id=production.get("user_id"),
-                )
-                generation_quota.refund_trial_on_failed(production_id=production_id)
-            purchased, prepaid = _generation_flags(production_id)
-            return MusicStatusResponse(
-                success=False,
-                task_id=task_id,
-                state="failed",
-                progress_hint=status["progress_hint"],
-                fail_code=status.get("fail_code", ""),
-                fail_msg=status.get("fail_msg", "") or "Не удалось создать трек",
-                production_id=production_id,
-                purchased=purchased,
-                prepaid=prepaid,
-            )
+        progress_hint = "Создаём твой лучший трек..."
+        if row and row["progress_hint"]:
+            progress_hint = row["progress_hint"]
 
         return MusicStatusResponse(
             success=False,
             task_id=task_id,
-            state=state,
-            progress_hint=status["progress_hint"],
+            state="generating",
+            progress_hint=progress_hint,
             production_id=production_id,
         )
     except HTTPException:
@@ -1577,13 +1593,17 @@ async def generate_lyrics_endpoint(
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
-        plan = prompt_builder.build_plan(
-            req.prompt,
-            genre=req.genre,
-            mood=req.mood,
-            vocal_hint=req.vocal,
+        plan = await run_in_threadpool(
+            lambda: prompt_builder.build_plan(
+                req.prompt,
+                genre=req.genre,
+                mood=req.mood,
+                vocal_hint=req.vocal,
+            )
         )
-        lyrics = prompt_builder.generate_lyrics(req.prompt, plan)
+        lyrics = await run_in_threadpool(
+            lambda: prompt_builder.generate_lyrics(req.prompt, plan)
+        )
         return {"success": True, "lyrics": lyrics}
     except Exception as exc:
         log.exception("legacy lyrics failed")

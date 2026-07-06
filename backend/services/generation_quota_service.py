@@ -88,17 +88,12 @@ class GenerationQuotaService:
 
         user_id = user["id"]
         with get_connection() as conn:
-            row = conn.execute(
-                "SELECT balance FROM users WHERE id = ?",
-                (user_id,),
-            ).fetchone()
-            if not row or int(row["balance"]) < 1:
-                raise ValueError("Недостаточно нот на балансе")
-
-            conn.execute(
-                "UPDATE users SET balance = balance - 1 WHERE id = ?",
+            cur = conn.execute(
+                "UPDATE users SET balance = balance - 1 WHERE id = ? AND balance >= 1",
                 (user_id,),
             )
+            if cur.rowcount == 0:
+                raise ValueError("Недостаточно нот на балансе")
             new_row = conn.execute(
                 "SELECT balance FROM users WHERE id = ?",
                 (user_id,),

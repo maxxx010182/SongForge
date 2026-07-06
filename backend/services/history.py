@@ -189,6 +189,35 @@ class HistoryService:
             return None
         return dict(row)
 
+    def update_progress(self, *, task_id: str, progress_hint: str) -> None:
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE generations SET progress_hint = ? WHERE task_id = ?",
+                (progress_hint, task_id),
+            )
+
+    def list_generating_tasks(self) -> list[dict]:
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, task_id
+                FROM generations
+                WHERE status = 'generating' AND task_id IS NOT NULL AND task_id != ''
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def count_generating(self) -> int:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM generations
+                WHERE status = 'generating'
+                """
+            ).fetchone()
+        return int(row["c"]) if row else 0
+
     def update_task_result(
         self,
         *,
@@ -197,6 +226,7 @@ class HistoryService:
         tracks: list[TrackVariant],
         fail_code: str = "",
         fail_msg: str = "",
+        progress_hint: str = "",
     ) -> None:
         track_a = tracks[0] if len(tracks) > 0 else None
         track_b = tracks[1] if len(tracks) > 1 else None
@@ -213,7 +243,8 @@ class HistoryService:
                     duration_a = ?,
                     duration_b = ?,
                     fail_code = ?,
-                    fail_msg = ?
+                    fail_msg = ?,
+                    progress_hint = COALESCE(NULLIF(?, ''), progress_hint)
                 WHERE task_id = ?
                 """,
                 (
@@ -226,6 +257,32 @@ class HistoryService:
                     track_b.duration if track_b else None,
                     fail_code,
                     fail_msg,
+                    progress_hint,
                     task_id,
                 ),
             )
+
+    def update_music_urls(
+        self,
+        *,
+        production_id: str,
+        music_url_a: str | None = None,
+        music_url_b: str | None = None,
+        storage_synced: bool | None = None,
+    ) -> None:
+        with get_connection() as conn:
+            if music_url_a is not None:
+                conn.execute(
+                    "UPDATE generations SET music_url_a = ? WHERE id = ?",
+                    (music_url_a, production_id),
+                )
+            if music_url_b is not None:
+                conn.execute(
+                    "UPDATE generations SET music_url_b = ? WHERE id = ?",
+                    (music_url_b, production_id),
+                )
+            if storage_synced is not None:
+                conn.execute(
+                    "UPDATE generations SET storage_synced = ? WHERE id = ?",
+                    (1 if storage_synced else 0, production_id),
+                )
