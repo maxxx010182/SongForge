@@ -12,6 +12,13 @@ YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gto6f1fi6j2dpfdlhd")
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 
+# apipass | sunoapi | fallback (ApiPass → sunoapi.org при ошибке)
+MUSIC_PROVIDER = os.getenv("MUSIC_PROVIDER", "apipass").strip().lower()
+SUNOAPI_ORG_API_KEY = os.getenv("SUNOAPI_ORG_API_KEY", "").strip()
+SUNOAPI_ORG_BASE = os.getenv(
+    "SUNOAPI_ORG_BASE", "https://api.sunoapi.org/api/v1"
+).strip().rstrip("/")
+
 DATA_DIR = ROOT_DIR / "data"
 DB_PATH = DATA_DIR / "songforge.db"
 UPLOADS_DIR = DATA_DIR / "uploads"

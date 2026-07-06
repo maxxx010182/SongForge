@@ -95,6 +95,7 @@ class HistoryService:
         plan: ProductionPlan,
         user_id: str | None = None,
         guest_id: str | None = None,
+        music_provider: str = "apipass",
     ) -> None:
         plan_json = dumps_json(plan.model_dump())
         with get_connection() as conn:
@@ -118,6 +119,7 @@ class HistoryService:
                         fail_code = NULL,
                         fail_msg = NULL,
                         storage_synced = 0,
+                        music_provider = ?,
                         user_id = COALESCE(?, user_id),
                         guest_id = COALESCE(?, guest_id)
                     WHERE id = ?
@@ -130,6 +132,7 @@ class HistoryService:
                         style,
                         plan_json,
                         "generating",
+                        music_provider,
                         user_id,
                         guest_id,
                         production_id,
@@ -141,8 +144,8 @@ class HistoryService:
                 """
                 INSERT INTO generations (
                     id, task_id, created_at, idea, title, lyrics, style,
-                    plan_json, status, user_id, guest_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    plan_json, status, user_id, guest_id, music_provider
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     production_id,
@@ -156,6 +159,7 @@ class HistoryService:
                     "generating",
                     user_id,
                     guest_id,
+                    music_provider,
                 ),
             )
 
@@ -209,7 +213,7 @@ class HistoryService:
         with get_connection() as conn:
             rows = conn.execute(
                 """
-                SELECT id, task_id
+                SELECT id, task_id, music_provider
                 FROM generations
                 WHERE status = 'generating' AND task_id IS NOT NULL AND task_id != ''
                 """

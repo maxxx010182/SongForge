@@ -355,6 +355,7 @@ def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
         "note_charged": "INTEGER NOT NULL DEFAULT 0",
         "progress_hint": "TEXT",
         "storage_synced": "INTEGER NOT NULL DEFAULT 0",
+        "music_provider": "TEXT NOT NULL DEFAULT 'apipass'",
     }
     for column, col_type in additions.items():
         if column not in existing:

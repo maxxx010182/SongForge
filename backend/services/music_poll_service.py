@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from backend.logger import log
 from backend.models import TrackVariant
-from backend.services.apipass_client import ApiPassClient
+from backend.services.music_provider_service import MusicProviderService
 from backend.services.cabinet_service import CabinetService
 from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.history import HistoryService
@@ -16,7 +16,7 @@ class MusicPollService:
     TERMINAL = {"success", "failed", "fail"}
 
     def __init__(self) -> None:
-        self._apipass = ApiPassClient()
+        self._music = MusicProviderService()
         self._history = HistoryService()
         self._quota = GenerationQuotaService()
         self._cabinet = CabinetService()
@@ -55,10 +55,11 @@ class MusicPollService:
                 self._queue.remove_poll(task_id=task_id)
                 return "failed"
 
+        provider = production.get("music_provider") or "apipass"
         try:
-            status = self._apipass.get_status(task_id)
+            status = self._music.get_status(task_id, provider=provider)
         except Exception:
-            log.exception("ApiPass poll failed: %s", task_id)
+            log.exception("Music poll failed (%s): %s", provider, task_id)
             return "pending"
 
         state = (status.get("state") or "unknown").lower()

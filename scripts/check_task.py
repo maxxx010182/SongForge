@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from backend.database.db import get_connection, init_db
-from backend.services.apipass_client import ApiPassClient
+from backend.services.music_provider_service import MusicProviderService
 from backend.services.history import HistoryService
 
 
@@ -46,11 +46,11 @@ def main() -> None:
             sys.exit(1)
         print("=== SongForge DB ===")
         print("  Записи с этим task_id НЕТ (orphan task).")
-        print("\n=== APIPass recordInfo ===")
+        print("\n=== Music API recordInfo ===")
         try:
-            status = ApiPassClient().get_status(task_id)
+            status = MusicProviderService().get_status(task_id)
         except Exception as exc:
-            print(f"  ОШИБКА запроса APIPass: {exc}")
+            print(f"  ОШИБКА запроса music API: {exc}")
             sys.exit(1)
         print(f"  state:         {status['state']}")
         print(f"  tracks parsed: {len(status.get('tracks') or [])}")
@@ -75,12 +75,14 @@ def main() -> None:
     print(f"  fail_msg:      {row['fail_msg'] or '—'}")
     print(f"  music_url_a:   {'есть' if row['music_url_a'] else 'нет'}")
     print(f"  music_url_b:   {'есть' if row['music_url_b'] else 'нет'}")
+    provider = row["music_provider"] if "music_provider" in row.keys() else "apipass"
+    print(f"  music_provider:{provider}")
 
-    print("\n=== APIPass recordInfo ===")
+    print(f"\n=== Music API ({provider}) recordInfo ===")
     try:
-        status = ApiPassClient().get_status(task_id)
+        status = MusicProviderService().get_status(task_id, provider=provider)
     except Exception as exc:
-        print(f"  ОШИБКА запроса APIPass: {exc}")
+        print(f"  ОШИБКА запроса music API: {exc}")
         sys.exit(1)
 
     print(f"  state:         {status['state']}")

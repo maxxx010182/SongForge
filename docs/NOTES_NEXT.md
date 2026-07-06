@@ -33,6 +33,13 @@
 
 **Уже сделано v2.10.x:** WAL, worker, Redis, S3, атомарные ноты, UI, юрдокументы+оферта.
 
+**v2.10.5 — sunoapi.org (запасной Suno):**
+- [x] `SunoApiOrgClient` + `MusicProviderService` (`apipass` | `sunoapi` | `fallback`)
+- [x] `music_provider` в `generations` — poll идёт в правильный API
+- [x] Webhook-заглушка `/api/webhooks/sunoapi` для `callBackUrl`
+- [ ] Пополнить credits на sunoapi.org (ключ проверен, баланс был 0)
+- [ ] A/B тест качества ApiPass vs sunoapi на 3–5 песнях
+
 Фазы: `SONGFORGE-КОНТЕКСТ.txt` §0e.
 
 ---

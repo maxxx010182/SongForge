@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.10.4
+Obnovleno: iyul 2026 | versiya: 2.10.5
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -22,7 +22,7 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.10.4 ===
+=== Gotovo! v2.10.5 ===
 
 Deploy avtomaticheski zapuskaet:
   pm2: songforge        (API)
@@ -33,7 +33,7 @@ SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.10.4"
+Otvet: "version":"2.10.5"
 Opcionalno: "redis":true, "s3":true, "generating":N
 
 
@@ -64,6 +64,28 @@ Posle .env:
 
 pm2 restart songforge
 pm2 restart songforge-worker
+
+
+SHAG 6b. sunoapi.org — zapasnoy kanal Suno (opcionalno)
+
+nano ~/SongForge/.env
+
+Dobavit:
+
+SUNOAPI_ORG_API_KEY=...
+MUSIC_PROVIDER=fallback
+
+fallback = snachala ApiPass, pri oshibke sunoapi.org
+Tolko sunoapi: MUSIC_PROVIDER=sunoapi
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+Proverka health:
+
+curl http://127.0.0.1:8000/api/health
+
+Otvet: "music_providers":["apipass","sunoapi"]
 
 
 SHAG 7. (odin raz) Admin-panel — vash email v .env

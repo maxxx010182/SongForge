@@ -2,7 +2,7 @@ import uuid
 
 from backend.logger import log
 from backend.models import CreateSongResponse, ProduceResponse, ProductionPlan
-from backend.services.apipass_client import ApiPassClient
+from backend.services.music_provider_service import MusicProviderService
 from backend.services.cabinet_service import CabinetService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
@@ -19,7 +19,7 @@ class AiProducer:
     def __init__(self) -> None:
         yandex = YandexClient()
         self._builder = PromptBuilder(yandex)
-        self._apipass = ApiPassClient()
+        self._music = MusicProviderService()
         self._history = HistoryService()
 
     def produce(
@@ -178,7 +178,7 @@ class AiProducer:
                 backing_vocal=backing_vocal,
             )
 
-        task_id = self._apipass.create_task(
+        task_ref = self._music.create_task(
             lyrics=lyrics,
             style=style,
             title=title,
@@ -186,7 +186,7 @@ class AiProducer:
         )
         self._history.attach_task(
             production_id=production_id,
-            task_id=task_id,
+            task_id=task_ref.task_id,
             idea=idea,
             title=title,
             lyrics=lyrics,
@@ -194,8 +194,9 @@ class AiProducer:
             plan=plan,
             user_id=getattr(self, "_current_user_id", None),
             guest_id=getattr(self, "_current_guest_id", None),
+            music_provider=task_ref.provider,
         )
-        return task_id
+        return task_ref.task_id
 
     def set_actor(self, *, user_id: str | None = None, guest_id: str | None = None) -> None:
         self._current_user_id = user_id

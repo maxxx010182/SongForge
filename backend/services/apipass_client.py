@@ -1,21 +1,17 @@
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
 from backend.logger import log
 from backend.models import ProductionPlan, TrackVariant
+from backend.services.suno_input import build_suno_custom_payload
 from backend.settings import APIPASS_API_KEY, APIPASS_BASE
-from backend.utils.suno_payload import (
-    clamp_suno_prompt,
-    compact_suno_style,
-    sanitize_negative_tags,
-    sanitize_suno_title,
-)
-from backend.utils.text import clean_text
 
 
 class ApiPassClient:
+    PROVIDER = "apipass"
+
     def __init__(self) -> None:
         self._headers = {
             "Authorization": f"Bearer {APIPASS_API_KEY}",
@@ -25,19 +21,6 @@ class ApiPassClient:
     def _ensure_key(self) -> None:
         if not APIPASS_API_KEY:
             raise RuntimeError("APIPASS_API_KEY is not configured")
-
-    @staticmethod
-    def _vocal_gender(plan: ProductionPlan) -> Optional[str]:
-        if plan.vocal == "duet":
-            return None
-        gender = (plan.vocal_gender or "").strip().lower()
-        if gender in {"m", "f"}:
-            return gender
-        if plan.vocal == "male":
-            return "m"
-        if plan.vocal == "female":
-            return "f"
-        return None
 
     def create_task(
         self,
@@ -49,32 +32,13 @@ class ApiPassClient:
     ) -> str:
         self._ensure_key()
 
-        prompt = "" if plan.instrumental else clamp_suno_prompt(clean_text(lyrics))
-        safe_style = compact_suno_style(style)
-        safe_title = sanitize_suno_title(
-            title,
-            idea=plan.optimized_idea or (lyrics[:300] if lyrics else title),
+        fields = build_suno_custom_payload(
+            lyrics=lyrics, style=style, title=title, plan=plan
         )
-        safe_negative = sanitize_negative_tags(
-            plan.negative_tags, safe_style, plan.genre
-        )
-
         input_data: dict[str, Any] = {
+            **fields,
             "model_version": plan.model_version,
-            "customMode": True,
-            "instrumental": plan.instrumental,
-            "prompt": prompt,
-            "style": safe_style,
-            "title": safe_title,
-            "negativeTags": safe_negative,
-            "styleWeight": plan.style_weight,
-            "weirdnessConstraint": plan.weirdness_constraint,
-            "audioWeight": plan.audio_weight,
         }
-
-        vocal_gender = self._vocal_gender(plan)
-        if vocal_gender:
-            input_data["vocalGender"] = vocal_gender
 
         payload = {
             "model": "suno/generate",
@@ -83,15 +47,14 @@ class ApiPassClient:
         }
 
         log.info(
-            "APIPass createTask: title=%s, vocal=%s, vocalGender=%s, "
+            "APIPass createTask: title=%s, vocalGender=%s, "
             "style_len=%s→%s, lyrics_len=%s, neg_len=%s",
-            safe_title[:40],
-            plan.vocal,
+            fields["title"][:40],
             input_data.get("vocalGender", "—"),
             len(style),
-            len(safe_style),
-            len(prompt),
-            len(safe_negative),
+            len(fields["style"]),
+            len(fields["prompt"]),
+            len(fields.get("negativeTags", "")),
         )
 
         last_error: Exception | None = None

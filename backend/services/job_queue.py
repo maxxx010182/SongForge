@@ -38,11 +38,21 @@ class JobQueue:
         except Exception:
             return False
 
-    def enqueue_poll(self, *, task_id: str, production_id: str = "") -> None:
+    def enqueue_poll(
+        self,
+        *,
+        task_id: str,
+        production_id: str = "",
+        music_provider: str = "apipass",
+    ) -> None:
         if not self._available or not task_id:
             return
         payload = json.dumps(
-            {"task_id": task_id, "production_id": production_id},
+            {
+                "task_id": task_id,
+                "production_id": production_id,
+                "music_provider": music_provider or "apipass",
+            },
             ensure_ascii=False,
         )
         self._redis.sadd(POLL_TASKS_KEY, payload)
@@ -63,6 +73,7 @@ class JobQueue:
                     {
                         "task_id": task_id,
                         "production_id": (data.get("production_id") or "").strip(),
+                        "music_provider": (data.get("music_provider") or "apipass").strip(),
                     }
                 )
         return tasks

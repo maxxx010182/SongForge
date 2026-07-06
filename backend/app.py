@@ -59,7 +59,7 @@ from backend.models import (
 from backend.services.admin_service import AdminService
 from backend.services.showcase_admin_service import ShowcaseAdminService
 from backend.services.ai_producer import AiProducer
-from backend.services.apipass_client import ApiPassClient
+from backend.services.music_provider_service import MusicProviderService
 from backend.services.audio_access_service import AudioAccessService
 from backend.services.auth_service import AuthService
 from backend.services.cabinet_service import CabinetService
@@ -82,6 +82,7 @@ from backend.settings import (
     LEGACY_API_ENABLED,
     PAYMENT_PROVIDER,
     ROOT_DIR,
+    MUSIC_PROVIDER,
     SITE_URL,
     TELEGRAM_AUTH_ENABLED,
     UPLOADS_DIR,
@@ -89,7 +90,7 @@ from backend.settings import (
 from backend.utils.text import clean_text, truncate
 
 producer = AiProducer()
-apipass = ApiPassClient()
+music_provider = MusicProviderService()
 history = HistoryService()
 consultant = ConsultantService()
 yandex = YandexClient()
@@ -106,7 +107,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.4")
+app = FastAPI(title="SongForge", version="2.10.5")
 
 app.add_middleware(
     CORSMiddleware,
@@ -149,6 +150,18 @@ def get_guest_id(
         response.set_cookie(GuestService.COOKIE_NAME, guest_id, **_guest_cookie_kwargs())
     guest_service.touch(guest_id)
     return guest_id
+
+
+def _music_provider_for_poll(*, task_id: str, production_id: str = "") -> str:
+    if production_id:
+        row = history.get_by_id(production_id)
+        if row and row.get("music_provider"):
+            return str(row["music_provider"])
+    if task_id:
+        row = history.get_by_task(task_id)
+        if row and row.get("music_provider"):
+            return str(row["music_provider"])
+    return "apipass"
 
 
 def get_optional_user(
@@ -332,11 +345,19 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.4",
+        "version": "2.10.5",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
+        "music_provider": MUSIC_PROVIDER,
+        "music_providers": music_provider.configured_providers(),
     }
+
+
+@app.post("/api/webhooks/sunoapi")
+async def sunoapi_webhook(_payload: dict | None = None):
+    """Заглушка для callBackUrl sunoapi.org — статус опрашиваем через poll."""
+    return {"ok": True}
 
 
 @app.get("/api/admin/me", response_model=AdminMeResponse)
@@ -1333,6 +1354,10 @@ async def create_song(
             job_queue.enqueue_poll(
                 task_id=result.task_id,
                 production_id=result.production_id,
+                music_provider=_music_provider_for_poll(
+                    task_id=result.task_id,
+                    production_id=result.production_id,
+                ),
             )
         result.balance = balance
         result.generation_mode = mode
@@ -1406,6 +1431,10 @@ async def start_music(
         job_queue.enqueue_poll(
             task_id=task_id,
             production_id=production_id or "",
+            music_provider=_music_provider_for_poll(
+                task_id=task_id,
+                production_id=production_id or "",
+            ),
         )
         return {
             "success": True,
@@ -1541,6 +1570,10 @@ async def music_status(
         job_queue.enqueue_poll(
             task_id=task_id,
             production_id=production_id,
+            music_provider=_music_provider_for_poll(
+                task_id=task_id,
+                production_id=production_id,
+            ),
         )
 
         if row and row["status"] != "success":
@@ -1682,7 +1715,7 @@ async def generate_music_endpoint(
 
     title = req.title or truncate(req.idea or "My Song", 75)
     try:
-        task_id = apipass.create_task(
+        task_ref = music_provider.create_task(
             lyrics=req.lyrics,
             style=req.style,
             title=title,
@@ -1690,7 +1723,8 @@ async def generate_music_endpoint(
         )
         return {
             "success": True,
-            "task_id": task_id,
+            "task_id": task_ref.task_id,
+            "music_provider": task_ref.provider,
             "message": "Используйте GET /api/music/status/{task_id} для проверки статуса",
         }
     except Exception as exc:
