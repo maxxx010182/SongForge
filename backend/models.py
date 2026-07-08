@@ -199,9 +199,21 @@ class EmailVerifyRequest(BaseModel):
 
 
 class TelegramAuthRequest(BaseModel):
-    id: str
+    id: int | str
     first_name: str = ""
+    last_name: str = ""
     username: str = ""
+    photo_url: str = ""
+    auth_date: int = 0
+    hash: str = ""
+
+
+class AuthProvidersResponse(BaseModel):
+    email_enabled: bool = True
+    email_smtp: bool = False
+    telegram_enabled: bool = False
+    telegram_bot_username: str = ""
+    vk_enabled: bool = False
 
 
 class UserInfo(BaseModel):
@@ -211,7 +223,7 @@ class UserInfo(BaseModel):
     balance: int = 0
     avatar_url: str | None = None
     nickname_confirmed: bool = False
-    theme: str = "burgundy"
+    theme: str = "classic"
 
 
 class PublicTrackResponse(BaseModel):

@@ -68,9 +68,9 @@
 - [ ] Алерты владельцу: ошибки оплаты, webhook, зависшие генерации (Telegram/email — см. § админ-алерты)
 
 **После беты / не блокер первой волны:**
-- [ ] SMTP — код на почту, убрать `dev_code` с прода
-- [ ] Telegram Login (бот + `/setdomain`)
-- [ ] VK ID OAuth
+- [x] SMTP + email-вход (v2.11.0) — на проде нужен SMTP в `.env`
+- [x] Telegram Login Widget + HMAC verify (v2.11.0) — BotFather `/setdomain`
+- [x] VK ID OAuth (v2.11.0) — redirect `https://sozdaipesnu.ru/api/auth/vk/callback`
 - [ ] МАКС — позже, отдельная интеграция
 - [ ] OG-превью `/t/{id}`, текст в модалке, UI-полировка
 

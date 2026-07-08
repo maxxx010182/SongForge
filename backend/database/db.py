@@ -272,8 +272,11 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
         )
     if "theme" not in existing:
         conn.execute(
-            "ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'burgundy'"
+            "ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'classic'"
         )
+    conn.execute(
+        "UPDATE users SET theme = 'classic' WHERE theme IS NULL OR TRIM(theme) = ''"
+    )
     if "nickname_confirmed" not in existing:
         conn.execute(
             "ALTER TABLE users ADD COLUMN nickname_confirmed INTEGER NOT NULL DEFAULT 0"

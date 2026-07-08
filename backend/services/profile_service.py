@@ -13,7 +13,7 @@ _MIME_EXT = {
 }
 _DISPLAY_NAME_FORBIDDEN = re.compile(r"[@<>]")
 VALID_THEMES = frozenset({"classic", "burgundy", "olive", "obsidian"})
-DEFAULT_THEME = "burgundy"
+DEFAULT_THEME = "classic"
 
 
 class DisplayNameTakenError(ValueError):

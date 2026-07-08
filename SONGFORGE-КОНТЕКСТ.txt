@@ -1,6 +1,6 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 8 июля 2026 (handoff — v2.10.7 dev-topup удалён, §0g)
+Обновлено: 8 июля 2026 (handoff — v2.11.0 вход TG/VK/email, §0g)
 Путь: C:\Users\makc0\Desktop\SongForge\SONGFORGE-КОНТЕКСТ.txt
 
 
@@ -8,11 +8,18 @@
 0d. HANDOFF — АКТУАЛЬНО (8 ИЮЛЯ 2026)
 ═══════════════════════════════════════
 
-ВЕРСИЯ В GITHUB: v2.10.7 (main)
-ДЕПЛОЙ НА СЕРВЕР: [ ] v2.10.7 — после push: ZAPUSK-v2.10.7.txt
-ПРОВЕРЕНО НА СЕРВЕРЕ (было v2.10.6):
-  version 2.10.6, music_provider fallback_suno,
+ВЕРСИЯ В GITHUB: v2.11.0 (main, после push)
+ДЕПЛОЙ НА СЕРВЕР: [ ] v2.11.0 — ZAPUSK-v2.11.0.txt (SMTP + TG + VK в .env)
+ПРОВЕРЕНО НА СЕРВЕРЕ (было v2.10.8):
+  version 2.10.8, music_provider fallback_suno,
   music_providers ["apipass","sunoapi"], redis:true, s3:true
+
+v2.11.0 В КОДЕ (ожидает деплой):
+  • Модалка студии: «Твоя песня — в один клик» / B2 подзаголовок
+  • Вход: email+SMTP, Telegram Login Widget, VK ID OAuth
+  • Тема по умолчанию: classic
+  • /api/auth/providers, /api/auth/vk/start|callback
+  • На сервере: SMTP_*, TELEGRAM_*, VK_* в .env (см. ZAPUSK-v2.11.0.txt)
 
 КАК ПРОДОЛЖИТЬ — напишите в чат:
   «Продолжаем SongForge. Прочитай §0d, §0g, §0f и docs/NOTES_NEXT.md § бета»
@@ -106,8 +113,15 @@ UI / продукт:
 0g. СЕССИЯ 8 ИЮЛЯ — АНАЛИЗ ПЕРЕД БЕТОЙ (зафиксировано)
 ═══════════════════════════════════════
 
-Владелец изучает; код v2.10.7 — в следующей сессии. Подробности: docs/NOTES_NEXT.md
+Владелец изучает; код v2.11.0 — вход TG/VK/email в бете. Подробности: docs/NOTES_NEXT.md
 § «Анализ перед бетой».
+
+ВХОД v2.11.0 (согласовано, в коде):
+  Модалка студии: «Твоя песня — в один клик» / «Осталось войти — и можно создать песню»
+  Способы: Telegram Login, VK ID, email+SMTP
+  Тема по умолчанию: classic
+  Деплой: ZAPUSK-v2.11.0.txt — SMTP + TELEGRAM_* + VK_* в .env на сервере
+  Не в этом релизе: Макс, чекбокс согласия в #authModal
 
 ПРОМОКОД GETPLATINUM
   Промо настроено в ЛК GetPlatinum. В коде init-payment-url промокод НЕ передаётся.

@@ -47,6 +47,7 @@ from backend.models import (
     AdminUpdateAuthorNameRequest,
     AdminBoostTrackRequest,
     AdminMeResponse,
+    AuthProvidersResponse,
     TelegramAuthRequest,
     TrackCommentCreateRequest,
     TrackCommentsResponse,
@@ -60,6 +61,9 @@ from backend.services.ai_producer import AiProducer
 from backend.services.music_provider_service import MusicProviderService
 from backend.services.audio_access_service import AudioAccessService
 from backend.services.auth_service import AuthService
+from backend.services.email_service import EmailService
+from backend.services.telegram_auth import verify_telegram_login
+from backend.services.vk_auth import VkAuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
 from backend.services.generation_quota_service import GenerationQuotaService
@@ -82,7 +86,11 @@ from backend.settings import (
     MUSIC_PROVIDER,
     SITE_URL,
     TELEGRAM_AUTH_ENABLED,
+    TELEGRAM_BOT_TOKEN,
+    TELEGRAM_BOT_USERNAME,
     UPLOADS_DIR,
+    VK_APP_ID,
+    VK_AUTH_ENABLED,
 )
 from backend.utils.text import clean_text, truncate
 
@@ -94,6 +102,8 @@ yandex = YandexClient()
 prompt_builder = PromptBuilder(yandex)
 guest_service = GuestService()
 auth_service = AuthService()
+email_service = EmailService()
+vk_auth_service = VkAuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
@@ -104,7 +114,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.8")
+app = FastAPI(title="SongForge", version="2.11.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -121,11 +131,13 @@ app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
 
 
 def _session_cookie_kwargs() -> dict:
+    secure = SITE_URL.lower().startswith("https://")
     return {
         "httponly": True,
         "samesite": "lax",
         "max_age": 60 * 60 * 24 * 30,
         "path": "/",
+        "secure": secure,
     }
 
 
@@ -363,7 +375,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.8",
+        "version": "2.11.0",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -945,7 +957,39 @@ async def listen_explore_track(library_id: str, request: Request):
 
 def _expose_email_auth_code() -> bool:
     """Пока SMTP не настроен — код только на экране, не в письме."""
-    return AUTH_DEV_CODE_ENABLED or not SMTP_HOST
+    return AUTH_DEV_CODE_ENABLED or not email_service.is_configured()
+
+
+def _telegram_auth_ready() -> bool:
+    return TELEGRAM_AUTH_ENABLED and bool(TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME)
+
+
+def _vk_auth_ready() -> bool:
+    return VK_AUTH_ENABLED and vk_auth_service.is_configured()
+
+
+def _complete_login(
+    *,
+    response: Response,
+    guest_id: str,
+    user: dict,
+    token: str,
+) -> dict:
+    cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+    generation_quota.sync_guest_trial_on_login(guest_id=guest_id, user_id=user["id"])
+    response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
+    return {"success": True, "user": _user_info(user).model_dump()}
+
+
+@app.get("/api/auth/providers", response_model=AuthProvidersResponse)
+async def auth_providers():
+    return AuthProvidersResponse(
+        email_enabled=True,
+        email_smtp=email_service.is_configured(),
+        telegram_enabled=_telegram_auth_ready(),
+        telegram_bot_username=TELEGRAM_BOT_USERNAME if _telegram_auth_ready() else "",
+        vk_enabled=_vk_auth_ready(),
+    )
 
 
 @app.post("/api/auth/email/request")
@@ -953,7 +997,12 @@ async def auth_email_request(req: EmailAuthRequest):
     try:
         code = auth_service.request_email_code(req.email)
         expose_code = _expose_email_auth_code()
-        if expose_code:
+        if email_service.is_configured() and not AUTH_DEV_CODE_ENABLED:
+            await run_in_threadpool(
+                email_service.send_auth_code, to_email=req.email, code=code
+            )
+            expose_code = False
+        elif expose_code:
             log.info("Email auth code for %s: %s", req.email, code)
         payload: dict = {"success": True}
         if expose_code:
@@ -964,6 +1013,8 @@ async def auth_email_request(req: EmailAuthRequest):
         return payload
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post("/api/auth/email/verify")
@@ -974,12 +1025,9 @@ async def auth_email_verify(
 ):
     try:
         user, token = auth_service.verify_email_code(req.email, req.code)
-        cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
-        generation_quota.sync_guest_trial_on_login(
-            guest_id=guest_id, user_id=user["id"]
+        return _complete_login(
+            response=response, guest_id=guest_id, user=user, token=token
         )
-        response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
-        return {"success": True, "user": _user_info(user).model_dump()}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -990,25 +1038,73 @@ async def auth_telegram(
     response: Response,
     guest_id: str = Depends(get_guest_id),
 ):
-    if not TELEGRAM_AUTH_ENABLED:
+    if not _telegram_auth_ready():
         raise HTTPException(
             status_code=503,
-            detail="Вход через Telegram скоро будет доступен",
+            detail="Вход через Telegram временно недоступен",
         )
     try:
-        user, token = auth_service.login_telegram(
-            telegram_id=req.id,
-            first_name=req.first_name,
-            username=req.username,
+        verified = verify_telegram_login(
+            payload=req.model_dump(exclude_none=True),
+            bot_token=TELEGRAM_BOT_TOKEN,
         )
+        user, token = auth_service.login_telegram(**verified)
+        return _complete_login(
+            response=response, guest_id=guest_id, user=user, token=token
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/auth/vk/start")
+async def vk_auth_start(response: Response):
+    if not _vk_auth_ready():
+        raise HTTPException(status_code=503, detail="Вход через VK временно недоступен")
+    state = vk_auth_service.new_state()
+    response.set_cookie(
+        "vk_oauth_state",
+        state,
+        httponly=True,
+        samesite="lax",
+        max_age=600,
+        path="/",
+        secure=SITE_URL.lower().startswith("https://"),
+    )
+    return RedirectResponse(vk_auth_service.build_authorize_url(state=state))
+
+
+@app.get("/api/auth/vk/callback")
+async def vk_auth_callback(
+    request: Request,
+    response: Response,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    guest_id: str = Depends(get_guest_id),
+):
+    if error:
+        return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Некорректный ответ VK")
+    cookie_state = request.cookies.get("vk_oauth_state", "")
+    if not cookie_state or cookie_state != state:
+        raise HTTPException(status_code=400, detail="Сессия VK устарела — попробуйте снова")
+    try:
+        profile = vk_auth_service.exchange_code(code=code)
+        user, token = auth_service.login_vk(**profile)
+        redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
         generation_quota.sync_guest_trial_on_login(
             guest_id=guest_id, user_id=user["id"]
         )
-        response.set_cookie(AuthService.COOKIE_NAME, token, **_session_cookie_kwargs())
-        return {"success": True, "user": _user_info(user).model_dump()}
+        redirect.set_cookie(
+            AuthService.COOKIE_NAME, token, **_session_cookie_kwargs()
+        )
+        redirect.delete_cookie("vk_oauth_state", path="/")
+        return redirect
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        log.warning("VK auth failed: %s", exc)
+        return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
 
 
 @app.get("/api/profile/nickname-available")

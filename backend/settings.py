@@ -49,6 +49,11 @@ GETPLATINUM_API_KEY = os.getenv("GETPLATINUM_API_KEY", "").strip()
 GETPLATINUM_VAT = os.getenv("GETPLATINUM_VAT", "none").strip() or "none"
 
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes"}
 
 AUTH_DEV_CODE_ENABLED = os.getenv("AUTH_DEV_CODE_ENABLED", "false").lower() in {
     "1",
@@ -65,6 +70,17 @@ TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
     "true",
     "yes",
 }
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
+
+VK_AUTH_ENABLED = os.getenv("VK_AUTH_ENABLED", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+VK_APP_ID = os.getenv("VK_APP_ID", "").strip()
+VK_APP_SECRET = os.getenv("VK_APP_SECRET", "").strip()
+VK_AUTH_BASE = os.getenv("VK_AUTH_BASE", "https://id.vk.ru").strip().rstrip("/")
 
 # --- Админ-панель (/admin) ---
 # Только эти email при первом входе в /admin становятся super_admin (через запятую).
