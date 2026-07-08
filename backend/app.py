@@ -13,8 +13,6 @@ from backend.models import (
     CreatePaymentOrderRequest,
     CreateSongRequest,
     CreateSongResponse,
-    DevTopupRequest,
-    DevTopupResponse,
     EmailAuthRequest,
     EmailVerifyRequest,
     FullAudioResponse,
@@ -77,7 +75,6 @@ from backend.services.yandex_client import YandexClient
 from backend.settings import (
     AUTH_DEV_CODE_ENABLED,
     SMTP_HOST,
-    DEV_TOPUP_ENABLED,
     GUEST_GENERATION_LIMIT,
     LEGACY_API_ENABLED,
     PAYMENT_PROVIDER,
@@ -107,7 +104,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.6")
+app = FastAPI(title="SongForge", version="2.10.7")
 
 app.add_middleware(
     CORSMiddleware,
@@ -366,7 +363,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.6",
+        "version": "2.10.7",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -760,7 +757,6 @@ async def get_me(
         user=_user_info(user) if user else None,
         guest_remaining=remaining,
         guest_limit=GUEST_GENERATION_LIMIT,
-        dev_tools=DEV_TOPUP_ENABLED,
         payment_provider=PAYMENT_PROVIDER,
     )
 
@@ -1273,29 +1269,6 @@ async def download_full_audio(
         lib_title = f"{lib_title} (вариант A)"
     log.info("Download proxy: user=%s gen=%s", user["id"], production_id)
     return audio_access.stream_download(source, title=lib_title)
-
-
-@app.post("/api/dev/topup", response_model=DevTopupResponse)
-async def dev_topup(
-    req: DevTopupRequest,
-    user: dict | None = Depends(get_optional_user),
-):
-    """Тестовое пополнение баланса (скрытая кнопка в UI)."""
-    if not DEV_TOPUP_ENABLED:
-        raise HTTPException(status_code=403, detail="Тестовое пополнение отключено")
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Войдите в аккаунт — ноты хранятся на сервере",
-        )
-    amount = max(1, min(int(req.amount), 100))
-    balance = cabinet.add_balance(user["id"], amount)
-    log.info("Dev topup: user=%s +%s → balance=%s", user["id"], amount, balance)
-    return DevTopupResponse(
-        success=True,
-        balance=balance,
-        message=f"Баланс пополнен на {amount} нот",
-    )
 
 
 @app.post("/api/produce", response_model=ProduceResponse)

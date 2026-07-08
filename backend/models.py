@@ -239,7 +239,6 @@ class MeResponse(BaseModel):
     user: UserInfo | None = None
     guest_remaining: int = 0
     guest_limit: int = 1
-    dev_tools: bool = False
     payment_provider: str = "stub"
 
 
@@ -328,16 +327,6 @@ class PurchaseResponse(BaseModel):
     generation_id: str
     library_ids: list[str] = Field(default_factory=list)
     balance: int = 0
-
-
-class DevTopupRequest(BaseModel):
-    amount: int = 10
-
-
-class DevTopupResponse(BaseModel):
-    success: bool
-    balance: int
-    message: str = ""
 
 
 class PaymentPackage(BaseModel):

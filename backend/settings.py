@@ -60,11 +60,6 @@ LEGACY_API_ENABLED = os.getenv("LEGACY_API_ENABLED", "false").lower() in {
     "true",
     "yes",
 }
-DEV_TOPUP_ENABLED = os.getenv("DEV_TOPUP_ENABLED", "false").lower() in {
-    "1",
-    "true",
-    "yes",
-}
 TELEGRAM_AUTH_ENABLED = os.getenv("TELEGRAM_AUTH_ENABLED", "false").lower() in {
     "1",
     "true",

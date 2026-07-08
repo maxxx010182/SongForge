@@ -6,7 +6,7 @@
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.10.6"
+EXPECTED_VERSION="2.10.7"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -120,7 +120,6 @@ ensure_env_key() {
 }
 
 echo "[2/7] Зависимости..."
-ensure_env_key DEV_TOPUP_ENABLED true
 ensure_venv
 ./venv/bin/pip install -q -r requirements.txt 2>/dev/null || ./venv/bin/pip install -r requirements.txt
 

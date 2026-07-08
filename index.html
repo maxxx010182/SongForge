@@ -108,8 +108,7 @@
         .faq-icon.rotated{transform:rotate(180deg)}
         .contact-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:1.2rem;padding:1.5rem;transition:all 0.2s}
         .contact-card:hover{border-color:rgba(var(--sf-accent-rgb),0.3);background:rgba(var(--sf-accent-rgb),0.04)}
-        .admin-btn{background:rgba(255,0,0,0.15);border:1px solid rgba(255,0,0,0.3);color:#f87171;transition:all 0.2s}
-        .admin-btn:hover{background:rgba(255,0,0,0.25)}
+
         .fun-fact-anim{animation:fadeup 0.5s ease}
         @keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .variant-wave{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:32px;margin:10px 0}
@@ -837,7 +836,6 @@
         <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
             <i class="fa-regular fa-comment text-yellow-400"></i> Спросить помощника
         </button>
-        <div id="adminPlaceholder"></div>
     </div>
 </div>
 
@@ -1045,7 +1043,7 @@
 <script>
 // ===== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ =====
 var user={balance:0,tracks:[]};
-var session={loggedIn:false,user:null,guestRemaining:0,guestLimit:1,history:[],serverLibrary:[],exploreTracks:[],devTools:false,paymentProvider:'stub'};
+var session={loggedIn:false,user:null,guestRemaining:0,guestLimit:1,history:[],serverLibrary:[],exploreTracks:[],paymentProvider:'stub'};
 var fetchOpts={credentials:'include'};
 var libraryTab='library';var LIBRARY_PAGE_SIZE=9;var libraryPage=0;var historyPage=0;var explorePage=0;
 var authEmailStep='request';
@@ -1130,7 +1128,7 @@ async function sharePublishedTrack(libraryId,title){var url=getTrackShareUrl(lib
 async function openSharedTrack(libraryId){if(!libraryId)return;try{var res=await fetch('/api/explore/'+encodeURIComponent(libraryId)+'/public',fetchOpts);var data=await res.json().catch(function(){return{};});if(!res.ok){showToast(data.detail||'Трек недоступен');return;}switchToView('explore');playAudio(data.listen_url||('/api/explore/'+libraryId+'/listen'),data.title||'Трек',data.image_url||'',data.author_name||'');showToast('«'+(data.title||'Трек')+'» — '+(data.author_name||'Аноним'));}catch(e){showToast('Не удалось открыть трек');}}
 function handleTrackDeepLink(){var p=new URLSearchParams(window.location.search);var id=p.get('track');if(!id)return;openSharedTrack(id);if(window.history&&window.history.replaceState){window.history.replaceState({},'',window.location.pathname);}}
 async function saveNicknameFromModal(){if(!session.loggedIn)return;var input=document.getElementById('nicknameModalInput');var hint=document.getElementById('nicknameModalHint');var btn=document.getElementById('nicknameModalSaveBtn');var name=(input?input.value:'').trim();if(name.length<2){if(hint){hint.textContent='Ник — от 2 до 40 символов';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(btn){btn.disabled=true;btn.textContent='...';}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(hint){hint.textContent=data.detail||(res.status===409?'Этот ник уже занят':'Не удалось сохранить');hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(data.user){session.user=data.user;updateProfileAuthUI();}closeNicknameModal();showToast('Ник сохранён');}catch(e){if(hint){hint.textContent='Ошибка сети';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}}finally{if(btn){btn.disabled=false;btn.textContent='Продолжить';}}}
-async function fetchMe(){try{var res=await fetch('/api/me',fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.devTools=!!data.dev_tools;session.paymentProvider=data.payment_provider||'stub';if(data.user){session.user=data.user;user.balance=data.user.balance;syncThemeFromSession();}else{session.user=null;loadLocalData();applyTheme(getStoredTheme());updateThemeHint();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();applyTheme(getStoredTheme());updateBalanceUI();}}
+async function fetchMe(){try{var res=await fetch('/api/me',fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.paymentProvider=data.payment_provider||'stub';if(data.user){session.user=data.user;user.balance=data.user.balance;syncThemeFromSession();}else{session.user=null;loadLocalData();applyTheme(getStoredTheme());updateThemeHint();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();applyTheme(getStoredTheme());updateBalanceUI();}}
 async function fetchHistory(){if(!session.loggedIn){session.history=[];return;}try{var res=await fetch('/api/history',fetchOpts);if(res.ok)session.history=await res.json();else session.history=[];}catch(e){session.history=[];}}
 async function fetchServerLibrary(){if(!session.loggedIn){session.serverLibrary=[];return;}try{var res=await fetch('/api/library',fetchOpts);if(res.ok)session.serverLibrary=await res.json();else session.serverLibrary=[];}catch(e){session.serverLibrary=[];}}
 async function fetchExploreTracks(limit){limit=limit||50;try{var res=await fetch('/api/explore?limit='+limit,fetchOpts);if(res.ok)session.exploreTracks=await res.json();else session.exploreTracks=[];}catch(e){session.exploreTracks=[];}bindPlayerDefaultFromChart();}
@@ -1198,8 +1196,6 @@ async function togglePublishTrack(trackId,published){if(!session.loggedIn){openA
 
 function notesWord(n){if(n===1)return'1 нота';if(n>=2&&n<=4)return n+' ноты';return n+' нот';}
 function showToast(msg){var t=document.createElement('div');t.className='toast-notify';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},3200);}
-async function adminAddCredits(amount){amount=amount||10;if(!session.loggedIn){openAuthModal();showToast('Войдите в аккаунт для тестового пополнения');return;}if(!session.devTools){showToast('Тестовое пополнение отключено на сервере');return;}try{var res=await fetch('/api/dev/topup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount}),...fetchOpts});var data=await res.json().catch(function(){return{}});if(!res.ok){alert(data.detail||'Не удалось пополнить баланс');return;}if(session.user)session.user.balance=data.balance;updateBalanceUI();updateVariantDownloadButtons();showToast('+'+amount+' нот. Баланс: '+notesWord(data.balance));}catch(e){alert('Ошибка пополнения баланса');}}
-function bindAdminTopupButton(btn){if(!btn||btn.dataset.bound)return;btn.dataset.bound='1';btn.addEventListener('click',function(e){e.stopPropagation();adminAddCredits(10);});}
 function updateModalCreditsBalance(){var el=document.getElementById('modalCreditsText');var box=document.getElementById('modalCreditsBalance');if(!el)return;var b=getBalance();el.textContent='Баланс '+notesWord(b);if(box)box.classList.toggle('notes-zero',b<=0);}
 function updatePaymentReturnBtn(){var btn=document.getElementById('returnToVariantsBtn');if(btn)btn.classList.toggle('hidden',!hasPendingResult());}
 function returnToResultModal(){document.getElementById('resultModal').classList.remove('hidden');updateModalCreditsBalance();updateVariantDownloadButtons();}
@@ -1467,47 +1463,6 @@ document.getElementById('profileTopupBtn').addEventListener('click',function(){s
 document.getElementById('profileNameSaveBtn').addEventListener('click',saveProfileName);
 document.getElementById('profileNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')saveProfileName();});
 document.getElementById('profileAvatarInput').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f)uploadProfileAvatar(f);e.target.value='';});
-
-// ===== РЕЖИМ АДМИНИСТРАТОРА (5 кликов по логотипу) =====
-(function() {
-    var logo = document.getElementById('headerBrand');
-    var clickCount = 0;
-    var adminActive = false;
-    if (logo) {
-        logo.addEventListener('click', function() {
-            clickCount++;
-            if (clickCount >= 5 && !adminActive) {
-                if (!session.devTools) {
-                    showToast('Тестовое пополнение отключено на сервере');
-                    clickCount = 0;
-                    return;
-                }
-                if (!session.loggedIn) {
-                    showToast('Войдите в аккаунт, чтобы добавить тестовые ноты');
-                    clickCount = 0;
-                    return;
-                }
-                adminActive = true;
-                var adminBtn = document.createElement('button');
-                adminBtn.className = 'w-full mt-3 admin-btn py-2 rounded-xl text-sm';
-                adminBtn.innerHTML = '➕ Добавить 10 нот (тест)';
-                bindAdminTopupButton(adminBtn);
-                var placeholder = document.getElementById('adminPlaceholder');
-                if (placeholder) placeholder.appendChild(adminBtn);
-                var profileCard = document.querySelector('#profilePanel .glass-panel');
-                if (profileCard) {
-                    var cloneBtn = adminBtn.cloneNode(true);
-                    cloneBtn.className = 'w-full mt-3 admin-btn py-2 rounded-xl text-sm';
-                    bindAdminTopupButton(cloneBtn);
-                    profileCard.appendChild(cloneBtn);
-                }
-                clickCount = 0;
-            }
-            clearTimeout(window._adminTimer);
-            window._adminTimer = setTimeout(function() { clickCount = 0; }, 3000);
-        });
-    }
-})();
 
 document.addEventListener('click',function(e){if(!e.target.closest('.lib-more-wrap'))closeAllLibMenus();});
 document.querySelectorAll('.bottom-nav a').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();switchToView(a.dataset.nav);});});
