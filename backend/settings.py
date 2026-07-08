@@ -12,7 +12,7 @@ YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gto6f1fi6j2dpfdlhd")
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 
-# apipass | sunoapi | fallback (ApiPass → sunoapi.org при ошибке)
+# apipass | sunoapi | fallback (ApiPass→sunoapi) | fallback_suno (sunoapi→ApiPass)
 MUSIC_PROVIDER = os.getenv("MUSIC_PROVIDER", "apipass").strip().lower()
 SUNOAPI_ORG_API_KEY = os.getenv("SUNOAPI_ORG_API_KEY", "").strip()
 SUNOAPI_ORG_BASE = os.getenv(
@@ -44,6 +44,9 @@ SITE_URL = os.getenv("SITE_URL", "http://195.19.20.245:8000").rstrip("/")
 PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
 PRODAMUS_SECRET = os.getenv("PRODAMUS_SECRET", "")
 PRODAMUS_SHOP_ID = os.getenv("PRODAMUS_SHOP_ID", "")
+GETPLATINUM_ACCOUNT = os.getenv("GETPLATINUM_ACCOUNT", "").strip()
+GETPLATINUM_API_KEY = os.getenv("GETPLATINUM_API_KEY", "").strip()
+GETPLATINUM_VAT = os.getenv("GETPLATINUM_VAT", "none").strip() or "none"
 
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 

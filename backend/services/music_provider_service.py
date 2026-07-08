@@ -61,6 +61,13 @@ class MusicProviderService:
             if "sunoapi" in available:
                 order.append("sunoapi")
             return order or available
+        if mode == "fallback_suno":
+            order = []
+            if "sunoapi" in available:
+                order.append("sunoapi")
+            if "apipass" in available:
+                order.append("apipass")
+            return order or available
         return available[:1]
 
     def create_task(
@@ -108,8 +115,16 @@ class MusicProviderService:
         clients: list[MusicProviderName] = [primary]
 
         mode = (MUSIC_PROVIDER or "apipass").strip().lower()
-        if mode == "fallback" and not provider:
-            for name in self.configured_providers():
+        if mode in {"fallback", "fallback_suno"} and not provider:
+            preferred: list[MusicProviderName] = []
+            if mode == "fallback_suno":
+                if "sunoapi" in self.configured_providers():
+                    preferred.append("sunoapi")
+                if "apipass" in self.configured_providers():
+                    preferred.append("apipass")
+            else:
+                preferred = self.configured_providers()
+            for name in preferred:
                 if name not in clients:
                     clients.append(name)
 

@@ -1,7 +1,7 @@
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -107,7 +107,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.10.5")
+app = FastAPI(title="SongForge", version="2.10.6")
 
 app.add_middleware(
     CORSMiddleware,
@@ -323,6 +323,27 @@ async def get_admin_page():
     return FileResponse(path)
 
 
+@app.get("/legal/terms", response_class=HTMLResponse)
+async def legal_terms():
+    from backend.legal_pages import render_legal_page
+
+    return HTMLResponse(render_legal_page("terms"))
+
+
+@app.get("/legal/privacy", response_class=HTMLResponse)
+async def legal_privacy():
+    from backend.legal_pages import render_legal_page
+
+    return HTMLResponse(render_legal_page("privacy"))
+
+
+@app.get("/legal/offer", response_class=HTMLResponse)
+async def legal_offer():
+    from backend.legal_pages import render_legal_page
+
+    return HTMLResponse(render_legal_page("offer"))
+
+
 @app.get("/t/{library_id}")
 async def track_share_short_link(library_id: str):
     """Короткая ссылка для шаринга — как YouTube / Instagram."""
@@ -345,7 +366,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.10.5",
+        "version": "2.10.6",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1108,6 +1129,8 @@ async def create_payment_order(
         order = payment_service.create_order(
             user_id=user["id"],
             package_id=req.package_id,
+            user_email=str(user.get("email") or ""),
+            user_display_name=str(user.get("display_name") or ""),
         )
         return PaymentOrderResponse(
             order_id=order["order_id"],

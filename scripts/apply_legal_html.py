@@ -11,9 +11,9 @@ OFFER_BODY = (LEGAL / "offer.html").read_text(encoding="utf-8")
 
 AGREEMENT_SECTION = f"""<div id="section-agreement" class="doc-section active">
     <div class="glass-panel p-8">
-        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 5 июля 2026 г.</div>
+        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 8 июля 2026 г.</div>
         <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Пользовательское соглашение</h1>
-        <p class="text-zinc-400 mb-8">Сервис «СоздайСвоюПесню» (создайсвоюпесню.рф)</p>
+        <p class="text-zinc-400 mb-8">Сервис «СоздайСвоюПесню» (sozdaipesnu.ru)</p>
 
         <div class="prose">
 {AGREEMENT_BODY}
@@ -23,7 +23,7 @@ AGREEMENT_SECTION = f"""<div id="section-agreement" class="doc-section active">
 
 PRIVACY_SECTION = f"""<div id="section-privacy" class="doc-section">
     <div class="glass-panel p-8">
-        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 5 июля 2026 г.</div>
+        <div class="text-xs text-zinc-500 mb-2">Последнее обновление: 8 июля 2026 г.</div>
         <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Политика конфиденциальности</h1>
         <p class="text-zinc-400 mb-8">В соответствии с Федеральным законом №152-ФЗ «О персональных данных»</p>
 
@@ -44,7 +44,7 @@ PRIVACY_SECTION = f"""<div id="section-privacy" class="doc-section">
 
 OFFER_SECTION = f"""<div id="section-offer" class="doc-section">
     <div class="glass-panel p-8">
-        <div class="text-xs text-zinc-500 mb-2">Дата публикации: 5 июля 2026 г. · г. Тюмень</div>
+        <div class="text-xs text-zinc-500 mb-2">Дата публикации: 8 июля 2026 г. · г. Тюмень</div>
         <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Публичная оферта</h1>
         <p class="text-zinc-400 mb-8">на оказание услуг посредством сервиса «СоздайСвоюПесню»</p>
 
@@ -74,36 +74,22 @@ def main() -> None:
     html = replace_block(
         html,
         '<div id="section-privacy"',
-        '<!-- ================================================ -->\n<!-- 3. FAQ -->',
-        PRIVACY_SECTION + "\n\n<!-- ================================================ -->\n<!-- 3. ПУБЛИЧНАЯ ОФЕРТА -->\n<!-- ================================================ -->\n"
-        + OFFER_SECTION
-        + "\n\n<!-- ================================================ -->\n<!-- 4. FAQ -->",
+        '<!-- ================================================ -->\n<!-- 3. ПУБЛИЧНАЯ ОФЕРТА -->',
+        PRIVACY_SECTION + "\n\n<!-- ================================================ -->\n<!-- 3. ПУБЛИЧНАЯ ОФЕРТА -->\n",
     )
 
-    html = html.replace(
-        '<div class="nav-link" data-section="privacy">Конфиденциальность</div>\n        <div class="nav-link" data-section="faq">FAQ</div>',
-        '<div class="nav-link" data-section="privacy">Конфиденциальность</div>\n        <div class="nav-link" data-section="offer">Оферта</div>\n        <div class="nav-link" data-section="faq">FAQ</div>',
+    html = replace_block(
+        html,
+        '<div id="section-offer"',
+        '<!-- ================================================ -->\n<!-- 4. FAQ -->',
+        OFFER_SECTION + "\n\n<!-- ================================================ -->\n<!-- 4. FAQ -->\n",
     )
 
-    html = html.replace(
-        '<!-- 3. FAQ -->',
-        '<!-- 4. FAQ -->',
-        1,
-    )
-
-    old_footer = """            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Соглашение</a>
-            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">Конфиденциальность</a>
-            <a href="#" onclick="switchToView('legal');return false;" class="hover:text-yellow-400 transition">FAQ</a>"""
-    new_footer = """            <a href="#" onclick="switchToView('legal');showSection('agreement');return false;" class="hover:text-yellow-400 transition">Соглашение</a>
-            <a href="#" onclick="switchToView('legal');showSection('privacy');return false;" class="hover:text-yellow-400 transition">Конфиденциальность</a>
-            <a href="#" onclick="switchToView('legal');showSection('offer');return false;" class="hover:text-yellow-400 transition">Оферта</a>
-            <a href="#" onclick="switchToView('legal');showSection('faq');return false;" class="hover:text-yellow-400 transition">FAQ</a>"""
-    html = html.replace(old_footer, new_footer)
-
-    html = html.replace(
-        '<a href="#" onclick="switchToView(\'legal\');return false;" class="hover:text-yellow-400 transition">Поддержка</a>',
-        '<a href="#" onclick="switchToView(\'legal\');showSection(\'support\');return false;" class="hover:text-yellow-400 transition">Поддержка</a>',
-    )
+    if 'data-section="offer"' not in html:
+        html = html.replace(
+            '<div class="nav-link" data-section="privacy">Конфиденциальность</div>\n        <div class="nav-link" data-section="faq">FAQ</div>',
+            '<div class="nav-link" data-section="privacy">Конфиденциальность</div>\n        <div class="nav-link" data-section="offer">Оферта</div>\n        <div class="nav-link" data-section="faq">FAQ</div>',
+        )
 
     INDEX.write_text(html, encoding="utf-8")
     print("Updated index.html legal sections")
