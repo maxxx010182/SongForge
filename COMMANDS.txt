@@ -37,6 +37,25 @@ Otvet: "version":"2.11.0"
 Opcionalno: "redis":true, "s3":true, "generating":N
 
 
+SHAG 4b. SMTP — esli kod ne uhodit na pochtu
+
+cd ~/SongForge
+./venv/bin/python scripts/test_smtp.py
+
+Esli FAIL — popravte .env (chasto pomogaet):
+
+SMTP_HOST=mail.hosting.reg.ru
+SMTP_PORT=587
+SMTP_USER=noreply@sozdaipesnu.ru
+SMTP_PASSWORD=...
+SMTP_FROM=noreply@sozdaipesnu.ru
+SMTP_USE_TLS=true
+
+pm2 restart songforge
+
+Podrobno: SMTP-DIAGNOSTIKA.txt (Windows, Bloknot)
+
+
 SHAG 5. Redis (odin raz, esli net)
 
 apt-get update && apt-get install -y redis-server

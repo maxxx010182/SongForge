@@ -1,0 +1,75 @@
+SongForge — не приходит код входа (SMTP)
+=========================================
+Файл: C:\Users\makc0\Desktop\SongForge\SMTP-DIAGNOSTIKA.txt
+
+Симптом: «Получить код» → пауза → «Не удалось отправить код».
+API email_smtp:true значит HOST в .env есть, но отправка с сервера падает.
+
+
+ШАГ 1. Диагностика на сервере
+-----------------------------
+
+ssh root@195.19.20.245
+
+cd ~/SongForge
+./venv/bin/python scripts/test_smtp.py
+
+Скрипт покажет: OK или FAIL и какой HOST:PORT сработал.
+
+
+ШАГ 2. Логи приложения
+----------------------
+
+pm2 logs songforge --lines 40 --nostream
+
+Ищите: SMTP auth failed / SMTP send failed
+
+
+ШАГ 3. Исправить .env (по результату test_smtp.py)
+-------------------------------------------------
+
+nano ~/SongForge/.env
+
+Вариант A (часто у REG.RU Mail):
+SMTP_HOST=mail.hosting.reg.ru
+SMTP_PORT=587
+SMTP_USER=noreply@sozdaipesnu.ru
+SMTP_PASSWORD=пароль_от_ящика
+SMTP_FROM=noreply@sozdaipesnu.ru
+SMTP_USE_TLS=true
+
+Вариант B (если 587 не работает с VPS):
+SMTP_HOST=mail.hosting.reg.ru
+SMTP_PORT=465
+SMTP_USE_TLS=false
+
+Вариант C (ваш сервер sm42):
+SMTP_HOST=sm42.hosting.reg.ru
+SMTP_PORT=587
+SMTP_USE_TLS=true
+
+Проверьте пароль: войдите в Roundcube как noreply@ — если не входит, пароль неверный в .env.
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+./venv/bin/python scripts/test_smtp.py
+curl http://127.0.0.1:8000/api/auth/providers
+
+exit
+
+
+ШАГ 4. Тест на сайте
+--------------------
+https://sozdaipesnu.ru Ctrl+F5 → Войти → ваша почта → Получить код.
+
+
+ЧАСТЫЕ ПРИЧИНЫ
+--------------
+1. Неверный пароль в SMTP_PASSWORD
+2. SMTP_HOST=sm42... а с VPS работает только mail.hosting.reg.ru
+3. Порт 587 заблокирован у хостера VPS — попробовать 465 + SMTP_USE_TLS=false
+4. SMTP_USER без домена (нужен полный noreply@sozdaipesnu.ru)
+
+После правок в .env на GitHub нужен deploy с scripts/test_smtp.py:
+  update-now.sh (см. COMMANDS.txt)

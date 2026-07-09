@@ -48,7 +48,7 @@ class EmailService:
 
         try:
             if SMTP_USE_TLS:
-                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
                     smtp.ehlo()
                     smtp.starttls()
                     smtp.ehlo()
@@ -56,10 +56,29 @@ class EmailService:
                         smtp.login(SMTP_USER, SMTP_PASSWORD)
                     smtp.send_message(msg)
             else:
-                with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+                with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
                     if SMTP_USER:
                         smtp.login(SMTP_USER, SMTP_PASSWORD)
                     smtp.send_message(msg)
-        except smtplib.SMTPException as exc:
-            log.error("SMTP send failed for %s: %s", to_email, exc)
-            raise RuntimeError("Не удалось отправить письмо. Попробуйте позже.") from exc
+        except smtplib.SMTPAuthenticationError as exc:
+            log.error(
+                "SMTP auth failed host=%s port=%s user=%s: %s",
+                SMTP_HOST,
+                SMTP_PORT,
+                SMTP_USER,
+                exc,
+            )
+            raise RuntimeError(
+                "Ошибка входа на почтовый сервер. Проверьте SMTP_USER и SMTP_PASSWORD в .env."
+            ) from exc
+        except (smtplib.SMTPException, OSError, TimeoutError) as exc:
+            log.error(
+                "SMTP send failed host=%s port=%s to=%s: %s",
+                SMTP_HOST,
+                SMTP_PORT,
+                to_email,
+                exc,
+            )
+            raise RuntimeError(
+                "Не удалось отправить письмо. Проверьте SMTP_HOST и порт (587 или 465)."
+            ) from exc

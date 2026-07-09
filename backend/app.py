@@ -1015,6 +1015,12 @@ async def auth_email_request(req: EmailAuthRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        log.exception("auth_email_request failed for %s", req.email)
+        raise HTTPException(
+            status_code=503,
+            detail="Не удалось отправить письмо. См. SMTP-DIAGNOSTIKA.txt на сервере.",
+        ) from exc
 
 
 @app.post("/api/auth/email/verify")
