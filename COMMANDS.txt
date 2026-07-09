@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.1
+Obnovleno: iyul 2026 | versiya: 2.11.2 (prod)
 Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
 
 
@@ -147,9 +147,16 @@ ssh root@195.19.20.245
 === OBNOVIT SAIT (obychno) ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-=== OBNOVIT SAIT (esli oshibka pro base64) ===
+=== OBNOVIT SAIT (esli TLS / raw.githubusercontent) ===
 cd ~/SongForge
 curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+bash scripts/deploy-vps.sh
+
+=== OBNOVIT SAIT (esli i codeload ne kachaet — wget) ===
+cd ~/SongForge
+wget -O /tmp/sf.tar.gz "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
 cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
 bash scripts/deploy-vps.sh
