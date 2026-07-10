@@ -2,7 +2,7 @@
 # Одна команда для обновления SongForge на VPS до последней версии с GitHub
 set -e
 DIR="${HOME}/SongForge"
-REQUIRED_DEPLOY_VERSION="11"
+REQUIRED_DEPLOY_VERSION="13"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 mkdir -p "$DIR/scripts"
 cd "$DIR"
