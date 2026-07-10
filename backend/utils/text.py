@@ -102,8 +102,35 @@ def lyrics_look_lazy(lyrics: str, idea: str) -> bool:
     return False
 
 
+_EXPLICIT_LYRICS_LANG = (
+    (r"(?:на|in)\s+английск|по-английски|english\s+lyrics|song\s+in\s+english|lyrics\s+in\s+english", "en", "английском"),
+    (r"(?:на|in)\s+арабск|по-арабски|arabic\s+lyrics|song\s+in\s+arabic", "ar", "арабском"),
+    (r"(?:на|in)\s+испанск|spanish\s+lyrics|song\s+in\s+spanish", "es", "испанском"),
+    (r"(?:на|in)\s+французск|french\s+lyrics|song\s+in\s+french", "fr", "французском"),
+    (r"(?:на|in)\s+немецк|german\s+lyrics|song\s+in\s+german", "de", "немецком"),
+    (r"(?:на|in)\s+китайск|chinese\s+lyrics|song\s+in\s+chinese", "zh", "китайском"),
+    (r"(?:на|in)\s+турецк|turkish\s+lyrics|song\s+in\s+turkish", "tr", "турецком"),
+)
+
+
+def resolve_lyrics_language(idea: str) -> tuple[str, str, bool]:
+    """
+    Язык текста песни из идеи пользователя.
+    Возвращает (код, подпись для промпта, is_default_ru).
+    По умолчанию — русский, если пользователь явно не попросил другой язык.
+    """
+    text = (idea or "").lower()
+    for pattern, code, label in _EXPLICIT_LYRICS_LANG:
+        if re.search(pattern, text, re.IGNORECASE):
+            return code, label, False
+    return "ru", "русском", True
+
+
 def idea_looks_russian(text: str) -> bool:
-    """True when the user's prompt is primarily Russian (default for SongForge)."""
+    """True when lyrics should be Russian (default or Russian prompt)."""
+    code, _, _ = resolve_lyrics_language(text)
+    if code != "ru":
+        return False
     if not text.strip():
         return True
     cyrillic = len(re.findall(r"[а-яё]", text.lower()))
@@ -111,6 +138,21 @@ def idea_looks_russian(text: str) -> bool:
     if cyrillic == 0 and latin > 0:
         return False
     return cyrillic >= latin or cyrillic >= 8
+
+
+def lyrics_language_instruction(idea: str) -> str:
+    """Строка для промпта: на каком языке писать строки песни."""
+    code, label, is_default = resolve_lyrics_language(idea)
+    if code == "ru":
+        return (
+            "ОБЯЗАТЕЛЬНО: все строки песни (куплеты, припев, бридж, финал) только на русском. "
+            "Структурные теги [Verse 1], [Chorus], [Bridge], [Outro] — на английском (требование Suno)."
+        )
+    return (
+        f"ОБЯЗАТЕЛЬНО: пользователь просит текст на {label} языке — все строки песни только на нём. "
+        "Структурные теги [Verse 1], [Chorus], [Bridge], [Outro] — на английском (требование Suno)."
+        + (" Это явный запрос, не переводить на русский." if not is_default else "")
+    )
 
 
 def lyrics_look_english(lyrics: str) -> bool:

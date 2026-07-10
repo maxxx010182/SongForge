@@ -18,9 +18,10 @@ from backend.utils.text import (
     clean_text,
     ensure_russian_vocal_style,
     extract_json,
-    idea_looks_russian,
+    lyrics_language_instruction,
     lyrics_look_english,
     lyrics_look_lazy,
+    resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
 )
 
@@ -36,7 +37,8 @@ _SYSTEM = (
     "lyrics: первая строка — структурный тег ([Verse 1]); сценические теги "
     "([Crowd cheering], [Female backing vocals]) только внутри блоков; "
     "куплеты до 4 строк; припев короткий и запоминающийся; весь текст до 2800 символов. "
-    "ЗАПРЕЩЕНО писать куплеты и припев на английском, если запрос пользователя на русском. "
+    "Язык строк песни: по умолчанию русский; если пользователь явно просит другой язык — пиши на нём. "
+    "ЗАПРЕЩЕНО подменять запрошенный язык. "
     "style_prompt: 12–20 слов И не более 180 символов; обязательно "
     "sung in Russian, native Russian vocals; жанр, вокал, инструменты, атмосфера, "
     "1–2 продакшн-детали; без имён артистов; без дублей."
@@ -51,10 +53,8 @@ class SunoPackageResult:
     source: str = "unified"
 
 
-_RUSSIAN_LYRICS_RETRY = (
-    "\n\nКРИТИЧНО: запрос на русском. Поле lyrics — строки песни только на русском. "
-    "Английский допустим только в тегах [Verse 1], [Chorus], [Bridge], [Outro]."
-)
+def _lyrics_retry_hint(idea: str) -> str:
+    return f"\n\nКРИТИЧНО: {lyrics_language_instruction(idea)}"
 
 
 class SunoPackageComposer:
@@ -81,11 +81,12 @@ class SunoPackageComposer:
             backing_vocal_gender=backing_vocal_gender,
             custom_description=custom_description,
         )
-        require_russian = idea_looks_russian(idea)
+        lang_code, _, _ = resolve_lyrics_language(idea)
+        retry_hint = _lyrics_retry_hint(idea)
         for model, temperature, label, extra_hint in (
             (self._yandex.MODEL_PRO, 0.72, "unified-pro", ""),
-            (self._yandex.MODEL_PRO, 0.62, "unified-pro-ru", _RUSSIAN_LYRICS_RETRY),
-            (self._yandex.MODEL_LITE, 0.65, "unified-lite-ru", _RUSSIAN_LYRICS_RETRY),
+            (self._yandex.MODEL_PRO, 0.62, "unified-pro-retry", retry_hint),
+            (self._yandex.MODEL_LITE, 0.65, "unified-lite-retry", retry_hint),
         ):
             try:
                 raw = self._yandex.complete(
@@ -103,8 +104,8 @@ class SunoPackageComposer:
                 if not result or lyrics_look_lazy(result.lyrics, idea):
                     log.warning("Unified package %s: lazy or empty lyrics", label)
                     continue
-                if require_russian and lyrics_look_english(result.lyrics):
-                    log.warning("Unified package %s: lyrics in English — retry", label)
+                if lang_code == "ru" and lyrics_look_english(result.lyrics):
+                    log.warning("Unified package %s: expected Russian lyrics — retry", label)
                     continue
                 result.source = label
                 return result
@@ -165,10 +166,7 @@ class SunoPackageComposer:
             parts.append(
                 "Нужна живая/стадионная атмосфера — добавь уместные crowd-теги в lyrics."
             )
-        if idea_looks_russian(idea):
-            parts.append(
-                "ОБЯЗАТЕЛЬНО: текст песни (куплеты, припев, бридж) только на русском языке."
-            )
+        parts.append(lyrics_language_instruction(idea))
         return "\n".join(parts)
 
     @staticmethod

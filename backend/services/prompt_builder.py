@@ -17,7 +17,10 @@ from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT
 from backend.utils.text import (
     clean_text,
     ensure_russian_vocal_style,
+    lyrics_language_instruction,
+    lyrics_look_english,
     lyrics_look_lazy,
+    resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
     truncate,
 )
@@ -313,9 +316,16 @@ class PromptBuilder:
                     )
                 )
                 lyrics = scrub_idea_echo_from_lyrics(lyrics, idea)
-                if lyrics and not lyrics_look_lazy(lyrics, idea):
+                lang_code, _, _ = resolve_lyrics_language(idea)
+                wrong_lang = lang_code == "ru" and lyrics_look_english(lyrics)
+                if lyrics and not lyrics_look_lazy(lyrics, idea) and not wrong_lang:
                     return lyrics, source
-                log.info("Lyrics attempt %s looked lazy — next try", source)
+                log.info(
+                    "Lyrics attempt %s rejected (lazy=%s wrong_lang=%s)",
+                    source,
+                    lyrics_look_lazy(lyrics, idea) if lyrics else True,
+                    wrong_lang,
+                )
             except Exception:
                 log.exception("Lyrics attempt %s failed", source)
 
@@ -332,7 +342,8 @@ class PromptBuilder:
             f"BPM: {plan.bpm}\n"
             f"Вокал: {plan.vocal} — {plan.vocal_description}\n"
             f"Атмосфера: {plan.atmosphere}\n"
-            f"Структура: {plan.structure}"
+            f"Структура: {plan.structure}\n"
+            f"{lyrics_language_instruction(idea)}"
         )
 
     def build_style(self, plan: ProductionPlan) -> str:
