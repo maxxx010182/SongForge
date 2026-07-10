@@ -13,8 +13,9 @@ SongForge — настройка GetPlatinum в .env на сервере
 ШАГ 1. Взять данные в личном кабинете GetPlatinum
 -------------------------------------------------
 
-1) Войти на https://getplatinum.ru (или ваш поддомен)
-2) Раздел API / интеграция / ключи
+1) Войти: https://sozdaisvoyupesnu.getplatinum.ru
+2) API-ключ — обычно: Настройки → Организации → шестерёнка у организации
+   → поле «API-ключ» (не путать с другими токенами в cabinet/request)
 3) Скопировать:
    • Имя аккаунта (поддомен) — у вас: sozdaisvoyupesnu
      → https://sozdaisvoyupesnu.getplatinum.ru
