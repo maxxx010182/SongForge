@@ -1,5 +1,5 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.8
+Obnovleno: iyul 2026 | versiya: 2.11.9
 Fail: COMMANDS.txt (korень proekta)
 
 Podrobnye instrukcii po temam: docs/instrukcii/INDEX.txt
@@ -41,7 +41,7 @@ bash scripts/deploy-vps.sh
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.11.8 ===
+=== Gotovo! v2.11.9 ===
 
 Deploy avtomaticheski zapuskaet:
   pm2: songforge        (API)
@@ -52,7 +52,7 @@ SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.11.8"
+Otvet: "version":"2.11.9"
 Opcionalno: "redis":true, "s3":true, "email_smtp":true
 
 

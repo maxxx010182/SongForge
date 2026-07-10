@@ -17,6 +17,7 @@ SongForge — оглавление инструкций
   SMTP-DIAGNOSTIKA.txt         — если код не уходит на email
   REG-RU-DNS-ЗАПИСИ.txt        — MX, SPF, DKIM, DMARC + SMTP в .env
   REG-RU-ПОЧТА-ISPmanager.txt  — настройка ящика noreply@ на sm42
+  SUPPORT-EMAIL-SEYCHAS.txt    — ящик support@ для поддержки (СЕЙЧАС)
   ВХОД-ПОЧТА-ПО-ШАГАМ.txt      — вход по email по шагам
   ВХОД-EMAIL-TG-VK.txt         — Telegram и VK (когда понадобится)
   VPS-SMTP-ЗАПРОС-В-ПОДДЕРЖКУ.txt — шаблон тикета REG.RU (архив)

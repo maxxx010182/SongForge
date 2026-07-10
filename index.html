@@ -666,36 +666,16 @@
         <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Служба поддержки</h1>
         <p class="text-zinc-400 mb-8">Мы поможем разобраться с любым вопросом</p>
 
-        <!-- Карточки контактов -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            <a href="https://t.me/m_moshkin" target="_blank" class="contact-card flex flex-col items-center text-center gap-3">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-                    <i class="fa-brands fa-telegram text-blue-400 text-2xl"></i>
-                </div>
-                <div>
-                    <div class="font-semibold text-sm">Telegram</div>
-                    <div class="text-xs text-zinc-500 mt-1">@m_moshkin</div>
-                    <div class="text-xs text-yellow-400/80 mt-1">Быстрее всего</div>
-                </div>
-            </a>
-            <a href="https://vk.com/moshkin_aikreator" target="_blank" class="contact-card flex flex-col items-center text-center gap-3">
-                <div class="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center">
-                    <i class="fa-brands fa-vk text-blue-500 text-2xl"></i>
-                </div>
-                <div>
-                    <div class="font-semibold text-sm">ВКонтакте</div>
-                    <div class="text-xs text-zinc-500 mt-1">@moshkin_aikreator</div>
-                    <div class="text-xs text-zinc-500 mt-1">Пн–Пт, 9:00–21:00</div>
-                </div>
-            </a>
-            <a href="mailto:bam8282@mail.ru" class="contact-card flex flex-col items-center text-center gap-3">
+        <!-- Контакт поддержки -->
+        <div class="flex justify-center mb-10">
+            <a href="mailto:support@sozdaipesnu.ru" class="contact-card flex flex-col items-center text-center gap-3 max-w-xs w-full">
                 <div class="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center">
                     <i class="fa-regular fa-envelope text-yellow-400 text-2xl"></i>
                 </div>
                 <div>
-                    <div class="font-semibold text-sm">Email</div>
-                    <div class="text-xs text-zinc-500 mt-1">bam8282@mail.ru</div>
-                    <div class="text-xs text-zinc-500 mt-1">Ответ до 24 часов</div>
+                    <div class="font-semibold text-sm">Email поддержки</div>
+                    <div class="text-xs text-zinc-500 mt-1">support@sozdaipesnu.ru</div>
+                    <div class="text-xs text-zinc-500 mt-1">Ответ в течение 24 часов</div>
                 </div>
             </a>
         </div>
@@ -1040,7 +1020,7 @@
             <a href="/legal/offer" target="_blank" rel="noopener" class="hover:text-yellow-400 transition">Оферта</a>
             <a href="#" onclick="switchToView('legal');showSection('faq');return false;" class="hover:text-yellow-400 transition">FAQ</a>
             <a href="#" onclick="switchToView('legal');showSection('support');return false;" class="hover:text-yellow-400 transition">Поддержка</a>
-            <a href="mailto:bam8282@mail.ru" class="hover:text-yellow-400 transition">bam8282@mail.ru</a>
+            <a href="mailto:support@sozdaipesnu.ru" class="hover:text-yellow-400 transition">support@sozdaipesnu.ru</a>
         </div>
     </div>
 </div>
@@ -1570,7 +1550,7 @@ document.getElementById('supportSendBtn').addEventListener('click', function(){
         return;
     }
     var mailBody = encodeURIComponent('Имя: '+name+'\nКонтакт: '+contact+'\nТема: '+topic+'\n\n'+message);
-    window.location.href = 'mailto:bam8282@mail.ru?subject='+encodeURIComponent('[СоздайСвоюПесню] '+topic)+'&body='+mailBody;
+    window.location.href = 'mailto:support@sozdaipesnu.ru?subject='+encodeURIComponent('[СоздайСвоюПесню] '+topic)+'&body='+mailBody;
     document.getElementById('supportSuccess').classList.remove('hidden');
 });
 
