@@ -1,7 +1,7 @@
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -114,7 +114,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.3")
+app = FastAPI(title="SongForge", version="2.11.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -318,6 +318,39 @@ def _generation_flags_after_success(production_id: str) -> tuple[bool, bool]:
     return _generation_flags(production_id)
 
 
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    base = SITE_URL.rstrip("/")
+    return PlainTextResponse(
+        "\n".join(
+            [
+                "User-agent: *",
+                "Allow: /",
+                "Disallow: /admin",
+                "Disallow: /api/",
+                f"Sitemap: {base}/sitemap.xml",
+                "",
+            ]
+        )
+    )
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    base = SITE_URL.rstrip("/")
+    pages = ["/", "/legal/offer", "/legal/privacy", "/legal/terms"]
+    body = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    body += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for path in pages:
+        body += "  <url>\n"
+        body += f"    <loc>{base}{path}</loc>\n"
+        body += "    <changefreq>weekly</changefreq>\n"
+        body += "    <priority>1.0</priority>\n" if path == "/" else "    <priority>0.6</priority>\n"
+        body += "  </url>\n"
+    body += "</urlset>\n"
+    return Response(content=body, media_type="application/xml")
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
@@ -375,7 +408,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.3",
+        "version": "2.11.4",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
