@@ -351,6 +351,14 @@ async def sitemap_xml():
     return Response(content=body, media_type="application/xml")
 
 
+@app.get("/googleb1701eb0e8593baa.html", response_class=PlainTextResponse)
+async def google_site_verification():
+    path = ROOT_DIR / "googleb1701eb0e8593baa.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return PlainTextResponse(path.read_text(encoding="utf-8"))
+
+
 @app.get("/")
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
