@@ -16,8 +16,8 @@ SongForge — настройка GetPlatinum в .env на сервере
 1) Войти на https://getplatinum.ru (или ваш поддомен)
 2) Раздел API / интеграция / ключи
 3) Скопировать:
-   • Имя аккаунта (поддомен), например: myshop
-     → URL оплаты: https://myshop.getplatinum.ru
+   • Имя аккаунта (поддомен) — у вас: sozdaisvoyupesnu
+     → https://sozdaisvoyupesnu.getplatinum.ru
    • API-ключ (Bearer token)
 
 
@@ -31,8 +31,8 @@ nano ~/SongForge/.env
 Добавить или заменить строки:
 
 PAYMENT_PROVIDER=getplatinum
-GETPLATINUM_ACCOUNT=имя_аккаунта_без_getplatinum.ru
-GETPLATINUM_API_KEY=ваш_api_ключ
+GETPLATINUM_ACCOUNT=sozdaisvoyupesnu
+GETPLATINUM_API_KEY=ВСТАВЬТЕ_КЛЮЧ_ИЗ_ЛК_GP
 GETPLATINUM_VAT=none
 
 Сохранить: Ctrl+O, Enter, Ctrl+X

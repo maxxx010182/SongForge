@@ -1,0 +1,45 @@
+SongForge — GetPlatinum: прописать ключ на сервере (шаг 1 из 1)
+=================================================================
+Файл: docs/instrukcii/GETPLATINUM-SERVER-SEYCHAS.txt
+Ключ уже скопирован в буфер — вставите в nano.
+
+
+КОМАНДЫ
+-------
+
+ssh root@195.19.20.245
+
+nano ~/SongForge/.env
+
+
+ДОБАВИТЬ ИЛИ ЗАМЕНИТЬ СТРОКИ
+----------------------------
+
+PAYMENT_PROVIDER=getplatinum
+GETPLATINUM_ACCOUNT=sozdaisvoyupesnu
+GETPLATINUM_API_KEY=ВСТАВЬТЕ_СЮДА_КЛЮЧ_ИЗ_БУФЕРА
+GETPLATINUM_VAT=none
+SITE_URL=https://sozdaipesnu.ru
+
+Сохранить nano: Ctrl+O, Enter, Ctrl+X
+
+
+ПЕРЕЗАПУСК
+----------
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+
+ПРОВЕРКА НА САЙТЕ
+-----------------
+
+1) https://sozdaipesnu.ru — войти в аккаунт
+2) Пакеты → любой пакет → Перейти к оплате
+3) Должна открыться форма GetPlatinum (не ошибка на сайте)
+
+Если ошибка — на сервере:
+
+pm2 logs songforge --lines 30 --nostream
+
+Скопируйте строку с GetPlatinum (без API-ключа) и пришлите ассистенту.
