@@ -2,7 +2,6 @@
 # Одна команда для обновления SongForge на VPS до последней версии с GitHub
 set -e
 DIR="${HOME}/SongForge"
-REQUIRED_DEPLOY_VERSION="13"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 mkdir -p "$DIR/scripts"
 cd "$DIR"
@@ -28,12 +27,12 @@ sed -i 's/\r$//' scripts/deploy-vps.sh 2>/dev/null || true
 chmod +x scripts/deploy-vps.sh
 rm -rf "$TMP"
 
-if ! grep -q "deploy-script-version: $REQUIRED_DEPLOY_VERSION" scripts/deploy-vps.sh; then
-  echo "ОШИБКА: на диске старый deploy-vps.sh (ожидалась версия $REQUIRED_DEPLOY_VERSION)"
-  grep 'deploy-script-version' scripts/deploy-vps.sh || true
+DEPLOY_VER=$(sed -n 's/.*deploy-script-version: *//p' scripts/deploy-vps.sh | head -1 | tr -d '\r')
+if [ -z "$DEPLOY_VER" ]; then
+  echo "ОШИБКА: в deploy-vps.sh нет маркера deploy-script-version"
   exit 1
 fi
-echo "  deploy-vps.sh: версия $REQUIRED_DEPLOY_VERSION — OK"
+echo "  deploy-vps.sh: версия $DEPLOY_VER — OK"
 
 echo "=== Запускаем деплой ==="
 bash scripts/deploy-vps.sh

@@ -22,7 +22,7 @@ SHAG 3. Obnovit sait (skopirovat ODNU stroku, vstaviti, Enter):
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-Esli TLS error — blok nizhe «esli TLS».
+Esli oshibka «staryj deploy-vps» ili TLS — blok nizhe «esli TLS» (nadezhnee).
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
