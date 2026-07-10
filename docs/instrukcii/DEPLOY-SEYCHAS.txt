@@ -1,0 +1,21 @@
+SongForge — деплой СЕЙЧАС (если update-now не работает)
+======================================================
+Файл: docs/instrukcii/DEPLOY-SEYCHAS.txt
+
+ssh root@195.19.20.245
+
+cd ~/SongForge
+
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+
+bash scripts/deploy-vps.sh
+
+Дождаться: === Готово! v2.11.8 ===
+
+curl -s https://sozdaipesnu.ru/api/health
+
+В ответе: "version":"2.11.8"

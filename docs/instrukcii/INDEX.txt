@@ -7,6 +7,7 @@ SongForge — оглавление инструкций
 
 СЕЙЧАС АКТУАЛЬНО (июль 2026)
 ----------------------------
+  DEPLOY-SEYCHAS.txt           — деплой если update-now падает
   GETPLATINUM-ENV.txt          — ключи оплаты в .env на VPS
   GOOGLE-POISK.txt             — почему нет в Google, Search Console
   ПРОВЕРКА-ПОСЛЕ-ДЕПЛОЯ.txt    — чеклист после обновления сайта
@@ -22,6 +23,7 @@ SongForge — оглавление инструкций
 
 ОПЛАТА
 ------
+  GETPLATINUM-PREFIX-SEYCHAS.txt — prefix в .env + тест (СЕЙЧАС)
   GETPLATINUM-ENV.txt
   ВАЖНО при подключении к платежной системе.txt
 

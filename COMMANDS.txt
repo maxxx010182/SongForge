@@ -22,7 +22,22 @@ SHAG 3. Obnovit sait (skopirovat ODNU stroku, vstaviti, Enter):
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-Esli oshibka «staryj deploy-vps» ili TLS — blok nizhe «esli TLS» (nadezhnee).
+Esli oshibka «staryj deploy-vps» ili TLS — SHAG 3b nizhe (NE update-now).
+
+
+SHAG 3b. Obnovit sait VRUCHNUYU (esli SHAG 3 ne srabotal)
+---------------------------------------------------------
+Skopirovat PO ODNOMU (uzhe na servere posle ssh):
+
+cd ~/SongForge
+
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+
+bash scripts/deploy-vps.sh
 
 Zhdat okonchaniya. V kontse dolzhno byt:
 
