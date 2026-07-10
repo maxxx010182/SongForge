@@ -1,0 +1,53 @@
+SongForge — S3 и защита от повторного бага (v2.10.1)
+===================================================
+
+ЧАСТЬ 1. Обновить сайт (один раз, на сервере)
+----------------------------------------------
+ssh root@195.19.20.245
+
+cd ~/SongForge
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl http://127.0.0.1:8000/api/health
+
+Нужно в ответе:
+  "version":"2.10.1"
+  "s3":true   или false — см. часть 2
+
+
+ЧАСТЬ 2. Подключено ли S3 сейчас
+--------------------------------
+./venv/bin/python -c "import sys; sys.path.insert(0,'.'); from backend.services.storage_service import StorageService; s=StorageService(); print('S3 configured:',s.enabled())"
+
+false = в .env не заполнен S3. Инструкция: S3-REG-RU-КАК-ЗАПОЛНИТЬ.txt
+После .env: pm2 restart songforge && pm2 restart songforge-worker
+
+
+ЧАСТЬ 3. Залить ВСЕ старые треки в S3 (один раз)
+------------------------------------------------
+Сначала посмотреть очередь:
+
+./venv/bin/python scripts/mirror_library_to_s3.py
+
+Залить:
+
+./venv/bin/python scripts/mirror_library_to_s3.py --fix
+
+Перезалить всё заново (если нужно):
+
+./venv/bin/python scripts/mirror_library_to_s3.py --all --fix
+
+
+ЧАСТЬ 4. Что даёт S3
+---------------------
+• После заливки ссылки в фонотеке ведут на ВАШ бакет REG.RU
+• Ссылки APIPass со временем могут протухнуть — S3 надёжнее
+• Новые песни worker заливает в S3 сам (если s3:true в health)
+
+
+ЧАСТЬ 5. Что исправлено в v2.10.1 (чтобы баг не повторился)
+-----------------------------------------------------------
+• Повторная «Создать песню» с тем же текстом = НОВАЯ запись, не перезапись
+• Фонотека обновляется при повторной генерации на том же id (sync)
+• Опрос статуса сам догоняет APIPass, если worker отстал

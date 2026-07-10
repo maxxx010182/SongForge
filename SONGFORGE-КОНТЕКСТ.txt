@@ -1,11 +1,29 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 9 июля 2026, конец дня (пауза — §0i, §0j)
+Обновлено: 10 июля 2026
 Путь: C:\Users\makc0\Desktop\SongForge\SONGFORGE-КОНТЕКСТ.txt
+
+ПАПКИ (порядок 10.07):
+  COMMANDS.txt              — команды сервера (корень)
+  docs/instrukcii/INDEX.txt — все пошаговые инструкции
+  docs/biznes/              — PDF, docx (не для деплоя)
 
 
 ═══════════════════════════════════════
-0i. СТАТУС ПРОДА (9 ИЮЛЯ 2026, КОНЕЦ ДНЯ)
+0k. СТАТУС (10 ИЮЛЯ 2026)
+═══════════════════════════════════════
+
+  [x] SMTP работает — код в письме, вход по email ок
+  [x] v2.11.3 в GitHub: темы, мини-плеер, ссылка ?auth=email, UX
+  [ ] Деплой v2.11.3 на сервер (COMMANDS.txt)
+  [ ] GetPlatinum: ключи в .env (docs/instrukcii/GETPLATINUM-ENV.txt)
+  [ ] Тестовая оплата end-to-end
+
+Следующий шаг: деплой → GetPlatinum .env → тест «Пакеты».
+
+
+═══════════════════════════════════════
+0i. СТАТУС ПРОДА (9 ИЮЛЯ 2026, архив)
 ═══════════════════════════════════════
 
 sozdaipesnu.ru — на сервере проверено владельцем:
@@ -71,7 +89,7 @@ sozdaipesnu.ru — на сервере проверено владельцем:
 
 ТЕКУЩИЙ ШАГ ПОСЛЕ ПАУЗЫ:
   Дождаться REG.RU → test_smtp.py → тест входа на сайте.
-  Файлы: SMTP-DIAGNOSTIKA.txt, VPS-SMTP-ЗАПРОС-В-ПОДДЕРЖКУ.txt
+  Файлы: docs/instrukcii/SMTP-DIAGNOSTIKA.txt
 
 
 ═══════════════════════════════════════
@@ -93,10 +111,10 @@ sozdaipesnu.ru — на сервере проверено владельцем:
   [x] Ящик noreply@sozdaipesnu.ru создан (псевдонимы/копии — пусто)
 
 ИНСТРУКЦИИ НА ДИСКЕ (копировать из Блокнота):
-  REG-RU-DNS-ЗАПИСИ.txt      — MX, SPF, DKIM, DMARC + .env + pm2
-  REG-RU-ПОЧТА-ISPmanager.txt — полный путь sm42
-  ВХОД-ПОЧТА-ПО-ШАГАМ.txt
-  ВХОД-EMAIL-TG-VK.txt
+  docs/instrukcii/REG-RU-DNS-ЗАПИСИ.txt
+  docs/instrukcii/REG-RU-ПОЧТА-ISPmanager.txt
+  docs/instrukcii/ВХОД-ПОЧТА-ПО-ШАГАМ.txt
+  docs/instrukcii/ВХОД-EMAIL-TG-VK.txt
 
 ПРОВЕРЕНО 9.07:
   [x] DNS: MX, SPF, DMARC, DKIM

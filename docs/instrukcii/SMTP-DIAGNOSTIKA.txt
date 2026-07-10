@@ -1,15 +1,23 @@
 SongForge — не приходит код входа (SMTP)
 =========================================
-Файл: C:\Users\makc0\Desktop\SongForge\SMTP-DIAGNOSTIKA.txt
+Файл: docs/instrukcii/SMTP-DIAGNOSTIKA.txt
 
 Симптом: «Получить код» → пауза → «Не удалось отправить код».
 API email_smtp:true значит HOST в .env есть, но отправка с сервера падает.
 
 
-ШАГ 1. Диагностика на сервере
------------------------------
+ШАГ 0. Сначала обновить код на сервере (если test_smtp.py «нет файла»)
+---------------------------------------------------------------------
 
 ssh root@195.19.20.245
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+Дождаться: === Gotovo! ===
+
+
+ШАГ 1. Диагностика SMTP
+-----------------------
 
 cd ~/SongForge
 ./venv/bin/python scripts/test_smtp.py
@@ -66,10 +74,26 @@ https://sozdaipesnu.ru Ctrl+F5 → Войти → ваша почта → Пол
 
 ЧАСТЫЕ ПРИЧИНЫ
 --------------
-1. Неверный пароль в SMTP_PASSWORD
+1. Неверный пароль в SMTP_PASSWORD (в test_smtp будет auth failed, не timed out)
 2. SMTP_HOST=sm42... а с VPS работает только mail.hosting.reg.ru
-3. Порт 587 заблокирован у хостера VPS — попробовать 465 + SMTP_USE_TLS=false
+3. Порт 587/465 ЗАБЛОКИРОВАН у хостера VPS — test_smtp: timed out на ВСЕХ host/port
 4. SMTP_USER без домена (нужен полный noreply@sozdaipesnu.ru)
+
+ЕСЛИ ВСЕ ВАРИАНТЫ timed out (проверено 9.07 на cv7545137)
+---------------------------------------------------------
+С паролем всё может быть ок — сервер просто не может открыть TCP до REG.RU.
+
+Проверка на VPS (одна команда):
+
+timeout 8 bash -c 'cat < /dev/null > /dev/tcp/mail.hosting.reg.ru/587' && echo PORT_587_OK || echo PORT_587_BLOCKED
+
+Проверено 9.07: PORT_587_BLOCKED на cv7545137 — исходящий SMTP с VPS закрыт.
+
+Если BLOCKED — написать в поддержку VPS (текст ниже).
+или использовать SMTP-релей (SendPulse, UniSender, Yandex и т.п.) в .env.
+
+Пока SMTP заблокирован — временно для узкой беты:
+  AUTH_DEV_CODE_ENABLED=true  (код на экране, не для публики)
 
 После правок в .env на GitHub нужен deploy с scripts/test_smtp.py:
   update-now.sh (см. COMMANDS.txt)

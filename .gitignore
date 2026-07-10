@@ -27,3 +27,8 @@ nohup.out
 
 # VS Code
 .vscode/
+
+# Cursor / agent (ne v repozitorii)
+terminals/
+agent-tools/
+mcps/

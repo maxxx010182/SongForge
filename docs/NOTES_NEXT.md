@@ -19,7 +19,9 @@
 - [ ] GetPlatinum ключи в .env на сервере — блокер оплаты
 - [ ] UI backlog: галочка, кнопка «Получить код» — § вход D
 
-**Продолжить:** деплой v2.11.3 → `GETPLATINUM-ENV.txt` → тест оплаты.
+**Продолжить:** деплой v2.11.3 → `docs/instrukcii/GETPLATINUM-ENV.txt` → тест оплаты.
+
+**Порядок в папке (10.07):** команды — `COMMANDS.txt`; инструкции — `docs/instrukcii/INDEX.txt`.
 
 ---
 

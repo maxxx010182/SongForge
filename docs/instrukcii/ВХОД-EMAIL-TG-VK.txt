@@ -1,0 +1,318 @@
+SongForge — полноценный вход: Email + Telegram + VK
+====================================================
+Файл: C:\Users\makc0\Desktop\SongForge\ВХОД-EMAIL-TG-VK.txt
+Копировать команды ОТСЮДА (Блокнот), не из чата Cursor.
+
+Сайт: https://sozdaipesnu.ru
+Сервер: ssh root@195.19.20.245
+Версия на сервере: 2.11.0 (у вас уже стоит)
+
+
+ОБЩАЯ СХЕМА (что вы делаете)
+----------------------------
+
+  1) Получаете данные у почты / Telegram / VK (ниже по шагам).
+  2) Вписываете их в файл .env НА СЕРВЕРЕ (не на Windows).
+  3) Перезапускаете сайт: pm2 restart songforge
+  4) Проверяете в браузере Ctrl+F5.
+
+Можно включать по одному: сначала email, потом TG, потом VK.
+
+
+========================================================
+ЧАСТЬ 0. ОДИН РАЗ — открыть .env на сервере
+========================================================
+
+ssh root@195.19.20.245
+
+nano ~/SongForge/.env
+
+Проверьте, что есть строка (должна быть именно https):
+
+SITE_URL=https://sozdaipesnu.ru
+
+И что НЕ включён показ кода на экране в обход почты:
+
+AUTH_DEV_CODE_ENABLED=false
+
+Сохранить в nano: Ctrl+O, Enter, Ctrl+X
+
+
+После ЛЮБЫХ правок .env:
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+
+========================================================
+ЧАСТЬ 1. EMAIL — код приходит НА ПОЧТУ (SMTP)
+========================================================
+
+СЕЙЧАС: код показывается на экране (SMTP_HOST пустой).
+ЦЕЛЬ: пользователь вводит email → код приходит в письмо.
+
+
+ШАГ 1.1 — Завести почту для отправки кодов
+------------------------------------------
+
+Нужен ящик или SMTP-аккаунт, с которого сервер шлёт письма.
+Примеры:
+
+  A) Почта на домене sozdaipesnu.ru (REG.RU, Timeweb и т.п.)
+     Создать ящик: noreply@sozdaipesnu.ru или auth@sozdaipesnu.ru
+
+  B) Yandex 360 / корпоративная почта на домене
+
+  C) Сервис рассылок с SMTP (SendPulse, Unisender) — для старта реже
+
+В панели хостинга/почты найдите раздел «SMTP» и выпишите:
+
+  - сервер (host), обычно smtp.домен.ru или smtp.yandex.ru
+  - порт: 587 (TLS) или 465 (SSL)
+  - логин (часто полный email)
+  - пароль (для Yandex — «пароль приложения», не основной)
+
+
+ШАГ 1.2 — Вписать в .env на сервере
+------------------------------------
+
+nano ~/SongForge/.env
+
+Добавить или заменить (подставить СВОИ значения):
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=noreply@sozdaipesnu.ru
+SMTP_PASSWORD=ваш_пароль_или_пароль_приложения
+SMTP_FROM=noreply@sozdaipesnu.ru
+SMTP_USE_TLS=true
+
+pm2 restart songforge
+
+
+ШАГ 1.3 — Проверка
+------------------
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Должно быть: "email_smtp":true
+
+В браузере https://sozdaipesnu.ru → Ctrl+F5 → войти по email.
+Код должен прийти в письмо (проверьте «Спам»).
+На экране жёлтого «Ваш код: ...» быть НЕ должно.
+
+
+========================================================
+ЧАСТЬ 2. TELEGRAM — вход через кнопку виджета
+========================================================
+
+СЕЙЧАС: telegram_enabled: false — кнопки нет.
+ЦЕЛЬ: в модалке кнопка «Log in with Telegram» → вход в аккаунт.
+
+
+ШАГ 2.1 — Создать бота
+----------------------
+
+1) В Telegram откройте @BotFather
+2) Команда: /newbot
+3) Имя бота (любое): например «СоздайСвоюПесню Вход»
+4) Username (латиница, на _bot): например SozdaiPesnuLogin_bot
+5) BotFather пришлёт ТОКЕН — длинная строка вида:
+   7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Запишите:
+  TELEGRAM_BOT_TOKEN=...
+  TELEGRAM_BOT_USERNAME=SozdaiPesnuLogin_bot   (без @)
+
+
+ШАГ 2.2 — Привязать бота к домену (ОБЯЗАТЕЛЬНО)
+------------------------------------------------
+
+В @BotFather:
+
+  /setdomain
+
+Выбрать вашего бота → ввести домен БЕЗ https:
+
+  sozdaipesnu.ru
+
+Без www, без слэша. Иначе виджет на сайте не заработает.
+
+
+ШАГ 2.3 — Вписать в .env на сервере
+------------------------------------
+
+nano ~/SongForge/.env
+
+TELEGRAM_AUTH_ENABLED=true
+TELEGRAM_BOT_TOKEN=7123456789:AAH...
+TELEGRAM_BOT_USERNAME=SozdaiPesnuLogin_bot
+
+pm2 restart songforge
+
+
+ШАГ 2.4 — Проверка
+------------------
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Должно быть:
+  "telegram_enabled":true
+  "telegram_bot_username":"SozdaiPesnuLogin_bot"
+
+Браузер Ctrl+F5 → модалка входа → кнопка Telegram.
+Нажать → подтвердить в приложении Telegram → вы в аккаунте.
+
+
+========================================================
+ЧАСТЬ 3. VK — вход через «Войти через VK»
+========================================================
+
+СЕЙЧАС: vk_enabled: false.
+ЦЕЛЬ: кнопка VK → страница VK ID → возврат на сайт → вход.
+
+
+ШАГ 3.1 — Создать приложение VK ID
+----------------------------------
+
+1) Откройте в браузере:
+   https://id.vk.com/about/business/go
+
+2) Войти под аккаунтом VK → «Мои приложения» → Создать
+
+3) Тип: «Веб-сайт» (Web)
+
+4) Название: СоздайСвоюПесню (любое)
+
+5) В настройках приложения найти:
+   - ID приложения (client_id)  → это VK_APP_ID
+   - Защищённый ключ (secret)   → это VK_APP_SECRET
+
+6) Redirect URI (адрес перенаправления) — вписать ТОЧНО:
+
+   https://sozdaipesnu.ru/api/auth/vk/callback
+
+   Без пробелов, без слэша в конце, только https.
+   Должен совпадать с SITE_URL в .env.
+
+
+ШАГ 3.2 — Вписать в .env на сервере
+------------------------------------
+
+nano ~/SongForge/.env
+
+VK_AUTH_ENABLED=true
+VK_APP_ID=12345678
+VK_APP_SECRET=ваш_секретный_ключ
+VK_AUTH_BASE=https://id.vk.ru
+
+pm2 restart songforge
+
+
+ШАГ 3.3 — Проверка
+------------------
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Должно быть: "vk_enabled":true
+
+Браузер Ctrl+F5 → «Войти через VK» → разрешить доступ →
+вернёт на сайт с ?auth=ok и toast «Вы вошли».
+
+
+========================================================
+ЧАСТЬ 4. ИТОГОВАЯ ПРОВЕРКА (все три способа)
+========================================================
+
+На сервере:
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Идеальный ответ:
+
+{
+  "email_enabled": true,
+  "email_smtp": true,
+  "telegram_enabled": true,
+  "telegram_bot_username": "ВашБот_bot",
+  "vk_enabled": true
+}
+
+В браузере https://sozdaipesnu.ru Ctrl+F5:
+  - модалка: Telegram + VK + email
+  - email: код в письме
+  - TG: один клик
+  - VK: редирект и возврат
+
+
+========================================================
+ЧАСТЬ 5. ПРИМЕР готового блока в .env (шаблон)
+========================================================
+
+Скопируйте в nano и замените XXX на свои значения:
+
+SITE_URL=https://sozdaipesnu.ru
+AUTH_DEV_CODE_ENABLED=false
+
+SMTP_HOST=smtp.XXX.ru
+SMTP_PORT=587
+SMTP_USER=noreply@sozdaipesnu.ru
+SMTP_PASSWORD=XXX
+SMTP_FROM=noreply@sozdaipesnu.ru
+SMTP_USE_TLS=true
+
+TELEGRAM_AUTH_ENABLED=true
+TELEGRAM_BOT_TOKEN=XXX
+TELEGRAM_BOT_USERNAME=XXX_bot
+
+VK_AUTH_ENABLED=true
+VK_APP_ID=XXX
+VK_APP_SECRET=XXX
+VK_AUTH_BASE=https://id.vk.ru
+
+ADMIN_BOOTSTRAP_EMAILS=ваш@email.ru
+
+
+========================================================
+ЧАСТЬ 6. ЧАСТЫЕ ОШИБКИ
+========================================================
+
+Код на экране, а не в почте
+  → SMTP_HOST пустой или неверный пароль
+  → pm2 restart songforge после .env
+
+Telegram: кнопки нет
+  → TELEGRAM_AUTH_ENABLED не true или нет /setdomain sozdaipesnu.ru
+
+Telegram: ошибка при входе
+  → проверить токен и username; домен в BotFather
+
+VK: ошибка redirect
+  → в кабинете VK URI должен быть ТОЧНО
+    https://sozdaipesnu.ru/api/auth/vk/callback
+  → SITE_URL=https://sozdaipesnu.ru
+
+VK: auth_error=vk в адресе
+  → неверный secret или redirect не совпадает
+
+После .env всегда:
+  pm2 restart songforge
+  pm2 restart songforge-worker
+
+Логи:
+  pm2 logs songforge --lines 50 --nostream
+
+
+========================================================
+ЧТО ПРИСЛАТЬ АССИСТЕНТУ (без паролей в чат!)
+========================================================
+
+Можно написать в Cursor:
+
+  «Настроил SMTP на REG.RU» — без пароля
+  «Бот @SozdaiPesnuLogin_bot, setdomain сделал»
+  «VK app id 12345678, redirect прописал»
+
+Пароли и токены — только в .env на сервере, не в Telegram и не в чат.
+
+exit

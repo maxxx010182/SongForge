@@ -17,7 +17,7 @@
 ## Деплой
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
-Текущая версия: **2.11.2** (на проде). Деплой: COMMANDS.txt блок «esli TLS» (raw.githubusercontent — TLS error на VPS).
+Текущая версия: **2.11.3**. Деплой: `COMMANDS.txt` (корень). Инструкции: `docs/instrukcii/INDEX.txt`. Блок «esli TLS» если raw.githubusercontent падает.
 
 ## Язык
 
@@ -33,4 +33,4 @@
 - Backlog и «на потом» — в `SONGFORGE-КОНТЕКСТ.txt` / `NOTES_NEXT.md`, не в каждое сообщение.
 - Команды для копирования — в `.txt` (COMMANDS.txt), в чате максимум одна команда или «открой файл X, шаг N».
 
-**Сейчас активная линия (не смешивать):** ждём REG.RU (разблок SMTP) → `test_smtp.py` → тест входа на сайте. Галочка auth — готово (v2.11.2). UI-копирайт галочки/кнопки — §0j, не блокер.
+**Сейчас активная линия:** деплой v2.11.3 → `GETPLATINUM-ENV.txt` (docs/instrukcii/) → тест оплаты. SMTP и вход по email — готово.

@@ -1,6 +1,8 @@
 SongForge — KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.2 (prod)
-Fail: COMMANDS.txt — otkryt cherez ОТКРЫТЬ-COMMANDS.bat
+Obnovleno: iyul 2026 | versiya: 2.11.3
+Fail: COMMANDS.txt (korень proekta)
+
+Podrobnye instrukcii po temam: docs/instrukcii/INDEX.txt
 
 
 ========================================
@@ -20,9 +22,11 @@ SHAG 3. Obnovit sait (skopirovat ODNU stroku, vstaviti, Enter):
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
+Esli TLS error — blok nizhe «esli TLS».
+
 Zhdat okonchaniya. V kontse dolzhno byt:
 
-=== Gotovo! v2.11.1 ===
+=== Gotovo! v2.11.3 ===
 
 Deploy avtomaticheski zapuskaet:
   pm2: songforge        (API)
@@ -33,33 +37,20 @@ SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
 
 curl http://127.0.0.1:8000/api/health
 
-Otvet: "version":"2.11.1"
-Opcionalno: "redis":true, "s3":true, "generating":N
+Otvet: "version":"2.11.3"
+Opcionalno: "redis":true, "s3":true, "email_smtp":true
 
 
 SHAG 4b. SMTP — esli kod ne uhodit na pochtu
 
-Snachala obnovit (esli net scripts/test_smtp.py):
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-Potom:
-
 cd ~/SongForge
 ./venv/bin/python scripts/test_smtp.py
 
-Esli FAIL — popravte .env (chasto pomogaet):
-
-SMTP_HOST=mail.hosting.reg.ru
-SMTP_PORT=587
-SMTP_USER=noreply@sozdaipesnu.ru
-SMTP_PASSWORD=...
-SMTP_FROM=noreply@sozdaipesnu.ru
-SMTP_USE_TLS=true
+Esli FAIL — popravte .env, potom:
 
 pm2 restart songforge
 
-Podrobno: SMTP-DIAGNOSTIKA.txt (Windows, Bloknot)
+Podrobno: docs/instrukcii/SMTP-DIAGNOSTIKA.txt
 
 
 SHAG 5. Redis (odin raz, esli net)
@@ -75,15 +66,7 @@ SHAG 6. S3 REG.RU v .env (odin raz)
 
 nano ~/SongForge/.env
 
-Dobavit (svoi znacheniya iz paneli REG.RU):
-
-S3_ENABLED=true
-S3_ENDPOINT=https://...
-S3_ACCESS_KEY=...
-S3_SECRET_KEY=...
-S3_BUCKET=...
-S3_REGION=ru-1
-S3_PUBLIC_BASE=https://...
+Podrobno: docs/instrukcii/S3-REG-RU-КАК-ЗАПОЛНИТЬ.txt
 
 Posle .env:
 
@@ -91,31 +74,11 @@ pm2 restart songforge
 pm2 restart songforge-worker
 
 
-SHAG 6b. sunoapi.org — zapasnoy kanal Suno (opcionalno)
-
-nano ~/SongForge/.env
-
-Dobavit:
-
-SUNOAPI_ORG_API_KEY=...
-MUSIC_PROVIDER=fallback
-
-fallback = snachala ApiPass, pri oshibke sunoapi.org
-Tolko sunoapi: MUSIC_PROVIDER=sunoapi
-
-pm2 restart songforge
-pm2 restart songforge-worker
-
-Proverka health:
-
-curl http://127.0.0.1:8000/api/health
-
-Otvet: "music_providers":["apipass","sunoapi"]
-
-
 SHAG 7. (odin raz) Admin-panel — vash email v .env
 
 ADMIN_BOOTSTRAP_EMAILS=vas@email.ru
+
+Podrobno: docs/instrukcii/ADMIN-VHOD.txt
 
 Esli menyali .env:
 
@@ -130,11 +93,13 @@ exit
 
 SHAG 9. V brauzere na Windows
 
-Sait: http://195.19.20.245:8000/
+Sait: https://sozdaipesnu.ru
 Zhat Ctrl+F5 (bez kesha)
 
-Admin: http://195.19.20.245:8000/admin
+Admin: https://sozdaipesnu.ru/admin
 (Snachala voyti na glavnoj pod tem zhe email)
+
+Posle deploy: docs/instrukcii/ПРОВЕРКА-ПОСЛЕ-ДЕПЛОЯ.txt
 
 
 ========================================
@@ -184,7 +149,6 @@ grep ADMIN_BOOTSTRAP .env
 exit
 
 === VOSSTANOVIT PROPAVSHUYU PESNYU (APIPass success, net v adminke) ===
-Smotret: VOSSTANOVLENIE-TREKA.txt (fail v korne proekta)
 cd ~/SongForge
 ./venv/bin/python scripts/check_task.py TASK_ID_IZ_APIPASS
 ./venv/bin/python scripts/recover_orphan_task.py TASK_ID --email EMAIL --prepaid --fix
@@ -192,5 +156,5 @@ cd ~/SongForge
 === V BRAUZERE ===
 Ctrl+F5
 
-Sait: http://195.19.20.245:8000/
-Admin: http://195.19.20.245:8000/admin
+Sait: https://sozdaipesnu.ru
+Admin: https://sozdaipesnu.ru/admin

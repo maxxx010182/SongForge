@@ -2,7 +2,7 @@
 
 AI-платформа для создания песен: Suno через ApiPass, тексты через YandexGPT.
 
-**Текущая версия:** 2.5.0
+**Текущая версия:** 2.11.3
 
 ## Стек
 
@@ -28,9 +28,11 @@ API-документация: http://127.0.0.1:8000/docs
 
 ## Деплой на VPS
 
-Команды — в `DEPLOY-NOW.txt` (или ярлык **ОТКРЫТЬ-ДЕПЛОЙ** на рабочем столе).
+**Команды сервера** — один файл в корне: `COMMANDS.txt` (латиница, копировать по строке).
 
-После обновления проверьте:
+**Пошаговые инструкции** — папка `docs/instrukcii/` (оглавление: `INDEX.txt`).
+
+После обновления:
 
 ```bash
 curl http://127.0.0.1:8000/api/health
@@ -40,33 +42,24 @@ curl http://127.0.0.1:8000/api/health
 
 | Файл | Назначение |
 |------|------------|
+| `COMMANDS.txt` | Команды SSH/деплой/pm2 (латиница) |
+| `docs/instrukcii/INDEX.txt` | Оглавление всех инструкций |
 | `SONGFORGE-КОНТЕКСТ.txt` | Статус, планы, тексты UI |
 | `docs/NOTES_NEXT.md` | Технический backlog |
 | `docs/ARCHITECTURE.md` | Архитектура |
-| `docs/TODO.md` | Долгосрочный roadmap |
-| `COMMANDS.txt` | Команды сервера (латиница) |
+| `AGENTS.md` | Правила для ассистента Cursor |
 
 ## Структура
 
 ```
-backend/
-  app.py              # API (эндпоинты)
-  settings.py         # переменные окружения
-  models.py           # Pydantic-схемы
-  services/           # бизнес-логика
-  database/           # SQLite
-index.html            # UI
-scripts/              # деплой, диагностика
-data/                 # БД и загрузки (не в git)
+SongForge/
+  COMMANDS.txt           ← команды сервера
+  SONGFORGE-КОНТЕКСТ.txt
+  backend/               ← API
+  index.html             ← фронт
+  scripts/               ← деплой, утилиты
+  docs/
+    instrukcii/          ← инструкции (.txt)
+    biznes/              ← PDF, docx
+    NOTES_NEXT.md
 ```
-
-## Тесты (smoke)
-
-```bash
-pip install -r requirements-dev.txt
-pytest tests/ -v
-```
-
-## Переменные окружения
-
-Шаблон: `.env.example`

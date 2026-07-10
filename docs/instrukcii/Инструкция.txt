@@ -1,0 +1,388 @@
+JavaScript / TypeScript SDK
+Используйте SDK для создания задач, сохранения возвращаемого taskId и получения результатов для Suno.
+
+Установить
+Перед запуском этих примеров SDK установите @apipass-dev/apipass-sdk.
+
+
+Копия
+npm install @apipass-dev/apipass-sdk
+# or
+pnpm add @apipass-dev/apipass-sdk
+# or
+yarn add @apipass-dev/apipass-sdk
+Использование на стороне сервера
+Храните свой API-ключ в переменных окружения на стороне сервера. SDK отправляет его в виде токена Bearer и автоматически добавляет заголовки JSON.
+
+Создать задачу
+client.jobs.createTask
+Создайте новую задачу генерации музыки в Suno V5.
+
+Пример создания задачи с помощью SDK
+Воспользуйтесь этим примером, чтобы быстро начать работу с выбранным SDK.
+
+
+Копия
+import { Apipass } from "@apipass-dev/apipass-sdk";
+
+const client = new Apipass({
+  apiKey: "apk_79e492a41d440edcc69c5f9e73573b4a77a2fb25e6205356d258ddc3679983b4",
+});
+
+const task = await client.jobs.createTask({
+  "model": "suno/generate",
+  "callBackUrl": "https://your-domain.com/api/callback",
+  "input": {
+    "prompt": "A catchy pop song about summer love with upbeat tempo and cheerful melody",
+    "customMode": false,
+    "instrumental": false,
+    "vocalGender": "f"
+  }
+});
+
+console.log(task.data.taskId);
+Параметры запроса
+API принимает полезную нагрузку в формате JSON со следующей структурой:
+
+Структура тела запроса
+
+Копия
+{
+  "model": "suno/generate",
+  "callBackUrl": "string (optional)",
+  "input": {
+    "model_version": "V5_5 | V5 | V4_5PLUS | V4_5ALL | V4_5 | V4",
+    "prompt": "string",
+    "customMode": "boolean",
+    "instrumental": "boolean",
+    "style": "string",
+    "title": "string",
+    "vocalGender": "m | f",
+    "negativeTags": "string",
+    "styleWeight": "number",
+    "weirdnessConstraint": "number",
+    "audioWeight": "number"
+  },
+  "channel": "auto"
+}
+Параметры корневого уровня
+model
+Необходимый
+нить
+Идентификатор модели для генерации музыки Suno V5
+
+Пример:
+"suno/generate"
+callBackUrl
+Необязательный
+нить
+URL-адрес для получения уведомлений веб-перехватчика после завершения генерации.
+
+Пример:
+"https://your-domain.com/api/callback"
+channel
+Необязательный
+нить
+В APIPASS вы можете указать соответствующего поставщика с помощью channelпараметра; эти поставщики обрабатывают фактические задачи генерации изображений и видео. В настоящее время APIPASS предлагает три варианта поставщиков:
+
+Стартовый тариф : Сверхнизкозатратный тариф с ограниченными квотами на использование, невысокой стабильностью и средней скоростью обработки задач.
+Обычный : Стандартный уровень, цена которого значительно ниже, чем у официальных API, отличается умеренной стабильностью и средней скоростью выполнения задач.
+Официальный : Официальный поставщик, использующий собственный API модели; обеспечивает высокую стабильность, быстрое выполнение задач и цены, идентичные официальному сервису.
+Значение параметра по умолчанию channel— auto. При включении APIPASS автоматически распределяет задачи между доступными поставщиками на основе цен в реальном времени и показателей стабильности, чтобы сбалансировать минимальные затраты и надежную работу. Сохраните autoзначение по умолчанию, если у вас нет особых требований к маршрутизации.
+
+Доступные варианты:
+
+авто
+- авто
+стартер
+- стартовый
+обычный
+- обычный
+официальный
+- официальный
+Пример:
+авто
+Параметры входного объекта
+Параметры генерации музыки:
+
+input.model_version
+Необязательный
+нить
+Для использования предназначена версия модели Suno. По умолчанию используется V5.
+
+Доступные варианты:
+
+V5_5
+- V5_5 (Последняя версия)
+V5
+- V5
+V4_5PLUS
+- V4.5 Plus
+V4_5ALL
+- V4.5 Все
+V4_5
+- V4.5
+V4
+- V4
+Пример:
+"V5"
+input.prompt
+Необязательный
+нить
+Текстовое описание музыки для генерации. Обязательно, если customMode имеет значение false, или если customMode имеет значение true, а instrumental — false.
+
+customMode=false: требуется подсказка, максимум 500 символов. customMode=true + instrumental=false: требуется подсказка. customMode=true + instrumental=true: подсказка необязательна. Для customMode=true: V4: максимум 3000 символов; V5_5, V5, V4_5PLUS, V4_5ALL, V4_5: максимум 5000 символов
+
+Пример:
+"Запоминающаяся поп-песня о летней любви в бодром темпе"
+input.customMode
+Необязательный
+логический
+Включите пользовательский режим для большего контроля. Если значение равно true, то стиль и заголовок являются обязательными.
+
+Если customMode=false, стиль и заголовок игнорируются и не будут отправлены поставщику.
+
+Режимы параметров:
+
+customMode=false + instrumental=false
+
+Необходимый:
+prompt
+customMode=false + instrumental=true
+
+Необходимый:
+prompt
+customMode=true + instrumental=false
+
+Необходимый:
+style
+title
+prompt
+customMode=true + instrumental=true
+
+Необходимый:
+style
+title
+Необязательный:
+prompt
+Пример:
+ЛОЖЬ
+input.instrumental
+Необязательный
+логический
+Создавайте инструментальную музыку без вокала.
+
+Пример:
+ЛОЖЬ
+input.style
+Необязательный
+нить
+Музыкальный стиль/жанр. Требуется, если customMode имеет значение true.
+
+Обязательно, если customMode=true. Игнорируется, если customMode=false. V4: максимум 200 символов; V5_5, V5, V4_5PLUS, V4_5ALL, V4_5: максимум 1000 символов
+
+Пример:
+"Поп-музыка, бодрящий ритм, летнее настроение"
+input.title
+Необязательный
+нить
+Заголовок для сгенерированной музыки. Обязательно, если customMode имеет значение true.
+
+Максимальная длина: 80 символов
+
+Пример:
+"Летняя любовь"
+input.vocalGender
+Необязательный
+нить
+Пол вокальных партий в сгенерированной песне.
+
+Эффективно только при customMode=true.
+
+Доступные варианты:
+
+м
+- Мужской
+ф
+- Женский
+Пример:
+"ф"
+input.personaId
+Необязательный
+нить
+Идентификатор персонажа для сгенерированной песни.
+
+Эффективно только при customMode=true.
+
+Пример:
+"1234567890"
+input.negativeTags
+Необязательный
+нить
+Стили или характеристики, которые следует исключить из процесса генерации.
+
+Эффективно только при customMode=true.
+
+Пример:
+"агрессивный, хэви-метал, кричащий"
+input.styleWeight
+Необязательный
+число
+Насколько строго следует придерживаться стиля. Диапазон: 0,0-1,0
+
+Действует только при customMode=true. Игнорируется при customMode=false. Число от 0,00 до 1,00. Необходимо использовать шаг 0,01. Логические значения не принимаются.
+
+Пример:
+0,5
+input.weirdnessConstraint
+Необязательный
+число
+Регулирует уровень креативности. Более высокие значения приводят к более экспериментальным результатам. Диапазон: 0,0–1,0
+
+Действует только при customMode=true. Игнорируется при customMode=false. Число от 0,00 до 1,00. Необходимо использовать шаг 0,01. Логические значения не принимаются.
+
+Пример:
+0.3
+input.audioWeight
+Необязательный
+число
+Вес влияния звука на процесс генерации. Диапазон: 0,0-1,0
+
+Действует только при customMode=true. Игнорируется при customMode=false. Число от 0,00 до 1,00. Необходимо использовать шаг 0,01. Логические значения не принимаются.
+
+Пример:
+0,5
+Пример ответа
+
+Копия
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "taskId": "task_abc123xyz"
+  }
+}
+Поля ответа
+code
+Код состояния 200 означает успех.
+
+message
+Ответное сообщение
+
+data.taskId
+Уникальный идентификатор задачи для запроса статуса и результатов.
+
+Уведомления об обратном звонке
+После завершения генерации на ваш callBackUrl отправляется POST-запрос.
+
+Пример обратного вызова при успешном выполнении
+
+Копия
+{
+  "code": 200,
+  "data": {
+    "taskId": "task_abc123xyz",
+    "state": "success",
+    "completeTime": 1755599644000,
+    "costTime": 45000,
+    "createTime": 1755599599000,
+    "model": "suno/generate",
+    "resultJson": {
+      "data": [
+        {
+          "id": "audio_001",
+          "audio_url": "https://cdn.apipass.dev/results/task_abc123xyz_0_audio.mp3",
+          "image_url": "https://cdn.apipass.dev/results/task_abc123xyz_0_cover.jpeg",
+          "duration": 180.5,
+          "title": "Summer Love",
+          "style": "Pop"
+        },
+        {
+          "id": "audio_002",
+          "audio_url": "https://cdn.apipass.dev/results/task_abc123xyz_1_audio.mp3",
+          "image_url": "https://cdn.apipass.dev/results/task_abc123xyz_1_cover.jpeg",
+          "duration": 175.2,
+          "title": "Summer Love",
+          "style": "Pop"
+        }
+      ]
+    }
+  },
+  "msg": "Task completed successfully."
+}
+Пример вызова функции обратного вызова при ошибке
+
+Копия
+{
+  "code": 501,
+  "data": {
+    "taskId": "task_abc123xyz",
+    "state": "fail",
+    "failCode": "GENERATION_FAILED",
+    "failMsg": "Music generation failed due to content policy violation"
+  },
+  "msg": "Task failed."
+}
+Важные примечания
+Каждое поколение создает 2 варианта песни.
+Продолжительность песен обычно составляет 2-4 минуты.
+Генерация обычно занимает 30-90 секунд.
+Аудиофайлы представлены в формате MP3.
+Результаты включают изображения обложек.
+Задача запроса
+client.jobs.recordInfo
+Запрос статуса задачи и получение сгенерированной музыки.
+
+Пример SDK для задач запроса
+Воспользуйтесь этим примером, чтобы быстро начать работу с выбранным SDK.
+
+
+Копия
+import { Apipass } from "@apipass-dev/apipass-sdk";
+
+const client = new Apipass({
+  apiKey: "apk_79e492a41d440edcc69c5f9e73573b4a77a2fb25e6205356d258ddc3679983b4",
+});
+
+const result = await client.jobs.recordInfo("task_abc123xyz");
+
+console.log(result.data.state);
+console.log(result.data.resultJson);
+Пример ответа
+
+Копия
+{
+  "code": 200,
+  "data": {
+    "taskId": "task_abc123xyz",
+    "state": "success",
+    "resultJson": {
+      "data": [
+        {
+          "id": "audio_001",
+          "audio_url": "https://cdn.apipass.dev/results/task_abc123xyz_0_audio.mp3",
+          "image_url": "https://cdn.apipass.dev/results/task_abc123xyz_0_cover.jpeg",
+          "duration": 180.5
+        }
+      ]
+    }
+  }
+}
+Поля ответа
+code
+Код состояния 200 означает успех.
+
+data.taskId
+Идентификатор задачи
+
+data.state
+Текущее состояние: в очереди, генерация, успех или неудача.
+
+data.resultJson.data
+Массив сгенерированных аудиодорожек с URL-адресами и метаданными.
+
+Государственные ценности
+Постановка в очередь — задача ожидает обработки.
+Создание музыки - процесс создания музыки в процессе
+Успех - Генерация завершена, аудио доступно.
+Ошибка - Генерация не удалась, проверьте failCode и failMg.

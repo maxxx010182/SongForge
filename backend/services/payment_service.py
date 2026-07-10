@@ -380,7 +380,7 @@ class PaymentService:
                 return (
                     "Оплата GetPlatinum не настроена на сервере. "
                     "Администратору: прописать GETPLATINUM_ACCOUNT и GETPLATINUM_API_KEY "
-                    "в .env (см. GETPLATINUM-ENV.txt)."
+                    "в .env (см. docs/instrukcii/GETPLATINUM-ENV.txt)."
                 )
             return (
                 "Не удалось создать ссылку на оплату GetPlatinum. "

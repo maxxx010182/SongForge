@@ -1,0 +1,111 @@
+SongForge — DNS-записи для sozdaipesnu.ru (копировать из Блокнота)
+==================================================================
+Файл: C:\Users\makc0\Desktop\SongForge\REG-RU-DNS-ЗАПИСИ.txt
+Откройте двойным щелчком в Блокноте. Копируйте ОТСЮДА, не из чата Cursor.
+
+Где вносить: REG.RU → Домены → sozdaipesnu.ru → DNS-серверы и зона
+Кнопка: + Добавить запись
+
+
+УЖЕ ЕСТЬ (НЕ ТРОГАТЬ)
+---------------------
+A    @      195.19.20.245
+A    www    195.19.20.245
+
+
+MX — ЗАПИСЬ 1
+-------------
+Тип:         MX
+Subdomain:   @
+Priority:    10
+Mail Server: mx1.hosting.reg.ru
+
+
+MX — ЗАПИСЬ 2
+-------------
+Тип:         MX
+Subdomain:   @
+Priority:    20
+Mail Server: mx2.hosting.reg.ru
+
+
+TXT — SPF
+---------
+Тип:         TXT
+Subdomain:   @
+Text:
+v=spf1 include:_spf.hosting.reg.ru ~all
+
+
+TXT — DMARC
+-----------
+Тип:         TXT
+Subdomain:   _dmarc
+Text:
+v=DMARC1; p=none; aspf=r; sp=none
+
+
+TXT — DKIM
+----------
+Тип:         TXT
+Subdomain:   dkim._domainkey
+Text (одна строка, скопировать целиком):
+
+v=DKIM1; k=rsa; s=email; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvocW8Sa0JXjlUBWMgSemuYZVtauQUvlzGCbierEGRkvgUZZrH6g+HgCU5SV3ulc4mNjkyoQsW5dPV7/WVecFGkPwDsA/uxNKctQGLbnidrAArqO20BMRnBFKur5I9e35wnRXYGcyj5+HIs+HOBi4f3Dw4TopCuI3/jjlYe4eP83BVyoCg/tfL6zq5dw2TxtgZw8npKYYiGU2sANMwOVFIJtN5oWQpm5KlhOOlwcuN2/+NGjwZgCizUT2+c61Q2cjUHIlJWjN/xoIcbYv6aBopAKWnjrjYQ3AcSzEy0OGPK9Rx2n2GvSx8auVOFX77U6gi/M/KZrbjNN1r/SUn8CLPQIDAQAB
+
+Если DKIM не сохраняется (лимит 512 символов) — пропустите DKIM.
+Для теста кодов входа достаточно MX + SPF.
+
+
+ПОСЛЕ DNS — ЯЩИК В ispmanager
+-----------------------------
+Почта → Почтовые ящики → Создать
+Домен:  sozdaipesnu.ru
+Имя:    noreply
+Полный: noreply@sozdaipesnu.ru
+Пароль: придумать и записать (только для .env на сервере)
+
+
+ПОСЛЕ ЯЩИКА — СЕРВЕР SongForge
+-------------------------------
+ssh root@195.19.20.245
+
+nano ~/SongForge/.env
+
+Вставить или заменить (пароль — свой от ящика):
+
+SITE_URL=https://sozdaipesnu.ru
+AUTH_DEV_CODE_ENABLED=false
+SMTP_HOST=sm42.hosting.reg.ru
+SMTP_PORT=587
+SMTP_USER=noreply@sozdaipesnu.ru
+SMTP_PASSWORD=ВАШ_ПАРОЛЬ_ОТ_ЯЩИКА
+SMTP_FROM=noreply@sozdaipesnu.ru
+SMTP_USE_TLS=true
+
+Сохранить nano: Ctrl+O, Enter, Ctrl+X
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Нужно: "email_smtp":true
+
+exit
+
+
+ПРОВЕРКА НА САЙТЕ
+-----------------
+https://sozdaipesnu.ru
+Ctrl+F5
+Войти → своя почта (gmail, mail.ru) → код в письме (и в Спам)
+
+
+ЕСЛИ ПИСЬМО НЕ УХОДИТ — ПОПРОБОВАТЬ ДРУГОЙ SMTP_HOST
+--------------------------------------------------
+В .env заменить строку на:
+
+SMTP_HOST=mail.hosting.reg.ru
+
+Снова: pm2 restart songforge
