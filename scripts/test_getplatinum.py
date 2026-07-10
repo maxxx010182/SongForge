@@ -53,12 +53,12 @@ def main() -> int:
     payload = {
         "dealId": str(uuid.uuid4()),
         "currency": "RUB",
-        "amount": 299,
+        "amount": 29900,
         "positions": [
             {
                 "prefix": position_prefix,
                 "name": "Тест SongForge — 1 нота",
-                "price": 299,
+                "price": 29900,
                 "quantity": 1,
                 "vat": GETPLATINUM_VAT,
             }

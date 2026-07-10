@@ -247,7 +247,8 @@ class PaymentService:
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
         url = f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url"
         notes = int(package["notes"])
-        amount = int(package["price_rub"])
+        # GetPlatinum API: amount и price в копейках (119900 = 1199.00 RUB)
+        amount = int(package["price_rub"]) * 100
         position_name = (
             f"Пакет {notes} {'нота' if notes == 1 else 'ноты' if 2 <= notes <= 4 else 'нот'} "
             f"— СоздайСвоюПесню"

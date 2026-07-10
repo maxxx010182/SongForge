@@ -5,8 +5,76 @@ SongForge — GetPlatinum: найти prefix и прописать в .env
 Тест показал: GetPlatinum требует поле prefix в заказе.
 Без GETPLATINUM_POSITION_PREFIX оплата не откроется.
 
+Если test_getplatinum.py пишет positions[0][prefix] отсутствует
+и в выводе НЕТ строки GETPLATINUM_POSITION_PREFIX — на сервере
+старый код. Сначала деплой (ниже), потом probe.
 
-ШАГ 1. Найти число prefix в ЛК GetPlatinum
+
+СЕЙЧАС — только .env (деплой и probe уже сделаны)
+--------------------------------------------------
+
+nano ~/SongForge/.env
+
+Добавить (для категории «доступ» probe дал prefix=1):
+
+GETPLATINUM_POSITION_PREFIX=1
+
+Ctrl+O, Enter, Ctrl+X
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+./venv/bin/python scripts/test_getplatinum.py
+
+Должно: OK: formUrl получен
+
+
+Если тест OK, а на сайте «Не удалось создать ссылку…»
+-------------------------------------------------------
+
+curl -s https://sozdaipesnu.ru/api/health
+
+Если version 2.11.4 (не 2.11.5) — нужен деплой:
+
+cd ~/SongForge
+
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+
+bash scripts/deploy-vps.sh
+
+Дождаться: === Готово! v2.11.5 ===
+
+curl -s https://sozdaipesnu.ru/api/health
+
+В ответе должно быть: "version":"2.11.5"
+
+Если версия уже 2.11.5 — только перезапуск:
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+Потом снова: Пакеты → Перейти к оплате.
+
+
+Сумма 11.99 вместо 1199 RUB (v2.11.6)
+--------------------------------------
+
+API GetPlatinum ждёт копейки. Деплой v2.11.6:
+
+cd ~/SongForge
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+bash scripts/deploy-vps.sh
+
+На форме оплаты должно быть 1199.00 RUB (не 11.99).
+
+
+ШАГ 1. Найти число prefix в ЛК GetPlatinum (если probe не помог)
 ------------------------------------------
 
 https://sozdaisvoyupesnu.getplatinum.ru

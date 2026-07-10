@@ -26,12 +26,12 @@ def try_prefix(prefix: int) -> tuple[bool, str]:
     payload = {
         "dealId": str(uuid.uuid4()),
         "currency": "RUB",
-        "amount": 299,
+        "amount": 29900,
         "positions": [
             {
                 "prefix": prefix,
                 "name": "Тест SongForge — 1 нота",
-                "price": 299,
+                "price": 29900,
                 "quantity": 1,
                 "vat": GETPLATINUM_VAT,
             }
