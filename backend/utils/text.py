@@ -102,6 +102,35 @@ def lyrics_look_lazy(lyrics: str, idea: str) -> bool:
     return False
 
 
+def idea_looks_russian(text: str) -> bool:
+    """True when the user's prompt is primarily Russian (default for SongForge)."""
+    if not text.strip():
+        return True
+    cyrillic = len(re.findall(r"[а-яё]", text.lower()))
+    latin = len(re.findall(r"[a-z]", text.lower()))
+    if cyrillic == 0 and latin > 0:
+        return False
+    return cyrillic >= latin or cyrillic >= 8
+
+
+def lyrics_look_english(lyrics: str) -> bool:
+    """True when lyric lines are mostly English, not Russian."""
+    body = _lyric_body_lines(lyrics)
+    if not body:
+        return False
+    joined = " ".join(body)
+    cyrillic = len(re.findall(r"[а-яё]", joined.lower()))
+    latin_words = re.findall(r"\b[a-z]{2,}\b", joined.lower())
+    if not latin_words:
+        return False
+    if cyrillic >= len(latin_words) * 3:
+        return False
+    if len(latin_words) >= 6 and cyrillic < 12:
+        return True
+    latin_chars = len(re.findall(r"[a-z]", joined.lower()))
+    return latin_chars > cyrillic * 2
+
+
 def scrub_idea_echo_from_lyrics(lyrics: str, idea: str) -> str:
     """Remove lines that repeat the user's prompt verbatim."""
     if not lyrics.strip() or not idea.strip():

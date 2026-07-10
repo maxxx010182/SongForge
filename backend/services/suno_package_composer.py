@@ -18,6 +18,8 @@ from backend.utils.text import (
     clean_text,
     ensure_russian_vocal_style,
     extract_json,
+    idea_looks_russian,
+    lyrics_look_english,
     lyrics_look_lazy,
     scrub_idea_echo_from_lyrics,
 )
@@ -27,13 +29,14 @@ _SYSTEM = (
     "сервиса (custom vocal: отдельно lyrics, title и style). "
     "Верни ТОЛЬКО валидный JSON без markdown. "
     'Поля: "title" (короткое название на русском, 1–4 слова, НЕ сценическая ремарка), '
-    '"lyrics" (полный текст с тегами [Verse 1], [Chorus], [Bridge], [Outro] на английском), '
+    '"lyrics" (полный текст песни: строки куплетов и припева ТОЛЬКО на русском; '
+    "структурные теги [Verse 1], [Chorus], [Bridge], [Outro] — на английском), "
     '"style_prompt" (одна строка на английском через запятую). '
     "title: максимум 60 символов, без скобок-ремарок. "
     "lyrics: первая строка — структурный тег ([Verse 1]); сценические теги "
     "([Crowd cheering], [Female backing vocals]) только внутри блоков; "
-    "куплеты до 4 строк; припев короткий и запоминающийся; весь текст до 2800 символов; "
-    "язык lyrics — русский, если не указано иное. "
+    "куплеты до 4 строк; припев короткий и запоминающийся; весь текст до 2800 символов. "
+    "ЗАПРЕЩЕНО писать куплеты и припев на английском, если запрос пользователя на русском. "
     "style_prompt: 12–20 слов И не более 180 символов; обязательно "
     "sung in Russian, native Russian vocals; жанр, вокал, инструменты, атмосфера, "
     "1–2 продакшн-детали; без имён артистов; без дублей."
@@ -46,6 +49,12 @@ class SunoPackageResult:
     lyrics: str
     style: str
     source: str = "unified"
+
+
+_RUSSIAN_LYRICS_RETRY = (
+    "\n\nКРИТИЧНО: запрос на русском. Поле lyrics — строки песни только на русском. "
+    "Английский допустим только в тегах [Verse 1], [Chorus], [Bridge], [Outro]."
+)
 
 
 class SunoPackageComposer:
@@ -72,14 +81,16 @@ class SunoPackageComposer:
             backing_vocal_gender=backing_vocal_gender,
             custom_description=custom_description,
         )
-        for model, temperature, label in (
-            (self._yandex.MODEL_PRO, 0.72, "unified-pro"),
-            (self._yandex.MODEL_LITE, 0.68, "unified-lite"),
+        require_russian = idea_looks_russian(idea)
+        for model, temperature, label, extra_hint in (
+            (self._yandex.MODEL_PRO, 0.72, "unified-pro", ""),
+            (self._yandex.MODEL_PRO, 0.62, "unified-pro-ru", _RUSSIAN_LYRICS_RETRY),
+            (self._yandex.MODEL_LITE, 0.65, "unified-lite-ru", _RUSSIAN_LYRICS_RETRY),
         ):
             try:
                 raw = self._yandex.complete(
                     _SYSTEM,
-                    user_text,
+                    user_text + extra_hint,
                     model=model,
                     max_tokens=2200,
                     temperature=temperature,
@@ -89,10 +100,14 @@ class SunoPackageComposer:
                     idea=idea,
                     analysis=analysis,
                 )
-                if result and not lyrics_look_lazy(result.lyrics, idea):
-                    result.source = label
-                    return result
-                log.warning("Unified package %s: lazy or empty lyrics", label)
+                if not result or lyrics_look_lazy(result.lyrics, idea):
+                    log.warning("Unified package %s: lazy or empty lyrics", label)
+                    continue
+                if require_russian and lyrics_look_english(result.lyrics):
+                    log.warning("Unified package %s: lyrics in English — retry", label)
+                    continue
+                result.source = label
+                return result
             except Exception:
                 log.exception("Unified package attempt %s failed", label)
         return None
@@ -149,6 +164,10 @@ class SunoPackageComposer:
         ):
             parts.append(
                 "Нужна живая/стадионная атмосфера — добавь уместные crowd-теги в lyrics."
+            )
+        if idea_looks_russian(idea):
+            parts.append(
+                "ОБЯЗАТЕЛЬНО: текст песни (куплеты, припев, бридж) только на русском языке."
             )
         return "\n".join(parts)
 
