@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 from backend.settings import (  # noqa: E402
     GETPLATINUM_ACCOUNT,
     GETPLATINUM_API_KEY,
+    GETPLATINUM_POSITION_PREFIX,
     GETPLATINUM_VAT,
     PAYMENT_PROVIDER,
     SITE_URL,
@@ -26,6 +27,7 @@ def main() -> int:
     print(f"  PAYMENT_PROVIDER={PAYMENT_PROVIDER!r}")
     print(f"  GETPLATINUM_ACCOUNT={GETPLATINUM_ACCOUNT!r}")
     print(f"  GETPLATINUM_API_KEY={'set' if GETPLATINUM_API_KEY else 'EMPTY'}")
+    print(f"  GETPLATINUM_POSITION_PREFIX={GETPLATINUM_POSITION_PREFIX!r}")
     print(f"  SITE_URL={SITE_URL!r}")
 
     if (PAYMENT_PROVIDER or "").strip().lower() != "getplatinum":
@@ -36,6 +38,16 @@ def main() -> int:
         print("FAIL: не заданы GETPLATINUM_API_KEY / GETPLATINUM_ACCOUNT")
         return 1
 
+    if not GETPLATINUM_POSITION_PREFIX:
+        print("FAIL: не задан GETPLATINUM_POSITION_PREFIX (число из ЛК GetPlatinum)")
+        return 1
+
+    try:
+        position_prefix = int(GETPLATINUM_POSITION_PREFIX)
+    except ValueError:
+        print(f"FAIL: GETPLATINUM_POSITION_PREFIX должен быть числом, got {GETPLATINUM_POSITION_PREFIX!r}")
+        return 1
+
     account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
     url = f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url"
     payload = {
@@ -44,6 +56,7 @@ def main() -> int:
         "amount": 299,
         "positions": [
             {
+                "prefix": position_prefix,
                 "name": "Тест SongForge — 1 нота",
                 "price": 299,
                 "quantity": 1,

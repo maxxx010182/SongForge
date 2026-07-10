@@ -1,0 +1,60 @@
+SongForge — GetPlatinum: найти prefix и прописать в .env
+=========================================================
+Файл: docs/instrukcii/GETPLATINUM-PREFIX-SEYCHAS.txt
+
+Тест показал: GetPlatinum требует поле prefix в заказе.
+Без GETPLATINUM_POSITION_PREFIX оплата не откроется.
+
+
+ШАГ 1. Найти число prefix в ЛК GetPlatinum
+------------------------------------------
+
+https://sozdaisvoyupesnu.getplatinum.ru
+
+Где искать (одно из мест):
+  • Настройки → Организации → шестерёнка у вашей организации
+  • Раздел API / документация API (кнопка «Скачать API-документацию»)
+  • Продажи → Предложения — иногда prefix в карточке оффера
+
+Это ЦЕЛОЕ ЧИСЛО (в примерах GP бывает 12, у вас может быть другое).
+
+Если не нашли — support@getplatinum.ru:
+  «Какой prefix указать в init-payment-url для positions[0][prefix]?»
+
+
+ШАГ 2. Прописать на сервере + деплой v2.11.5
+---------------------------------------------
+
+ssh root@195.19.20.245
+
+cd ~/SongForge
+
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+
+bash scripts/deploy-vps.sh
+
+nano ~/SongForge/.env
+
+Добавить строку (ЧИСЛО из шага 1):
+
+GETPLATINUM_POSITION_PREFIX=ВАШЕ_ЧИСЛО
+
+Сохранить: Ctrl+O, Enter, Ctrl+X
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+
+ШАГ 3. Проверка
+---------------
+
+cd ~/SongForge
+./venv/bin/python scripts/test_getplatinum.py
+
+Должно быть: OK: formUrl получен
+
+Потом на сайте: Пакеты → Перейти к оплате.

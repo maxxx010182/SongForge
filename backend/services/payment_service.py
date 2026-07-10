@@ -15,6 +15,7 @@ from backend.logger import log
 from backend.settings import (
     GETPLATINUM_ACCOUNT,
     GETPLATINUM_API_KEY,
+    GETPLATINUM_POSITION_PREFIX,
     GETPLATINUM_VAT,
     PAYMENT_PROVIDER,
     PRODAMUS_SECRET,
@@ -231,6 +232,17 @@ class PaymentService:
         if not GETPLATINUM_API_KEY or not GETPLATINUM_ACCOUNT:
             log.warning("GetPlatinum: не заданы GETPLATINUM_API_KEY / GETPLATINUM_ACCOUNT")
             return None
+        if not GETPLATINUM_POSITION_PREFIX:
+            log.warning("GetPlatinum: не задан GETPLATINUM_POSITION_PREFIX в .env")
+            return None
+        try:
+            position_prefix = int(GETPLATINUM_POSITION_PREFIX)
+        except ValueError:
+            log.error(
+                "GetPlatinum: GETPLATINUM_POSITION_PREFIX должен быть числом, got %r",
+                GETPLATINUM_POSITION_PREFIX,
+            )
+            return None
 
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
         url = f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url"
@@ -246,6 +258,7 @@ class PaymentService:
             "amount": amount,
             "positions": [
                 {
+                    "prefix": position_prefix,
                     "name": position_name,
                     "price": amount,
                     "quantity": 1,
@@ -382,9 +395,14 @@ class PaymentService:
                     "Администратору: прописать GETPLATINUM_ACCOUNT и GETPLATINUM_API_KEY "
                     "в .env (см. docs/instrukcii/GETPLATINUM-ENV.txt)."
                 )
+            if not GETPLATINUM_POSITION_PREFIX:
+                return (
+                    "Оплата GetPlatinum: в .env не задан GETPLATINUM_POSITION_PREFIX "
+                    "(префикс позиции из ЛК GetPlatinum). См. docs/instrukcii/GETPLATINUM-ENV.txt."
+                )
             return (
                 "Не удалось создать ссылку на оплату GetPlatinum. "
-                "Проверьте ключ API и имя аккаунта в .env или напишите в поддержку."
+                "Проверьте ключ API, аккаунт и prefix в .env или напишите в поддержку."
             )
         if provider == "stub":
             return (
