@@ -34,6 +34,7 @@ nano ~/SongForge/.env
 PAYMENT_PROVIDER=getplatinum
 GETPLATINUM_ACCOUNT=sozdaisvoyupesnu
 GETPLATINUM_API_KEY=ВСТАВЬТЕ_КЛЮЧ_ИЗ_ЛК_GP
+GETPLATINUM_POSITION_PREFIX=ЧИСЛО_ИЗ_ЛК_GP
 GETPLATINUM_VAT=none
 
 Сохранить: Ctrl+O, Enter, Ctrl+X
