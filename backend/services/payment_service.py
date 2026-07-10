@@ -368,13 +368,23 @@ class PaymentService:
         )
 
     @staticmethod
+    def is_getplatinum_configured() -> bool:
+        return bool(GETPLATINUM_API_KEY and GETPLATINUM_ACCOUNT)
+
+    @staticmethod
     def _status_message(provider: str, payment_url: str | None) -> str:
         if payment_url:
             return "Перенаправляем на страницу оплаты…"
         if provider == "getplatinum":
+            if not PaymentService.is_getplatinum_configured():
+                return (
+                    "Оплата GetPlatinum не настроена на сервере. "
+                    "Администратору: прописать GETPLATINUM_ACCOUNT и GETPLATINUM_API_KEY "
+                    "в .env (см. GETPLATINUM-ENV.txt)."
+                )
             return (
-                "Не удалось открыть оплату GetPlatinum. "
-                "Проверьте настройки в личном кабинете или напишите в поддержку."
+                "Не удалось создать ссылку на оплату GetPlatinum. "
+                "Проверьте ключ API и имя аккаунта в .env или напишите в поддержку."
             )
         if provider == "stub":
             return (

@@ -1,0 +1,64 @@
+SongForge — настройка GetPlatinum в .env на сервере
+====================================================
+Файл: GETPLATINUM-ENV.txt (копировать из Блокнота)
+
+Симптом на сайте:
+  «Оплата GetPlatinum не настроена на сервере…»
+  или «Не удалось открыть оплату GetPlatinum…»
+
+Это НЕ настройка в профиле пользователя на сайте.
+Ключи прописываются в .env на VPS (195.19.20.245).
+
+
+ШАГ 1. Взять данные в личном кабинете GetPlatinum
+-------------------------------------------------
+
+1) Войти на https://getplatinum.ru (или ваш поддомен)
+2) Раздел API / интеграция / ключи
+3) Скопировать:
+   • Имя аккаунта (поддомен), например: myshop
+     → URL оплаты: https://myshop.getplatinum.ru
+   • API-ключ (Bearer token)
+
+
+ШАГ 2. Прописать на сервере
+--------------------------
+
+ssh root@195.19.20.245
+
+nano ~/SongForge/.env
+
+Добавить или заменить строки:
+
+PAYMENT_PROVIDER=getplatinum
+GETPLATINUM_ACCOUNT=имя_аккаунта_без_getplatinum.ru
+GETPLATINUM_API_KEY=ваш_api_ключ
+GETPLATINUM_VAT=none
+
+Сохранить: Ctrl+O, Enter, Ctrl+X
+
+pm2 restart songforge
+pm2 restart songforge-worker
+
+
+ШАГ 3. Проверка
+---------------
+
+На сайте: Пакеты → выбрать пакет → Перейти к оплате.
+Должен открыться сайт GetPlatinum (не сообщение об ошибке).
+
+В логах при ошибке:
+  pm2 logs songforge --lines 30 --nostream
+  Ищите: GetPlatinum init-payment-url
+
+
+ВАЖНО
+-----
+
+• SITE_URL в .env должен быть https://sozdaipesnu.ru
+• Webhook: https://sozdaipesnu.ru/api/payment/webhook/getplatinum
+• Заявка в GetPlatinum одобрена для домена sozdaipesnu.ru
+• Промокод вводится на форме GetPlatinum (в код не передаётся)
+
+Если ключи есть, но ошибка остаётся — пришлите строку из pm2 logs
+(без самого API-ключа).

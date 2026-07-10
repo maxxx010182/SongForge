@@ -30,6 +30,8 @@ class EmailService:
         msg["Subject"] = "Код входа — СоздайСвоюПесню"
         msg["From"] = sender
         msg["To"] = to_email
+        site = SITE_URL.rstrip("/")
+        login_url = f"{site}/?auth=email"
         msg.set_content(
             "\n".join(
                 [
@@ -39,7 +41,8 @@ class EmailService:
                     "",
                     "Код действует 15 минут.",
                     "",
-                    f"Сайт: {SITE_URL}",
+                    "Вернитесь на сайт и введите код в форме входа:",
+                    login_url,
                     "",
                     "Если вы не запрашивали код — просто проигнорируйте это письмо.",
                 ]
