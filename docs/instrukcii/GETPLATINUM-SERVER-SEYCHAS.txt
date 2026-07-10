@@ -38,8 +38,14 @@ pm2 restart songforge-worker
 2) Пакеты → любой пакет → Перейти к оплате
 3) Должна открыться форма GetPlatinum (не ошибка на сайте)
 
-Если ошибка — на сервере:
+Если ошибка — диагностика на сервере:
+
+cd ~/SongForge
+./venv/bin/python scripts/test_getplatinum.py
+
+Скрипт покажет OK + ссылку или FAIL и текст от GetPlatinum.
+(Если «нет файла» — сначала деплой v2.11.4+ из COMMANDS.txt)
+
+Дополнительно:
 
 pm2 logs songforge --lines 30 --nostream
-
-Скопируйте строку с GetPlatinum (без API-ключа) и пришлите ассистенту.
