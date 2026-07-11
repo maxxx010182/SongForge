@@ -1,0 +1,127 @@
+SongForge — VK вход: .env и проверка (СЕЙЧАС)
+================================================
+Файл: docs/instrukcii/VK-ENV-SEYCHAS.txt
+Копировать команды ОТСЮДА (Блокнот), по одной строке.
+
+Кабинет VK ID уже настроен: приложение «СоздайСвоюПесню»,
+ID + защищённый ключ, redirect:
+  https://sozdaipesnu.ru/api/auth/vk/callback
+
+
+ШАГ 1. Подключиться к серверу
+------------------------------
+
+ssh root@195.19.20.245
+
+
+ШАГ 2. Открыть .env
+------------------
+
+nano ~/SongForge/.env
+
+Добавить или заменить (подставить СВОИ значения из кабинета VK):
+
+VK_AUTH_ENABLED=true
+VK_APP_ID=ВАШ_ID_ПРИЛОЖЕНИЯ
+VK_APP_SECRET=ВАШ_ЗАЩИЩЁННЫЙ_КЛЮЧ
+VK_AUTH_BASE=https://id.vk.ru
+
+ВАЖНО:
+  - VK_APP_SECRET = «Защищённый ключ», НЕ «Сервисный ключ».
+  - Если в ключе есть символ # или = — возьмите в кавычки:
+    VK_APP_SECRET="ваш_ключ_целиком"
+  - Без пробелов вокруг знака =.
+  - SITE_URL в .env должен быть: https://sozdaipesnu.ru
+
+Сохранить: Ctrl+O, Enter, Ctrl+X
+
+
+ШАГ 3. Перезапуск (с подхватом .env)
+------------------------------------
+
+pm2 restart songforge --update-env
+
+Для VK worker НЕ обязателен. Если перезапускали worker — проверьте songforge:
+
+pm2 status
+
+
+ШАГ 4. Проверка — .env читается?
+--------------------------------
+
+cd ~/SongForge
+
+./venv/bin/python -c "from backend.settings import VK_AUTH_ENABLED, VK_APP_ID, VK_APP_SECRET; print('enabled', VK_AUTH_ENABLED); print('id', bool(VK_APP_ID)); print('secret', bool(VK_APP_SECRET))"
+
+Должно быть:
+  enabled True
+  id True
+  secret True
+
+Если False — опечатка в .env или пустое поле.
+
+
+ШАГ 5. Проверка API
+-------------------
+
+curl http://127.0.0.1:8000/api/auth/providers
+
+Должно быть: "vk_enabled":true
+
+
+ШАГ 6. Браузер
+--------------
+
+https://sozdaipesnu.ru
+Ctrl+F5 → модалка входа → «Войти через VK» → разрешить → toast «Вы вошли».
+
+
+ЕСЛИ pm2 status: songforge errored (а сайт в браузере открывается)
+-------------------------------------------------------------------
+
+Часто порт 8000 занят СТАРЫМ процессом — pm2 не подхватывает новый .env.
+
+ШАГ A — лог ошибки:
+
+pm2 logs songforge --lines 25 --nostream
+
+Если в логе «Address already in use» / «address already in use» — шаг B.
+
+ШАГ B — освободить порт и поднять заново:
+
+pm2 delete songforge
+
+fuser -k 8000/tcp
+
+cd ~/SongForge
+
+pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd ~/SongForge
+
+pm2 save
+
+pm2 status
+
+Должно: songforge online (не errored).
+
+ШАГ C — снова проверка .env и API (шаги 4–5 выше).
+
+
+Другие причины errored
+----------------------
+
+  - битая строка в .env (кавычки, лишний символ)
+  - VK_APP_SECRET с # без кавычек
+
+После правки .env:
+
+pm2 restart songforge --update-env
+
+Если снова errored — шаг B.
+
+
+ЧТО ПРИСЛАТЬ В ЧАТ (без секретов)
+---------------------------------
+
+Вывод шага 4 (enabled/id/secret).
+Вывод шага 5 (vk_enabled true или false).
+Если errored — последние строки шага «pm2 logs» (без ключей).

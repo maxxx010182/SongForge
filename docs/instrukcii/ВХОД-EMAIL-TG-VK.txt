@@ -196,23 +196,22 @@ curl http://127.0.0.1:8000/api/auth/providers
    Должен совпадать с SITE_URL в .env.
 
 
-ШАГ 3.2 — Вписать в .env на сервере
-------------------------------------
+ШАГ 3.2 — Вписать в .env + перезапуск
+--------------------------------------
 
-nano ~/SongForge/.env
+Все команды для копирования (по одной строке):
+  docs/instrukcii/VK-ENV-SEYCHAS.txt
 
-VK_AUTH_ENABLED=true
-VK_APP_ID=12345678
-VK_APP_SECRET=ваш_секретный_ключ
-VK_AUTH_BASE=https://id.vk.ru
-
-pm2 restart songforge
+Кратко:
+  VK_APP_SECRET = защищённый ключ (не сервисный).
+  VK_AUTH_BASE=https://id.vk.ru — оставить так.
+  pm2 restart songforge --update-env  (не просто restart)
 
 
 ШАГ 3.3 — Проверка
 ------------------
 
-curl http://127.0.0.1:8000/api/auth/providers
+См. VK-ENV-SEYCHAS.txt шаги 4–6.
 
 Должно быть: "vk_enabled":true
 

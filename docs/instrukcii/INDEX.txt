@@ -19,7 +19,8 @@ SongForge — оглавление инструкций
   REG-RU-ПОЧТА-ISPmanager.txt  — настройка ящика noreply@ на sm42
   SUPPORT-EMAIL-SEYCHAS.txt    — ящик support@ для поддержки (СЕЙЧАС)
   ВХОД-ПОЧТА-ПО-ШАГАМ.txt      — вход по email по шагам
-  ВХОД-EMAIL-TG-VK.txt         — Telegram и VK (когда понадобится)
+  VK-ENV-SEYCHAS.txt           — VK: .env + pm2 + проверка (СЕЙЧАС)
+  ВХОД-EMAIL-TG-VK.txt         — Email, Telegram, VK (полная инструкция)
   VPS-SMTP-ЗАПРОС-В-ПОДДЕРЖКУ.txt — шаблон тикета REG.RU (архив)
 
 ОПЛАТА
