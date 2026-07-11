@@ -7,6 +7,10 @@ from dataclasses import dataclass
 from backend.logger import log
 from backend.models import MusicAnalysis
 from backend.services.reference_translator import ReferenceTranslation
+from backend.services.lyrics_craft_prompt import (
+    UNIFIED_MODEL_ATTEMPTS,
+    UNIFIED_PACKAGE_SYSTEM,
+)
 from backend.services.yandex_client import YandexClient
 from backend.utils.suno_payload import (
     SUNO_STYLE_MAX_LEN,
@@ -24,26 +28,6 @@ from backend.utils.text import (
     resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
 )
-
-_SYSTEM = (
-    "Ты — профессиональный автор текстов песен и саунд-продюсер для музыкального "
-    "сервиса (custom vocal: отдельно lyrics, title и style). "
-    "Верни ТОЛЬКО валидный JSON без markdown. "
-    'Поля: "title" (короткое название на русском, 1–4 слова, НЕ сценическая ремарка), '
-    '"lyrics" (полный текст песни: строки куплетов и припева ТОЛЬКО на русском; '
-    "структурные теги [Verse 1], [Chorus], [Bridge], [Outro] — на английском), "
-    '"style_prompt" (одна строка на английском через запятую). '
-    "title: максимум 60 символов, без скобок-ремарок. "
-    "lyrics: первая строка — структурный тег ([Verse 1]); сценические теги "
-    "([Crowd cheering], [Female backing vocals]) только внутри блоков; "
-    "куплеты до 4 строк; припев короткий и запоминающийся; весь текст до 2800 символов. "
-    "Язык строк песни: по умолчанию русский; если пользователь явно просит другой язык — пиши на нём. "
-    "ЗАПРЕЩЕНО подменять запрошенный язык. "
-    "style_prompt: 12–20 слов И не более 180 символов; обязательно "
-    "sung in Russian, native Russian vocals; жанр, вокал, инструменты, атмосфера, "
-    "1–2 продакшн-детали; без имён артистов; без дублей."
-)
-
 
 @dataclass
 class SunoPackageResult:
@@ -83,17 +67,20 @@ class SunoPackageComposer:
         )
         lang_code, _, _ = resolve_lyrics_language(idea)
         retry_hint = _lyrics_retry_hint(idea)
-        for model, temperature, label, extra_hint in (
-            (self._yandex.MODEL_PRO, 0.72, "unified-pro", ""),
-            (self._yandex.MODEL_PRO, 0.62, "unified-pro-retry", retry_hint),
-            (self._yandex.MODEL_LITE, 0.65, "unified-lite-retry", retry_hint),
-        ):
+        for model_name, temperature, suffix in UNIFIED_MODEL_ATTEMPTS:
+            model = (
+                self._yandex.MODEL_PRO
+                if model_name == self._yandex.MODEL_PRO
+                else self._yandex.MODEL_LITE
+            )
+            label = f"unified-{model_name}" + (f"-{suffix}" if suffix else "")
+            extra_hint = retry_hint if suffix else ""
             try:
                 raw = self._yandex.complete(
-                    _SYSTEM,
+                    UNIFIED_PACKAGE_SYSTEM,
                     user_text + extra_hint,
                     model=model,
-                    max_tokens=2200,
+                    max_tokens=2400,
                     temperature=temperature,
                 )
                 result = self._parse_response(
@@ -178,7 +165,9 @@ class SunoPackageComposer:
     ) -> SunoPackageResult | None:
         data = extract_json(raw)
         title = clean_text(str(data.get("title", ""))).strip("\"'«»")
-        lyrics = clean_text(str(data.get("lyrics", "")))
+        lyrics = clean_text(
+            str(data.get("lyrics") or data.get("prompt") or "")
+        )
         style = clean_text(
             str(data.get("style_prompt") or data.get("style") or "")
         )

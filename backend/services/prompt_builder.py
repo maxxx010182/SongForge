@@ -2,6 +2,11 @@ from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.idea_parser import merge_parsed_with_request, parse_idea
+from backend.services.lyrics_craft_prompt import (
+    CLASSIC_LYRICS_RETRY_HINT,
+    CLASSIC_LYRICS_SYSTEM,
+    LYRICS_MODEL_ATTEMPTS,
+)
 from backend.services.suno_package_composer import SunoPackageComposer
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
@@ -27,21 +32,6 @@ from backend.utils.text import (
 
 
 class PromptBuilder:
-    LYRICS_SYSTEM = (
-        "Ты профессиональный поэт-песенник для музыкального сервиса. "
-        "Напиши полноценный художественный текст песни на русском языке. "
-        "Обязательная структура с тегами на английском: "
-        "[Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]. "
-        "В каждом куплете 4 строки с рифмой, в припеве 4 строки. "
-        "Запрещено: копировать описание пользователя, пересказывать промпт, "
-        "писать прозу вместо стихов, markdown, пояснения. "
-        "Бери только тему и настроение — превращай в метафоры и образы."
-    )
-    LYRICS_RETRY_HINT = (
-        "\n\nКРИТИЧНО: нельзя использовать фразы из описания пользователя. "
-        "Пиши оригинальные стихи с рифмой, как у профессионального автора песен."
-    )
-
     def __init__(self, yandex: YandexClient) -> None:
         self._yandex = yandex
         self._translator = ReferenceTranslator(yandex)
@@ -298,19 +288,20 @@ class PromptBuilder:
             return "", "instrumental"
 
         user_text = self._lyrics_user_prompt(idea, plan)
-        attempts: list[tuple[str, float, str, str]] = [
-            (self._yandex.MODEL_PRO, 0.72, "", "yandexgpt"),
-            (self._yandex.MODEL_PRO, 0.88, self.LYRICS_RETRY_HINT, "yandexgpt-retry"),
-            (self._yandex.MODEL_LITE, 0.82, self.LYRICS_RETRY_HINT, "yandexgpt-lite-retry"),
-        ]
-
-        for model, temperature, extra_hint, source in attempts:
+        for model_name, temperature, suffix in LYRICS_MODEL_ATTEMPTS:
+            model = (
+                self._yandex.MODEL_PRO
+                if model_name == self._yandex.MODEL_PRO
+                else self._yandex.MODEL_LITE
+            )
+            source = f"{model_name}" + (f"-{suffix}" if suffix else "")
+            extra_hint = CLASSIC_LYRICS_RETRY_HINT if suffix else ""
             try:
                 lyrics = clean_text(
                     self._yandex.complete(
-                        self.LYRICS_SYSTEM,
+                        CLASSIC_LYRICS_SYSTEM,
                         user_text + extra_hint,
-                        max_tokens=1000,
+                        max_tokens=1400,
                         temperature=temperature,
                         model=model,
                     )
