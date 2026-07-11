@@ -10,6 +10,7 @@ from backend.services.reference_translator import ReferenceTranslation
 from backend.services.lyrics_craft_prompt import (
     UNIFIED_MODEL_ATTEMPTS,
     UNIFIED_PACKAGE_SYSTEM,
+    UNIFIED_SCREENPLAY_RETRY_HINT,
 )
 from backend.services.yandex_client import YandexClient
 from backend.utils.suno_payload import (
@@ -74,7 +75,9 @@ class SunoPackageComposer:
                 else self._yandex.MODEL_LITE
             )
             label = f"unified-{model_name}" + (f"-{suffix}" if suffix else "")
-            extra_hint = retry_hint if suffix else ""
+            extra_hint = ""
+            if suffix:
+                extra_hint = UNIFIED_SCREENPLAY_RETRY_HINT + retry_hint
             try:
                 raw = self._yandex.complete(
                     UNIFIED_PACKAGE_SYSTEM,
@@ -146,12 +149,18 @@ class SunoPackageComposer:
             parts.append(
                 f"Обязательно: подпевки ({gender or 'любые'}), гармонии на припеве."
             )
+        energy = (analysis.energy or "").lower()
+        genre_blob = f"{analysis.genre} {analysis.subgenre} {analysis.mood}".lower()
         if any(
             token in idea.lower()
             for token in ("стадион", "stadium", "концерт", "arena", "толпа", "live")
-        ):
+        ) or any(
+            token in genre_blob
+            for token in ("rap", "rock", "pop", "stadium", "anthem", "party")
+        ) or energy in ("high", "very high", "энергич"):
             parts.append(
-                "Нужна живая/стадионная атмосфера — добавь уместные crowd-теги в lyrics."
+                "Энергичный трек: добавь в lyrics crowd/stadium-теги, ad-libs и "
+                "нарастание к финальному припеву, если уместно теме."
             )
         parts.append(lyrics_language_instruction(idea))
         return "\n".join(parts)
@@ -195,6 +204,8 @@ class SunoPackageComposer:
         if not text:
             return text
         first = text.splitlines()[0].strip().lower()
-        if first.startswith("[verse") or first.startswith("[chorus"):
+        if first.startswith(
+            ("[verse", "[chorus", "[intro", "[pre-chorus", "[bridge", "[outro", "[crowd")
+        ):
             return text
         return f"[Verse 1]\n{text}"
