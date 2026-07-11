@@ -114,7 +114,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.9")
+app = FastAPI(title="SongForge", version="2.11.10")
 
 app.add_middleware(
     CORSMiddleware,
@@ -416,7 +416,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.9",
+        "version": "2.11.10",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1228,7 +1228,7 @@ async def auth_logout(
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
-    if user:
+    if user and generation_quota.user_trial_used(user["id"]) > 0:
         guest_service.mark_exhausted(guest_id)
     if sf_session:
         auth_service.logout(sf_session)

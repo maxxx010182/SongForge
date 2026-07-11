@@ -26,6 +26,7 @@ class GenerationQuotaService:
         return max(0, self._trial_limit() - self.user_trial_used(user_id))
 
     def sync_guest_trial_on_login(self, *, guest_id: str, user_id: str) -> None:
+        """Перенос «сожжённой» пробной браузера на новый аккаунт (после logout)."""
         guest_used = self._guest.get_usage(guest_id)
         if guest_used <= 0:
             return
