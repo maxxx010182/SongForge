@@ -14,8 +14,8 @@ cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
 
 bash scripts/deploy-vps.sh
 
-Дождаться: === Готово! v2.11.9 ===
+Дождаться: === Готово! v2.11.10 ===
 
 curl -s https://sozdaipesnu.ru/api/health
 
-В ответе: "version":"2.11.9"
+В ответе: "version":"2.11.10"

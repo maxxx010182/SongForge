@@ -1,12 +1,12 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 13
+# deploy-script-version: 14
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.9"
+EXPECTED_VERSION="2.11.10"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
