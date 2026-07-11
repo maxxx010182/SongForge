@@ -6,6 +6,7 @@ from backend.services.lyrics_craft_prompt import (
     CLASSIC_LYRICS_RETRY_HINT,
     CLASSIC_LYRICS_SYSTEM,
     LYRICS_MODEL_ATTEMPTS,
+    lyrics_screenplay_user_hint,
 )
 from backend.services.suno_package_composer import SunoPackageComposer
 from backend.services.reference_translator import ReferenceTranslator
@@ -325,6 +326,14 @@ class PromptBuilder:
 
     @staticmethod
     def _lyrics_user_prompt(idea: str, plan: ProductionPlan) -> str:
+        screenplay_hint = lyrics_screenplay_user_hint(
+            genre=plan.genre,
+            subgenre=plan.subgenre,
+            mood=plan.mood,
+            energy=plan.energy,
+            idea=idea,
+            backing_vocal=False,
+        )
         return (
             f"Тема песни (не копировать дословно): {idea}\n"
             f"Жанр: {plan.genre} / {plan.subgenre}\n"
@@ -334,6 +343,7 @@ class PromptBuilder:
             f"Вокал: {plan.vocal} — {plan.vocal_description}\n"
             f"Атмосфера: {plan.atmosphere}\n"
             f"Структура: {plan.structure}\n"
+            f"{screenplay_hint}\n"
             f"{lyrics_language_instruction(idea)}"
         )
 

@@ -11,6 +11,7 @@ from backend.services.lyrics_craft_prompt import (
     UNIFIED_MODEL_ATTEMPTS,
     UNIFIED_PACKAGE_SYSTEM,
     UNIFIED_SCREENPLAY_RETRY_HINT,
+    lyrics_screenplay_user_hint,
 )
 from backend.services.yandex_client import YandexClient
 from backend.utils.suno_payload import (
@@ -149,19 +150,16 @@ class SunoPackageComposer:
             parts.append(
                 f"Обязательно: подпевки ({gender or 'любые'}), гармонии на припеве."
             )
-        energy = (analysis.energy or "").lower()
-        genre_blob = f"{analysis.genre} {analysis.subgenre} {analysis.mood}".lower()
-        if any(
-            token in idea.lower()
-            for token in ("стадион", "stadium", "концерт", "arena", "толпа", "live")
-        ) or any(
-            token in genre_blob
-            for token in ("rap", "rock", "pop", "stadium", "anthem", "party")
-        ) or energy in ("high", "very high", "энергич"):
-            parts.append(
-                "Энергичный трек: добавь в lyrics crowd/stadium-теги, ad-libs и "
-                "нарастание к финальному припеву, если уместно теме."
+        parts.append(
+            lyrics_screenplay_user_hint(
+                genre=analysis.genre,
+                subgenre=analysis.subgenre,
+                mood=analysis.mood,
+                energy=analysis.energy,
+                idea=idea,
+                backing_vocal=backing_vocal,
             )
+        )
         parts.append(lyrics_language_instruction(idea))
         return "\n".join(parts)
 
