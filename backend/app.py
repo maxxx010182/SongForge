@@ -1108,6 +1108,9 @@ async def vk_auth_start(response: Response):
     if not _vk_auth_ready():
         raise HTTPException(status_code=503, detail="Вход через VK временно недоступен")
     state = vk_auth_service.new_state()
+    verifier = vk_auth_service.generate_code_verifier()
+    challenge = vk_auth_service.generate_code_challenge(verifier)
+
     response.set_cookie(
         "vk_oauth_state",
         state,
@@ -1117,7 +1120,19 @@ async def vk_auth_start(response: Response):
         path="/",
         secure=SITE_URL.lower().startswith("https://"),
     )
-    return RedirectResponse(vk_auth_service.build_authorize_url(state=state))
+    response.set_cookie(
+        "vk_code_verifier",
+        verifier,
+        httponly=True,
+        samesite="lax",
+        max_age=600,
+        path="/",
+        secure=SITE_URL.lower().startswith("https://"),
+    )
+
+    return RedirectResponse(
+        vk_auth_service.build_authorize_url(state=state, code_challenge=challenge)
+    )
 
 
 @app.get("/api/auth/vk/callback")
@@ -1136,8 +1151,14 @@ async def vk_auth_callback(
     cookie_state = request.cookies.get("vk_oauth_state", "")
     if not cookie_state or cookie_state != state:
         raise HTTPException(status_code=400, detail="Сессия VK устарела — попробуйте снова")
+
+    code_verifier = request.cookies.get("vk_code_verifier", "")
+    if not code_verifier:
+        log.warning("Missing code_verifier for VK PKCE")
+        return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+
     try:
-        profile = vk_auth_service.exchange_code(code=code)
+        profile = vk_auth_service.exchange_code(code=code, code_verifier=code_verifier)
         user, token = auth_service.login_vk(**profile)
         redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
@@ -1148,10 +1169,14 @@ async def vk_auth_callback(
             AuthService.COOKIE_NAME, token, **_session_cookie_kwargs()
         )
         redirect.delete_cookie("vk_oauth_state", path="/")
+        redirect.delete_cookie("vk_code_verifier", path="/")
         return redirect
     except ValueError as exc:
         log.warning("VK auth failed: %s", exc)
-        return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+        redirect = RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+        redirect.delete_cookie("vk_oauth_state", path="/")
+        redirect.delete_cookie("vk_code_verifier", path="/")
+        return redirect
 
 
 @app.get("/api/profile/nickname-available")
