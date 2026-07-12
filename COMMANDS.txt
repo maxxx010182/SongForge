@@ -74,7 +74,7 @@ grep ADMIN_BOOTSTRAP
 
 === АКТУАЛЬНОЕ (VK — прямой вход как в TG) ===
 
-Починили порядок загрузки: теперь кнопки ТГ/ВК должны показываться даже если открывается модалка по ошибке.
+Починили: сессия ставится ДО привязки гостя. Если привязка упадёт — вход всё равно сработает.
 
 Обнови:
 
@@ -84,12 +84,13 @@ grep ADMIN_BOOTSTRAP
 
 3. cd ~/SongForge && pm2 restart songforge --update-env
 
-4. На сайте Ctrl+F5 + попробуй полный вход через VK.
+4. На сайте Ctrl+F5
 
-Ссылка в кабинет VK: https://id.vk.ru/
+5. Попробуй войти через VK.
 
-(войди → найди приложение → настройки → Redirect URI должен быть https://sozdaipesnu.ru/api/auth/vk/callback )
+После попытки пришли:
+pm2 logs songforge --lines 30 --nostream
 
-Если после "Разрешить" снова модалка — пришли pm2 logs songforge --lines 25 --nostream
+Ищи "VK login", "VK auth failed", "received profile"
 
-(ищи VK / callback / error)
+Ссылка в кабинет: https://id.vk.com/about/business/go/ (Мои приложения)
