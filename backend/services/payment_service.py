@@ -253,6 +253,18 @@ class PaymentService:
             f"Пакет {notes} {'нота' if notes == 1 else 'ноты' if 2 <= notes <= 4 else 'нот'} "
             f"— СоздайСвоюПесню"
         )
+
+        # Для GetPlatinum важно передавать реальные контактные данные,
+        # чтобы чеки (через Мой налог) приходили на правильную почту.
+        # Платформенный display_name — это ник, а не ФИО.
+        # Если нет настоящей почты (не @songforge.local), оставляем пустым,
+        # чтобы пользователь заполнил свои данные сам в форме GP.
+        safe_email = ""
+        if user_email and "@" in user_email and "songforge.local" not in user_email.lower():
+            safe_email = user_email
+
+        safe_name = ""  # не подставляем никнейм как ФИО
+
         payload = {
             "dealId": order_id,
             "currency": "RUB",
@@ -268,8 +280,8 @@ class PaymentService:
             ],
             "clientParams": {
                 "clientId": user_id,
-                "email": user_email or f"{user_id}@songforge.local",
-                "name": user_display_name or user_email or "Покупатель",
+                "email": safe_email,
+                "name": safe_name,
             },
             "notificationUrl": f"{SITE_URL}/api/payment/webhook/getplatinum",
             "successUrl": f"{SITE_URL}/?payment=success",
