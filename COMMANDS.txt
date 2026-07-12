@@ -74,9 +74,7 @@ grep ADMIN_BOOTSTRAP
 
 === АКТУАЛЬНОЕ (VK — прямой вход как в TG) ===
 
-Проблема: после "Разрешить" в VK возвращает в модалку вместо прямого входа.
-
-Сейчас починили: запросы к VK в фоне + ловим любые ошибки.
+Починили порядок загрузки: теперь кнопки ТГ/ВК должны показываться даже если открывается модалка по ошибке.
 
 Обнови:
 
@@ -86,13 +84,12 @@ grep ADMIN_BOOTSTRAP
 
 3. cd ~/SongForge && pm2 restart songforge --update-env
 
-4. На сайте Ctrl+F5, попробуй VK.
+4. На сайте Ctrl+F5 + попробуй полный вход через VK.
 
-Если опять в модалку:
-pm2 logs songforge --lines 25 --nostream
+Ссылка в кабинет VK: https://id.vk.ru/
 
-Пришли вывод (ищи VK, exchange, token, error).
+(войди → найди приложение → настройки → Redirect URI должен быть https://sozdaipesnu.ru/api/auth/vk/callback )
 
-Также проверь в VK кабинете точный Redirect URI = https://sozdaipesnu.ru/api/auth/vk/callback
+Если после "Разрешить" снова модалка — пришли pm2 logs songforge --lines 25 --nostream
 
-Цель: после "Разрешить" — сразу тост "Вы вошли" и кабинет (без модалки).
+(ищи VK / callback / error)
