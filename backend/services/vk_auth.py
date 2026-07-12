@@ -36,7 +36,7 @@ class VkAuthService:
             params["code_challenge_method"] = "S256"
         return f"{VK_AUTH_BASE.rstrip('/')}/authorize?{urlencode(params)}"
 
-    def exchange_code(self, *, code: str, code_verifier: str | None = None) -> dict:
+    def exchange_code(self, *, code: str, code_verifier: str | None = None, device_id: str | None = None) -> dict:
         if not self.is_configured():
             raise ValueError("VK OAuth не настроен")
 
@@ -50,6 +50,8 @@ class VkAuthService:
         }
         if code_verifier:
             data["code_verifier"] = code_verifier
+        if device_id:
+            data["device_id"] = device_id
 
         try:
             token_res = requests.post(

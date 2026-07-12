@@ -1,5 +1,5 @@
 ﻿SongForge вЂ” KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.15 (текущая в коде)
+Obnovleno: iyul 2026 | versiya: 2.11.16 (текущая в коде) + фикс VK device_id
 Fail: COMMANDS.txt (korРµРЅСЊ proekta)
 Podrobnye instrukcii po temam: docs/instrukcii/INDEX.txt
 ========================================
@@ -97,3 +97,117 @@ pm2 logs songforge --lines 30 --nostream
 Ищи "VK login" / "VK auth failed"
 
 Ссылка в VK кабинет: https://id.vk.com/about/business/go/ (Мои приложения)
+
+=== VK ДИАГНОСТИКА (проблема: после "Разрешить" возвращает в модалку входа) ===
+
+Версия: 2.11.15
+Цель: собрать точные логи сразу после попытки VK-входа.
+
+Выполняй по порядку. Копируй команды по одной.
+
+1. Подключись к серверу (полная строка):
+
+ssh root@195.19.20.245
+
+(Введи пароль)
+
+2. Перейди в папку проекта:
+
+cd ~/SongForge
+
+3. Проверь версию на сервере:
+
+curl http://127.0.0.1:8000/api/health
+
+(Должно быть "version":"2.11.15")
+
+4. Проверь настройки VK (не отправляй секретный ключ):
+
+grep -E 'VK_|SITE_URL' .env
+
+5. Если недавно правили .env — перезапусти приложение:
+
+pm2 restart songforge --update-env
+
+6. В браузере (на своём компьютере) сделай попытку входа:
+
+   - Открой https://sozdaipesnu.ru
+   - Нажми Ctrl + F5 (полная очистка кэша)
+   - Открой модалку "Войти / Регистрация"
+   - Поставь галочку согласия с документами
+   - Нажми кнопку "Войти через VK"
+   - В окне VK ID нажми "Разрешить"
+   - Дождись возврата обратно на сайт (даже если снова появится окно входа)
+
+7. СРАЗУ ПОСЛЕ возврата из VK (пока сидишь в терминале) выполни ЭТУ команду:
+
+pm2 logs songforge --lines 120 --nostream
+
+Или более удобный вариант с фильтром:
+
+pm2 logs songforge --lines 100 --nostream | grep -iE 'vk|callback|state|token|auth|error|profile|login'
+
+8. Дополнительно (если попросят):
+
+pm2 status
+
+pm2 logs songforge --lines 30 --nostream
+
+9. Сохранить логи в файл (самый удобный способ отправить):
+
+pm2 logs songforge --lines 150 --nostream > /tmp/vk-debug-logs.txt && cat /tmp/vk-debug-logs.txt
+
+10. Закончил — выйди с сервера:
+
+exit
+
+После этого пришли сюда всё, что вывелось из команды пункта 7 (или содержимое файла из пункта 9).
+
+Это позволит точно понять, где рвётся цепочка (state mismatch, ошибка обмена кода, VK не вернул профиль или кука сессии не прилетела).
+
+=== ФИКС VK (device_id) — v2.11.16 ===
+
+Причина проблемы (из твоих логов):
+VK при редиректе в callback отдаёт device_id, но в запросе на обмен кода на токен мы его не передавали обратно.
+VK отвечает: "device_id is invalid"
+
+Исправлено в коде (v2.11.16).
+
+=== ШАГ 1: Запушить фикс из локального проекта (на Windows) ===
+
+Открой PowerShell в папке проекта C:\Users\makc0\Desktop\SongForge
+
+Выполни по одной строке:
+
+git status
+
+git add backend/app.py backend/services/vk_auth.py scripts/deploy-vps.sh COMMANDS.txt SONGFORGE-КОНТЕКСТ.txt
+
+git commit -m "v2.11.16: VK OAuth fix - pass device_id from callback to token exchange"
+
+git push origin main
+
+(Если попросит имя/почту git: git config user.name "твоё имя" и git config user.email "твоя@почта")
+
+=== ШАГ 2: Деплой на сервер ===
+
+1. ssh root@195.19.20.245
+
+2. cd ~/SongForge
+
+3. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+4. После деплоя проверить:
+   curl http://127.0.0.1:8000/api/health
+   (должно быть "version":"2.11.16")
+
+5. pm2 restart songforge --update-env
+
+6. На сайте: Ctrl + F5
+
+7. Протестируй "Войти через VK" заново (с галочкой).
+
+После теста, если проблема осталась — собери логи командой из блока VK ДИАГНОСТИКА.
+
+Версия на проде должна стать 2.11.16.
+

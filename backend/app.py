@@ -114,7 +114,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.15")
+app = FastAPI(title="SongForge", version="2.11.16")
 
 app.add_middleware(
     CORSMiddleware,
@@ -416,7 +416,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.15",
+        "version": "2.11.16",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1142,6 +1142,7 @@ async def vk_auth_callback(
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
+    device_id: str | None = None,
     guest_id: str = Depends(get_guest_id),
 ):
     if error:
@@ -1165,10 +1166,10 @@ async def vk_auth_callback(
 
     try:
         profile = await run_in_threadpool(
-            vk_auth_service.exchange_code, code=code, code_verifier=code_verifier
+            vk_auth_service.exchange_code, code=code, code_verifier=code_verifier, device_id=device_id
         )
-        log.info("VK login: received profile vk_id=%s email_present=%s", 
-                 profile.get("vk_id"), bool(profile.get("email")))
+        log.info("VK login: received profile vk_id=%s email_present=%s device_id=%s", 
+                 profile.get("vk_id"), bool(profile.get("email")), bool(device_id))
         user, token = auth_service.login_vk(**profile)
 
         redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
