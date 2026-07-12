@@ -1167,17 +1167,26 @@ async def vk_auth_callback(
         profile = await run_in_threadpool(
             vk_auth_service.exchange_code, code=code, code_verifier=code_verifier
         )
+        log.info("VK login: received profile vk_id=%s email_present=%s", 
+                 profile.get("vk_id"), bool(profile.get("email")))
         user, token = auth_service.login_vk(**profile)
+
         redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
-        cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
-        generation_quota.sync_guest_trial_on_login(
-            guest_id=guest_id, user_id=user["id"]
-        )
         redirect.set_cookie(
             AuthService.COOKIE_NAME, token, **_session_cookie_kwargs()
         )
         redirect.delete_cookie("vk_oauth_state", path="/")
         redirect.delete_cookie("vk_code_verifier", path="/")
+
+        # Link guest data, but do not fail the login if this errors
+        try:
+            cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+            generation_quota.sync_guest_trial_on_login(
+                guest_id=guest_id, user_id=user["id"]
+            )
+        except Exception as link_exc:
+            log.warning("VK guest linking failed (login still succeeded): %s", link_exc)
+
         return redirect
     except Exception as exc:
         log.warning("VK auth failed: %s", exc)
