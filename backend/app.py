@@ -1164,7 +1164,9 @@ async def vk_auth_callback(
         return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
 
     try:
-        profile = vk_auth_service.exchange_code(code=code, code_verifier=code_verifier)
+        profile = await run_in_threadpool(
+            vk_auth_service.exchange_code, code=code, code_verifier=code_verifier
+        )
         user, token = auth_service.login_vk(**profile)
         redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
@@ -1177,7 +1179,7 @@ async def vk_auth_callback(
         redirect.delete_cookie("vk_oauth_state", path="/")
         redirect.delete_cookie("vk_code_verifier", path="/")
         return redirect
-    except ValueError as exc:
+    except Exception as exc:
         log.warning("VK auth failed: %s", exc)
         redirect = RedirectResponse(f"{SITE_URL}/?auth_error=vk")
         redirect.delete_cookie("vk_oauth_state", path="/")
