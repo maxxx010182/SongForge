@@ -74,38 +74,46 @@ grep ADMIN_BOOTSTRAP
 
 === АКТУАЛЬНОЕ (VK + PKCE фикс) ===
 
-# Изменения PKCE уже внесены локально в:
-# backend/services/vk_auth.py
-# backend/app.py
+Правки для входа через VK уже отправлены на GitHub.
 
-# Чтобы залить на сервер:
+Чтобы обновить сайт на сервере:
 
-# 1. Отправь изменения на GitHub (с этого компьютера):
-git add backend/services/vk_auth.py backend/app.py
-git commit -m "fix: add PKCE for VK login"
-git push
+1. Подключись к VPS:
+ssh root@195.19.20.245
 
-# 2. На VPS выполни обновление:
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh" | bash
+2. Скачай и примени обновление с GitHub:
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# 3. Перезапусти:
+3. Перезапусти приложение (обязательно с --update-env):
 cd ~/SongForge
 pm2 restart songforge --update-env
 
-# 4. Проверь:
+4. Проверь, что VK включён:
 curl http://127.0.0.1:8000/api/auth/providers
 
-# 5. На сайте:
-# Ctrl+F5
-# Поставь галочку
-# Попробуй "Войти через VK"
+Должно вывести: "vk_enabled":true
 
-# 6. Сразу после клика:
-pm2 logs songforge --lines 8 --nostream
+5. На сайте (с Windows):
+Открой https://sozdaipesnu.ru
+Нажми Ctrl + F5 (полная перезагрузка)
+Открой модалку входа
+Поставь галочку согласия
+Нажми «Войти через VK»
 
-# Ищи /api/auth/vk/start
+6. Диагностика (если не работает):
+pm2 logs songforge --lines 20 --nostream
 
-# "Адрес сайта" без https в VK кабинете - нормально.
-# Ничего в Access token не трогай.
+Ищи строки с vk, /auth/vk, error
 
-# Если хочешь быстро без гита - скажи, дам scp команды.
+Дополнительно:
+pm2 status
+
+Если нужно быстро без полного деплоя:
+cd ~/SongForge
+git pull
+pm2 restart songforge --update-env
+
+После обновления:
+- Проверь кнопку VK в модалке входа
+- Попробуй войти
+- Если ошибка — пришли последние строки из pm2 logs (без секретов)
