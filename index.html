@@ -1129,6 +1129,7 @@ function handleAuthRedirect(){var p=new URLSearchParams(window.location.search);
 function handleEmailAuthDeepLink(){var p=new URLSearchParams(window.location.search);if(p.get('auth')!=='email')return;var email=(p.get('email')||'').trim();if(window.history&&window.history.replaceState)window.history.replaceState({},'',window.location.pathname);openAuthModalForEmailVerify(email);}
 function openAuthModalForEmailVerify(email){openAuthModal();var consent=document.getElementById('authConsentCheckbox');if(consent)consent.checked=true;updateAuthButtonsState();if(email)document.getElementById('authEmailInput').value=email;authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';var codeInput=document.getElementById('authCodeInput');if(codeInput)setTimeout(function(){codeInput.focus();},150);showToast('Введите код из письма');}
 async function loadData(){await fetchAuthProviders();var authRedirect=handleAuthRedirect();await fetchMe();await fetchHistory();await fetchServerLibrary();await fetchExploreTracks();renderLibrary();renderHistory();renderExplore();renderHomeExplore();handleTrackDeepLink();handleEmailAuthDeepLink();if(authRedirect==='ok')showToast('Вы вошли в аккаунт');
+}
 
 // Восстанавливаем состояние студии после возврата из оплаты GetPlatinum
 // (иначе описание и режимы теряются из-за полной перезагрузки страницы)
