@@ -1111,7 +1111,10 @@ async def vk_auth_start(response: Response):
     verifier = vk_auth_service.generate_code_verifier()
     challenge = vk_auth_service.generate_code_challenge(verifier)
 
-    response.set_cookie(
+    redirect = RedirectResponse(
+        vk_auth_service.build_authorize_url(state=state, code_challenge=challenge)
+    )
+    redirect.set_cookie(
         "vk_oauth_state",
         state,
         httponly=True,
@@ -1120,7 +1123,7 @@ async def vk_auth_start(response: Response):
         path="/",
         secure=SITE_URL.lower().startswith("https://"),
     )
-    response.set_cookie(
+    redirect.set_cookie(
         "vk_code_verifier",
         verifier,
         httponly=True,
@@ -1129,10 +1132,7 @@ async def vk_auth_start(response: Response):
         path="/",
         secure=SITE_URL.lower().startswith("https://"),
     )
-
-    return RedirectResponse(
-        vk_auth_service.build_authorize_url(state=state, code_challenge=challenge)
-    )
+    return redirect
 
 
 @app.get("/api/auth/vk/callback")
@@ -1147,10 +1147,16 @@ async def vk_auth_callback(
     if error:
         return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
     if not code or not state:
-        raise HTTPException(status_code=400, detail="Некорректный ответ VK")
+        log.warning("VK callback missing code or state")
+        return RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+
     cookie_state = request.cookies.get("vk_oauth_state", "")
     if not cookie_state or cookie_state != state:
-        raise HTTPException(status_code=400, detail="Сессия VK устарела — попробуйте снова")
+        log.warning("VK state mismatch: cookie=%s, param=%s", cookie_state, state)
+        redirect = RedirectResponse(f"{SITE_URL}/?auth_error=vk")
+        redirect.delete_cookie("vk_oauth_state", path="/")
+        redirect.delete_cookie("vk_code_verifier", path="/")
+        return redirect
 
     code_verifier = request.cookies.get("vk_code_verifier", "")
     if not code_verifier:
