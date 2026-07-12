@@ -72,35 +72,27 @@ pm2 logs songforge-worker --lines 30 --nostream
 ./venv/bin/python scripts/admin_bootstrap_check.py
 grep ADMIN_BOOTSTRAP
 
-=== АКТУАЛЬНОЕ (VK фикс — куки + редиректы) ===
+=== АКТУАЛЬНОЕ (VK — прямой вход как в TG) ===
 
-Исправлена проблема с куками сессии VK (они не прикреплялись к редиректу).
-Теперь ошибки тоже красиво редиректят на сайт, а не показывают сырой JSON.
+Проблема: после "Разрешить" в VK возвращает в модалку вместо прямого входа.
 
-Чтобы обновить сайт на сервере:
+Сейчас починили: запросы к VK в фоне + ловим любые ошибки.
 
-1. Подключись к VPS:
-ssh root@195.19.20.245
+Обнови:
 
-2. Обнови с GitHub:
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+1. ssh root@195.19.20.245
 
-3. Перезапусти:
-cd ~/SongForge
-pm2 restart songforge --update-env
+2. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-4. Проверь:
-curl http://127.0.0.1:8000/api/auth/providers
-(должно быть vk_enabled:true)
+3. cd ~/SongForge && pm2 restart songforge --update-env
 
-5. На сайте:
-Открой https://sozdaipesnu.ru
-Ctrl + F5
-Открой вход → поставь галочку → нажми «Войти через VK»
+4. На сайте Ctrl+F5, попробуй VK.
 
-6. Если снова ошибка — пришли:
-pm2 logs songforge --lines 15 --nostream
+Если опять в модалку:
+pm2 logs songforge --lines 25 --nostream
 
-(ищи vk, state, callback)
+Пришли вывод (ищи VK, exchange, token, error).
 
-После этого попробуй полный вход через VK и скажи, что происходит.
+Также проверь в VK кабинете точный Redirect URI = https://sozdaipesnu.ru/api/auth/vk/callback
+
+Цель: после "Разрешить" — сразу тост "Вы вошли" и кабинет (без модалки).
