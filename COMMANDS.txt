@@ -1,5 +1,5 @@
 ﻿SongForge вЂ” KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.15
+Obnovleno: iyul 2026 | versiya: 2.11.15 (текущая в коде)
 Fail: COMMANDS.txt (korРµРЅСЊ proekta)
 Podrobnye instrukcii po temam: docs/instrukcii/INDEX.txt
 ========================================
@@ -72,11 +72,12 @@ pm2 logs songforge-worker --lines 30 --nostream
 ./venv/bin/python scripts/admin_bootstrap_check.py
 grep ADMIN_BOOTSTRAP
 
-=== АКТУАЛЬНОЕ (VK — прямой вход как в TG) ===
+=== АКТУАЛЬНОЕ (v2.11.15 — VK стабильность входа) ===
 
-Починили: сессия ставится ДО привязки гостя. Если привязка упадёт — вход всё равно сработает.
+Версия: 2.11.15
+Изменения: VK вход (PKCE + куки + обработка ошибок + защита от падения привязки гостя).
 
-Обнови:
+Чтобы обновить до 2.11.15:
 
 1. ssh root@195.19.20.245
 
@@ -84,13 +85,15 @@ grep ADMIN_BOOTSTRAP
 
 3. cd ~/SongForge && pm2 restart songforge --update-env
 
-4. На сайте Ctrl+F5
+4. Проверить:
+   curl http://127.0.0.1:8000/api/health
+   (должно быть "version":"2.11.15")
 
-5. Попробуй войти через VK.
+5. На сайте: Ctrl+F5 и тест VK входа.
 
-После попытки пришли:
+После теста если проблема осталась:
 pm2 logs songforge --lines 30 --nostream
 
-Ищи "VK login", "VK auth failed", "received profile"
+Ищи "VK login" / "VK auth failed"
 
-Ссылка в кабинет: https://id.vk.com/about/business/go/ (Мои приложения)
+Ссылка в VK кабинет: https://id.vk.com/about/business/go/ (Мои приложения)
