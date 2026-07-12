@@ -284,7 +284,7 @@ class PaymentService:
                 "name": safe_name,
             },
             "notificationUrl": f"{SITE_URL}/api/payment/webhook/getplatinum",
-            "successUrl": f"{SITE_URL}/?payment=success",
+            "successUrl": f"{SITE_URL}/?payment=success&order={order_id}",
             "failUrl": f"{SITE_URL}/?payment=failed",
             "customParams": {"package_id": package["id"], "notes": notes},
         }
