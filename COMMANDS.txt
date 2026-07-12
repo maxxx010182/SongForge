@@ -211,39 +211,75 @@ git push origin main
 
 Версия на проде должна стать 2.11.16.
 
+=== Настройка GitHub CLI (чтобы я мог сам пушить) ===
+
+gh сейчас не найден. Сделай по порядку:
+
+1. Установи GitHub CLI (скопируй и выполни одну строку):
+
+winget install --id GitHub.cli -e --source winget
+
+2. Закрой это окно PowerShell полностью и открой новое.
+
+3. Проблема: PowerShell плохо "слушает" токен в этой команде.
+
+**Делай строго так** (скопируй весь этот текст и замени токен):
+
+$token = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_БЕЗ_КАВЫЧЕК".Trim()
+$token | gh auth login --with-token
+gh auth status
+
+Пример (замени на свой токен):
+$token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".Trim()
+$token | gh auth login --with-token
+gh auth status
+
+4. После этого кинь сюда полный вывод `gh auth status`.
+
+Если увидишь "Logged in to github.com as ...", то авторизация прошла успешно.
+
+После этого я смогу сам делать git push.
+
 === АКТУАЛЬНОЕ — Тест возврата из GetPlatinum (ноты + сохранение ввода) ===
 
 Проблемы, которые описал:
 - После оплаты в ГП ноты не прибавляются сразу.
 - Весь введённый текст (продюсер + расширенный режим) теряется — форма сбрасывается при возврате.
 
-Исправлено (локально):
+Исправлено локально (коммиты 627ce6e + e615742):
 - Перед редиректом в ГП — сохраняем описание, текст песни, настройки в sessionStorage.
 - При возврате ?payment=success — восстанавливаем все поля + force fetchMe() для актуального баланса.
 - Пустые email/name в clientParams (чтобы пользователь сам вводил реальные).
 
-Пока не обновлял сервер — тестировал на текущем.
+ВАЖНО: push из инструмента сейчас не работает (нет соединения с github.com). Делаем как раньше.
+
+=== ШАГ 1: Запушить локальные коммиты (выполни в PowerShell в папке проекта) ===
+
+git status
+git add index.html backend/services/payment_service.py COMMANDS.txt SONGFORGE-КОНТЕКСТ.txt
+git commit -m "payment return UX + gh auth setup"
+git push origin main
+
+(Если попросит имя/почту — git config user.name "твоё имя" && git config user.email "твоя@почта")
+
+Если ругается на auth — gh auth login уже сделано, должно взять credential автоматически.
+
+После успешного push переходи к ШАГ 2 (обновить сервер).
+
+После успешного push:
+
+=== ШАГ 2: Обновить сервер ===
 
 1. ssh root@195.19.20.245
-
 2. cd ~/SongForge
-
 3. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-4. curl http://127.0.0.1:8000/api/health   (проверь версию)
-
+4. curl http://127.0.0.1:8000/api/health
 5. pm2 restart songforge --update-env
+6. На сайте Ctrl+F5
 
-6. На сайте: Ctrl+F5
+7. Протестируй: вбей текст → сгенерировать → оплата → возврат. Должен вернуться текст + ноты.
 
-7. Протестируй полный путь:
-   - Вбей текст в AI-продюсер (или расширенный)
-   - Нажми сгенерировать
-   - Купи ноту с промокодом
-   - Вернись
-   → Должен вернуться текст + ноты должны появиться
+Если после пуша ноты не приходят — пришли логи: pm2 logs songforge --lines 30 --nostream | grep -i "getplatinum\|webhook\|mark_paid"
 
-Если ноты не пришли — пришли pm2 logs songforge --lines 30 --nostream | grep -i "getplatinum\|webhook\|mark_paid"
-
-После теста — скажи результат.
+Открой COMMANDS.txt заново, чтобы видеть актуальные блоки.
 

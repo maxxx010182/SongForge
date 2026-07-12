@@ -4,6 +4,22 @@
 ВАЖНОЕ ПРАВИЛО (сохранить!): Ассистент всегда делает правки ЛОКАЛЬНО в workspace + git commit + git push в GitHub. 
 Затем даёт пользователю команды ТОЛЬКО на update-now.sh на сервере VPS. 
 Если push не получается (auth, доступ и т.д.) — сразу пишу об этом.
+
+Текущая проблема (12.07.2026): run_terminal_command не может подключиться к github.com:443 ("Could not connect to server"). 
+Раньше иногда push проходил, сейчас — нет. Это сетевое ограничение окружения инструмента, а не credentials.
+
+Решение (как было раньше):
+- Создаём fine-grained Personal Access Token **только для репозитория SongForge**.
+- Даём минимальные права:
+  - Contents: Read and write (обязательно)
+  - Pull requests: Read and write
+  - Issues: Read and write
+  - Actions: Read
+- Затем выполняем на своей машине:
+  gh auth login --with-token
+  (вставляем токен)
+
+После этого я смогу самостоятельно делать git commit + git push.
 Путь: C:\Users\makc0\Desktop\SongForge\SONGFORGE-КОНТЕКСТ.txt
 
 ПАПКИ (порядок 10.07):
