@@ -72,48 +72,35 @@ pm2 logs songforge-worker --lines 30 --nostream
 ./venv/bin/python scripts/admin_bootstrap_check.py
 grep ADMIN_BOOTSTRAP
 
-=== АКТУАЛЬНОЕ (VK + PKCE фикс) ===
+=== АКТУАЛЬНОЕ (VK фикс — куки + редиректы) ===
 
-Правки для входа через VK уже отправлены на GitHub.
+Исправлена проблема с куками сессии VK (они не прикреплялись к редиректу).
+Теперь ошибки тоже красиво редиректят на сайт, а не показывают сырой JSON.
 
 Чтобы обновить сайт на сервере:
 
 1. Подключись к VPS:
 ssh root@195.19.20.245
 
-2. Скачай и примени обновление с GitHub:
+2. Обнови с GitHub:
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-3. Перезапусти приложение (обязательно с --update-env):
+3. Перезапусти:
 cd ~/SongForge
 pm2 restart songforge --update-env
 
-4. Проверь, что VK включён:
+4. Проверь:
 curl http://127.0.0.1:8000/api/auth/providers
+(должно быть vk_enabled:true)
 
-Должно вывести: "vk_enabled":true
-
-5. На сайте (с Windows):
+5. На сайте:
 Открой https://sozdaipesnu.ru
-Нажми Ctrl + F5 (полная перезагрузка)
-Открой модалку входа
-Поставь галочку согласия
-Нажми «Войти через VK»
+Ctrl + F5
+Открой вход → поставь галочку → нажми «Войти через VK»
 
-6. Диагностика (если не работает):
-pm2 logs songforge --lines 20 --nostream
+6. Если снова ошибка — пришли:
+pm2 logs songforge --lines 15 --nostream
 
-Ищи строки с vk, /auth/vk, error
+(ищи vk, state, callback)
 
-Дополнительно:
-pm2 status
-
-Если нужно быстро без полного деплоя:
-cd ~/SongForge
-git pull
-pm2 restart songforge --update-env
-
-После обновления:
-- Проверь кнопку VK в модалке входа
-- Попробуй войти
-- Если ошибка — пришли последние строки из pm2 logs (без секретов)
+После этого попробуй полный вход через VK и скажи, что происходит.
