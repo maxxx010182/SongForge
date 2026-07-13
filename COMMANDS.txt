@@ -1,285 +1,92 @@
-﻿SongForge вЂ” KOMANDY SERVERA (kopirovat OTDELNO kazhduyu stroku)
-Obnovleno: iyul 2026 | versiya: 2.11.16 (текущая в коде) + фикс VK device_id
-Fail: COMMANDS.txt (korРµРЅСЊ proekta)
-Podrobnye instrukcii po temam: docs/instrukcii/INDEX.txt
-========================================
-POLNAYA INSTRUKCIYA: OBNOVIT SERVER
-SHAG 1. Otkryt PowerShell ili cmd na Windows
-SHAG 2. Podklyuchitsya k serveru (skopirovat ODNU stroku):
+SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
+
+=== АКТУАЛЬНОЕ (v2.11.16 — тест GetPlatinum: возврат из оплаты + сохранение текста студии + начисление нот) ===
+
+# === ШАГ 1. Обновить сайт на сервере (одна команда) ===
 ssh root@195.19.20.245
-Vvesti parol servera.
-SHAG 3. Obnovit sait (skopirovat ODNU stroku, vstaviti, Enter):
+
+cd ~/SongForge
+
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-Esli oshibka В«staryj deploy-vpsВ» ili TLS вЂ” SHAG 3b nizhe (NE update-now).
-SHAG 3b. Obnovit sait VRUCHNUYU (esli SHAG 3 ne srabotal)
----------------------------------------------------------
-Skopirovat PO ODNOMU (uzhe na servere posle ssh):
-cd ~/SongForge
-curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
-tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
-cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
-bash scripts/deploy-vps.sh
-Zhdat okonchaniya. V kontse dolzhno byt:
-=== Gotovo! v2.11.15 ===
-Deploy avtomaticheski zapuskaet:
-  pm2: songforge        (API)
-  pm2: songforge-worker (opros Suno + S3)
-SHAG 4. Proverit versiyu (skopirovat ODNU stroku):
-curl http://127.0.0.1:8000/api/health
-Otvet: "version":"2.11.15"
-Opcionalno: "redis":true, "s3":true, "email_smtp":true
-SHAG 4b. SMTP вЂ” esli kod ne uhodit na pochtu
-./venv/bin/python scripts/test_smtp.py
-Esli FAIL вЂ” popravte .env, potom:
-pm2 restart songforge
-Podrobno: docs/instrukcii/SMTP-DIAGNOSTIKA.txt
-SHAG 5. Redis (odin raz, esli net)
-apt-get update && apt-get install -y redis-server
-systemctl enable redis-server
-systemctl start redis-server
-redis-cli ping
-Otvet: PONG
-SHAG 6. S3 REG.RU v .env (odin raz)
-nano ~/SongForge/.env
-Podrobno: docs/instrukcii/S3-REG-RU-РљРђРљ-Р—РђРџРћР›РќРРўР¬.txt
-Posle .env:
-pm2 restart songforge-worker
-SHAG 7. (odin raz) Admin-panel вЂ” vash email v .env
-ADMIN_BOOTSTRAP_EMAILS=vas@email.ru
-Podrobno: docs/instrukcii/ADMIN-VHOD.txt
-Esli menyali .env:
-SHAG 8. Vyiti s servera:
-exit
-SHAG 9. V brauzere na Windows
-Sait: https://sozdaipesnu.ru
-Zhat Ctrl+F5 (bez kesha)
-Admin: https://sozdaipesnu.ru/admin
-(Snachala voyti na glavnoj pod tem zhe email)
-Posle deploy: docs/instrukcii/РџР РћР’Р•Р РљРђ-РџРћРЎР›Р•-Р”Р•РџР›РћРЇ.txt
-KOMANDY PO OTDELNOSTI
-=== PODKLYUCHIT K SERVERU ===
-=== OBNOVIT SAIT (obychno) ===
-=== OBNOVIT SAIT (esli TLS / raw.githubusercontent) ===
-=== OBNOVIT SAIT (esli i codeload ne kachaet вЂ” wget) ===
-wget -O /tmp/sf.tar.gz "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
-=== PROVERIT VERSIYU ===
-=== PM2: status API + worker ===
+
+# Ждать вывода: === Готово! v2.11.16 === (или выше)
+
+# Если curl падает с TLS / raw.githubusercontent — используй codeload-вариант ниже:
+# cd ~/SongForge
+# curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+# tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/update-now.sh
+# cp /tmp/SongForge-main/scripts/update-now.sh scripts/update-now.sh
+# bash scripts/update-now.sh
+
+# === ШАГ 2. Проверить после деплоя (по одной строке) ===
+curl -s https://sozdaipesnu.ru/api/health
+# Должно: "version":"2.11.16" , "redis":true , "s3":true
+
+curl -s https://sozdaipesnu.ru/api/auth/providers
+# vk_enabled:true , email_enabled:true , email_smtp:true
+
+# === ШАГ 3. Тест оплаты GetPlatinum (на сайте, после деплоя) ===
+# 1. Открой https://sozdaipesnu.ru   → Ctrl+F5
+# 2. Войди по email (или VK/TG если включено)
+# 3. В студии: введи идею / текст песни (в обычном или расширенном режиме)
+# 4. Перейди в «Пакеты» → выбери пакет → «Перейти к оплате»
+# 5. Оплати (тестово или реально)
+# 6. После успешной оплаты вернись на сайт (автоматически или вручную)
+# 7. Проверь:
+#    - В студии восстановился введённый текст (idea, lyrics, поля)
+#    - В профиле / шапке баланс нот увеличился на купленный пакет
+#    - Можно создать полную песню (1 нота)
+
+# === Логи и диагностика (если нужно) ===
+pm2 logs songforge --lines 40 --nostream
+
 pm2 status
-pm2 logs songforge-worker --lines 30 --nostream
-=== ADMIN: redaktirovat .env ===
-=== ADMIN: perezapusk posle .env ===
-=== ADMIN: diagnostika (pochemu net prav) ===
-./venv/bin/python scripts/admin_bootstrap_check.py
-grep ADMIN_BOOTSTRAP
 
-=== АКТУАЛЬНОЕ (v2.11.15 — VK стабильность входа) ===
-
-Версия: 2.11.15
-Изменения: VK вход (PKCE + куки + обработка ошибок + защита от падения привязки гостя).
-
-Чтобы обновить до 2.11.15:
-
-1. ssh root@195.19.20.245
-
-2. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-3. cd ~/SongForge && pm2 restart songforge --update-env
-
-4. Проверить:
-   curl http://127.0.0.1:8000/api/health
-   (должно быть "version":"2.11.15")
-
-5. На сайте: Ctrl+F5 и тест VK входа.
-
-После теста если проблема осталась:
-pm2 logs songforge --lines 30 --nostream
-
-Ищи "VK login" / "VK auth failed"
-
-Ссылка в VK кабинет: https://id.vk.com/about/business/go/ (Мои приложения)
-
-=== VK ДИАГНОСТИКА (проблема: после "Разрешить" возвращает в модалку входа) ===
-
-Версия: 2.11.15
-Цель: собрать точные логи сразу после попытки VK-входа.
-
-Выполняй по порядку. Копируй команды по одной.
-
-1. Подключись к серверу (полная строка):
-
-ssh root@195.19.20.245
-
-(Введи пароль)
-
-2. Перейди в папку проекта:
-
-cd ~/SongForge
-
-3. Проверь версию на сервере:
-
-curl http://127.0.0.1:8000/api/health
-
-(Должно быть "version":"2.11.15")
-
-4. Проверь настройки VK (не отправляй секретный ключ):
-
-grep -E 'VK_|SITE_URL' .env
-
-5. Если недавно правили .env — перезапусти приложение:
-
+# После любых правок .env:
 pm2 restart songforge --update-env
 
-6. В браузере (на своём компьютере) сделай попытку входа:
+# ВАЖНО:
+# - После копирования команд — закрой COMMANDS.txt полностью и открой заново (чтобы увидеть свежий текст)
+# - Копируй по ОДНОЙ строке, вставляй правой кнопкой мыши
 
-   - Открой https://sozdaipesnu.ru
-   - Нажми Ctrl + F5 (полная очистка кэша)
-   - Открой модалку "Войти / Регистрация"
-   - Поставь галочку согласия с документами
-   - Нажми кнопку "Войти через VK"
-   - В окне VK ID нажми "Разрешить"
-   - Дождись возврата обратно на сайт (даже если снова появится окно входа)
+=== ОТКАТ К РАБОЧЕЙ ВЕРСИИ (сайт сломан после деплоя) ===
 
-7. СРАЗУ ПОСЛЕ возврата из VK (пока сидишь в терминале) выполни ЭТУ команду:
+# На своём Windows (в папке проекта):
+cd C:\Users\makc0\Desktop\SongForge
 
-pm2 logs songforge --lines 120 --nostream
+# Посмотреть коммиты:
+git log --oneline -10
 
-Или более удобный вариант с фильтром:
+# Откатить index.html к версии ДО поломки (замени ABC123 на коммит из лога выше):
+git checkout ABC123 -- index.html
 
-pm2 logs songforge --lines 100 --nostream | grep -iE 'vk|callback|state|token|auth|error|profile|login'
-
-8. Дополнительно (если попросят):
-
-pm2 status
-
-pm2 logs songforge --lines 30 --nostream
-
-9. Сохранить логи в файл (самый удобный способ отправить):
-
-pm2 logs songforge --lines 150 --nostream > /tmp/vk-debug-logs.txt && cat /tmp/vk-debug-logs.txt
-
-10. Закончил — выйди с сервера:
-
-exit
-
-После этого пришли сюда всё, что вывелось из команды пункта 7 (или содержимое файла из пункта 9).
-
-Это позволит точно понять, где рвётся цепочка (state mismatch, ошибка обмена кода, VK не вернул профиль или кука сессии не прилетела).
-
-=== ФИКС VK (device_id) — v2.11.16 ===
-
-Причина проблемы (из твоих логов):
-VK при редиректе в callback отдаёт device_id, но в запросе на обмен кода на токен мы его не передавали обратно.
-VK отвечает: "device_id is invalid"
-
-Исправлено в коде (v2.11.16).
-
-=== ШАГ 1: Запушить фикс из локального проекта (на Windows) ===
-
-Открой PowerShell в папке проекта C:\Users\makc0\Desktop\SongForge
-
-Выполни по одной строке:
-
-git status
-
-git add backend/app.py backend/services/vk_auth.py scripts/deploy-vps.sh COMMANDS.txt SONGFORGE-КОНТЕКСТ.txt
-
-git commit -m "v2.11.16: VK OAuth fix - pass device_id from callback to token exchange"
-
+# Закоммитить и запушить:
+git add index.html
+git commit -m "revert to working"
 git push origin main
 
-(Если попросит имя/почту git: git config user.name "твоё имя" и git config user.email "твоя@почта")
+# На сервере:
+ssh root@195.19.20.245
+(введи пароль)
 
-=== ШАГ 2: Деплой на сервер ===
+# Скачать откатанную версию:
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/index.html" -o ~/SongForge/index.html
 
-1. ssh root@195.19.20.245
+# Если TLS — этот:
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+tar -xzf /tmp/sf.tar.gz -C /tmp --strip-components=1 SongForge-main/index.html
+cp /tmp/index.html ~/SongForge/index.html
+rm -f /tmp/sf.tar.gz /tmp/index.html
 
-2. cd ~/SongForge
+pm2 restart songforge
 
-3. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# На сайте:
+F12 → Network → Disable cache + правой кнопкой по обновлению → Empty cache and hard reload
 
-4. После деплоя проверить:
-   curl http://127.0.0.1:8000/api/health
-   (должно быть "version":"2.11.16")
+# ВАЖНО для вставки:
+Копируй ТОЛЬКО одну строку
+Вставляй правой кнопкой мыши
+Если прыгнуло — стрелками убери перенос, Enter
+Дождись выполнения
 
-5. pm2 restart songforge --update-env
-
-6. На сайте: Ctrl + F5
-
-7. Протестируй "Войти через VK" заново (с галочкой).
-
-После теста, если проблема осталась — собери логи командой из блока VK ДИАГНОСТИКА.
-
-Версия на проде должна стать 2.11.16.
-
-=== Настройка GitHub CLI (чтобы я мог сам пушить) ===
-
-gh сейчас не найден. Сделай по порядку:
-
-1. Установи GitHub CLI (скопируй и выполни одну строку):
-
-winget install --id GitHub.cli -e --source winget
-
-2. Закрой это окно PowerShell полностью и открой новое.
-
-3. Проблема: PowerShell плохо "слушает" токен в этой команде.
-
-**Делай строго так** (скопируй весь этот текст и замени токен):
-
-$token = "ВСТАВЬ_СЮДА_СВОЙ_ТОКЕН_БЕЗ_КАВЫЧЕК".Trim()
-$token | gh auth login --with-token
-gh auth status
-
-Пример (замени на свой токен):
-$token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".Trim()
-$token | gh auth login --with-token
-gh auth status
-
-4. После этого кинь сюда полный вывод `gh auth status`.
-
-Если увидишь "Logged in to github.com as ...", то авторизация прошла успешно.
-
-После этого я смогу сам делать git push.
-
-=== АКТУАЛЬНОЕ — Тест возврата из GetPlatinum (ноты + сохранение ввода) ===
-
-Проблемы, которые описал:
-- После оплаты в ГП ноты не прибавляются сразу.
-- Весь введённый текст (продюсер + расширенный режим) теряется — форма сбрасывается при возврате.
-
-Исправлено локально (коммиты 627ce6e + e615742):
-- Перед редиректом в ГП — сохраняем описание, текст песни, настройки в sessionStorage.
-- При возврате ?payment=success — восстанавливаем все поля + force fetchMe() для актуального баланса.
-- Пустые email/name в clientParams (чтобы пользователь сам вводил реальные).
-
-ВАЖНО: push из инструмента сейчас не работает (нет соединения с github.com). Делаем как раньше.
-
-=== ШАГ 1: Запушить локальные коммиты (выполни в PowerShell в папке проекта) ===
-
-git status
-git add index.html backend/services/payment_service.py COMMANDS.txt SONGFORGE-КОНТЕКСТ.txt
-git commit -m "payment return UX + gh auth setup"
-git push origin main
-
-(Если попросит имя/почту — git config user.name "твоё имя" && git config user.email "твоя@почта")
-
-Если ругается на auth — gh auth login уже сделано, должно взять credential автоматически.
-
-После успешного push переходи к ШАГ 2 (обновить сервер).
-
-После успешного push:
-
-=== ШАГ 2: Обновить сервер ===
-
-1. ssh root@195.19.20.245
-2. cd ~/SongForge
-3. curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-4. curl http://127.0.0.1:8000/api/health
-5. pm2 restart songforge --update-env
-6. На сайте Ctrl+F5
-
-7. Протестируй: вбей текст → сгенерировать → оплата → возврат. Должен вернуться текст + ноты.
-
-Если после пуша ноты не приходят — пришли логи: pm2 logs songforge --lines 30 --nostream | grep -i "getplatinum\|webhook\|mark_paid"
-
-Открой COMMANDS.txt заново, чтобы видеть актуальные блоки.
-
+Открой COMMANDS.txt заново полностью после правок.
