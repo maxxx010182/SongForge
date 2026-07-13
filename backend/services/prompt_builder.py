@@ -335,7 +335,7 @@ class PromptBuilder:
             backing_vocal=False,
         )
         return (
-            f"Тема песни (не копировать дословно): {idea}\n"
+            f"Тема песни (СТРОГО следуй только этой идее, без добавок): {idea}\n"
             f"Жанр: {plan.genre} / {plan.subgenre}\n"
             f"Настроение: {plan.mood}\n"
             f"Энергия: {plan.energy}\n"
@@ -343,6 +343,8 @@ class PromptBuilder:
             f"Вокал: {plan.vocal} — {plan.vocal_description}\n"
             f"Атмосфера: {plan.atmosphere}\n"
             f"Структура: {plan.structure}\n"
+            "ОБЯЗАТЕЛЬНО сделай полную 3–4 минутную песню с развитой структурой (Verse 1 + Pre + Chorus + Verse 2 с развитием + Bridge + Final Chorus + Outro).\n"
+            "Используй конкретные детали из идеи пользователя в тексте.\n"
             f"{screenplay_hint}\n"
             f"{lyrics_language_instruction(idea)}"
         )

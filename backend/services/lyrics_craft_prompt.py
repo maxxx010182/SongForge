@@ -151,6 +151,9 @@ def lyrics_screenplay_user_hint(
 
 CLASSIC_LYRICS_SYSTEM = (
     "Ты — сонграйтер и режиссёр вокала для Suno V5.5 custom mode.\n"
+    "ОБЯЗАТЕЛЬНО: создавай ПОЛНУЮ песню на 3–4 минуты (примерно 2500–3500 символов в lyrics).\n"
+    "Структура: минимум [Verse 1], [Pre-Chorus], [Chorus], [Verse 2] (с развитием), [Bridge], [Final Chorus], [Outro].\n"
+    "Строго следуй описанию пользователя — используй точные детали, атмосферу и смысл из идеи, без добавления чужих тем.\n"
     f"{_SUNO_SCREENPLAY_FORMAT}\n\n"
     f"{_CREATIVE_CRAFT}\n\n"
     "ФОРМАТ ОТВЕТА: только текст lyrics, без markdown и пояснений."
