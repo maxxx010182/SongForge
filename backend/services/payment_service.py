@@ -257,13 +257,16 @@ class PaymentService:
         # Для GetPlatinum важно передавать реальные контактные данные,
         # чтобы чеки (через Мой налог) приходили на правильную почту.
         # Платформенный display_name — это ник, а не ФИО.
-        # Если нет настоящей почты (не @songforge.local), оставляем пустым,
-        # чтобы пользователь заполнил свои данные сам в форме GP.
+        # Если email выглядит как фейковый (с .local или внутренним доменом) — не передаём,
+        # чтобы в форме GetPlatinum пользователь сам ввёл настоящие данные.
+        # Имя тоже не передаём.
         safe_email = ""
-        if user_email and "@" in user_email and "songforge.local" not in user_email.lower():
-            safe_email = user_email
+        if user_email and "@" in user_email:
+            lower_email = user_email.lower()
+            if not any(bad in lower_email for bad in (".local", "sozdaipesnu.local", "songforge.local", "test.local", "example.com")):
+                safe_email = user_email
 
-        safe_name = ""  # не подставляем никнейм как ФИО
+        safe_name = ""  # никогда не подставляем ник как ФИО
 
         payload = {
             "dealId": order_id,
