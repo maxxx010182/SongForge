@@ -1132,35 +1132,7 @@ async function loadData(){await fetchAuthProviders();var authRedirect=handleAuth
 }
 
 // Восстанавливаем состояние студии после возврата из оплаты GetPlatinum
-// (иначе описание и режимы теряются из-за полной перезагрузки страницы)
-try {
-  var payParam = new URLSearchParams(window.location.search).get('payment');
-  if (payParam === 'success' || payParam === 'failed') {
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-    if (payParam === 'success') {
-      showToast('Оплата прошла, обновляем баланс...');
-      await fetchMe(); // свежий баланс после webhook
-    }
-    var savedState = sessionStorage.getItem('pendingStudioState');
-    if (savedState) {
-      var s = JSON.parse(savedState);
-      if (s.idea) { var iel = document.getElementById('ideaInput'); if (iel) iel.value = s.idea; }
-      if (s.lyrics) { var lel = document.getElementById('lyricsEditor'); if (lel) lel.value = s.lyrics; }
-      if (s.customDesc) { var cel = document.getElementById('customDescriptionInput'); if (cel) cel.value = s.customDesc; }
-      if (s.artistRef) { var ael = document.getElementById('artistRef'); if (ael) ael.value = s.artistRef; }
-      if (s.studioMode) setStudioMode(s.studioMode);
-      if (s.expertStyleMode) setExpertStyleMode(s.expertStyleMode);
-      if (s.genre) selectedGenre = s.genre;
-      if (s.mood) selectedMood = s.mood;
-      if (s.vocal) selectedVocal = s.vocal;
-      if (s.instrumental !== undefined) instrumentalMode = !!s.instrumental;
-      if (s.backing !== undefined) backingVocal = !!s.backing;
-      sessionStorage.removeItem('pendingStudioState');
-    }
-  }
-} catch(e) {}
+// (логика перенесена ниже в безопасный async IIFE, чтобы не было top-level await и ошибок парсинга)
 var authModalDefaultCopy={title:'Вход в аккаунт',subtitle:'После входа — превью генераций, история, фонотека и баланс нот на сервере.'};
 var authModalStudioCopy={title:'Сейчас начнётся магия',subtitle:'Остался один шаг: быстрый вход через Telegram, VK или email. Подарок новичкам — первая демо-версия твоей идеи.'};
 function setAuthModalCopy(copy){var t=document.getElementById('authModalTitle');var s=document.getElementById('authModalSubtitle');if(t)t.textContent=copy.title;if(s)s.textContent=copy.subtitle;}
@@ -1634,7 +1606,42 @@ document.getElementById('nicknameModalSaveBtn').addEventListener('click',saveNic
 document.getElementById('logoutBtn').addEventListener('click',logoutUser);
 document.getElementById('commentsModalSubmit').addEventListener('click',submitComment);
 
-initProfileThemes();loadData();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
+initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
+
+// Безопасное восстановление студии после возврата из GetPlatinum (payment=success)
+// Обёрнуто в async IIFE, чтобы не было top-level await и ReferenceError (все функции уже объявлены)
+(async function restoreStudioAfterPayment() {
+  try {
+    var payParam = new URLSearchParams(window.location.search).get('payment');
+    if (payParam === 'success' || payParam === 'failed') {
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      if (payParam === 'success') {
+        showToast('Оплата прошла, обновляем баланс...');
+        await fetchMe();
+      }
+      var savedState = sessionStorage.getItem('pendingStudioState');
+      if (savedState) {
+        var s = JSON.parse(savedState);
+        var iel = document.getElementById('ideaInput'); if (iel && s.idea) iel.value = s.idea;
+        var lel = document.getElementById('lyricsEditor'); if (lel && s.lyrics) lel.value = s.lyrics;
+        var cel = document.getElementById('customDescriptionInput'); if (cel && s.customDesc) cel.value = s.customDesc;
+        var ael = document.getElementById('artistRef'); if (ael && s.artistRef) ael.value = s.artistRef;
+        if (s.studioMode) setStudioMode(s.studioMode);
+        if (s.expertStyleMode) setExpertStyleMode(s.expertStyleMode);
+        if (s.genre) selectedGenre = s.genre;
+        if (s.mood) selectedMood = s.mood;
+        if (s.vocal) selectedVocal = s.vocal;
+        if (s.instrumental !== undefined) instrumentalMode = !!s.instrumental;
+        if (s.backing !== undefined) backingVocal = !!s.backing;
+        sessionStorage.removeItem('pendingStudioState');
+      }
+    }
+  } catch(e) { /* ignore restore errors */ }
+})();
+
+loadData();
 </script>
 </body>
 </html>
