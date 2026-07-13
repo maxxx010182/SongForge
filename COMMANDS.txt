@@ -1,6 +1,6 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
 
-=== АКТУАЛЬНОЕ (v2.11.16 — тест GetPlatinum: возврат из оплаты + сохранение текста студии + начисление нот) ===
+=== АКТУАЛЬНОЕ (v2.11.17 — фикс начисления нот по GetPlatinum webhook: isSuccess) ===
 
 # === ШАГ 1. Обновить сайт на сервере (одна команда) ===
 ssh root@195.19.20.245
@@ -20,12 +20,12 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 
 # === ШАГ 2. Проверить после деплоя (по одной строке) ===
 curl -s https://sozdaipesnu.ru/api/health
-# Должно: "version":"2.11.16" , "redis":true , "s3":true
+# Должно: "version":"2.11.17" , "redis":true , "s3":true
 
 curl -s https://sozdaipesnu.ru/api/auth/providers
 # vk_enabled:true , email_enabled:true , email_smtp:true
 
-# === ШАГ 3. Тест оплаты GetPlatinum (на сайте, после деплоя) ===
+# === ШАГ 3. Тест оплаты GetPlatinum (на сайте, после деплоя v2.11.17) ===
 # 1. Открой https://sozdaipesnu.ru   → Ctrl+F5
 # 2. Войди по email (или VK/TG если включено)
 # 3. В студии: введи идею / текст песни (в обычном или расширенном режиме)
@@ -36,6 +36,24 @@ curl -s https://sozdaipesnu.ru/api/auth/providers
 #    - В студии восстановился введённый текст (idea, lyrics, поля)
 #    - В профиле / шапке баланс нот увеличился на купленный пакет
 #    - Можно создать полную песню (1 нота)
+
+# === ШАГ 4. Диагностика + после фикса v2.11.17 ===
+# (фикс: теперь правильно обрабатываем isSuccess от GetPlatinum)
+# Выполняй после оплаты, когда баланс остался 0
+
+pm2 logs songforge --lines 100 --nostream
+# Ищи строки: "GetPlatinum webhook received"  — пришли весь блок с ними
+
+cd ~/SongForge
+sqlite3 data/songforge.db "
+SELECT id, user_id, package_id, status, notes_amount, provider, paid_at 
+FROM payment_orders 
+ORDER BY created_at DESC LIMIT 5;
+"
+# Если есть заказ со status=paid — ноты должны были добавиться. Если pending — webhook не дошёл или не распознал success.
+
+# Проверить .env (ключи)
+cat .env | grep -E 'PAYMENT_PROVIDER|GETPLATINUM| SITE_URL' 
 
 # === Логи и диагностика (если нужно) ===
 pm2 logs songforge --lines 40 --nostream

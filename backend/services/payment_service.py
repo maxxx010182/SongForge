@@ -331,11 +331,18 @@ class PaymentService:
             raise ValueError("GETPLATINUM_API_KEY не настроен")
 
         # Логируем для диагностики (важно при проблемах с начислением)
-        status_candidates = {k: payload.get(k) for k in ["paymentStatus", "status", "payment_status", "paymentStatus"] if k in payload}
-        log.info("GetPlatinum webhook received: keys=%s, deal candidates=%s, status candidates=%s", 
-                 list(payload.keys())[:10], 
-                 [payload.get(k) for k in ["dealId","deal_id","order_id","orderId"] if payload.get(k)], 
-                 status_candidates)
+        # Расширили ключи, чтобы ловить реальный формат GetPlatinum (isSuccess + notificationType)
+        status_candidates = {
+            k: payload.get(k)
+            for k in ["paymentStatus", "status", "payment_status", "isSuccess", "notificationType"]
+            if k in payload
+        }
+        log.info("GetPlatinum webhook received: keys=%s, deal candidates=%s, status candidates=%s, isSuccess=%s, notificationType=%s",
+                 list(payload.keys())[:12],
+                 [payload.get(k) for k in ["dealId","deal_id","order_id","orderId"] if payload.get(k)],
+                 status_candidates,
+                 payload.get("isSuccess"),
+                 payload.get("notificationType"))
 
         order_id = (
             payload.get("dealId")
@@ -346,24 +353,36 @@ class PaymentService:
         if not order_id:
             raise ValueError("dealId не найден в webhook GetPlatinum")
 
-        status_raw = str(
-            payload.get("paymentStatus")
-            or payload.get("status")
-            or payload.get("payment_status")
-            or ""
-        ).strip()
-        status_lower = status_raw.lower()
+        # Проверяем isSuccess напрямую (основной формат, который присылает GetPlatinum)
+        is_success_flag = payload.get("isSuccess")
+        if isinstance(is_success_flag, bool):
+            is_success = is_success_flag
+        elif is_success_flag is not None:
+            is_success = str(is_success_flag).lower() in ("true", "1", "yes", "success")
+        else:
+            is_success = False
 
-        # Более широкая проверка статусов успеха GetPlatinum
-        success_indicators = ["success", "paid", "completed", "оплач", "done", "finished"]
-        is_success = (
-            any(ind in status_lower for ind in success_indicators)
-            or "success" in status_lower
-            or status_raw in ("paymentStatusSuccess", "Success", "PAID", "Paid")
-            or any("success" in str(v).lower() or "paid" in str(v).lower() for v in status_candidates.values())
-        )
+        # Запасная проверка по старым полям (на случай других форматов)
         if not is_success:
-            log.info("GetPlatinum webhook ignored (no success indicator) status=%s order=%s", status_raw, order_id)
+            status_raw = str(
+                payload.get("paymentStatus")
+                or payload.get("status")
+                or payload.get("payment_status")
+                or ""
+            ).strip()
+            status_lower = status_raw.lower()
+
+            success_indicators = ["success", "paid", "completed", "оплач", "done", "finished"]
+            is_success = (
+                any(ind in status_lower for ind in success_indicators)
+                or "success" in status_lower
+                or status_raw in ("paymentStatusSuccess", "Success", "PAID", "Paid")
+                or any("success" in str(v).lower() or "paid" in str(v).lower() for v in status_candidates.values())
+            )
+
+        if not is_success:
+            log.info("GetPlatinum webhook ignored (no success indicator) status=%s order=%s, isSuccess_raw=%s",
+                     payload.get("paymentStatus") or payload.get("status") or "", order_id, is_success_flag)
             return None
 
         payment_id = str(
