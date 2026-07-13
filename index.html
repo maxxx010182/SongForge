@@ -1620,6 +1620,9 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
       if (payParam === 'success') {
         showToast('Оплата прошла, обновляем баланс...');
         await fetchMe();
+        // На всякий случай делаем повторные запросы баланса (webhook может прийти с небольшой задержкой)
+        setTimeout(function(){ fetchMe().then(function(){ showToast('Баланс обновлён'); }); }, 2500);
+        setTimeout(function(){ fetchMe(); }, 7000);
       }
       var savedState = sessionStorage.getItem('pendingStudioState');
       if (savedState) {

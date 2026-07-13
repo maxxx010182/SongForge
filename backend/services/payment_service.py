@@ -327,6 +327,13 @@ class PaymentService:
         if not GETPLATINUM_API_KEY:
             raise ValueError("GETPLATINUM_API_KEY не настроен")
 
+        # Логируем для диагностики (важно при проблемах с начислением)
+        status_candidates = {k: payload.get(k) for k in ["paymentStatus", "status", "payment_status", "paymentStatus"] if k in payload}
+        log.info("GetPlatinum webhook received: keys=%s, deal candidates=%s, status candidates=%s", 
+                 list(payload.keys())[:10], 
+                 [payload.get(k) for k in ["dealId","deal_id","order_id","orderId"] if payload.get(k)], 
+                 status_candidates)
+
         order_id = (
             payload.get("dealId")
             or payload.get("deal_id")
@@ -344,21 +351,16 @@ class PaymentService:
         ).strip()
         status_lower = status_raw.lower()
 
-        success_tokens = {
-            "success",
-            "paid",
-            "completed",
-            "paymentstatussuccess",
-            "оплачен",
-            "оплачено",
-        }
+        # Более широкая проверка статусов успеха GetPlatinum
+        success_indicators = ["success", "paid", "completed", "оплач", "done", "finished"]
         is_success = (
-            status_lower in success_tokens
+            any(ind in status_lower for ind in success_indicators)
             or "success" in status_lower
-            or status_raw == "paymentStatusSuccess"
+            or status_raw in ("paymentStatusSuccess", "Success", "PAID", "Paid")
+            or any("success" in str(v).lower() or "paid" in str(v).lower() for v in status_candidates.values())
         )
         if not is_success:
-            log.info("GetPlatinum webhook ignored status=%s order=%s", status_raw, order_id)
+            log.info("GetPlatinum webhook ignored (no success indicator) status=%s order=%s", status_raw, order_id)
             return None
 
         payment_id = str(
