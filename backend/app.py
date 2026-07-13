@@ -1,3 +1,4 @@
+import json
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -114,7 +115,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.18")
+app = FastAPI(title="SongForge", version="2.11.19")
 
 app.add_middleware(
     CORSMiddleware,
@@ -416,7 +417,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.18",
+        "version": "2.11.19",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1362,7 +1363,18 @@ async def get_payment_order(
 
 
 @app.post("/api/payment/webhook/{provider}")
-async def payment_webhook(provider: str, payload: dict):
+async def payment_webhook(provider: str, request: Request):
+    raw_body = await request.body()
+    try:
+        payload = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+    except Exception:
+        payload = {}
+
+    if provider == "getplatinum":
+        if not payment_service.verify_getplatinum_webhook(raw_body, payload):
+            log.warning("GetPlatinum webhook signature verification failed")
+            raise HTTPException(status_code=400, detail="Invalid signature")
+
     try:
         result = payment_service.handle_webhook(provider, payload)
         if not result:

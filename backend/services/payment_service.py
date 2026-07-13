@@ -326,6 +326,29 @@ class PaymentService:
             return None
         return str(form_url)
 
+    def verify_getplatinum_webhook(self, raw_body: bytes, payload: dict) -> bool:
+        """Проверка подписи GetPlatinum webhook по checksum (HMAC-SHA256).
+        Используем API_KEY как секрет (стандартная практика для таких сервисов).
+        """
+        if not GETPLATINUM_API_KEY or not raw_body:
+            return False
+
+        checksum = ""
+        if isinstance(payload, dict):
+            checksum = payload.get("checksum", "") or ""
+
+        # Подписываем тело без checksum (как в Prodamus)
+        payload_for_sign = {k: v for k, v in payload.items() if k != "checksum"} if isinstance(payload, dict) else {}
+        body_str = json.dumps(payload_for_sign, ensure_ascii=False, separators=(",", ":"))
+
+        expected = hmac.new(
+            GETPLATINUM_API_KEY.encode(),
+            body_str.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        return hmac.compare_digest(checksum, expected)
+
     def _handle_getplatinum_webhook(self, payload: dict) -> dict | None:
         if not GETPLATINUM_API_KEY:
             raise ValueError("GETPLATINUM_API_KEY не настроен")

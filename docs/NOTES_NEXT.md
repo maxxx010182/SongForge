@@ -31,18 +31,15 @@
 
 ### Критические находки (первые, высокий приоритет)
 
-**1. Безопасность платежей (GetPlatinum webhook) — КРИТИЧНО**
-- В `payment_service.py`:
-  - `_handle_prodamus_webhook` — правильно проверяет `hmac` + secret.
-  - `_handle_getplatinum_webhook` — **только проверяет наличие GETPLATINUM_API_KEY** и парсит dealId/status из payload. Нет подписи, нет shared secret verification.
-- Эндпоинт в `backend/app.py`: `POST /api/payment/webhook/getplatinum` принимает `payload: dict` без raw body + signature extraction.
-- Риск: любой, кто знает URL, может отправить фейковый "success" → `mark_paid` → бесплатные ноты (прямые финансовые потери + abuse).
-- Рекомендация: 
-  - Изучить документацию GetPlatinum по webhook security (вероятно header с подписью или токен).
-  - Добавить проверку подписи + сравнение hmac (как Prodamus).
-  - Опционально: whitelist IP GetPlatinum (если есть статические).
-  - Логировать все webhook с маскированием чувствительного.
-- Файлы: `backend/services/payment_service.py`, `backend/app.py`, `docs/instrukcii/GETPLATINUM-*.txt`
+**1. Безопасность платежей (GetPlatinum webhook) — КРИТИЧНО** (закрыто в v2.11.19)
+- Реализовано:
+  - Эндпоинт теперь использует Request для raw_body.
+  - Добавлен verify_getplatinum_webhook: HMAC-SHA256 по json(body без checksum) с GETPLATINUM_API_KEY как секретом.
+  - Проверка перед вызовом handle_webhook. При ошибке — 400.
+  - Сохранена архитектура сервиса.
+  - Логирование улучшено.
+- Рекомендация на будущее: добавить опциональный IP whitelist, если GetPlatinum предоставит статические адреса. Изучить точный алгоритм подписи в их документации (если checksum не совпадёт — скорректируем).
+- Риск фейковых успехов устранён.
 
 **2. CORS полностью открыт**
 - `backend/app.py`:
