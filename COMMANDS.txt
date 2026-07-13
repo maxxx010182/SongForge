@@ -1,6 +1,6 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
 
-=== АКТУАЛЬНОЕ (v2.11.19 — безопасность GetPlatinum webhook: добавлена проверка подписи) ===
+=== АКТУАЛЬНОЕ СЕЙЧАС (v2.11.20 — исправление CORS для безопасности) ===
 
 # === ШАГ 1. Обновить сайт на сервере (одна команда) ===
 ssh root@195.19.20.245
@@ -9,14 +9,22 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать вывода: === Готово! v2.11.17 === (или выше)
+# Ждать вывода: === Готово! v2.11.20 ===
 
-# Если curl падает с TLS / raw.githubusercontent — используй codeload-вариант ниже:
-# cd ~/SongForge
-# curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
-# tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/update-now.sh
-# cp /tmp/SongForge-main/scripts/update-now.sh scripts/update-now.sh
-# bash scripts/update-now.sh
+# === ШАГ 2. Проверить после деплоя ===
+curl -s https://sozdaipesnu.ru/api/health
+# Должно: "version":"2.11.20"
+
+# === старые блоки ниже (не копируй пока) ===
+
+# === ШАГ 1. Обновить сайт на сервере (одна команда) ===
+ssh root@195.19.20.245
+
+cd ~/SongForge
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+# Ждать вывода: === Готово! v2.11.19 === (или выше)
 
 # === ШАГ 2. Проверить после деплоя (по одной строке) ===
 curl -s https://sozdaipesnu.ru/api/health
@@ -24,18 +32,6 @@ curl -s https://sozdaipesnu.ru/api/health
 
 curl -s https://sozdaipesnu.ru/api/auth/providers
 # vk_enabled:true , email_enabled:true , email_smtp:true
-
-# === ШАГ 3. Тест оплаты GetPlatinum (на сайте, после деплоя v2.11.17) ===
-# 1. Открой https://sozdaipesnu.ru   → Ctrl+F5
-# 2. Войди по email (или VK/TG если включено)
-# 3. В студии: введи идею / текст песни (в обычном или расширенном режиме)
-# 4. Перейди в «Пакеты» → выбери пакет → «Перейти к оплате»
-# 5. Оплати (тестово или реально)
-# 6. После успешной оплаты вернись на сайт (автоматически или вручную)
-# 7. Проверь:
-#    - В студии восстановился введённый текст (idea, lyrics, поля)
-#    - В профиле / шапке баланс нот увеличился на купленный пакет
-#    - Можно создать полную песню (1 нота)
 
 # === РЕЗУЛЬТАТ ТЕСТА (13.07) ===
 # Пользователь: обновил, затестировал — нота появилась.
@@ -56,10 +52,9 @@ ORDER BY created_at DESC LIMIT 5;
 
 # Пришли вывод. Посмотрим, какие URL и размеры приходят от Suno сейчас.
 
-# === ШАГ 4. Обновление v2.11.18 (все три улучшения одним деплойем) ===
-# 1. Промпты lyrics в AI-продюсере: длиннее структура (3-4 мин) + лучшее следование описанию.
-# 2. Обложки в фонотеке: лучшее заполнение контейнера, меньше кропа и фона.
-# 3. После успешной генерации поля студии очищаются (idea, lyrics, описание и т.д.).
+# === ШАГ 4. Обновление v2.11.19 (аудит: безопасность GetPlatinum webhook) ===
+# Добавлена проверка подписи (HMAC-SHA256 по checksum с использованием API_KEY).
+# Риск фейковых успехов закрыт. Архитектура сохранена.
 
 ssh root@195.19.20.245
 
@@ -67,11 +62,23 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.18 ===
+# Ждать: === Готово! v2.11.19 ===
 
 # После:
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.18"
+# "version":"2.11.19"
+
+# === ПРОВЕРКА ФИКСА БЕЗОПАСНОСТИ WEBHOOK (v2.11.19) ===
+# Открой COMMANDS.txt полностью заново, если уже был открыт.
+# Копируй по ОДНОЙ строке, вставляй правой кнопкой мыши на сервере.
+
+pm2 logs songforge --lines 30 --nostream | grep -i -E 'getplatinum|webhook|signature|verify|checksum'
+
+# Если пусто — это нормально (нет свежих вызовов). Проверь код напрямую:
+grep -A 25 "def verify_getplatinum_webhook" backend/services/payment_service.py
+
+# И проверь эндпоинт:
+grep -A 10 "async def payment_webhook" backend/app.py
 
 # === Логи и диагностика (если нужно) ===
 pm2 logs songforge --lines 40 --nostream

@@ -115,13 +115,14 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.19")
+app = FastAPI(title="SongForge", version="2.11.20")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[SITE_URL],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -417,7 +418,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.19",
+        "version": "2.11.20",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
