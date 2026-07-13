@@ -9,7 +9,7 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать вывода: === Готово! v2.11.16 === (или выше)
+# Ждать вывода: === Готово! v2.11.17 === (или выше)
 
 # Если curl падает с TLS / raw.githubusercontent — используй codeload-вариант ниже:
 # cd ~/SongForge
