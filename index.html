@@ -1123,12 +1123,13 @@ function applyAuthProvidersUI(){var social=document.getElementById('authSocialBl
 function isAuthConsentGiven(){var cb=document.getElementById('authConsentCheckbox');return!!(cb&&cb.checked);}
 function updateAuthButtonsState(){var ok=isAuthConsentGiven();var emailBtn=document.getElementById('authEmailSubmitBtn');var vkBtn=document.getElementById('authVkBtn');if(emailBtn){emailBtn.disabled=!ok;emailBtn.classList.toggle('opacity-50',!ok);emailBtn.classList.toggle('cursor-not-allowed',!ok);}if(vkBtn){vkBtn.disabled=!ok;vkBtn.classList.toggle('opacity-50',!ok);vkBtn.classList.toggle('cursor-not-allowed',!ok);}var mount=document.getElementById('authTelegramMount');if(!mount)return;if(ok)mountTelegramWidget();else mount.innerHTML='<p class="text-[11px] text-zinc-500 text-center py-2">Отметьте согласие выше</p>';}
 function mountTelegramWidget(){var mount=document.getElementById('authTelegramMount');if(!mount)return;mount.innerHTML='';if(!isAuthConsentGiven())return;if(!authProviders.telegram_enabled||!authProviders.telegram_bot_username)return;var s=document.createElement('script');s.async=true;s.src='https://telegram.org/js/telegram-widget.js?22';s.setAttribute('data-telegram-login',authProviders.telegram_bot_username);s.setAttribute('data-size','large');s.setAttribute('data-radius','12');s.setAttribute('data-onauth','onTelegramAuth(user)');s.setAttribute('data-request-access','write');mount.appendChild(s);}
-async function onTelegramAuth(user){if(!isAuthConsentGiven()){showToast('Отметьте согласие с документами');return;}try{var res=await fetch('/api/auth/telegram',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(user),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){alert(data.detail||'Не удалось войти через Telegram');return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');}catch(e){alert('Ошибка сети');}}
+async function onTelegramAuth(user){if(!isAuthConsentGiven()){showToast('Отметьте согласие с документами');return;}try{var res=await fetch('/api/auth/telegram',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(user),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){alert(data.detail||'Не удалось войти через Telegram');return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');restorePendingStudioState();}catch(e){alert('Ошибка сети');}}
 function startVkAuth(){if(!isAuthConsentGiven()){showToast('Отметьте согласие с документами');return;}window.location.href='/api/auth/vk/start';}
 function handleAuthRedirect(){var p=new URLSearchParams(window.location.search);if(p.get('auth')==='ok'){if(window.history&&window.history.replaceState)window.history.replaceState({},'',window.location.pathname);return'ok';}if(p.get('auth_error')==='vk'){if(window.history&&window.history.replaceState)window.history.replaceState({},'',window.location.pathname);showToast('Не удалось войти через VK — попробуйте снова');openAuthModal();return'error';}return null;}
 function handleEmailAuthDeepLink(){var p=new URLSearchParams(window.location.search);if(p.get('auth')!=='email')return;var email=(p.get('email')||'').trim();if(window.history&&window.history.replaceState)window.history.replaceState({},'',window.location.pathname);openAuthModalForEmailVerify(email);}
 function openAuthModalForEmailVerify(email){openAuthModal();var consent=document.getElementById('authConsentCheckbox');if(consent)consent.checked=true;updateAuthButtonsState();if(email)document.getElementById('authEmailInput').value=email;authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';var codeInput=document.getElementById('authCodeInput');if(codeInput)setTimeout(function(){codeInput.focus();},150);showToast('Введите код из письма');}
-async function loadData(){await fetchAuthProviders();var authRedirect=handleAuthRedirect();await fetchMe();await fetchHistory();await fetchServerLibrary();await fetchExploreTracks();renderLibrary();renderHistory();renderExplore();renderHomeExplore();handleTrackDeepLink();handleEmailAuthDeepLink();if(authRedirect==='ok')showToast('Вы вошли в аккаунт');
+async function loadData(){await fetchAuthProviders();var authRedirect=handleAuthRedirect();await fetchMe();await fetchHistory();await fetchServerLibrary();await fetchExploreTracks();renderLibrary();renderHistory();renderExplore();renderHomeExplore();handleTrackDeepLink();handleEmailAuthDeepLink();if(authRedirect==='ok'){showToast('Вы вошли в аккаунт');restorePendingStudioState();}
+restorePendingStudioState();
 }
 
 // Восстанавливаем состояние студии после возврата из оплаты GetPlatinum
@@ -1146,7 +1147,48 @@ function switchToView(view){['create','library','explore','profile','payment','l
 function applyServerBalance(bal){if(bal==null||bal===undefined)return;if(session.loggedIn&&session.user)session.user.balance=bal;updateBalanceUI();}
 function handleGuestLimitError(detail,opts){opts=opts||{};var msg=detail||'Войдите в аккаунт, чтобы продолжить';if(/нот|Купите|Пробная генерация уже/i.test(msg)){if(session.loggedIn)openCreditPurchaseModal();else openAuthModal('studio');}else{openAuthModal('studio');}if(!opts.noThrow)throw new Error(msg);return msg;}
 function canStartSongGeneration(){if(!session.loggedIn)return'auth';if(session.guestRemaining>0)return'ok';if(getBalance()>=1)return'ok';return'payment';}
-function blockSongGenerationIfNeeded(){var gate=canStartSongGeneration();if(gate==='ok')return true;if(gate==='auth'){openAuthModal('studio');}else{openCreditPurchaseModal();showToast('Пробная использована — купите ноты, чтобы создать новую песню');}return false;}
+
+function savePendingStudioState(){
+  try {
+    var st = {
+      idea: (document.getElementById('ideaInput')||{}).value || '',
+      lyrics: (document.getElementById('lyricsEditor')||{}).value || '',
+      customDesc: (document.getElementById('customDescriptionInput')||{}).value || '',
+      artistRef: (document.getElementById('artistRef')||{}).value || '',
+      studioMode: studioMode,
+      expertStyleMode: expertStyleMode,
+      genre: selectedGenre,
+      mood: selectedMood,
+      vocal: selectedVocal,
+      instrumental: !!instrumentalMode,
+      backing: !!backingVocal
+    };
+    sessionStorage.setItem('pendingStudioState', JSON.stringify(st));
+  } catch(e) {}
+}
+
+function restorePendingStudioState(){
+  try {
+    var savedState = sessionStorage.getItem('pendingStudioState');
+    if (savedState) {
+      var s = JSON.parse(savedState);
+      var iel = document.getElementById('ideaInput'); if (iel && s.idea) iel.value = s.idea;
+      var lel = document.getElementById('lyricsEditor'); if (lel && s.lyrics) lel.value = s.lyrics;
+      var cel = document.getElementById('customDescriptionInput'); if (cel && s.customDesc) cel.value = s.customDesc;
+      var ael = document.getElementById('artistRef'); if (ael && s.artistRef) ael.value = s.artistRef;
+      if (s.studioMode) setStudioMode(s.studioMode);
+      if (s.expertStyleMode) setExpertStyleMode(s.expertStyleMode);
+      if (s.genre) selectedGenre = s.genre;
+      if (s.mood) selectedMood = s.mood;
+      if (s.vocal) selectedVocal = s.vocal;
+      if (s.instrumental !== undefined) instrumentalMode = !!s.instrumental;
+      if (s.backing !== undefined) backingVocal = !!s.backing;
+      sessionStorage.removeItem('pendingStudioState');
+    }
+  } catch(e) { /* ignore */ }
+}
+
+function blockSongGenerationIfNeeded(){var gate=canStartSongGeneration();if(gate==='ok')return true;if(gate==='auth'){savePendingStudioState();openAuthModal('studio');}else{openCreditPurchaseModal();showToast('Пробная использована — купите ноты, чтобы создать новую песню');}return false;}
 function resetStaleGeneratingUI(){var block=document.getElementById('generatingBlock');if(!block||block.classList.contains('hidden'))return;if(currentTaskId)return;hideGenerating(null,{success:false});genApiPhase='idle';}
 
 async function generateLyrics(idea){var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});throw new Error('forbidden');}if(!res.ok){var err2=await res.json().catch(function(){return{};});throw new Error((err2&&err2.detail)||'Не удалось сгенерировать текст');}var d=await res.json();return d.lyrics||'Текст не получен.';}
@@ -1467,23 +1509,7 @@ document.getElementById('createDemoBtn').addEventListener('click',createSongExpe
 
 function closePaymentCheckout(){document.getElementById('paymentCheckoutModal').classList.add('hidden');}
 async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();return;}
-  // Сохраняем состояние студии перед уходом на оплату (чтобы не потерять описание после возврата из ГП)
-  try {
-    var st = {
-      idea: (document.getElementById('ideaInput')||{}).value || '',
-      lyrics: (document.getElementById('lyricsEditor')||{}).value || '',
-      customDesc: (document.getElementById('customDescriptionInput')||{}).value || '',
-      artistRef: (document.getElementById('artistRef')||{}).value || '',
-      studioMode: studioMode,
-      expertStyleMode: expertStyleMode,
-      genre: selectedGenre,
-      mood: selectedMood,
-      vocal: selectedVocal,
-      instrumental: !!instrumentalMode,
-      backing: !!backingVocal
-    };
-    sessionStorage.setItem('pendingStudioState', JSON.stringify(st));
-  } catch(e) {}
+  savePendingStudioState();
   var pkgId='notes_'+activePacket.songs;try{var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});var data=await res.json().catch(function(){return{}});if(!res.ok){alert(data.detail||'Не удалось создать заказ');return;}if(data.payment_url){window.location.href=data.payment_url;return;}document.getElementById('paymentCheckoutText').textContent=data.message||'Заказ создан. Оплата подключается.';document.getElementById('paymentCheckoutOrder').textContent='Заказ '+data.order_id+' • '+activePacket.songs+' нот • '+activePacket.price+'₽';document.getElementById('paymentCheckoutModal').classList.remove('hidden');}catch(e){alert('Ошибка сети при создании заказа');}}
 document.getElementById('paymentConfirmBtn').addEventListener('click',startPaymentCheckout);
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
@@ -1608,9 +1634,9 @@ document.getElementById('commentsModalSubmit').addEventListener('click',submitCo
 
 initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 
-// Безопасное восстановление студии после возврата из GetPlatinum (payment=success)
-// Обёрнуто в async IIFE, чтобы не было top-level await и ReferenceError (все функции уже объявлены)
-(async function restoreStudioAfterPayment() {
+// Восстановление состояния студии после возврата из оплаты И после входа (auth) для гостей
+// Обёрнуто в async IIFE, чтобы не было top-level await
+(async function restoreStudioState() {
   try {
     var payParam = new URLSearchParams(window.location.search).get('payment');
     if (payParam === 'success' || payParam === 'failed') {
@@ -1620,28 +1646,15 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
       if (payParam === 'success') {
         showToast('Оплата прошла, обновляем баланс...');
         await fetchMe();
-        // На всякий случай делаем повторные запросы баланса (webhook может прийти с небольшой задержкой)
         setTimeout(function(){ fetchMe().then(function(){ showToast('Баланс обновлён'); }); }, 2500);
         setTimeout(function(){ fetchMe(); }, 7000);
       }
-      var savedState = sessionStorage.getItem('pendingStudioState');
-      if (savedState) {
-        var s = JSON.parse(savedState);
-        var iel = document.getElementById('ideaInput'); if (iel && s.idea) iel.value = s.idea;
-        var lel = document.getElementById('lyricsEditor'); if (lel && s.lyrics) lel.value = s.lyrics;
-        var cel = document.getElementById('customDescriptionInput'); if (cel && s.customDesc) cel.value = s.customDesc;
-        var ael = document.getElementById('artistRef'); if (ael && s.artistRef) ael.value = s.artistRef;
-        if (s.studioMode) setStudioMode(s.studioMode);
-        if (s.expertStyleMode) setExpertStyleMode(s.expertStyleMode);
-        if (s.genre) selectedGenre = s.genre;
-        if (s.mood) selectedMood = s.mood;
-        if (s.vocal) selectedVocal = s.vocal;
-        if (s.instrumental !== undefined) instrumentalMode = !!s.instrumental;
-        if (s.backing !== undefined) backingVocal = !!s.backing;
-        sessionStorage.removeItem('pendingStudioState');
-      }
     }
-  } catch(e) { /* ignore restore errors */ }
+
+    // Восстанавливаем то, что гость писал в студии (идея, текст и т.д.)
+    // Это покрывает возврат после входа (TG/VK редирект) и после оплаты
+    restorePendingStudioState();
+  } catch(e) { /* ignore */ }
 })();
 
 loadData();
