@@ -1194,6 +1194,29 @@ function resetStaleGeneratingUI(){var block=document.getElementById('generatingB
 async function generateLyrics(idea){var res=await fetch('/api/generate-lyrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:idea,genre:selectedGenre,mood:selectedMood,vocal:selectedVocal})});if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});throw new Error('forbidden');}if(!res.ok){var err2=await res.json().catch(function(){return{};});throw new Error((err2&&err2.detail)||'Не удалось сгенерировать текст');}var d=await res.json();return d.lyrics||'Текст не получен.';}
 
 var POLL_INTERVAL_MS=3000;var POLL_MAX_ATTEMPTS=160;var POLL_GRACE_ATTEMPTS=30;var PREVIEW_LIMIT_SEC=30;var PLAYER_COVER_DEFAULT='https://picsum.photos/id/1015/400/300';
+
+// Лимит перегенерации текста (4 раза за одну попытку создания песни)
+var TEXT_REGEN_MAX = 4;
+
+function getTextRegenCount() {
+  try {
+    return parseInt(sessionStorage.getItem('textRegenCount') || '0', 10);
+  } catch(e) { return 0; }
+}
+
+function setTextRegenCount(n) {
+  try { sessionStorage.setItem('textRegenCount', String(n)); } catch(e){}
+}
+
+function incrementTextRegenCount() {
+  var c = getTextRegenCount() + 1;
+  setTextRegenCount(c);
+  return c;
+}
+
+function resetTextRegenCount() {
+  try { sessionStorage.removeItem('textRegenCount'); } catch(e){}
+}
 function trackListenUrl(track,idx,productionId,purchased,prepaid){if(!track)return'';if(purchased||prepaid)return track.audio_url||'';return track.preview_url||('/api/audio/preview/'+productionId+'/'+idx);}
 function tracksToListenUrls(tracks,productionId,purchased,prepaid){var out=[];for(var i=0;i<(tracks?tracks.length:0);i++){var u=trackListenUrl(tracks[i],i,productionId,purchased,prepaid);if(u)out.push(u);}return out;}
 async function fetchFullAudioUrl(productionId,variantIdx){var res=await fetch('/api/audio/full/'+encodeURIComponent(productionId)+'/'+variantIdx,fetchOpts);var data=await res.json().catch(function(){return{}});if(!res.ok)throw new Error(data.detail||'Не удалось получить файл');return data.audio_url;}
@@ -1391,7 +1414,7 @@ document.getElementById('miniPlayerStop').addEventListener('click',stopAudio);
 
 function updateIdeaFieldUI(){var inp=document.getElementById('ideaInput');var hint=document.getElementById('ideaInputHint');if(inp){if(instrumentalMode)inp.placeholder=IDEA_PLACEHOLDER_INSTR;else inp.placeholder=studioMode==='expert'?IDEA_PLACEHOLDER_EXPERT:IDEA_PLACEHOLDER_PRODUCER;}if(hint){if(instrumentalMode)hint.textContent=IDEA_HINT_INSTR;else hint.textContent=studioMode==='expert'?IDEA_HINT_EXPERT:IDEA_HINT_PRODUCER;}}
 
-function clearStudioFields(){try{var idea=document.getElementById('ideaInput');if(idea)idea.value='';var lyrics=document.getElementById('lyricsEditor');if(lyrics)lyrics.value='';var custom=document.getElementById('customDescriptionInput');if(custom)custom.value='';var artist=document.getElementById('artistRef');if(artist)artist.value='';currentIdea='';currentGeneratedLyrics='';sessionStorage.removeItem('pendingStudioState');}catch(e){}}
+function clearStudioFields(){try{var idea=document.getElementById('ideaInput');if(idea)idea.value='';var lyrics=document.getElementById('lyricsEditor');if(lyrics)lyrics.value='';var custom=document.getElementById('customDescriptionInput');if(custom)custom.value='';var artist=document.getElementById('artistRef');if(artist)artist.value='';currentIdea='';currentGeneratedLyrics='';sessionStorage.removeItem('pendingStudioState');resetTextRegenCount();}catch(e){}}
 function initChips(){
   var genreList=Object.keys(genreMap);
   var sd=document.getElementById('stylePicker');
@@ -1444,6 +1467,17 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     if(expertStyleMode==='custom'&&!getCustomDescription()){alert('Опиши желаемое звучание своими словами или переключись на режим «Списки»');return;}
     if(!idea&&expertStyleMode==='custom')idea=getCustomDescription();
     currentIdea=idea;
+
+    // Проверка лимита перегенераций текста (максимум 4 за попытку)
+    var currentCount = getTextRegenCount();
+    if (currentCount >= TEXT_REGEN_MAX) {
+        showToast('Можно перегенерировать текст максимум 4 раза. После этого только ручное редактирование.');
+        return;
+    }
+    if (currentCount === 2) {
+        showToast('Это уже 3-я перегенерация. Максимум можно сделать 4 раза. После этого текст можно будет только править вручную.');
+    }
+
     var btn=document.getElementById('generateTextBtn');
     btn.disabled=true;
     btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> AI-продюсер анализирует идею...';
@@ -1455,6 +1489,7 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
             currentProduction=data;
             currentGeneratedLyrics=data.lyrics||'';
             renderProducerPlan(data);
+            incrementTextRegenCount();
         }else{
             var err=await res.json().catch(function(){return{};});
             if(res.status===403){handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-pen-to-square mr-1"></i> Сгенерировать текст песни';updateStudioGenerateButtons();return;}
@@ -1489,7 +1524,19 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     }
 });
 
-document.getElementById('regenLyricsBtn').addEventListener('click',async function(){if(!blockSongGenerationIfNeeded())return;var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}else{var err2=await res.json().catch(function(){return{};});alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
+document.getElementById('regenLyricsBtn').addEventListener('click',async function(){if(!blockSongGenerationIfNeeded())return;var idea=document.getElementById('ideaInput').value.trim()||currentIdea;if(!idea)return;
+
+    // Проверка лимита перегенераций текста
+    var currentCount = getTextRegenCount();
+    if (currentCount >= TEXT_REGEN_MAX) {
+        showToast('Можно перегенерировать текст максимум 4 раза. После этого только ручное редактирование.');
+        return;
+    }
+    if (currentCount === 2) {
+        showToast('Это уже 3-я перегенерация. Максимум можно сделать 4 раза. После этого текст можно будет только править вручную.');
+    }
+
+    var btn=document.getElementById('regenLyricsBtn');btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse"></i> Генерируем...';btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;incrementTextRegenCount();}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}else{var err2=await res.json().catch(function(){return{};});alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';updateStudioGenerateButtons();return;}alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}btn.innerHTML='<i class="fa-solid fa-rotate-right"></i> Ещё раз';btn.disabled=false;});
 
 document.getElementById('editLyricsBtn').addEventListener('click',function(){var disp=document.getElementById('lyricsDisplay'),ed=document.getElementById('lyricsEditor'),btn=document.getElementById('editLyricsBtn');if(ed.classList.contains('hidden')){disp.classList.add('hidden');ed.classList.remove('hidden');btn.innerHTML='<i class="fa-regular fa-floppy-disk mr-1"></i>Сохранить';}else{currentGeneratedLyrics=ed.value;disp.textContent=currentGeneratedLyrics;disp.classList.remove('hidden');ed.classList.add('hidden');btn.innerHTML='<i class="fa-regular fa-pen-to-square mr-1"></i>Редактировать';}});
 
