@@ -71,9 +71,11 @@ class SunoApiOrgClient:
         )
         payload = {
             **fields,
+            "duration": 180,
             "model": self._normalize_model(plan.model_version),
             "callBackUrl": self._callback_url(),
         }
+        log.info(f"FULL PAYLOAD: {payload}")
 
         log.info(
             "sunoapi.org create: title=%s, model=%s, style_len=%s, lyrics_len=%s",

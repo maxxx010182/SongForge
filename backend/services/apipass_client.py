@@ -44,6 +44,7 @@ class ApiPassClient:
             "model": "suno/generate",
             "input": input_data,
             "channel": plan.channel,
+            "duration": 240,
         }
 
         log.info(
