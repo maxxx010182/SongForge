@@ -1,10 +1,10 @@
 from backend.models import ProductionPlan
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.utils.text import clean_text, truncate
 
 
 class TitleGenerator:
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def generate(self, idea: str, plan: ProductionPlan) -> str:

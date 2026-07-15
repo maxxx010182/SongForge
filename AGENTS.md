@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.31:** support@ везде + consultant + SUPPORT-OWNER-PROSTO + SUPPORT-AGENT-SCRIPT.
-- Деплой 2.11.31; владелец: ящик support@ + пересылка; промо 60% → бета.
+- **v2.11.32:** multi-model LLM (Yandex default; VseGPT openai_compat optional). PRO=lyrics, LITE=bot.
+- `docs/instrukcii/LLM-VSEGPT-PROSTO.txt`. Деплой 2.11.32; VseGPT — когда ключ.
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 

@@ -12,7 +12,7 @@ from backend.services.suno_package_composer import SunoPackageComposer
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.logger import log
 from backend.utils.suno_payload import (
     compact_suno_style,
@@ -34,12 +34,12 @@ from backend.utils.text import (
 
 
 class PromptBuilder:
-    def __init__(self, yandex: YandexClient) -> None:
-        self._yandex = yandex
-        self._translator = ReferenceTranslator(yandex)
-        self._analyst = AiMusicAnalyst(yandex)
-        self._composer = AiPromptComposer(yandex)
-        self._package = SunoPackageComposer(yandex)
+    def __init__(self, llm: LlmClient) -> None:
+        self._yandex = llm  # имя историческое; клиент Yandex или OpenAI-compat
+        self._translator = ReferenceTranslator(llm)
+        self._analyst = AiMusicAnalyst(llm)
+        self._composer = AiPromptComposer(llm)
+        self._package = SunoPackageComposer(llm)
 
     def build(
         self,

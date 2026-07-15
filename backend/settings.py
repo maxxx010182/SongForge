@@ -9,6 +9,22 @@ load_dotenv(ROOT_DIR / ".env")
 YANDEX_API_KEY = os.getenv("YANDEX_API_KEY", "")
 YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gto6f1fi6j2dpfdlhd")
 
+# LLM: yandex | openai_compat (VseGPT / любой OpenAI-compatible)
+# openai_compat: один ключ, разные model id под роли (тексты vs бот)
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "yandex").strip().lower()
+OPENAI_COMPAT_API_KEY = os.getenv("OPENAI_COMPAT_API_KEY", "").strip()
+OPENAI_COMPAT_BASE = os.getenv(
+    "OPENAI_COMPAT_BASE", "https://api.vsegpt.ru/v1"
+).strip().rstrip("/")
+# Роли (id из каталога провайдера, напр. VseGPT Docs/Models)
+# PRO — сильная (lyrics, package); LITE — дешёвая (consultant, analyst fallback)
+LLM_MODEL_PRO = os.getenv(
+    "LLM_MODEL_PRO", "deepseek/deepseek-v4-pro"
+).strip()
+LLM_MODEL_LITE = os.getenv(
+    "LLM_MODEL_LITE", "deepseek/deepseek-v4-flash"
+).strip()
+
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 

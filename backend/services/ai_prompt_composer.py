@@ -1,7 +1,7 @@
 from backend.models import MusicAnalysis, SunoPromptPayload
 from backend.services.reference_translator import ReferenceTranslation
 from backend.services.style_enforcer import enforce_style
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.settings import DEFAULT_AUDIO_WEIGHT, DEFAULT_STYLE_WEIGHT, DEFAULT_WEIRDNESS
 from backend.utils.text import clean_text, ensure_russian_vocal_style, extract_json, truncate
 
@@ -64,7 +64,7 @@ class AiPromptComposer:
         "lo-fi": 0.75,
     }
 
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def compose(

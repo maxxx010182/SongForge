@@ -78,7 +78,7 @@ from backend.services.storage_service import StorageService
 from backend.services.payment_service import PaymentService
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
 from backend.services.prompt_builder import PromptBuilder
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import get_llm_client
 from backend.settings import (
     AUTH_DEV_CODE_ENABLED,
     SMTP_HOST,
@@ -107,8 +107,8 @@ producer = AiProducer()
 music_provider = MusicProviderService()
 history = HistoryService()
 consultant = ConsultantService()
-yandex = YandexClient()
-prompt_builder = PromptBuilder(yandex)
+llm = get_llm_client()
+prompt_builder = PromptBuilder(llm)
 guest_service = GuestService()
 auth_service = AuthService()
 email_service = EmailService()
@@ -124,7 +124,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.31")
+app = FastAPI(title="SongForge", version="2.11.32")
 
 app.add_middleware(
     CORSMiddleware,
@@ -463,7 +463,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.31",
+        "version": "2.11.32",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),

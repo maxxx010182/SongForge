@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import get_llm_client
 from backend.settings import ROOT_DIR
 from backend.utils.text import clean_text
 
@@ -94,7 +94,7 @@ class ConsultantService:
     }
 
     def __init__(self) -> None:
-        self._yandex = YandexClient()
+        self._llm = get_llm_client()
         self._guide = _load_user_guide_excerpt()
 
     def _system_prompt(self) -> str:
@@ -116,11 +116,13 @@ class ConsultantService:
             user_text = f"Контекст: {context.strip()}\n\nВопрос: {message}"
 
         try:
-            answer = self._yandex.complete(
+            # LITE — дешёвая/быстрая модель для живого общения
+            answer = self._llm.complete(
                 self._system_prompt(),
                 user_text,
                 max_tokens=400,
                 temperature=0.55,
+                model=self._llm.MODEL_LITE,
             )
             return clean_text(answer)
         except Exception:

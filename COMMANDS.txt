@@ -1,11 +1,10 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.31 — support@ + помощник; деплой после support-настройки
+Версия: 2.11.32 — LLM multi-model (Yandex default; VseGPT optional)
 
-=== АКТУАЛЬНОЕ (15.07 — v2.11.31 support) ===
+=== АКТУАЛЬНОЕ (v2.11.32) ===
 
-# На сайте: support@sozdaipesnu.ru, часы 8–20, помощник знает support@
-# Тебе: docs/instrukcii/SUPPORT-OWNER-PROSTO.txt (простыми словами)
-# Агенту: docs/internal/SUPPORT-AGENT-SCRIPT.txt
+# По умолчанию Yandex. VseGPT — когда будет ключ: docs/instrukcii/LLM-VSEGPT-PROSTO.txt
+# PRO = тексты песен, LITE = помощник (один ключ, две модели)
 
 ssh root@195.19.20.245
 
@@ -13,10 +12,16 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.31 ===
-
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.31"
+# "version":"2.11.32"
+
+# --- Включить VseGPT (после ключа) — в nano .env ---
+# LLM_PROVIDER=openai_compat
+# OPENAI_COMPAT_API_KEY=sk-...
+# OPENAI_COMPAT_BASE=https://api.vsegpt.ru/v1
+# LLM_MODEL_PRO=deepseek/deepseek-v4-pro
+# LLM_MODEL_LITE=deepseek/deepseek-v4-flash
+# pm2 restart songforge --update-env
 
 
 === ОБЫЧНОЕ ===

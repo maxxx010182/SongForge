@@ -1,9 +1,9 @@
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.utils.text import clean_text
 
 
 class AiOptimizer:
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def optimize(self, idea: str) -> str:

@@ -13,7 +13,7 @@ from backend.services.lyrics_craft_prompt import (
     UNIFIED_SCREENPLAY_RETRY_HINT,
     lyrics_screenplay_user_hint,
 )
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.utils.suno_payload import (
     SUNO_STYLE_MAX_LEN,
     clamp_suno_prompt,
@@ -45,7 +45,7 @@ def _lyrics_retry_hint(idea: str) -> str:
 
 
 class SunoPackageComposer:
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def compose(

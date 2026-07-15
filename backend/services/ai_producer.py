@@ -7,7 +7,7 @@ from backend.services.cabinet_service import CabinetService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.plan_overrides import apply_user_to_plan
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import get_llm_client
 from backend.utils.text import lyrics_look_lazy
 
 
@@ -17,8 +17,7 @@ class AiProducer:
     )
 
     def __init__(self) -> None:
-        yandex = YandexClient()
-        self._builder = PromptBuilder(yandex)
+        self._builder = PromptBuilder(get_llm_client())
         self._music = MusicProviderService()
         self._history = HistoryService()
 

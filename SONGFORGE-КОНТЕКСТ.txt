@@ -1,29 +1,28 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (support@ + агент поддержки; v2.11.31)
+Обновлено: 15 июля 2026 (LLM multi-model VseGPT ready; v2.11.32)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.31** (push → update-now).
+Версия кода: **2.11.32** (push → update-now).
 
-**Поддержка (для не-программиста):**
-  - На сайте: только support@sozdaipesnu.ru (не личные контакты)
-  - Часы: 8:00–20:00 МСК, email до 24 ч
-  - Владельцу просто: docs/instrukcii/SUPPORT-OWNER-PROSTO.txt
-    (ящик → пересылка на личную почту → по желанию TG)
-  - Скрипт AI-агента: docs/internal/SUPPORT-AGENT-SCRIPT.txt
-  - Помощник на сайте (consultant.py) знает support@ + USER_GUIDE
+**LLM (важно):**
+  - По умолчанию: Yandex (как раньше).
+  - Опция: LLM_PROVIDER=openai_compat → VseGPT (один ключ, 2+ модели).
+  - PRO = тексты песен (deepseek-v4-pro), LITE = бот/план (deepseek-v4-flash).
+  - Инструкция: docs/instrukcii/LLM-VSEGPT-PROSTO.txt
+  - DeepSeek напрямую — оплата из РФ часто не проходит; VseGPT — обход.
 
-**Также:** 2.11.30 UX, экономика, промо 60% ок с лимитом.
+**Поддержка:** support@, SUPPORT-OWNER-PROSTO, SUPPORT-AGENT-SCRIPT.
 
 **Активно:**
-  1) Владелец: создать/проверить support@ + пересылка (SUPPORT-OWNER-PROSTO)
-  2) update-now → 2.11.31
-  3) Промо GP −60% + smoke → бета
+  1) update-now 2.11.32 (код готов, Yandex без .env смены)
+  2) Когда ключ VseGPT — строки в .env из LLM-VSEGPT-PROSTO
+  3) Промо 60% + бета
 
-Правило версионирования: патч 2.11.31→2.11.32; app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.32→2.11.33; app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

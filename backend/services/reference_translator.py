@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.utils.text import clean_text, extract_json, truncate
 
 
@@ -40,7 +40,7 @@ class ReferenceTranslator:
         "любые proper nouns исполнителей. Только описание звука и продакшна."
     )
 
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def translate(self, artist_ref: str, *, idea: str = "") -> ReferenceTranslation:

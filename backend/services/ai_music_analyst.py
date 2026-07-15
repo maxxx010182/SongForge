@@ -8,7 +8,7 @@ from backend.services.genre_resolver import (
 )
 from backend.services.plan_overrides import apply_user_to_analysis
 from backend.services.reference_translator import ReferenceTranslation
-from backend.services.yandex_client import YandexClient
+from backend.services.llm_factory import LlmClient
 from backend.utils.text import extract_json
 
 
@@ -34,7 +34,7 @@ class AiMusicAnalyst:
         "Не упоминай имена артистов. Будь конкретным и профессиональным."
     )
 
-    def __init__(self, yandex: YandexClient) -> None:
+    def __init__(self, yandex: LlmClient) -> None:
         self._yandex = yandex
 
     def analyze(
