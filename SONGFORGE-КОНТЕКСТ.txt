@@ -1,24 +1,22 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (v2.11.28 — бета-защита: rate/concurrent/trial IP/backup)
+Обновлено: 15 июля 2026 (v2.11.29 — мягче concurrent 6/2, trial 8 IP/день)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.28** (push → update-now).
+Версия кода: **2.11.29** (push → update-now).
 
-**v2.11.28 — must-have перед бетой (код):**
-  - Rate limit: auth email, produce/lyrics/style, create-song/music, pay create-order.
-  - Concurrent: max 3 generating на сервер, 1 на user.
-  - Trial: max 3 пробных с одного IP в сутки (+ 1 на аккаунт как раньше).
-  - scripts/backup-db.sh + health-watch.sh (cron — владелец, COMMANDS).
+**Бета-защита (2.11.28 + смягчение 2.11.29):**
+  - Rate limit: auth, produce/lyrics, music, pay.
+  - Concurrent: **6** на сервер, **2** на user (было 3/1).
+  - Trial: **1 на аккаунт** + **8 с IP/сутки** (было 3).
+  - backup-db.sh + health-watch.sh (cron на сервере).
 
-Также: жанр из идеи (2.11.27), lyrics ~4 мин, GP ноты OK, V5_5.
+Активно: деплой **2.11.29** → cron → smoke → бета.
 
-Активно: **деплой 2.11.28** → chmod+cron backup/health → smoke → **бета 5–20**.
-
-Правило версионирования: патч 2.11.28→2.11.29; всегда app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.29→2.11.30; всегда app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

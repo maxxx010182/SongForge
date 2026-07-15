@@ -40,10 +40,10 @@ SHOWCASE_HOURS = 24
 PREVIEW_LIMIT_SEC = 30
 PREVIEW_MAX_BYTES = 500_000
 
-# Бета-защита (без Redis; in-memory + SQLite)
-MAX_CONCURRENT_GENERATIONS = int(os.getenv("MAX_CONCURRENT_GENERATIONS", "3"))
-MAX_CONCURRENT_PER_USER = int(os.getenv("MAX_CONCURRENT_PER_USER", "1"))
-MAX_TRIAL_PER_IP_PER_DAY = int(os.getenv("MAX_TRIAL_PER_IP_PER_DAY", "3"))
+# Бета-защита (без Redis; in-memory + SQLite). Мягче для 5–20 тестеров.
+MAX_CONCURRENT_GENERATIONS = int(os.getenv("MAX_CONCURRENT_GENERATIONS", "6"))
+MAX_CONCURRENT_PER_USER = int(os.getenv("MAX_CONCURRENT_PER_USER", "2"))
+MAX_TRIAL_PER_IP_PER_DAY = int(os.getenv("MAX_TRIAL_PER_IP_PER_DAY", "8"))
 # rate limit: запросов за окно
 RATE_AUTH_IP_LIMIT = int(os.getenv("RATE_AUTH_IP_LIMIT", "8"))
 RATE_AUTH_IP_WINDOW_SEC = int(os.getenv("RATE_AUTH_IP_WINDOW_SEC", "900"))  # 15 мин

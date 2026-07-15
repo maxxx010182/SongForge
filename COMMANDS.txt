@@ -1,13 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.28 — бета-защита: rate limit, concurrent, trial IP, backup
+Версия: 2.11.29 — бета-лимиты мягче: concurrent 6/2, trial 8 IP/сутки
 
-=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.28 для беты) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.29) ===
 
-# 2.11.28 (must-have перед бетой):
-# - rate limit: auth code, produce/lyrics, create-song/music
-# - max 3 параллельных генерации (сервер), 1 на пользователя
-# - max 3 пробных с одного IP в сутки
-# - scripts/backup-db.sh + health-watch.sh
+# Лимиты (env можно переопределить):
+# MAX_CONCURRENT_GENERATIONS=6  — одновременно «варятся» на всём сервере
+# MAX_CONCURRENT_PER_USER=2     — одновременно на одного user
+# MAX_TRIAL_PER_IP_PER_DAY=8    — пробных с одного IP за день
+# (1 пробная на аккаунт — без изменений)
 
 ssh root@195.19.20.245
 
@@ -15,26 +15,19 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.28 ===
+# Ждать: === Готово! v2.11.29 ===
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.28"
+# "version":"2.11.29"
 
-# --- Бэкап БД (один раз вручную) ---
+# Бэкап / health (если ещё не ставил cron — см. ниже)
 chmod +x scripts/backup-db.sh scripts/health-watch.sh
 ./scripts/backup-db.sh
 
-# --- Cron (вставить в crontab -e) ---
+# crontab -e:
 # 15 3 * * * /root/SongForge/scripts/backup-db.sh >> /var/log/songforge-backup.log 2>&1
 # */5 * * * * /root/SongForge/scripts/health-watch.sh >> /var/log/songforge-health.log 2>&1
 
-# --- Smoke перед бетой ---
-# 1) Вход email  2) создать песню  3) оплата 1 нота  4) баланс
-# 5) второй аккаунт с того же Wi‑Fi — 4-я пробная за сутки должна упереться в лимит IP
-
-
-=== Ноты / GP ===
-# docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
 
 === ОБЫЧНОЕ ===
 pm2 status

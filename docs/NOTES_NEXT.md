@@ -1,26 +1,21 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.28** — бета-защита (rate/concurrent/backup).
+> **Актуально (15.07.2026):** код **v2.11.29** — мягкие бета-лимиты 6/2, trial 8 IP.
 > Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
 
 ---
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.28 — must-have беты в коде.
+**Код:** v2.11.29 — бета-защита, лимиты смягчены.
 
-**Сделано 2.11.28:**
-- Rate limit (auth, gen, music, pay)
-- Concurrent: 3 global / 1 user
-- Trial: ≤3/IP/сутки
-- `scripts/backup-db.sh`, `health-watch.sh`
+- Concurrent: **6** global / **2** user
+- Trial: 1/аккаунт + **8**/IP/сутки
+- Rate limit + backup/health scripts
 
-**Владельцу:**
-1. update-now → 2.11.28
-2. chmod + cron backup/health (COMMANDS)
-3. smoke → бета 5–20
+**Владельцу:** update-now 2.11.29 → cron → smoke → бета.
 
-**Осталось не-блокеры:** промокод, fingerprint, Telegram-алерт, UI polish.
+**Не-блокеры:** промокод, fingerprint, Telegram-алерт, UI polish.
 
 ---
 

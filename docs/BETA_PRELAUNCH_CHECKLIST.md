@@ -4,16 +4,16 @@
 **Цель:** Минимальный набор доработок, чтобы запустить бету без крупных рисков (abuse, падения, потеря денег).
 **Принцип:** Только must-have. Всё остальное — после беты или параллельно.
 
-## Статус на сейчас (15.07.2026, v2.11.28)
+## Статус на сейчас (15.07.2026, v2.11.29)
 - Закрыто: webhook/CORS/оплата GP, lyrics ~4 мин, жанр из идеи.
-- **v2.11.28 закрывает P1 код:** server rate limit, concurrent, trial IP/day, backup+health scripts.
-- Владельцу: **деплой 2.11.28** + cron backup/health + smoke-цикл → бета.
+- **P1 код:** rate limit, concurrent **6/2**, trial **8 IP/сутки**, backup+health scripts.
+- Владельцу: **деплой 2.11.29** + cron + smoke → бета.
 
 ## Приоритет 1 — Критично перед бетой
 
-1. **Rate limiting** — [x] код 2.11.28 (auth / produce / lyrics / music / pay) + фронт 14.07
-2. **Пробная (trial)** — [x] 1 на аккаунт + max 3 с IP/сутки (2.11.28); fingerprint — later
-3. **Параллельные генерации** — [x] max 3 сервер / 1 user (2.11.28)
+1. **Rate limiting** — [x] (auth / produce / lyrics / music / pay) + фронт
+2. **Пробная (trial)** — [x] 1 на аккаунт + max **8** с IP/сутки (2.11.29)
+3. **Параллельные генерации** — [x] max **6** сервер / **2** user (2.11.29)
 4. **Бэкапы БД** — [x] `scripts/backup-db.sh`; **[ ] cron на сервере** (COMMANDS)
 5. **Мониторинг** — [x] `scripts/health-watch.sh`; **[ ] cron или UptimeRobot**
 

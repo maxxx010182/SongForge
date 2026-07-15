@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.28**
+**Версия в коде (истина):** **2.11.29**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.28:** бета-защита (rate limit, concurrent, trial IP, backup/health scripts).
+- **v2.11.29:** concurrent 6/2, trial 8 IP/сутки; rate limit + backup/health.
 - Деплой + cron + smoke → бета.
 - GP runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`.
 
