@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.30:** UX до беты (текст модалки, Скачать MP3, скролл пакетов, sticky header результата).
-- Деплой + cron + smoke → бета.
+- **v2.11.30** на проде. Доки: USER_GUIDE, DEVELOPER_GUIDE, ADMIN_GUIDE, FULL-DEPLOY, ЭКОНОМИКА §11/лист Промо.
+- cron backup/health + smoke → бета. Промо 30–40% комфортно (см. ЭКОНОМИКА).
 - GP runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`.
 
