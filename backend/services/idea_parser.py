@@ -95,9 +95,13 @@ _GENRE_INLINE = re.compile(
 
 _BACKING_MARKERS = (
     "подпевк",
+    "подпек",  # опечатка «подпеках» без «в»
     "бэк-вокал",
     "бэк вокал",
     "бэков",
+    "бек-вокал",  # без ъ
+    "бек вокал",
+    "бек вокал",
     "backing vocal",
     "backing vocals",
     "гармони",
@@ -141,6 +145,8 @@ class ParsedIdea:
     backing_vocal_gender: str = ""  # f | m | ""
     female_lead_explicit: bool = False
     male_lead_explicit: bool = False
+    # True если в тексте явно «жанр реп» / «жанр: rock» — важнее чипа UI
+    genre_inline_lock: bool = False
     locked_fields: list[str] = field(default_factory=list)
 
     @property
@@ -168,17 +174,27 @@ def _clean_artist_name(raw: str) -> str:
     return name[:60]
 
 
-def _find_genre_keyword(text: str) -> str:
+def _find_genre_keyword(text: str) -> tuple[str, bool]:
+    """Возвращает (жанр_UI, inline_lock). inline_lock = явное «жанр …» в тексте."""
     lower = text.lower()
     inline = _GENRE_INLINE.search(text)
     if inline:
         token = inline.group(1).strip().lower()
         for keyword, genre_ui in _GENRE_KEYWORDS:
             if token == keyword or token.startswith(keyword):
-                return genre_ui
+                return genre_ui, True
         resolved, _ = resolve_genre(token, text)
         if resolved:
-            return resolved
+            # resolve может вернуть English — нормализуем если есть в UI map
+            for key, val in (
+                ("hip-hop", "Реп"),
+                ("hip hop", "Реп"),
+                ("pop", "Поп"),
+                ("rock", "Рок"),
+            ):
+                if resolved.lower() == key:
+                    return val, True
+            return resolved, True
 
     best_pos = len(lower) + 1
     best_genre = ""
@@ -187,7 +203,7 @@ def _find_genre_keyword(text: str) -> str:
         if pos != -1 and pos < best_pos:
             best_pos = pos
             best_genre = genre_ui
-    return best_genre
+    return best_genre, False
 
 
 def _find_mood(text: str) -> str:
@@ -220,9 +236,15 @@ def _detect_vocals(text: str) -> tuple[str, bool, str, bool, bool]:
 
     backing_gender = ""
     if backing:
-        if re.search(r"женск\w*.*подпевк|женск\w*.*бэк|female.*backing", lower):
+        if re.search(
+            r"женск\w*.*(?:подпев|бэк|бек)|female.*backing|backing.*female",
+            lower,
+        ):
             backing_gender = "f"
-        elif re.search(r"мужск\w*.*подпевк|male.*backing", lower):
+        elif re.search(
+            r"мужск\w*.*(?:подпев|бэк|бек)|male.*backing|backing.*male",
+            lower,
+        ):
             backing_gender = "m"
 
     female_lead = False
@@ -267,11 +289,15 @@ def parse_idea(idea: str) -> ParsedIdea:
     result = ParsedIdea()
     locked: list[str] = []
 
-    genre = _find_genre_keyword(text)
+    genre, genre_inline = _find_genre_keyword(text)
+    result.genre_inline_lock = genre_inline
     if not genre:
         genre_en, _ = infer_genre_from_idea(text)
         lower = text.lower()
-        if any(k in lower for k in ("рэп", "реп", "rap", "хип", "hip-hop", "hip hop")):
+        if any(
+            k in lower
+            for k in ("рэп", "реп", "rap", "хип", "hip-hop", "hip hop", "баста")
+        ):
             genre = "Реп"
         elif genre_en and genre_en.lower() != "pop":
             genre = genre_en
@@ -340,6 +366,15 @@ def apply_rap_lead_default(
     return vocal_hint or "auto"
 
 
+def _genres_conflict(ui_genre: str, idea_genre: str) -> bool:
+    """True если UI и идея указывают разные жанры (Поп vs Реп и т.п.)."""
+    if not ui_genre.strip() or not idea_genre.strip():
+        return False
+    ui_en, _ = resolve_genre(ui_genre, "")
+    idea_en, _ = resolve_genre(idea_genre, "")
+    return ui_en.lower() != idea_en.lower()
+
+
 def merge_parsed_with_request(
     parsed: ParsedIdea,
     *,
@@ -349,15 +384,36 @@ def merge_parsed_with_request(
     vocal_hint: str = "",
     backing_vocal: bool = False,
 ) -> tuple[str, str, str, str, bool, str, ParsedIdea]:
-    """Настройки панели (жанр, настроение, референс) важнее текста идеи."""
-    effective_genre = genre.strip() if genre.strip() else parsed.genre
+    """Слияние UI и текста идеи.
+
+    Приоритет жанра:
+    1) Явное «жанр …» в идее (genre_inline_lock) — важнее чипа UI
+       (AI-продюсер часто шлёт дефолт «Поп» и ломал «Жанр реп»).
+    2) Чип/поле UI, если задано.
+    3) Жанр, вытащенный из ключевых слов идеи.
+    """
+    ui_genre = genre.strip()
+    if parsed.genre_inline_lock and parsed.genre.strip():
+        if not ui_genre or _genres_conflict(ui_genre, parsed.genre):
+            effective_genre = parsed.genre
+        else:
+            effective_genre = ui_genre
+    elif ui_genre:
+        effective_genre = ui_genre
+    else:
+        effective_genre = parsed.genre
+
     effective_artist = artist_ref.strip() if artist_ref.strip() else parsed.artist_ref
     effective_mood = mood.strip() if mood.strip() else parsed.mood
-    effective_vocal = vocal_hint.strip() if vocal_hint.strip() and vocal_hint.strip() != "auto" else (parsed.vocal_hint or vocal_hint.strip())
+    effective_vocal = (
+        vocal_hint.strip()
+        if vocal_hint.strip() and vocal_hint.strip() != "auto"
+        else (parsed.vocal_hint or vocal_hint.strip())
+    )
     effective_backing = backing_vocal or parsed.backing_vocal
     backing_gender = parsed.backing_vocal_gender
 
-    if genre.strip():
+    if effective_genre:
         parsed.genre = effective_genre
         if "genre" not in parsed.locked_fields:
             parsed.locked_fields.append("genre")

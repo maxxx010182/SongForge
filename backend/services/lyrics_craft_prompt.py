@@ -230,7 +230,9 @@ UNIFIED_PACKAGE_SYSTEM = (
     "delivery-теги; строки на языке запроса; припев дословно одинаков; "
     "НЕ пересказ брифа.\n"
     '- "style_prompt": одна строка на английском, СТРОГО до 200 символов; '
-    "6–10 тегов; genre → mood → instruments → vocals → production; "
+    "6–10 тегов; СНАЧАЛА точный genre из анализа (Hip-Hop/Rap ≠ Pop); "
+    "genre → mood → instruments → vocals → production; "
+    "если жанр hip-hop/rap — 808, rap vocals, urban beat; НЕ Modern Pop; "
     "обязательно sung in Russian, native Russian vocals "
     "(если язык песни не русский — укажи язык вокала по брифу); без имён артистов.\n"
     "negativeTags, vocalGender и веса Suno задаёт сервер — не включай в JSON."

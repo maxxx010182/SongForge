@@ -1,13 +1,14 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.25 — lyrics ~4 мин + craft; sunoapi duration 240; модель V5_5
+Версия: 2.11.26 — жанр из идеи (реп≠поп); AI-продюсер без дефолт Поп; enforce style
 
-=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.25: длиннее треки + тексты) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.26: жанр/реп) ===
 
-# Что в 2.11.25:
-# - unified/classic: полная форма ~4 мин, не «что вижу — то пою»
-# - reject коротких/неполных lyrics → retry
-# - sunoapi duration 240 (как ApiPass); prompt до 5000; модель только V5_5
-# Runbook нот: docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
+# Что в 2.11.26:
+# - «Жанр реп» в тексте важнее дефолтного Поп с UI
+# - AI-продюсер не шлёт selectedGenre=Поп
+# - unified style: enforce hip-hop, срез Modern Pop leak
+# - бек-вокал / подпевки лучше парсятся
+# - модель V5_5; lyrics ~4 мин (2.11.25)
 
 ssh root@195.19.20.245
 
@@ -15,34 +16,20 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.25 ===
+# Ждать: === Готово! v2.11.26 ===
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.25"
+# "version":"2.11.26"
 
-# После деплоя: создать песню в AI-продюсере, проверить длительность ~3.5–4+ мин
-# и что текст — песня (структура + хук), а не пересказ идеи.
-
-
-=== Ноты не пришли после оплаты (диагностика) ===
-
-sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, price_rub, created_at, paid_at FROM payment_orders ORDER BY created_at DESC LIMIT 8;"
-
-sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, provider_payment_id, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
-
-sqlite3 data/songforge.db "SELECT id, email, balance FROM users WHERE id='USER_ID';"
-
-pm2 logs songforge --lines 80 --nostream | grep -i -E 'getplatinum|mark_paid|accepted via|verify FAILED|signature'
+# Тест: AI-продюсер + «Жанр реп, стиль Баста…» → style должен содержать hip-hop/rap, не Modern Pop
 
 
-=== Ручное начисление (только pending + оплата подтверждена в GP) ===
+=== Ноты не пришли ===
+# docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
 
-sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders WHERE id='ORDER_UUID';"
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
 
-./venv/bin/python -c "from backend.services.payment_service import PaymentService; print(PaymentService().mark_paid(order_id='ORDER_UUID', provider_payment_id='GP_PAYMENT_ID'))"
-
-sqlite3 data/songforge.db "SELECT id, status, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
-sqlite3 data/songforge.db "SELECT balance FROM users WHERE id='USER_ID';"
+pm2 logs songforge --lines 40 --nostream | grep -i -E 'getplatinum|mark_paid|verify'
 
 
 === ОБЫЧНОЕ ===

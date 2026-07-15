@@ -1,28 +1,26 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.25** — lyrics ~4 мин + craft; V5_5 only.
+> **Актуально (15.07.2026):** код **v2.11.26** — жанр из идеи (реп ≠ pop).
 > Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
-> Runbook нот: `instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`
 
 ---
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.25 — длина треков + качество текста (модель **только V5_5**).
+**Код:** v2.11.26 — фикс Modern Pop при «Жанр реп» + Баста.
 
-**Что сделано в 2.11.25:**
-- Промпты: полная структура ~4 мин; бриф ≠ текст («что вижу — то пою» запрещён).
-- `lyrics_look_incomplete` + lazy → retry; max_tokens lyrics↑; prompt max 5000.
-- sunoapi `duration: 240` (было 180); ApiPass уже 240.
-- Модель: **V5_5** (без смены на V4_5ALL).
+**Баг:** AI-продюсер слал `genre=Поп` (дефолт UI) → merge бил идею; unified style без enforce → `Modern Pop…`.
+
+**Фикс:**
+- createSongWithProducer: genre/mood пустые (идея ведёт)
+- «жанр X» inline lock > UI при конфликте
+- keyword «реп» без ё; enforce_style на unified + strip pop leak
+- бек/подпевки parse
 
 **Статус:**
-- [x] CORS, GP webhook/ноты (2.11.24), runbook
-- [~] Длина/текст — 2.11.25, ждёт подтверждения на проде
+- [x] GP ноты, lyrics ~4 мин (2.11.25)
+- [~] Жанр/style — 2.11.26, ждёт деплой + тест
 - [~] Rate limiting backend — backlog
-- Чек-лист: `BETA_PRELAUNCH_CHECKLIST.md`
-
-**Следующее:** деплой 2.11.25 + тест песни; если всё ещё коротко — смотреть объём lyrics в логах / extend.
 
 ---
 

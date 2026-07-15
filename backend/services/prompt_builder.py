@@ -157,49 +157,37 @@ class PromptBuilder:
             backing_vocal=backing_vocal,
         )
 
-        if package:
-            if custom_mode:
-                user_style = truncate(clean_text(custom_description.strip()), 120)
-                merged = (
-                    f"{user_style}, {payload.style}"
-                    if payload.style.strip()
-                    else user_style
-                )
-                payload.style = ensure_russian_vocal_style(merged)
-            payload.style = compact_suno_style(payload.style)
-            payload.title = sanitize_suno_title(payload.title, analyst_idea)
-            payload.negative_tags = sanitize_negative_tags(
-                payload.negative_tags, payload.style, plan.genre
+        # Unified раньше пропускал enforce_style → Yandex мог отдать Modern Pop
+        # при идее «жанр реп». Classic уже проходил enforce.
+        if custom_mode:
+            user_style = truncate(clean_text(custom_description.strip()), 120)
+            merged = (
+                f"{user_style}, {payload.style}"
+                if payload.style.strip()
+                else user_style
             )
-        else:
-            payload.style = enforce_style(
-                payload.style,
-                plan,
-                reference=reference,
-                backing_vocal=backing_vocal,
-                backing_vocal_gender=backing_gender,
+            payload.style = (
+                ensure_russian_vocal_style(merged) if not instrumental else merged
             )
-            if custom_mode:
-                user_style = truncate(clean_text(custom_description.strip()), 120)
-                merged = (
-                    f"{user_style}, {payload.style}"
-                    if payload.style.strip()
-                    else user_style
-                )
-                payload.style = (
-                    ensure_russian_vocal_style(merged) if not instrumental else merged
-                )
 
-            payload.style = compact_suno_style(payload.style)
-            payload.title = sanitize_suno_title(payload.title, analyst_idea)
-            payload.negative_tags = sanitize_negative_tags(
-                payload.negative_tags, payload.style, plan.genre
-            )
-            payload.vocal_gender = plan.vocal_gender
-            payload.style_weight = plan.style_weight
-            payload.weirdness_constraint = plan.weirdness_constraint
-            payload.audio_weight = plan.audio_weight
+        payload.style = enforce_style(
+            payload.style,
+            plan,
+            reference=reference,
+            backing_vocal=backing_vocal,
+            backing_vocal_gender=backing_gender,
+        )
+        payload.style = compact_suno_style(payload.style)
+        payload.title = sanitize_suno_title(payload.title, analyst_idea)
+        payload.negative_tags = sanitize_negative_tags(
+            payload.negative_tags, payload.style, plan.genre
+        )
+        payload.vocal_gender = plan.vocal_gender
+        payload.style_weight = plan.style_weight
+        payload.weirdness_constraint = plan.weirdness_constraint
+        payload.audio_weight = plan.audio_weight
 
+        if not package:
             if plan.instrumental:
                 payload.lyrics = ""
             else:

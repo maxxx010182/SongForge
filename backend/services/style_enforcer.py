@@ -1,11 +1,23 @@
 """Supplement AI-generated Suno style prompts — never replace the AI output."""
 
+import re
+
 from backend.models import ProductionPlan
 from backend.services.idea_parser import is_rap_genre
 from backend.services.reference_translator import ReferenceTranslation
 from backend.utils.text import clean_text, ensure_russian_vocal_style, truncate
 
 _MIN_STYLE_LEN = 80
+
+# Если жанр hip-hop/rap — вычищаем «Modern Pop» из style (Yandex часто подмешивает).
+_POP_LEAK_RE = re.compile(
+    r",?\s*\b(?:"
+    r"modern\s+pop|upbeat\s+pop|cheerful\s+pop|bright\s+pop|dance\s+pop|"
+    r"euro\s+pop|bubblegum\s+pop|pop\s+rock|synth[\s-]?pop|"
+    r"powerful\s+melodic\s+vocals|radio[\s-]?ready\s+polished\s+mix"
+    r")\b\s*,?",
+    re.IGNORECASE,
+)
 
 
 def _contains(haystack: str, needle: str) -> bool:
@@ -19,6 +31,12 @@ def _append_unique(style: str, fragment: str) -> str:
     if style.strip():
         return f"{style}, {fragment}"
     return fragment
+
+
+def _strip_pop_leak_for_rap(style: str) -> str:
+    cleaned = _POP_LEAK_RE.sub(", ", style)
+    cleaned = re.sub(r"\s*,\s*,+", ", ", cleaned)
+    return cleaned.strip(" ,")
 
 
 def _plan_style_fallback(plan: ProductionPlan) -> str:
@@ -81,16 +99,26 @@ def enforce_style(
         base = _append_unique(base, plan.atmosphere)
 
     if is_rap_genre(plan.genre, plan.subgenre):
-        base = _append_unique(
-            base,
-            "Russian hip-hop, rap vocals, 808 drums, boom bap flow, urban beat",
-        )
+        base = _strip_pop_leak_for_rap(base)
+        # Жанр в начало — Suno сильнее опирается на первые теги style
+        rap_head = "Russian hip-hop, rap vocals, 808 drums, boom bap flow, urban beat"
+        if not _contains(base, "hip-hop") and not _contains(base, "rap vocal"):
+            base = f"{rap_head}, {base}" if base else rap_head
+        else:
+            base = _append_unique(base, rap_head)
+        atmosphere = (plan.atmosphere or "").lower()
+        if plan.energy == "high" or any(
+            t in atmosphere for t in ("stadium", "live", "concert", "crowd", "arena")
+        ):
+            base = _append_unique(
+                base, "live stadium energy, concert atmosphere, crowd singalong hooks"
+            )
 
     if plan.vocal == "duet":
         base = _append_unique(
             base,
             "male and female duet vocals, dual lead vocals, "
-            "alternating male and female verses",
+            "alternating male and female verses, male rap verses with female sung hook",
         )
     elif plan.vocal == "male":
         base = _append_unique(base, "male lead vocals, deep male rap delivery")

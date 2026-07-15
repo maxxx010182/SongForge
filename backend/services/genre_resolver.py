@@ -33,8 +33,44 @@ _GENRE_FROM_UI: dict[str, str] = {
 }
 
 _GENRE_HINTS: list[tuple[str, str, tuple[str, ...]]] = [
-    ("Hip-Hop", "Modern Hip-Hop", ("рэп", "rap", "хип", "hip-hop", "hip hop", "трэп", "trap", "drill", "дрилл", "битмейк", "808")),
-    ("Rock", "Rap Rock", ("rap-rock", "rap rock", "rap-rock", "stadium", "anthem", "рок", "rock", "гитар", "metal", "метал", "панк", "punk")),
+    # «реп» (е) — часто пишут без ё; «рэп» — с ё. Оба обязательны.
+    (
+        "Hip-Hop",
+        "Modern Hip-Hop",
+        (
+            "рэп",
+            "реп",
+            "rap",
+            "хип-хоп",
+            "хип хоп",
+            "хипхоп",
+            "hip-hop",
+            "hip hop",
+            "трэп",
+            "trap",
+            "drill",
+            "дрилл",
+            "битмейк",
+            "808",
+            "баста",  # частый RU-референс → hip-hop, не pop
+        ),
+    ),
+    # stadium/anthem НЕ здесь: иначе «гимн на стадионе + реп» уезжал в Rock
+    (
+        "Rock",
+        "Rap Rock",
+        (
+            "rap-rock",
+            "rap rock",
+            "рок",
+            "rock",
+            "гитар",
+            "metal",
+            "метал",
+            "панк",
+            "punk",
+        ),
+    ),
     ("Electronic", "Modern Electronic", ("электрон", "electronic", "edm", "техно", "techno", "хаус", "house", "синт", "synth")),
     ("Ballad", "Emotional Ballad", ("баллад", "ballad", "лирич", "нежн", "трогательн")),
     ("Lo-Fi", "Chill Lo-Fi", ("лофи", "lo-fi", "lofi", "чилл", "chill", "расслаб")),

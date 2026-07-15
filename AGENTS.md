@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.25**
+**Версия в коде (истина):** **2.11.26**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.25:** lyrics ~4 мин + craft (не «что вижу то пою»); sunoapi duration 240; **только V5_5**.
-- Деплой → тест генерации.
+- **v2.11.26:** «Жанр реп» не затирается дефолт-Поп; enforce hip-hop style; V5_5.
+- Деплой → тест Тюмень/реп/Баста.
 - GP runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`.
 

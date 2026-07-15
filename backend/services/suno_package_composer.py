@@ -134,7 +134,9 @@ class SunoPackageComposer:
             f"БРИФ (не готовый текст — преврати в песню): {idea}",
             "Задача: полная песня ~4 минуты, качественный сонграйтинг, "
             "НЕ пересказ брифа «что вижу — то пою».",
-            f"Жанр: {analysis.genre} / {analysis.subgenre}",
+            f"Жанр: {analysis.genre} / {analysis.subgenre} "
+            f"(style_prompt ОБЯЗАН соответствовать этому жанру; "
+            f"если Hip-Hop/Rap — НЕ пиши Modern Pop / synth-pop / melodic pop)",
             f"Настроение: {analysis.mood}",
             f"BPM: {analysis.bpm}",
             f"Энергия: {analysis.energy}",
@@ -146,6 +148,8 @@ class SunoPackageComposer:
             "Обязательная форма lyrics: Verse1 → Pre → Chorus → Verse2 → Pre → "
             "Chorus → Bridge → Final Chorus → Outro; припев дословно одинаков; "
             "lyrics 2000–4500 символов (если не детская).",
+            "style_prompt: английские теги жанра первыми "
+            "(напр. Russian hip-hop, rap vocals, 808…), без чужого жанра.",
         ]
         if custom_description.strip():
             parts.append(
