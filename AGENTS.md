@@ -34,9 +34,9 @@
 
 **В чате:** один шаг за раз; backlog — в контекст/NOTES; команды — в `COMMANDS.txt`.
 
-## Сейчас (15.07.2026)
+## Сейчас (15.07.2026) — пауза
 
-- **v2.11.30** на проде. Доки: USER_GUIDE, DEVELOPER_GUIDE, ADMIN_GUIDE, FULL-DEPLOY, ЭКОНОМИКА §11/лист Промо.
-- cron backup/health + smoke → бета. Промо 30–40% комфортно (см. ЭКОНОМИКА).
+- **v2.11.30** на проде. Доки + экономика (Suno 7,5 ₽, GP 3,5%, промо **60%** ок с лимитом).
+- Дальше: cron → промо GP → smoke → бета. Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 - GP runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`.
 
