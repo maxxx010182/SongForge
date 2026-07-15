@@ -1722,16 +1722,39 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
 // Обёрнуто в async IIFE, чтобы не было top-level await
 (async function restoreStudioState() {
   try {
-    var payParam = new URLSearchParams(window.location.search).get('payment');
+    var qs = new URLSearchParams(window.location.search);
+    var payParam = qs.get('payment');
+    var payOrder = qs.get('order') || '';
     if (payParam === 'success' || payParam === 'failed') {
       if (window.history && window.history.replaceState) {
         window.history.replaceState({}, '', window.location.pathname);
       }
       if (payParam === 'success') {
-        showToast('Оплата прошла, обновляем баланс...');
+        // Не врём «баланс обновлён», пока сервер не подтвердил status=paid (webhook).
+        showToast('Оплата принята, ждём подтверждение…');
+        var paidOk = false;
+        var startBal = getBalance();
+        for (var attempt = 0; attempt < 12; attempt++) {
+          if (payOrder && session.loggedIn) {
+            try {
+              var oRes = await fetch('/api/payment/orders/' + encodeURIComponent(payOrder), fetchOpts);
+              var oData = await oRes.json().catch(function(){ return {}; });
+              if (oRes.ok && oData && String(oData.status || '').toLowerCase() === 'paid') {
+                paidOk = true;
+                break;
+              }
+            } catch (e) { /* retry */ }
+          }
+          await fetchMe();
+          if (getBalance() > startBal) { paidOk = true; break; }
+          await new Promise(function(r){ setTimeout(r, 1500); });
+        }
         await fetchMe();
-        setTimeout(function(){ fetchMe().then(function(){ showToast('Баланс обновлён'); }); }, 2500);
-        setTimeout(function(){ fetchMe(); }, 7000);
+        if (paidOk || getBalance() > startBal) {
+          showToast('Ноты зачислены. Баланс обновлён.');
+        } else {
+          showToast('Оплата принята. Если ноты не появились за 1–2 мин — напишите в поддержку.');
+        }
       }
     }
 

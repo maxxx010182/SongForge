@@ -1,44 +1,34 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия кода: 2.11.23 (webhook: checksum + fallback pending-order+IP GetPlatinum)
+Версия: 2.11.24 — оплата GP: atomic mark_paid, safe IP, UI ждёт paid, fallback order+IP
 
-=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.23 + начисление зависшего заказа) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.24) ===
 
-# Лог показал: isSuccess=true, checksum есть, но алгоритм GP ≠ HMAC(API_KEY).
-# v2.11.23: если checksum не сошёлся — принимаем webhook при
-#   isSuccess + наш pending dealId + IP 212.41.13.* (реальные IP GP).
+# Как начисляются ноты (кратко):
+# 1) create-order → pending в БД + formUrl GetPlatinum
+# 2) GP webhook isSuccess → verify (checksum ИЛИ order+IP 212.41.13.*+shape)
+# 3) mark_paid атомарно: status pending→paid + balance += notes_amount из НАШЕГО заказа
+# 4) UI после return: polling /api/payment/orders/{id} — тост «зачислены» только при paid
+# Злоумышленник без IP GP + без нашего UUID-заказа ноты не получит.
+# nginx: proxy_set_header X-Real-IP $remote_addr;
 
-# === ШАГ 1. SSH ===
 ssh root@195.19.20.245
 
-# === ШАГ 2. Папка ===
 cd ~/SongForge
 
-# === ШАГ 3. Деплой ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.23 ===
+# Ждать: === Готово! v2.11.24 ===
 
-# === ШАГ 4. Health ===
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.23"
+# "version":"2.11.24"
 
-# === ШАГ 5. Начислить УЖЕ оплаченный заказ (если status ещё pending) ===
-# order из лога: 0bab3aa4-8b9f-42b6-96ef-0666e0435c7b
+# --- Зависший заказ (если ещё pending) ---
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders WHERE id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b';"
 
-sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, price_rub FROM payment_orders WHERE id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b';"
+./venv/bin/python -c "from backend.services.payment_service import PaymentService; print(PaymentService().mark_paid(order_id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b', provider_payment_id='76871408'))"
 
-# Если status=pending — начислить (одна команда):
-./venv/bin/python -c "from backend.services.payment_service import PaymentService; r=PaymentService().mark_paid(order_id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b', provider_payment_id='76871408'); print(r)"
-
-# Проверка баланса user из SELECT выше:
-# sqlite3 data/songforge.db "SELECT id, email, balance FROM users WHERE id='USER_ID_СЮДА';"
-
-# === ШАГ 6. Новый тест оплаты (после деплоя) ===
-# После оплаты в логах ожидаем либо signature OK, либо:
-#   checksum mismatch, accepted via pending-order+IP
-# и status paid + рост balance.
-
-pm2 logs songforge --lines 50 --nostream | grep -i -E 'getplatinum|webhook|signature|accepted via|mark_paid|FAILED|paid'
+# --- После новой оплаты ---
+pm2 logs songforge --lines 40 --nostream | grep -i -E 'getplatinum|mark_paid|accepted via|verify FAILED'
 
 
 === ОБЫЧНОЕ ===

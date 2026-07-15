@@ -115,7 +115,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.23")
+app = FastAPI(title="SongForge", version="2.11.24")
 
 app.add_middleware(
     CORSMiddleware,
@@ -418,7 +418,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.23",
+        "version": "2.11.24",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1372,10 +1372,16 @@ async def payment_webhook(provider: str, request: Request):
         payload = {}
 
     if provider == "getplatinum":
-        # Реальный IP за nginx — из X-Forwarded-For / X-Real-IP
-        forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        # IP: не доверяем X-Forwarded-For от клиента в обход nginx.
+        # nginx обязан: proxy_set_header X-Real-IP $remote_addr;
+        peer = request.client.host if request.client else ""
         real_ip = (request.headers.get("x-real-ip") or "").strip()
-        client_ip = forwarded or real_ip or (request.client.host if request.client else "")
+        if peer in ("127.0.0.1", "::1", "localhost"):
+            # Запрос от локального nginx/proxy — берём X-Real-IP
+            client_ip = real_ip or peer
+        else:
+            # Прямое подключение (без proxy) — peer; заголовки не подставляем
+            client_ip = peer or real_ip
         if not payment_service.verify_getplatinum_webhook(
             raw_body, payload, client_ip=client_ip
         ):

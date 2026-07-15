@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.23**
+**Версия в коде (истина):** **2.11.24**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,6 +36,6 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.23:** GetPlatinum webhook — checksum multi-try + fallback (isSuccess + known order + IP 212.41.13.*).
-- Деплой + ручное mark_paid для `0bab3aa4-…` если ещё pending (см. COMMANDS).
+- **v2.11.24:** hardening оплаты GP (atomic mark_paid, safe IP, UI polling, fallback order+IP+shape).
+- Деплой + при необходимости mark_paid для `0bab3aa4-…`.
 

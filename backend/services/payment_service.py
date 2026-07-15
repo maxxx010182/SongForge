@@ -138,24 +138,41 @@ class PaymentService:
         order_id: str,
         provider_payment_id: str | None = None,
     ) -> dict | None:
+        """Идемпотентное начисление: два webhook подряд не удвоят ноты."""
         with get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM payment_orders WHERE id = ?",
                 (order_id,),
             ).fetchone()
-            if not row or row["status"] == "paid":
+            if not row:
                 return None
+            if str(row["status"] or "").lower() == "paid":
+                balance_row = conn.execute(
+                    "SELECT balance FROM users WHERE id = ?",
+                    (row["user_id"],),
+                ).fetchone()
+                return {
+                    "order_id": order_id,
+                    "user_id": row["user_id"],
+                    "notes_added": 0,
+                    "balance": int(balance_row["balance"]) if balance_row else 0,
+                    "already_paid": True,
+                }
 
-            conn.execute(
+            # Атомарно: только один concurrent-worker пройдёт WHERE status='pending'
+            cur = conn.execute(
                 """
                 UPDATE payment_orders
                 SET status = 'paid',
                     provider_payment_id = ?,
                     paid_at = ?
-                WHERE id = ?
+                WHERE id = ? AND status = 'pending'
                 """,
                 (provider_payment_id or "", utc_now(), order_id),
             )
+            if cur.rowcount != 1:
+                return None
+
             conn.execute(
                 "UPDATE users SET balance = balance + ? WHERE id = ?",
                 (int(row["notes_amount"]), row["user_id"]),
@@ -165,6 +182,13 @@ class PaymentService:
                 (row["user_id"],),
             ).fetchone()
 
+        log.info(
+            "mark_paid OK order=%s user=%s notes=+%s balance=%s",
+            order_id,
+            row["user_id"],
+            int(row["notes_amount"]),
+            int(balance_row["balance"]) if balance_row else 0,
+        )
         return {
             "order_id": order_id,
             "user_id": row["user_id"],
@@ -442,7 +466,10 @@ class PaymentService:
         checksum_cmp = (
             checksum.strip().removeprefix("sha256=").removeprefix("SHA256=").lower()
         )
-        for secret in secrets or [b""]:
+        # Только схемы С секретом. sha256(body) без ключа — дыра (подделка checksum).
+        if not secrets:
+            return False
+        for secret in secrets:
             for body in unique_bodies:
                 digest = hmac.new(secret, body, hashlib.sha256).digest()
                 variants = (
@@ -452,15 +479,27 @@ class PaymentService:
                     hashlib.sha256(secret + body).hexdigest(),
                     hashlib.sha256(secret + b"." + body).hexdigest(),
                     hashlib.sha256(body + b"." + secret).hexdigest(),
-                    hashlib.sha256(body).hexdigest(),
                     hmac.new(secret, body, hashlib.md5).hexdigest(),
                     hashlib.md5(body + secret).hexdigest(),
+                    hashlib.md5(secret + body).hexdigest(),
                 )
                 for expected in variants:
                     if hmac.compare_digest(checksum_cmp, expected.lower()):
                         log.info("GetPlatinum webhook signature OK")
                         return True
         return False
+
+    @staticmethod
+    def _payload_looks_like_getplatinum(payload: dict) -> bool:
+        """Грубый отпечаток реального GP (не произвольный JSON от сканера)."""
+        if "isSuccess" not in payload and "notificationType" not in payload:
+            return False
+        if not (payload.get("dealId") or payload.get("deal_id")):
+            return False
+        # Реальные webhook'и GP несут paymentData и/или offerId
+        if not isinstance(payload.get("paymentData"), dict) and payload.get("offerId") is None:
+            return False
+        return True
 
     def verify_getplatinum_webhook(
         self,
@@ -469,12 +508,16 @@ class PaymentService:
         *,
         client_ip: str = "",
     ) -> bool:
-        """Проверка webhook GetPlatinum.
+        """Проверка webhook GetPlatinum (безопасность + доставка нот).
 
-        1) checksum (несколько схем; публичный алгоритм GP не задокументирован).
-        2) Fallback: isSuccess + наш pending dealId + IP GetPlatinum (212.41.13.*).
-           dealId — UUID, который создаём только мы; подделать «успех» снаружи
-           без знания pending order и без IP GP практически нельзя.
+        Доверие к начислению:
+        1) checksum с секретом (если алгоритм совпал) — идеально;
+        2) иначе fallback ТОЛЬКО если одновременно:
+           - isSuccess=true (GP говорит «оплачено»),
+           - dealId есть у нас в payment_orders (UUID создаём только мы),
+           - IP из сети GetPlatinum (по умолчанию 212.41.13.*),
+           - тело похоже на GP (paymentData/offerId).
+        Ноты всегда из нашей БД (notes_amount заказа), не из webhook amount.
         """
         if not isinstance(payload, dict) or not raw_body:
             return False
@@ -497,10 +540,35 @@ class PaymentService:
         )
         ip_ok = self._client_ip_allowed(client_ip)
         order_ok = self._order_accept_for_webhook(order_id)
+        shape_ok = self._payload_looks_like_getplatinum(payload)
 
-        if ok_flag and ip_ok and order_ok:
+        if ok_flag and ip_ok and order_ok and shape_ok:
+            # Сверка суммы (копейки): несовпадение — предупреждение (промо/тест),
+            # но не блокер: notes берём из заказа.
+            pd = payload.get("paymentData") if isinstance(payload.get("paymentData"), dict) else {}
+            amount = pd.get("amount")
+            if amount is not None:
+                try:
+                    with get_connection() as conn:
+                        o = conn.execute(
+                            "SELECT price_rub FROM payment_orders WHERE id = ?",
+                            (order_id,),
+                        ).fetchone()
+                    if o:
+                        expected = int(o["price_rub"]) * 100
+                        if int(amount) != expected:
+                            log.warning(
+                                "GetPlatinum amount mismatch order=%s got=%s expected_kop=%s "
+                                "(promo/test? still crediting notes from order)",
+                                order_id,
+                                amount,
+                                expected,
+                            )
+                except Exception:
+                    pass
+
             log.warning(
-                "GetPlatinum: checksum mismatch, accepted via known-order+IP "
+                "GetPlatinum: checksum mismatch, accepted via known-order+IP+shape "
                 "(order=%s ip=%s)",
                 order_id,
                 client_ip,
@@ -509,12 +577,13 @@ class PaymentService:
 
         log.warning(
             "GetPlatinum verify FAILED: isSuccess=%s order=%s order_known=%s "
-            "ip=%s ip_ok=%s keys=%s checksum_prefix=%s",
+            "ip=%s ip_ok=%s shape_ok=%s keys=%s checksum_prefix=%s",
             payload.get("isSuccess"),
             order_id or "-",
             order_ok,
             client_ip or "-",
             ip_ok,
+            shape_ok,
             list(payload.keys())[:16],
             str(payload.get("checksum") or "")[:12],
         )
