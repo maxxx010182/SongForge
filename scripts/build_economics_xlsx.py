@@ -69,12 +69,13 @@ def sheet_vvod(wb: Workbook):
     ws["A1"] = "Допущения (меняйте жёлтые/синие ячейки)"
     ws["A1"].font = HDR
     labels = [
-        ("Курс USD → RUB", "usd_rub", 95),
-        ("Suno + ApiPass, ₽/нота (оценка)", "suno_rub", 6),
+        ("Курс USD → RUB (справочно)", "usd_rub", 95),
+        # Suno: 15 credits/песня, 1000 cr ≈ 500 ₽ → 7,5 ₽
+        ("Suno, ₽/нота (15 cr, 1000cr=500₽)", "suno_rub", 7.5),
         ("YandexGPT, ₽/нота", "yandex_rub", 5),
         ("S3, ₽/нота", "s3_rub", 0.5),
         ("Брак/retry, % к API", "waste_pct", 0.12),
-        ("Эквайринг GetPlatinum, %", "gp_pct", 0.03),
+        ("Эквайринг GetPlatinum, %", "gp_pct", 0.035),
         ("НПД, % с выручки", "npd_pct", 0.04),
         ("Платных нот в месяц (прогноз)", "notes_month", 50),
         ("Пробных генераций в месяц", "trials_month", 100),
@@ -116,12 +117,13 @@ def sheet_fix(wb: Workbook):
     ws["A1"] = "Постоянные расходы, ₽/мес"
     ws["A1"].font = HDR
     items = [
-        ("VPS 195.19.20.245", 0),
-        ("Домен sozdaipesnu.ru", 0),
-        ("Почта REG.RU Mail-1", 0),
-        ("S3 REG.RU", 0),
-        ("Yandex Cloud (мин.)", 0),
-        ("Прочее", 0),
+        # 1 коп/час ≈ 7 ₽/мес; заложить рост — 1500 ₽ (2vCPU/4GB ориентир)
+        ("VPS (сейчас копейки / заложить рост)", 1500),
+        ("Домен sozdaipesnu.ru (продление/12)", 50),
+        ("Почта REG.RU Mail-1", 200),
+        ("S3 REG.RU Object Storage", 100),
+        ("Yandex Cloud (мин./факт)", 200),
+        ("Прочее (мониторинг и т.п.)", 100),
     ]
     ws["A3"] = "Статья"
     ws["B3"] = "₽/мес"
