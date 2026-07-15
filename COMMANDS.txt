@@ -1,7 +1,17 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия кода/прода: 2.11.20 (backend/app.py, deploy-vps.sh, /api/health)
+Версия кода: 2.11.21 (тема Бордо wine/scarlet). После деплоя health = 2.11.21
 
-=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — баг: ноты не начисляются после GetPlatinum) ===
+=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — деплой v2.11.21 + баг нот GetPlatinum) ===
+
+# === ДЕПЛОЙ v2.11.21 (тема Бордо) — когда закончите тест оплаты ===
+ssh root@195.19.20.245
+cd ~/SongForge
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Ждать: === Готово! v2.11.21 ===
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.21"
+
+# === ДИАГНОСТИКА БАГА НОТ (можно до/после деплоя) ===
 
 # === ШАГ 1. SSH ===
 ssh root@195.19.20.245
@@ -29,9 +39,9 @@ pm2 restart songforge --update-env
 
 # Важно: после копирования закрой COMMANDS.txt полностью и открой заново.
 
-# === ШАГ 9. Проверка health (версия должна быть 2.11.20) ===
+# === ШАГ 9. Проверка health (после деплоя: 2.11.21) ===
 curl -s https://sozdaipesnu.ru/api/health
-# Ожидаем: "version":"2.11.20" , "redis":true , "s3":true
+# Ожидаем: "version":"2.11.21" , "redis":true , "s3":true
 
 curl -s https://sozdaipesnu.ru/api/auth/providers
 # Ожидаем: vk_enabled:true , email_enabled:true , email_smtp:true
@@ -45,7 +55,7 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.20 === (или выше, если версию подняли)
+# Ждать: === Готово! v2.11.21 === (или выше, если версию подняли)
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version" должен совпадать с backend/app.py

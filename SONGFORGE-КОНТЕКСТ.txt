@@ -1,14 +1,14 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (синхронизация версий/handoff; без путаницы 2.11.3)
+Обновлено: 15 июля 2026 (v2.11.21 — тема Бордо wine/scarlet)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода + прод: **2.11.20**
-  - backend/app.py, scripts/deploy-vps.sh, scripts/deploy-local.sh, README.md, AGENTS.md
-  - Прод проверен: curl https://sozdaipesnu.ru/api/health → "version":"2.11.20"
+Версия кода: **2.11.21** (запушена; на прод — update-now.sh когда удобно).
+  - backend/app.py, deploy-vps.sh, deploy-local.sh, README, AGENTS, COMMANDS
+  - v2.11.21: тема «Бордо» — убран розовый rose (#E891AD), акцент wine/scarlet #C94B5C + красноватые градиенты.
 
 Работает: SMTP / email-вход, Telegram, VK, GetPlatinum (создание платежа), CORS, webhook signature.
 
@@ -17,18 +17,19 @@
   UI optimistic по ?payment=success; реальное начисление — webhook.
   Диагностика: COMMANDS.txt → блок «АКТУАЛЬНОЕ СЕЙЧАС».
 
-Сделано недавно (не багфиксы версии):
+Сделано недавно:
   - Frontend rate limit: max 4 перегенерации текста; cooldown 10с на создание песни.
   - docs/BETA_PRELAUNCH_CHECKLIST.md
   - Аудит: webhook security v2.11.19, CORS v2.11.20 — закрыты.
+  - v2.11.21: палитра Бордо (wine, не dusty pink).
 
 Следующий шаг работы:
-  1) Диагностика webhook/orders на сервере (COMMANDS.txt ШАГ 3–6).
-  2) Фикс начисления + bump версии (2.11.21) + push + update-now.
+  1) Владелец: тест нот; по готовности — update-now → 2.11.21 и оценка темы.
+  2) Диагностика webhook/orders (COMMANDS) → фикс начисления → 2.11.22.
   3) Потом beta checklist (1% лимита).
 
 Правило версионирования (13.07):
-  Значимая правка = новая версия. Патч 2.11.20→2.11.21; минор → 2.12.0.
+  Значимая правка = новая версия. Патч 2.11.21→2.11.22; минор → 2.12.0.
   Всегда: backend/app.py, deploy-vps.sh, deploy-local.sh, README, COMMANDS, этот файл, AGENTS «Сейчас».
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

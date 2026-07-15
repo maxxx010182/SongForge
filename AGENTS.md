@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.20**
+**Версия в коде (истина):** **2.11.21**
 - `backend/app.py` (FastAPI + `/api/health`)
 - `scripts/deploy-vps.sh` (`EXPECTED_VERSION`)
 - `scripts/deploy-local.sh` (`EXPECTED_VERSION`)
@@ -47,8 +47,8 @@
 
 ## Сейчас (синхронизировано 15.07.2026)
 
-- Прод и код: **v2.11.20** (проверено `/api/health`).
+- Код: **v2.11.21** (тема Бордо: wine/scarlet вместо розового; ждёт деплоя). Прод до update-now может быть 2.11.20.
 - SMTP, email, TG, VK — работают.
 - Аудит: webhook GetPlatinum (v2.11.19) и CORS (v2.11.20) — закрыты.
-- Rate limiting: фронт есть (4 перегенерации текста + cooldown 10с на создание песни); backend slowapi — backlog.
-- **Активная проблема:** после оплаты GetPlatinum тост «Баланс обновлён», но нота не начисляется. Диагностика — `COMMANDS.txt` (блок АКТУАЛЬНОЕ).
+- Rate limiting: фронт есть; backend slowapi — backlog.
+- **Активная проблема:** после оплаты GetPlatinum тост «Баланс обновлён», но нота не начисляется. Диагностика — `COMMANDS.txt`.
