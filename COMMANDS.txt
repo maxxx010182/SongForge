@@ -1,14 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.26 — жанр из идеи (реп≠поп); AI-продюсер без дефолт Поп; enforce style
+Версия: 2.11.27 — жанр универсально из идеи (рок/джаз/реп/…); style enforce для всех
 
-=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.26: жанр/реп) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.27) ===
 
-# Что в 2.11.26:
-# - «Жанр реп» в тексте важнее дефолтного Поп с UI
-# - AI-продюсер не шлёт selectedGenre=Поп
-# - unified style: enforce hip-hop, срез Modern Pop leak
-# - бек-вокал / подпевки лучше парсятся
-# - модель V5_5; lyrics ~4 мин (2.11.25)
+# 2.11.27: не только рэп — любой жанр из описания пользователя
+# - дефолт UI «Поп» не затирает рок/джаз/металл/… из текста
+# - «жанр X» и ключевые слова; style head + срез чужого жанра
+# - AI-продюсер: genre/mood пустые (из идеи)
+# - V5_5; lyrics ~4 мин
 
 ssh root@195.19.20.245
 
@@ -16,21 +15,14 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.26 ===
+# Ждать: === Готово! v2.11.27 ===
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.26"
-
-# Тест: AI-продюсер + «Жанр реп, стиль Баста…» → style должен содержать hip-hop/rap, не Modern Pop
+# "version":"2.11.27"
 
 
-=== Ноты не пришли ===
+=== Ноты ===
 # docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
-
-sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
-
-pm2 logs songforge --lines 40 --nostream | grep -i -E 'getplatinum|mark_paid|verify'
-
 
 === ОБЫЧНОЕ ===
 pm2 status

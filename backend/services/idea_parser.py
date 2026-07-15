@@ -294,12 +294,10 @@ def parse_idea(idea: str) -> ParsedIdea:
     if not genre:
         genre_en, _ = infer_genre_from_idea(text)
         lower = text.lower()
-        if any(
-            k in lower
-            for k in ("рэп", "реп", "rap", "хип", "hip-hop", "hip hop", "баста")
-        ):
+        if any(k in lower for k in ("рэп", "реп", "rap", "хип-хоп", "хип хоп", "hip-hop", "hip hop")):
             genre = "Реп"
         elif genre_en and genre_en.lower() != "pop":
+            # Любой распознанный жанр (Rock, Jazz, Metal…) — не только реп
             genre = genre_en
     if genre:
         result.genre = genre
@@ -367,12 +365,18 @@ def apply_rap_lead_default(
 
 
 def _genres_conflict(ui_genre: str, idea_genre: str) -> bool:
-    """True если UI и идея указывают разные жанры (Поп vs Реп и т.п.)."""
+    """True если UI и идея указывают разные жанры (Поп vs Реп/Рок/Джаз…)."""
     if not ui_genre.strip() or not idea_genre.strip():
         return False
     ui_en, _ = resolve_genre(ui_genre, "")
     idea_en, _ = resolve_genre(idea_genre, "")
     return ui_en.lower() != idea_en.lower()
+
+
+def _is_sticky_default_pop(ui_genre: str) -> bool:
+    """Дефолт студии selectedGenre=Поп — не должен затирать жанр из текста идеи."""
+    g = ui_genre.strip().lower()
+    return g in {"поп", "pop", "modern pop"}
 
 
 def merge_parsed_with_request(
@@ -384,24 +388,28 @@ def merge_parsed_with_request(
     vocal_hint: str = "",
     backing_vocal: bool = False,
 ) -> tuple[str, str, str, str, bool, str, ParsedIdea]:
-    """Слияние UI и текста идеи.
+    """Слияние UI и текста идеи (универсально для любого жанра).
 
     Приоритет жанра:
-    1) Явное «жанр …» в идее (genre_inline_lock) — важнее чипа UI
-       (AI-продюсер часто шлёт дефолт «Поп» и ломал «Жанр реп»).
-    2) Чип/поле UI, если задано.
-    3) Жанр, вытащенный из ключевых слов идеи.
+    1) Явное «жанр …» в идее (genre_inline_lock) — важнее чипа UI.
+    2) Жанр из ключевых слов идеи (рок/джаз/реп/…) — важнее *дефолтного* Поп UI
+       (липкий selectedGenre=Поп не должен ломать описание пользователя).
+    3) Явный чип UI (не дефолт-поп, или совпадает с идеей) — для Расширенного режима.
+    4) Иначе — жанр из идеи / пусто.
     """
     ui_genre = genre.strip()
-    if parsed.genre_inline_lock and parsed.genre.strip():
-        if not ui_genre or _genres_conflict(ui_genre, parsed.genre):
-            effective_genre = parsed.genre
+    idea_genre = parsed.genre.strip()
+
+    if idea_genre and ui_genre and _genres_conflict(ui_genre, idea_genre):
+        if parsed.genre_inline_lock or _is_sticky_default_pop(ui_genre):
+            effective_genre = idea_genre
         else:
+            # Пользователь явно выбрал другой чип (Рок, Джаз…) — чип важнее
             effective_genre = ui_genre
     elif ui_genre:
         effective_genre = ui_genre
     else:
-        effective_genre = parsed.genre
+        effective_genre = idea_genre
 
     effective_artist = artist_ref.strip() if artist_ref.strip() else parsed.artist_ref
     effective_mood = mood.strip() if mood.strip() else parsed.mood

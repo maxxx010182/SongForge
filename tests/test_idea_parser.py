@@ -4,8 +4,8 @@ from backend.services.genre_resolver import infer_genre_from_idea
 from backend.services.idea_parser import merge_parsed_with_request, parse_idea
 
 
-def test_ui_genre_overrides_ballad_in_idea_text():
-    """Чип «Реп» важнее слова «баллада» в тексте (без явного «жанр …»)."""
+def test_ui_genre_chip_beats_ballad_keyword():
+    """Явный чип «Реп» (не дефолт-Поп) важнее слова «баллада» в тексте."""
     parsed = parse_idea("лирическая баллада про улицу, в духе Басты")
     genre, mood, artist, *_ = merge_parsed_with_request(
         parsed,

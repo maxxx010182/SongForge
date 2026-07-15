@@ -32,8 +32,9 @@ _GENRE_FROM_UI: dict[str, str] = {
     "фламенко": "Flamenco",
 }
 
+# Порядок важен: более специфичные жанры раньше общего Pop.
+# Ключи — подстроки в идее (RU + EN). Не завязано только на рэп.
 _GENRE_HINTS: list[tuple[str, str, tuple[str, ...]]] = [
-    # «реп» (е) — часто пишут без ё; «рэп» — с ё. Оба обязательны.
     (
         "Hip-Hop",
         "Modern Hip-Hop",
@@ -46,40 +47,64 @@ _GENRE_HINTS: list[tuple[str, str, tuple[str, ...]]] = [
             "хипхоп",
             "hip-hop",
             "hip hop",
-            "трэп",
-            "trap",
-            "drill",
-            "дрилл",
             "битмейк",
             "808",
-            "баста",  # частый RU-референс → hip-hop, не pop
         ),
     ),
-    # stadium/anthem НЕ здесь: иначе «гимн на стадионе + реп» уезжал в Rock
+    ("Trap", "Dark Trap", ("трэп", "trap")),
+    ("Drill", "UK Drill", ("дрилл", "drill")),
+    (
+        "Metal",
+        "Heavy Metal",
+        ("металл", "metal", "heavy metal", "дэт", "death metal", "блэк-метал"),
+    ),
     (
         "Rock",
-        "Rap Rock",
+        "Alternative Rock",
         (
             "rap-rock",
             "rap rock",
             "рок",
             "rock",
             "гитар",
-            "metal",
-            "метал",
             "панк",
             "punk",
+            "альтернатив",
         ),
     ),
-    ("Electronic", "Modern Electronic", ("электрон", "electronic", "edm", "техно", "techno", "хаус", "house", "синт", "synth")),
-    ("Ballad", "Emotional Ballad", ("баллад", "ballad", "лирич", "нежн", "трогательн")),
-    ("Lo-Fi", "Chill Lo-Fi", ("лофи", "lo-fi", "lofi", "чилл", "chill", "расслаб")),
-    ("R&B", "Modern R&B", ("r&b", "рнб", "р&б", "соул", "soul")),
+    (
+        "Electronic",
+        "Modern Electronic",
+        (
+            "электрон",
+            "electronic",
+            "edm",
+            "техно",
+            "techno",
+            "хаус",
+            "house",
+            "синтвейв",
+            "synthwave",
+            "дэнс",
+            "dance",
+        ),
+    ),
+    ("Ballad", "Emotional Ballad", ("баллад", "ballad", "лирическ")),
+    ("Lo-Fi", "Chill Lo-Fi", ("лофи", "lo-fi", "lofi", "чиллhop", "chillhop")),
+    ("R&B", "Modern R&B", ("r&b", "рнб", "р&б", "rnb", "соул", "soul")),
     ("Jazz", "Contemporary Jazz", ("джаз", "jazz", "свинг", "swing")),
-    ("Classical", "Orchestral", ("классик", "classical", "оркестр", "orchestr", "симфон")),
+    (
+        "Classical",
+        "Orchestral",
+        ("классик", "classical", "оркестр", "orchestr", "симфон", "cinematic score"),
+    ),
     ("Country", "Modern Country", ("кантри", "country")),
-    ("Metal", "Heavy Metal", ("металл", "metal", "heavy")),
-    ("Pop", "Modern Pop", ("поп", "pop", "радио", "хит")),
+    ("Chanson", "Russian Chanson", ("шансон", "chanson", "блатн")),
+    ("Folk", "Contemporary Folk", ("фолк", "folk", "народн")),
+    ("Blues", "Modern Blues", ("блюз", "blues")),
+    ("Reggae", "Roots Reggae", ("регги", "reggae", "ска", "ska")),
+    ("Funk", "Modern Funk", ("фанк", "funk")),
+    ("Pop", "Modern Pop", ("поп", "pop", "радиохит", "radio hit")),
 ]
 
 _MOOD_HINTS: list[tuple[str, tuple[str, ...]]] = [
@@ -110,6 +135,13 @@ SUBGENRE_BY_GENRE: dict[str, str] = {
     "House": "Deep House",
     "Drum and Bass": "Liquid DnB",
     "Ambient": "Cinematic Ambient",
+    "Chanson": "Russian Chanson",
+    "Folk": "Contemporary Folk",
+    "Blues": "Modern Blues",
+    "Reggae": "Roots Reggae",
+    "Funk": "Modern Funk",
+    "Punk": "Punk Rock",
+    "Soul": "Modern Soul",
 }
 
 
