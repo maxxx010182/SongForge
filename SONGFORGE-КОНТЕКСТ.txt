@@ -1,21 +1,27 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (v2.11.24 — hardening оплаты GP)
+Обновлено: 15 июля 2026 (v2.11.24 — ноты GP OK; runbook зафиксирован)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.24** (push; деплой update-now).
-  Оплата GP:
-  - Начисление ТОЛЬКО mark_paid по dealId из нашей БД (notes_amount заказа).
-  - Webhook: checksum с секретом ИЛИ (isSuccess + known order + IP GP + shape paymentData).
-  - IP: X-Real-IP только от localhost nginx (без spoof XFF).
-  - mark_paid атомарный (не удвоит ноты).
-  - UI: polling order status, без ложного «баланс обновлён».
-  - Зависший: 0bab3aa4-… → COMMANDS mark_paid.
+Версия кода: **2.11.24** (на проде; ноты после оплаты подтверждены).
 
-Активно: деплой 2.11.24 → ручное начисление если нужно → тест оплаты.
+Оплата GP — РАБОТАЕТ (15.07). Что сделали (v2.11.19→2.11.24):
+  - mark_paid: ноты ТОЛЬКО из notes_amount заказа в БД; атомарно pending→paid (без удвоения).
+  - Webhook verify: checksum с секретом ИЛИ fallback (isSuccess + known order UUID + IP GP 212.41.13.* + shape).
+  - IP: X-Real-IP только от localhost nginx (без spoof XFF).
+  - UI: polling /api/payment/orders/{id}; тост «зачислены» только при status=paid.
+
+Если ноты снова не пришли:
+  1) `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` — полный runbook
+  2) `COMMANDS.txt` — блоки «Ноты не пришли» / «Ручное начисление»
+  Диагностика: sqlite payment_orders + pm2 logs grep getplatinum|mark_paid|verify
+  Срочно: mark_paid(order_id=…) если pending и оплата в GP подтверждена.
+
+Активно: можно идти дальше по бете (см. NOTES_NEXT / BETA_PRELAUNCH_CHECKLIST).
+  Backlog рядом: rate limiting backend, guest trial, промпты/длина трека — не срочно.
 
 Правило версионирования: патч 2.11.24→2.11.25; всегда app.py + deploy + README + COMMANDS + СЕЙЧАС.
 

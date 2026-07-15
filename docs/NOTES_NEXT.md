@@ -1,24 +1,28 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.22** — фикс verify GetPlatinum + Бордо wine.
+> **Актуально (15.07.2026):** код **v2.11.24** — оплата GP, ноты OK.
 > Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
+> Runbook нот: `instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`
 
 ---
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.22 — webhook signature: multi-algo (raw strip + HMAC/SHA/MD5); лог raw preview при fail.
+**Код:** v2.11.24 на проде. **Ноты после GetPlatinum подтверждены.**
 
-**Причина бага нот:** `signature verification failed` → 400 (webhook доходил, mark_paid нет).
-
-**Следующий шаг:** update-now 2.11.22 → тест оплаты. Если fail — логи raw preview.
+**Баг нот (закрыт):**
+- Причина: strict checksum (2.11.19) → verify fail → mark_paid не вызывался; UI врал success по `?payment=success`.
+- Фикс: multi-algo signature (2.11.22) + atomic mark_paid + safe IP + fallback order+IP+shape + UI polling (2.11.24).
+- Документация на повтор: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` + блоки в `COMMANDS.txt`.
 
 **Статус:**
 - [x] CORS (v2.11.20), Бордо (v2.11.21)
-- [~] Webhook signature: v2.11.19 ломал прод; v2.11.22 — исправление, ждёт подтверждения на проде
-- [ ] Подтвердить начисление нот после 2.11.22
+- [x] Webhook + начисление нот GP (v2.11.24, подтверждено на проде 15.07)
+- [x] Runbook «ноты не пришли» зафиксирован
 - [~] Rate limiting backend — backlog
 - Чек-лист: `BETA_PRELAUNCH_CHECKLIST.md`
+
+**Следующее (по бете, не срочно):** backend rate limit, guest trial protection, concurrent generations, бэкапы/алерты.
 
 ---
 

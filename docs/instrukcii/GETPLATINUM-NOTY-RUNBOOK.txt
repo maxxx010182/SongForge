@@ -1,0 +1,209 @@
+SongForge — RUNBOOK: ноты после оплаты GetPlatinum
+====================================================
+Файл: docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
+Версия кода, с которой эта схема актуальна: **v2.11.24+**
+Дата фиксации: 15.07.2026 (ноты после фикса подтверждены на проде)
+
+Команды для копирования: корень `COMMANDS.txt` (блок «Ноты не пришли»).
+Код: `backend/services/payment_service.py` (mark_paid, verify_getplatinum_webhook).
+
+
+═══════════════════════════════════════
+1. КАК ДОЛЖНЫ НАЧИСЛЯТЬСЯ НОТЫ (норма)
+═══════════════════════════════════════
+
+1) Пользователь жмёт «Купить» → POST create-order
+   → в SQLite `payment_orders`: status=pending, notes_amount, price_rub, user_id
+   → GetPlatinum отдаёт formUrl → редирект на оплату
+
+2) Пользователь платит → GetPlatinum шлёт webhook:
+   POST /api/payment/webhook/getplatinum
+   Тело: dealId (= наш order UUID), isSuccess, paymentData, иногда checksum
+
+3) Сервер verify (см. §2) → mark_paid:
+   - UPDATE payment_orders SET status=paid WHERE id=? AND status=pending  (атомарно)
+   - users.balance += notes_amount **из нашей БД** (не из amount webhook!)
+   - повторный webhook: already_paid, ноты НЕ удваиваются
+
+4) UI после return (?payment=success&order=…):
+   - polling GET /api/payment/orders/{id}
+   - тост «зачислены» **только** когда status=paid
+   - НЕ верить только query-параметру success (это ломало UX до 2.11.24)
+
+
+═══════════════════════════════════════
+2. ПРОВЕРКА WEBHOOK (безопасность v2.11.24)
+═══════════════════════════════════════
+
+Доверие к начислению (одно из двух):
+
+A) checksum с секретом (HMAC/SHA/MD5 варианты в коде) — идеально
+
+B) fallback (если checksum не сошёлся) — ВСЕ условия сразу:
+   - isSuccess = true
+   - dealId есть в payment_orders (UUID создаём только мы)
+   - IP клиента из сети GetPlatinum (по умолчанию 212.41.13.*)
+   - тело «похоже» на GP (paymentData и/или offerId)
+
+IP: берём X-Real-IP **только** если peer = localhost (nginx).
+nginx обязан: proxy_set_header X-Real-IP $remote_addr;
+(без этого spoof через X-Forwarded-For)
+
+Ноты всегда из notes_amount заказа. Amount в webhook — только warning при mismatch.
+
+
+═══════════════════════════════════════
+3. ЧТО БЫЛО СЛОМАНО (история 14–15.07.2026)
+═══════════════════════════════════════
+
+Симптом:
+  Тост «Оплата прошла / баланс обновлён», ноты на балансе не появляются.
+
+Корневые причины (по слоям):
+
+1) v2.11.19 — строгий checksum HMAC без точного алгоритма GP
+   → webhook доходил, verify FAILED → 400 → mark_paid не вызывался
+
+2) UI (до 2.11.24) — optimistic success по ?payment=success
+   → показывал «баланс обновлён» даже без paid в БД
+
+3) Частичные фиксы:
+   - v2.11.22 multi-algo signature + raw preview в логах
+   - v2.11.24: atomic mark_paid, safe IP, fallback order+IP+shape, UI polling
+
+Итог 15.07: после v2.11.24 на проде ноты начислились (подтверждено).
+
+
+═══════════════════════════════════════
+4. СИМПТОМЫ → ЧТО ПРОВЕРЯТЬ
+═══════════════════════════════════════
+
+A) Оплата не открывается / нет formUrl
+   → docs/instrukcii/GETPLATINUM-DIAGNOSTIKA.txt + GETPLATINUM-ENV.txt
+   (это НЕ про ноты, а про init-payment-url)
+
+B) Оплатил, вернулся на сайт, тост «ждём / обновляем», ноты нет
+   → этот runbook §5–§7 (webhook / pending / mark_paid)
+
+C) В БД status=paid, но баланс не вырос
+   → почти невозможно при atomic mark_paid; смотреть users.balance и
+     paid_at; возможно смотришь не того user_id / другой аккаунт
+
+
+═══════════════════════════════════════
+5. ДИАГНОСТИКА (на сервере, по одной строке)
+═══════════════════════════════════════
+
+ssh root@195.19.20.245
+cd ~/SongForge
+
+# Версия (нужна 2.11.24+)
+curl -s https://sozdaipesnu.ru/api/health
+
+# Последние заказы
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, price_rub, created_at, paid_at FROM payment_orders ORDER BY created_at DESC LIMIT 8;"
+
+# Конкретный order_id (подставь UUID из URL ?order=… или из логов)
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, provider_payment_id, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
+
+# Баланс пользователя
+sqlite3 data/songforge.db "SELECT id, email, balance FROM users WHERE id='USER_ID';"
+
+# Логи webhook / verify / mark_paid
+pm2 logs songforge --lines 80 --nostream | grep -i -E 'getplatinum|mark_paid|accepted via|verify FAILED|signature'
+
+
+═══════════════════════════════════════
+6. ЧТО ЗНАЧАТ ЛОГИ
+═══════════════════════════════════════
+
+mark_paid OK order=… notes=+N
+  → всё хорошо, ноты начислены
+
+GetPlatinum webhook signature OK
+  → checksum совпал (путь A)
+
+checksum mismatch, accepted via known-order+IP+shape
+  → fallback (путь B), это НОРМА если ноты пришли
+
+GetPlatinum verify FAILED: …
+  → webhook отвергнут, mark_paid не было
+  Смотри флаги: isSuccess / order_known / ip / shape
+  - order_known=False → dealId не наш UUID (чужой/битый)
+  - ip=False → webhook не с IP GP или nginx без X-Real-IP
+  - shape=False → тело не похоже на GP
+
+signature verification failed (старые версии) / 400
+  → до 2.11.24: обновить код; сейчас должен сработать fallback
+
+init-payment-url HTTP …
+  → проблема создания ссылки, не webhook
+
+
+═══════════════════════════════════════
+7. СРОЧНОЕ РУЧНОЕ НАЧИСЛЕНИЕ (если заказ pending)
+═══════════════════════════════════════
+
+Только если:
+  - пользователь реально оплатил (чек GP / ЛК GetPlatinum / payment id),
+  - в payment_orders status ещё **pending**,
+  - notes_amount корректный.
+
+# 1) Проверить заказ
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders WHERE id='ORDER_UUID';"
+
+# 2) Начислить (идемпотентно: повтор не удвоит)
+./venv/bin/python -c "from backend.services.payment_service import PaymentService; print(PaymentService().mark_paid(order_id='ORDER_UUID', provider_payment_id='GP_PAYMENT_ID'))"
+
+# 3) Проверить
+sqlite3 data/songforge.db "SELECT id, status, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
+sqlite3 data/songforge.db "SELECT balance FROM users WHERE id='USER_ID';"
+
+Если already_paid / notes_added=0 — уже было paid, повторно не трогать.
+provider_payment_id — id платежа в GP (если есть); можно пустую строку '' если неизвестен.
+
+
+═══════════════════════════════════════
+8. ПОСЛЕ РУЧНОГО FIX — ПОЧЕМУ WEBHOOK НЕ СРАБОТАЛ
+═══════════════════════════════════════
+
+Чеклист (чтобы не чинить вручную каждый раз):
+
+[ ] health version >= 2.11.24
+[ ] nginx: X-Real-IP $remote_addr на location API
+[ ] webhook URL в GP: https://sozdaipesnu.ru/api/payment/webhook/getplatinum
+[ ] в логах есть POST webhook (или verify FAILED с деталями)
+[ ] GETPLATINUM_API_KEY / ACCOUNT в .env (для init и checksum)
+[ ] IP GP не сменился (если fallback ip=False — расширить whitelist в коде)
+
+Если webhook вообще не приходит — тикет в GetPlatinum / проверка notificationUrl в init.
+
+
+═══════════════════════════════════════
+9. ФАЙЛЫ КОДА (куда смотреть ассистенту)
+═══════════════════════════════════════
+
+backend/services/payment_service.py
+  - mark_paid
+  - verify_getplatinum_webhook
+  - _verify_getplatinum_checksum
+  - _handle_getplatinum_webhook
+  - _client_ip_allowed
+
+backend/app.py — роут webhook + client IP
+index.html — polling order status после ?payment=success
+
+НЕ доверять amount из webhook для notes_amount.
+НЕ показывать «баланс обновлён» без status=paid в API.
+
+
+═══════════════════════════════════════
+10. БЫСТРЫЙ ЧЕКЛИСТ «ОПЛАТА СЛОМАЛАСЬ СНОВА»
+═══════════════════════════════════════
+
+1. curl health → версия
+2. sqlite pending/paid последние заказы
+3. pm2 logs grep getplatinum|mark_paid|verify
+4. Если pending + оплата подтверждена → mark_paid (§7)
+5. Починить причину webhook (§8), не оставлять только ручной фикс
+6. Обновить COMMANDS.txt + этот runbook если поменялся алгоритм GP

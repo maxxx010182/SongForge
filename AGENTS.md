@@ -36,6 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.24:** hardening оплаты GP (atomic mark_paid, safe IP, UI polling, fallback order+IP+shape).
-- Деплой + при необходимости mark_paid для `0bab3aa4-…`.
+- **v2.11.24:** оплата GP, ноты на проде OK.
+- Runbook при повторе: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` + `COMMANDS.txt` (блоки «Ноты не пришли» / mark_paid).
+- Дальше: бета-чек-лист / NOTES_NEXT (не срочно).
 

@@ -25,6 +25,8 @@ SongForge — оглавление инструкций
 
 ОПЛАТА
 ------
+  GETPLATINUM-NOTY-RUNBOOK.txt   — ноты не пришли / mark_paid / логи (ГЛАВНЫЙ runbook 15.07)
+  GETPLATINUM-DIAGNOSTIKA.txt    — не открывается formUrl / init-payment
   GETPLATINUM-PREFIX-SEYCHAS.txt — prefix в .env + тест (СЕЙЧАС)
   GETPLATINUM-ENV.txt
   ВАЖНО при подключении к платежной системе.txt
