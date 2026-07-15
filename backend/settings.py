@@ -40,6 +40,18 @@ SHOWCASE_HOURS = 24
 PREVIEW_LIMIT_SEC = 30
 PREVIEW_MAX_BYTES = 500_000
 
+# Бета-защита (без Redis; in-memory + SQLite)
+MAX_CONCURRENT_GENERATIONS = int(os.getenv("MAX_CONCURRENT_GENERATIONS", "3"))
+MAX_CONCURRENT_PER_USER = int(os.getenv("MAX_CONCURRENT_PER_USER", "1"))
+MAX_TRIAL_PER_IP_PER_DAY = int(os.getenv("MAX_TRIAL_PER_IP_PER_DAY", "3"))
+# rate limit: запросов за окно
+RATE_AUTH_IP_LIMIT = int(os.getenv("RATE_AUTH_IP_LIMIT", "8"))
+RATE_AUTH_IP_WINDOW_SEC = int(os.getenv("RATE_AUTH_IP_WINDOW_SEC", "900"))  # 15 мин
+RATE_GEN_IP_LIMIT = int(os.getenv("RATE_GEN_IP_LIMIT", "12"))
+RATE_GEN_IP_WINDOW_SEC = int(os.getenv("RATE_GEN_IP_WINDOW_SEC", "60"))
+RATE_MUSIC_IP_LIMIT = int(os.getenv("RATE_MUSIC_IP_LIMIT", "6"))
+RATE_MUSIC_IP_WINDOW_SEC = int(os.getenv("RATE_MUSIC_IP_WINDOW_SEC", "60"))
+
 SITE_URL = os.getenv("SITE_URL", "http://195.19.20.245:8000").rstrip("/")
 PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
 GETPLATINUM_ACCOUNT = os.getenv("GETPLATINUM_ACCOUNT", "").strip()

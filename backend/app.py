@@ -67,11 +67,13 @@ from backend.services.telegram_auth import verify_telegram_login
 from backend.services.vk_auth import VkAuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
+from backend.services.beta_guards import BetaGuards
 from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
 from backend.services.job_queue import JobQueue
 from backend.services.history import HistoryService
 from backend.services.music_poll_service import MusicPollService
+from backend.services.rate_limit import limiter
 from backend.services.storage_service import StorageService
 from backend.services.payment_service import PaymentService
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
@@ -83,6 +85,12 @@ from backend.settings import (
     GUEST_GENERATION_LIMIT,
     LEGACY_API_ENABLED,
     PAYMENT_PROVIDER,
+    RATE_AUTH_IP_LIMIT,
+    RATE_AUTH_IP_WINDOW_SEC,
+    RATE_GEN_IP_LIMIT,
+    RATE_GEN_IP_WINDOW_SEC,
+    RATE_MUSIC_IP_LIMIT,
+    RATE_MUSIC_IP_WINDOW_SEC,
     ROOT_DIR,
     MUSIC_PROVIDER,
     SITE_URL,
@@ -108,6 +116,7 @@ vk_auth_service = VkAuthService()
 cabinet = CabinetService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
+beta_guards = BetaGuards()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
@@ -115,7 +124,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.27")
+app = FastAPI(title="SongForge", version="2.11.28")
 
 app.add_middleware(
     CORSMiddleware,
@@ -182,12 +191,48 @@ def get_optional_user(
 
 
 def _client_ip(request: Request) -> str:
+    """IP клиента: X-Real-IP только от localhost nginx (без spoof XFF снаружи)."""
+    peer = request.client.host if request.client else ""
+    real_ip = (request.headers.get("x-real-ip") or "").strip()
+    if peer in {"127.0.0.1", "::1", "localhost"} and real_ip:
+        return real_ip
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
+    if forwarded and peer in {"127.0.0.1", "::1", "localhost"}:
         return forwarded.split(",")[0].strip()
-    if request.client:
-        return request.client.host
-    return ""
+    return peer or ""
+
+
+def _rate_or_429(key: str, *, limit: int, window_sec: int, detail: str) -> None:
+    if not limiter.allow(key, limit=limit, window_sec=float(window_sec)):
+        raise HTTPException(status_code=429, detail=detail)
+
+
+def _assert_generation_capacity(*, user: dict | None) -> None:
+    user_id = user["id"] if user else ""
+    beta_guards.assert_slot_available(
+        count_generating=history.count_generating(),
+        count_user_generating=history.count_generating_for_user(user_id)
+        if user_id
+        else 0,
+    )
+
+
+def _assert_gen_rate(request: Request, bucket: str = "gen") -> None:
+    ip = _client_ip(request) or "unknown"
+    if bucket == "music":
+        _rate_or_429(
+            f"music:{ip}",
+            limit=RATE_MUSIC_IP_LIMIT,
+            window_sec=RATE_MUSIC_IP_WINDOW_SEC,
+            detail="Слишком много запусков песен. Подождите минуту.",
+        )
+    else:
+        _rate_or_429(
+            f"gen:{ip}",
+            limit=RATE_GEN_IP_LIMIT,
+            window_sec=RATE_GEN_IP_WINDOW_SEC,
+            detail="Слишком много запросов. Подождите немного.",
+        )
 
 
 async def require_admin_user(
@@ -418,7 +463,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.27",
+        "version": "2.11.28",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1036,7 +1081,21 @@ async def auth_providers():
 
 
 @app.post("/api/auth/email/request")
-async def auth_email_request(req: EmailAuthRequest):
+async def auth_email_request(req: EmailAuthRequest, request: Request):
+    ip = _client_ip(request) or "unknown"
+    _rate_or_429(
+        f"auth_ip:{ip}",
+        limit=RATE_AUTH_IP_LIMIT,
+        window_sec=RATE_AUTH_IP_WINDOW_SEC,
+        detail="Слишком много запросов кода. Подождите 15 минут.",
+    )
+    email_key = (req.email or "").strip().lower()
+    _rate_or_429(
+        f"auth_email:{email_key}",
+        limit=5,
+        window_sec=3600,
+        detail="На этот email уже отправляли код. Подождите час или проверьте почту.",
+    )
     try:
         code = auth_service.request_email_code(req.email)
         expose_code = _expose_email_auth_code()
@@ -1305,10 +1364,18 @@ async def list_payment_packages():
 @app.post("/api/payment/create-order", response_model=PaymentOrderResponse)
 async def create_payment_order(
     req: CreatePaymentOrderRequest,
+    request: Request,
     user: dict | None = Depends(get_optional_user),
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    ip = _client_ip(request) or "unknown"
+    _rate_or_429(
+        f"pay:{ip}",
+        limit=10,
+        window_sec=300,
+        detail="Слишком много попыток оплаты. Подождите несколько минут.",
+    )
     try:
         order = payment_service.create_order(
             user_id=user["id"],
@@ -1485,9 +1552,11 @@ async def download_full_audio(
 @app.post("/api/produce", response_model=ProduceResponse)
 async def produce_song(
     req: ProduceRequest,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
+    _assert_gen_rate(request, "gen")
     try:
         _assert_can_generate(user=user, guest_id=guest_id)
     except ValueError as exc:
@@ -1523,14 +1592,23 @@ async def produce_song(
 @app.post("/api/create-song", response_model=CreateSongResponse)
 async def create_song(
     req: CreateSongRequest,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
+    _assert_gen_rate(request, "music")
     mode = ""
     paid_user_id: str | None = None
     balance: int | None = None
     try:
+        _assert_generation_capacity(user=user)
+        # Пробная: лимит по IP (несколько аккаунтов с одной сети)
+        mode_peek = generation_quota.resolve_mode(user=user, guest_id=guest_id)
+        if mode_peek == "trial":
+            beta_guards.assert_trial_ip_allowed(_client_ip(request))
         mode, balance = _begin_generation(user=user, guest_id=guest_id)
+        if mode == "trial":
+            beta_guards.record_trial_ip(_client_ip(request))
         if user and mode == "paid":
             paid_user_id = user["id"]
     except ValueError as exc:
@@ -1590,9 +1668,11 @@ async def create_song(
 @app.post("/api/music/start")
 async def start_music(
     req: MusicStartRequest,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
+    _assert_gen_rate(request, "music")
     production_id = (req.production_id or "").strip()
     if production_id:
         production_id = await run_in_threadpool(
@@ -1603,11 +1683,17 @@ async def start_music(
     paid_user_id: str | None = None
     balance: int | None = None
     try:
+        _assert_generation_capacity(user=user)
+        mode_peek = generation_quota.resolve_mode(user=user, guest_id=guest_id)
+        if mode_peek == "trial":
+            beta_guards.assert_trial_ip_allowed(_client_ip(request))
         mode, balance = _begin_generation(
             user=user,
             guest_id=guest_id,
             production_id=production_id or None,
         )
+        if mode == "trial":
+            beta_guards.record_trial_ip(_client_ip(request))
         if user and mode == "paid":
             paid_user_id = user["id"]
     except ValueError as exc:
@@ -1842,9 +1928,11 @@ async def consultant_chat(
 @app.post("/api/generate-lyrics")
 async def generate_lyrics_endpoint(
     req: LyricsRequest,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
+    _assert_gen_rate(request, "gen")
     try:
         _assert_can_generate(user=user, guest_id=guest_id)
     except ValueError as exc:
@@ -1870,8 +1958,10 @@ async def generate_lyrics_endpoint(
 @app.post("/api/generate-style")
 async def generate_style_endpoint(
     req: StyleRequest,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
 ):
+    _assert_gen_rate(request, "gen")
     idea = (req.idea or req.custom_description or "Song").strip()
     try:
         plan = prompt_builder.build_plan(

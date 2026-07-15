@@ -231,6 +231,20 @@ class HistoryService:
             ).fetchone()
         return int(row["c"]) if row else 0
 
+    def count_generating_for_user(self, user_id: str) -> int:
+        if not (user_id or "").strip():
+            return 0
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM generations
+                WHERE status = 'generating' AND user_id = ?
+                """,
+                (user_id,),
+            ).fetchone()
+        return int(row["c"]) if row else 0
+
     def update_task_result(
         self,
         *,
