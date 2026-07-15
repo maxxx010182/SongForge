@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.33**
+**Версия в коде (истина):** **2.11.34**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.33:** Kie для текстов (`LLM_PROVIDER=kie`), балансы Kie+sunoapi в `/admin`.
-- `docs/instrukcii/LLM-KIE-PROSTO.txt`. Деплой + .env KIE_API_KEY.
+- **v2.11.34:** CSS-эквалайзер в плеере; VseGPT/openai_compat удалены (kie + yandex).
+- Kie на проде; деплой update-now 2.11.34.
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 

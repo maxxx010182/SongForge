@@ -1,64 +1,31 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.33 — Kie LLM + балансы в админке
+Версия: 2.11.34 — эквалайзер плеера + без VseGPT
 
-=== АКТУАЛЬНОЕ: ВКЛЮЧИТЬ KIE (после деплоя) ===
+=== АКТУАЛЬНОЕ (v2.11.34) ===
 
-# Уже в SSH на сервере? Если нет:
-ssh root@195.19.20.245
-
-# Папка проекта:
-cd ~/SongForge
-
-# Открыть файл .env в редакторе (скопируй ЭТУ строку):
-nano ~/SongForge/.env
-
-# --- Внутри nano ---
-# Стрелками вниз дойдите до конца файла (или найдите строки LLM / YANDEX).
-# Добавьте в КОНЕЦ файла (или замените старые LLM_*) такие 4 строки:
-#
-# LLM_PROVIDER=kie
-# KIE_API_KEY=вставьте_свой_ключ_kie_сюда
-# LLM_MODEL_PRO=gemini-2.5-pro
-# LLM_MODEL_LITE=gemini-2.5-flash
-#
-# Ключ НЕ присылайте в чат. Только на сервер.
-#
-# Сохранить в nano:
-#   1) Ctrl+O   (буква O)
-#   2) Enter
-#   3) Ctrl+X   (выйти)
-# --- конец nano ---
-
-# Применить настройки (скопируй строку):
-pm2 restart songforge --update-env
-
-# Проверка:
-curl -s https://sozdaipesnu.ru/api/health
-# нужно: "version":"2.11.33"  и  "llm_provider":"kie"
-
-# Админка балансы: https://sozdaipesnu.ru/admin
-
-
-=== ЕСЛИ nano НЕ ПОНЯТЕН — посмотреть файл (ключ будет виден на экране) ===
-
-# Только прочитать (выход: q):
-less ~/SongForge/.env
-
-# Есть ли уже KIE в файле?
-grep -n "LLM_PROVIDER\|KIE_API\|YANDEX" ~/SongForge/.env
-
-
-=== ДЕПЛОЙ КОДА (если ещё не делали) ===
-
+# Деплой
 ssh root@195.19.20.245
 
 cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.34"  "llm_provider":"kie"
+
+# .env уже с Kie — менять не нужно (только если ключ ещё не вписан):
+# nano ~/SongForge/.env
+# LLM_PROVIDER=kie
+# KIE_API_KEY=...
+# LLM_MODEL_PRO=gemini-2.5-pro
+# LLM_MODEL_LITE=gemini-2.5-flash
+# Ctrl+O Enter, Ctrl+X
+# pm2 restart songforge --update-env
+
+# Проверка: play любой трек — эквалайзер на обложке и в мини-плеере
+
 
 === ОБЫЧНОЕ ===
-
 pm2 status
 pm2 restart songforge --update-env
 pm2 logs songforge --lines 80

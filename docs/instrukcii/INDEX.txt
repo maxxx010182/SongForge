@@ -17,7 +17,6 @@ SongForge — оглавление инструкций
 СЕЙЧАС АКТУАЛЬНО
 ----------------
   LLM-KIE-PROSTO.txt           — тексты через Kie + балансы в админке
-  LLM-VSEGPT-PROSTO.txt        — альтернатива VseGPT
   SUPPORT-OWNER-PROSTO.txt     — support@ простыми словами (ВЛАДЕЛЬЦУ)
   SUPPORT-EMAIL-SEYCHAS.txt    — создать ящик support@
   FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS

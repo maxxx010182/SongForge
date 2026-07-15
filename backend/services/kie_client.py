@@ -63,7 +63,7 @@ class KieClient:
         slug = _slugify(key)
         if self._is_kie_gemini(slug):
             return slug
-        # leftover deepseek/... из VseGPT → fallback LITE
+        # неизвестный id → LITE
         return _DEFAULT_SLUGS["lite"]
 
     @staticmethod
