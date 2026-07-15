@@ -42,8 +42,6 @@ PREVIEW_MAX_BYTES = 500_000
 
 SITE_URL = os.getenv("SITE_URL", "http://195.19.20.245:8000").rstrip("/")
 PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()
-PRODAMUS_SECRET = os.getenv("PRODAMUS_SECRET", "")
-PRODAMUS_SHOP_ID = os.getenv("PRODAMUS_SHOP_ID", "")
 GETPLATINUM_ACCOUNT = os.getenv("GETPLATINUM_ACCOUNT", "").strip()
 GETPLATINUM_API_KEY = os.getenv("GETPLATINUM_API_KEY", "").strip()
 GETPLATINUM_VAT = os.getenv("GETPLATINUM_VAT", "none").strip() or "none"

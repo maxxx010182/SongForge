@@ -1,4 +1,4 @@
-"""Универсальные платежи: заказ в БД + адаптер провайдера (getplatinum / stub / …)."""
+"""Платежи: заказ в БД + GetPlatinum (прод) / stub (локальные тесты)."""
 
 from __future__ import annotations
 
@@ -20,8 +20,6 @@ from backend.settings import (
     GETPLATINUM_POSITION_PREFIX,
     GETPLATINUM_VAT,
     PAYMENT_PROVIDER,
-    PRODAMUS_SECRET,
-    PRODAMUS_SHOP_ID,
     SITE_URL,
 )
 
@@ -185,9 +183,6 @@ class PaymentService:
                 raise ValueError("order_id обязателен")
             return self.mark_paid(order_id=order_id, provider_payment_id="stub")
 
-        if provider == "prodamus":
-            return self._handle_prodamus_webhook(payload)
-
         if provider == "getplatinum":
             return self._handle_getplatinum_webhook(payload)
 
@@ -205,13 +200,6 @@ class PaymentService:
     ) -> str | None:
         if provider == "stub":
             return None
-        if provider == "prodamus":
-            if not PRODAMUS_SHOP_ID:
-                return None
-            return (
-                f"{SITE_URL}/pay/checkout?order_id={order_id}"
-                f"&provider=prodamus&amount={package['price_rub']}"
-            )
         if provider == "getplatinum":
             return self._init_getplatinum_payment(
                 order_id=order_id,
@@ -349,7 +337,7 @@ class PaymentService:
     def verify_getplatinum_webhook(self, raw_body: bytes, payload: dict) -> bool:
         """Проверка подписи GetPlatinum webhook.
 
-        Официальный алгоритм в публичной доке размыт; v2.11.19 угадал HMAC «как Prodamus»
+        Официальный алгоритм в публичной доке размыт; v2.11.19 угадал HMAC
         и на реальных webhook'ах начал отдавать 400 → ноты не начислялись.
         Пробуем несколько канонических вариантов (тело без checksum + API key).
         """
@@ -514,30 +502,6 @@ class PaymentService:
             or ""
         )
         return self.mark_paid(order_id=str(order_id), provider_payment_id=payment_id)
-
-    def _handle_prodamus_webhook(self, payload: dict) -> dict | None:
-        if not PRODAMUS_SECRET:
-            raise ValueError("PRODAMUS_SECRET не настроен")
-
-        signature = payload.pop("signature", "")
-        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        expected = hmac.new(
-            PRODAMUS_SECRET.encode(),
-            body.encode(),
-            hashlib.sha256,
-        ).hexdigest()
-        if not hmac.compare_digest(signature, expected):
-            raise ValueError("Неверная подпись webhook")
-
-        order_id = payload.get("order_id") or payload.get("order_num")
-        if not order_id:
-            raise ValueError("order_id не найден в webhook")
-        if payload.get("payment_status") not in {"success", "paid", "completed"}:
-            return None
-        return self.mark_paid(
-            order_id=str(order_id),
-            provider_payment_id=str(payload.get("payment_id", "")),
-        )
 
     @staticmethod
     def is_getplatinum_configured() -> bool:
