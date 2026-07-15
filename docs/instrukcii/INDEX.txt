@@ -1,26 +1,27 @@
 SongForge — оглавление инструкций
 ==================================
 Папка: docs/instrukcii/
-Обновлено: 15.07.2026 (v2.11.30)
+Обновлено: 15.07.2026 (v2.11.31 support)
 
 КОМАНДЫ СЕРВЕРА (копировать по одной строке):
   COMMANDS.txt  — в корне проекта (SSH, деплой, pm2, backup)
 
 ГЛАВНЫЕ ГАЙДЫ (docs/)
 ---------------------
-  public/USER_GUIDE.md           — пользователи / бета-тестеры
-  internal/DEVELOPER_GUIDE.md    — разработка, деплой, ops
-  internal/ADMIN_GUIDE.md        — /admin, поддержка, ноты
-  biznes/ЭКОНОМИКА.txt           — деньги + §11 промо для тестеров
-  biznes/ЭКОНОМИКА.xlsx          — Excel (лист Промо)
+  public/USER_GUIDE.md              — пользователи / бета
+  internal/DEVELOPER_GUIDE.md       — разработка, деплой
+  internal/ADMIN_GUIDE.md           — /admin
+  internal/SUPPORT-AGENT-SCRIPT.txt — скрипт AI-агента поддержки
+  biznes/ЭКОНОМИКА.txt / .xlsx      — деньги, промо
 
 СЕЙЧАС АКТУАЛЬНО
 ----------------
-  FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS с нуля
+  SUPPORT-OWNER-PROSTO.txt     — support@ простыми словами (ВЛАДЕЛЬЦУ)
+  SUPPORT-EMAIL-SEYCHAS.txt    — создать ящик support@
+  FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS
   DEPLOY-SEYCHAS.txt           — если update-now падает
-  ПРОВЕРКА-ПОСЛЕ-ДЕПЛОЯ.txt    — чеклист после обновления
-  GETPLATINUM-NOTY-RUNBOOK.txt — ноты не пришли / mark_paid
-  GETPLATINUM-PISMO-TELEFON.txt — текст в ТП GP (телефон)
+  GETPLATINUM-NOTY-RUNBOOK.txt — ноты не пришли
+  GETPLATINUM-PISMO-TELEFON.txt
 
 ПОЧТА И ВХОД
 ------------
