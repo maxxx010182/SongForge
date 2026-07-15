@@ -43,11 +43,15 @@ curl http://127.0.0.1:8000/api/health
 | Файл | Назначение |
 |------|------------|
 | `COMMANDS.txt` | Команды SSH/деплой/pm2 (латиница) |
-| `docs/instrukcii/INDEX.txt` | Оглавление всех инструкций |
-| `SONGFORGE-КОНТЕКСТ.txt` | Статус, планы, тексты UI |
-| `docs/NOTES_NEXT.md` | Технический backlog |
-| `docs/ARCHITECTURE.md` | Архитектура |
-| `AGENTS.md` | Правила для ассистента Cursor |
+| `docs/instrukcii/INDEX.txt` | Оглавление инструкций |
+| `docs/public/USER_GUIDE.md` | Пользователи / бета-тестеры |
+| `docs/internal/DEVELOPER_GUIDE.md` | Разработка, деплой, новый VPS |
+| `docs/internal/ADMIN_GUIDE.md` | Админка, поддержка |
+| `docs/instrukcii/FULL-DEPLOY-FROM-SCRATCH.txt` | Сервер с нуля |
+| `docs/biznes/ЭКОНОМИКА.txt` + `.xlsx` | Экономика, промо-скидки (§11 / лист Промо) |
+| `SONGFORGE-КОНТЕКСТ.txt` | Handoff ассистенту |
+| `docs/NOTES_NEXT.md` | Backlog |
+| `AGENTS.md` | Правила для Cursor |
 
 ## Структура
 

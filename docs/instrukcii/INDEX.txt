@@ -1,34 +1,44 @@
 SongForge — оглавление инструкций
 ==================================
 Папка: docs/instrukcii/
+Обновлено: 15.07.2026 (v2.11.30)
 
 КОМАНДЫ СЕРВЕРА (копировать по одной строке):
-  COMMANDS.txt  — в корне проекта, латиница (SSH, деплой, pm2)
+  COMMANDS.txt  — в корне проекта (SSH, деплой, pm2, backup)
 
-СЕЙЧАС АКТУАЛЬНО (июль 2026)
-----------------------------
-  DEPLOY-SEYCHAS.txt           — деплой если update-now падает
-  GETPLATINUM-ENV.txt          — ключи оплаты в .env на VPS
-  GOOGLE-POISK.txt             — почему нет в Google, Search Console
-  ПРОВЕРКА-ПОСЛЕ-ДЕПЛОЯ.txt    — чеклист после обновления сайта
+ГЛАВНЫЕ ГАЙДЫ (docs/)
+---------------------
+  public/USER_GUIDE.md           — пользователи / бета-тестеры
+  internal/DEVELOPER_GUIDE.md    — разработка, деплой, ops
+  internal/ADMIN_GUIDE.md        — /admin, поддержка, ноты
+  biznes/ЭКОНОМИКА.txt           — деньги + §11 промо для тестеров
+  biznes/ЭКОНОМИКА.xlsx          — Excel (лист Промо)
+
+СЕЙЧАС АКТУАЛЬНО
+----------------
+  FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS с нуля
+  DEPLOY-SEYCHAS.txt           — если update-now падает
+  ПРОВЕРКА-ПОСЛЕ-ДЕПЛОЯ.txt    — чеклист после обновления
+  GETPLATINUM-NOTY-RUNBOOK.txt — ноты не пришли / mark_paid
+  GETPLATINUM-PISMO-TELEFON.txt — текст в ТП GP (телефон)
 
 ПОЧТА И ВХОД
 ------------
-  SMTP-DIAGNOSTIKA.txt         — если код не уходит на email
-  REG-RU-DNS-ЗАПИСИ.txt        — MX, SPF, DKIM, DMARC + SMTP в .env
-  REG-RU-ПОЧТА-ISPmanager.txt  — настройка ящика noreply@ на sm42
-  SUPPORT-EMAIL-SEYCHAS.txt    — ящик support@ для поддержки (СЕЙЧАС)
-  ВХОД-ПОЧТА-ПО-ШАГАМ.txt      — вход по email по шагам
-  VK-ENV-SEYCHAS.txt           — VK: .env + pm2 + проверка (СЕЙЧАС)
-  ВХОД-EMAIL-TG-VK.txt         — Email, Telegram, VK (полная инструкция)
-  VPS-SMTP-ЗАПРОС-В-ПОДДЕРЖКУ.txt — шаблон тикета REG.RU (архив)
+  SMTP-DIAGNOSTIKA.txt
+  REG-RU-DNS-ЗАПИСИ.txt
+  REG-RU-ПОЧТА-ISPmanager.txt
+  SUPPORT-EMAIL-SEYCHAS.txt
+  ВХОД-ПОЧТА-ПО-ШАГАМ.txt
+  VK-ENV-SEYCHAS.txt
+  ВХОД-EMAIL-TG-VK.txt
 
 ОПЛАТА
 ------
-  GETPLATINUM-NOTY-RUNBOOK.txt   — ноты не пришли / mark_paid / логи (ГЛАВНЫЙ runbook 15.07)
-  GETPLATINUM-DIAGNOSTIKA.txt    — не открывается formUrl / init-payment
-  GETPLATINUM-PREFIX-SEYCHAS.txt — prefix в .env + тест (СЕЙЧАС)
+  GETPLATINUM-NOTY-RUNBOOK.txt
+  GETPLATINUM-DIAGNOSTIKA.txt
+  GETPLATINUM-PREFIX-SEYCHAS.txt
   GETPLATINUM-ENV.txt
+  GETPLATINUM-PISMO-TELEFON.txt
   ВАЖНО при подключении к платежной системе.txt
 
 ХРАНИЛИЩЕ S3
@@ -38,20 +48,22 @@ SongForge — оглавление инструкций
 
 АДМИНКА
 -------
-  ADMIN-VHOD.txt               — /admin, bootstrap email
+  ADMIN-VHOD.txt
 
 ПЛАН И РЕФЕРЕНС
 ---------------
-  ЗАПУСК-ПЛАН.txt               — план запуска и бета
+  ЗАПУСК-ПЛАН.txt
+  BETA: docs/BETA_PRELAUNCH_CHECKLIST.md
   ВИДЕО-ПРЕЗЕНТАЦИЯ.txt
-  Инструкция.txt               — общая инструкция проекта
+  Инструкция.txt
   Руководство по интеграции апи суно.txt
 
-КОНТЕКСТ ДЛЯ АССИСТЕНТА (не инструкции)
----------------------------------------
-  SONGFORGE-КОНТЕКСТ.txt       — корень проекта
-  docs/NOTES_NEXT.md           — технический backlog
+КОНТЕКСТ ДЛЯ АССИСТЕНТА
+-----------------------
+  SONGFORGE-КОНТЕКСТ.txt
+  docs/NOTES_NEXT.md
+  AGENTS.md
 
-БИЗНЕС-ДОКУМЕНТЫ
------------------
-  docs/biznes/                 — оферта PDF, план продвижения
+БИЗНЕС
+------
+  docs/biznes/                 — оферта, экономика, продвижение

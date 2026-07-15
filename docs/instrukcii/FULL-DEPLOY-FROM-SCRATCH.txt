@@ -1,0 +1,192 @@
+SongForge — развёртывание на НОВОМ сервере с нуля
+==================================================
+Версия документа: 15.07.2026 (под продукт 2.11.30+)
+Команды: по одной строке. Пароли/ключи в чат не писать.
+
+Прод сейчас: root@195.19.20.245 , сайт https://sozdaipesnu.ru
+Этот файл — если переносите на ДРУГОЙ VPS или поднимаете копию.
+
+
+═══════════════════════════════════════
+A. ЧТО НУЖНО ЗАРАНЕЕ
+═══════════════════════════════════════
+
+• VPS Ubuntu 22.04+ (рекоменд. 2+ ГБ RAM, 20+ ГБ диск)
+• Домен, DNS A → IP сервера
+• Аккаунты: GitHub repo, Yandex Cloud GPT, ApiPass и/или sunoapi.org,
+  GetPlatinum, REG.RU (почта/S3 опционально), Telegram Bot / VK ID опционально
+• Email для ADMIN_BOOTSTRAP_EMAILS
+
+
+═══════════════════════════════════════
+B. СИСТЕМА
+═══════════════════════════════════════
+
+# 1. Обновление
+sudo apt update && sudo apt upgrade -y
+
+# 2. Пакеты
+sudo apt install -y python3 python3-venv python3-pip git nginx certbot
+sudo apt install -y python3-certbot-nginx redis-server sqlite3 curl
+
+# 3. Node + pm2 (если ещё нет)
+# curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# sudo apt install -y nodejs
+sudo npm install -g pm2
+
+# 4. Firewall (пример ufw)
+# sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
+
+
+═══════════════════════════════════════
+C. КОД
+═══════════════════════════════════════
+
+cd ~
+git clone https://github.com/maxxx010182/SongForge.git SongForge
+cd ~/SongForge
+
+python3 -m venv venv
+./venv/bin/pip install -U pip
+./venv/bin/pip install -r requirements.txt
+
+cp .env.example .env
+# nano .env  — заполнить ВСЕ ключи (см. ниже)
+
+
+═══════════════════════════════════════
+D. .env (минимум прода)
+═══════════════════════════════════════
+
+SITE_URL=https://ВАШ_ДОМЕН
+PAYMENT_PROVIDER=getplatinum
+GETPLATINUM_ACCOUNT=...
+GETPLATINUM_API_KEY=...
+GETPLATINUM_POSITION_PREFIX=...
+GETPLATINUM_VAT=none
+
+YANDEX_API_KEY=...
+YANDEX_FOLDER_ID=...
+
+APIPASS_API_KEY=...          # и/или
+SUNOAPI_ORG_API_KEY=...
+MUSIC_PROVIDER=fallback_suno
+
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_USER=noreply@ВАШ_ДОМЕН
+SMTP_PASSWORD=...
+SMTP_FROM=noreply@ВАШ_ДОМЕН
+SMTP_USE_TLS=true
+
+ADMIN_BOOTSTRAP_EMAILS=you@example.com
+AUTH_DEV_CODE_ENABLED=false
+LEGACY_API_ENABLED=false
+
+REDIS_ENABLED=true
+REDIS_URL=redis://127.0.0.1:6379/0
+
+# S3 — по желанию (S3_ENABLED=true + ключи)
+
+
+═══════════════════════════════════════
+E. PM2
+═══════════════════════════════════════
+
+cd ~/SongForge
+
+# Web (пример; при необходимости ecosystem.config.js)
+pm2 start "./venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8000" --name songforge
+
+# Worker (если в проекте есть отдельный entrypoint — см. README/скрипты)
+# pm2 start "./venv/bin/python -m backend.worker" --name songforge-worker
+
+pm2 save
+pm2 startup
+# выполнить команду, которую выведет pm2 startup
+
+
+═══════════════════════════════════════
+F. NGINX + HTTPS
+═══════════════════════════════════════
+
+# /etc/nginx/sites-available/songforge  (пример)
+
+# server {
+#   listen 80;
+#   server_name ВАШ_ДОМЕН;
+#   location / {
+#     proxy_pass http://127.0.0.1:8000;
+#     proxy_set_header Host $host;
+#     proxy_set_header X-Real-IP $remote_addr;
+#     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#     proxy_set_header X-Forwarded-Proto $scheme;
+#     client_max_body_size 20m;
+#   }
+# }
+
+# sudo ln -s /etc/nginx/sites-available/songforge /etc/nginx/sites-enabled/
+# sudo nginx -t && sudo systemctl reload nginx
+# sudo certbot --nginx -d ВАШ_ДОМЕН
+
+КРИТИЧНО для webhook GetPlatinum и rate limit:
+  proxy_set_header X-Real-IP $remote_addr;
+
+
+═══════════════════════════════════════
+G. GETPLATINUM
+═══════════════════════════════════════
+
+• notificationUrl: https://ВАШ_ДОМЕН/api/payment/webhook/getplatinum
+• success/fail URL — как в коде (SITE_URL)
+• Промокоды — в ЛК GetPlatinum
+• Тест: пакет → оплата → ноты (см. GETPLATINUM-NOTY-RUNBOOK.txt)
+
+
+═══════════════════════════════════════
+H. CRON
+═══════════════════════════════════════
+
+cd ~/SongForge
+chmod +x scripts/backup-db.sh scripts/health-watch.sh
+./scripts/backup-db.sh
+
+crontab -e
+# 15 3 * * * /root/SongForge/scripts/backup-db.sh >> /var/log/songforge-backup.log 2>&1
+# */5 * * * * /root/SongForge/scripts/health-watch.sh >> /var/log/songforge-health.log 2>&1
+
+# При другом HOME поправьте путь. SONGFORGE_HEALTH_URL=https://ВАШ_ДОМЕН/api/health
+
+
+═══════════════════════════════════════
+I. ПРОВЕРКА
+═══════════════════════════════════════
+
+curl -s https://ВАШ_ДОМЕН/api/health
+# "version":"2.11.xx"
+
+# Вход email → студия → песня → пакеты → оплата (тест)
+# /admin под bootstrap email
+
+Дальше обновления только:
+  curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+
+═══════════════════════════════════════
+J. ЧТО НЕ КОПИРОВАТЬ СЛЕПО СО СТАРОГО
+═══════════════════════════════════════
+
+• data/songforge.db — только если переносите пользователей (scp + stop pm2)
+• .env — ключи; SITE_URL на новый домен
+• IP в ADMIN_IP_ALLOWLIST / DNS
+
+
+═══════════════════════════════════════
+K. ДОКУМЕНТЫ
+═══════════════════════════════════════
+
+docs/internal/DEVELOPER_GUIDE.md
+docs/internal/ADMIN_GUIDE.md
+docs/public/USER_GUIDE.md
+COMMANDS.txt
+docs/instrukcii/INDEX.txt

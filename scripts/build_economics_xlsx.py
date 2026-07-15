@@ -49,13 +49,14 @@ def sheet_readme(wb: Workbook):
         ("Ввод", "Главные допущения (курс, API, налоги)"),
         ("Фикс", "Постоянные расходы ₽/мес"),
         ("Пакеты", "Текущие тарифы и маржа"),
+        ("Промо", "Скидка % для беты — маржа после GP+НПД"),
         ("Калькулятор", "Точка безубыточности"),
         ("Реклама", "CAC / LTV / пробные"),
         ("Балансы", "Журнал пополнений API"),
         ("Подписка", "Черновик планов"),
         ("", ""),
-        ("Текст для ассистента:", "docs/biznes/ЭКОНОМИКА.txt"),
-        ("Обновлено:", "10 июля 2026"),
+        ("Текст для ассистента:", "docs/biznes/ЭКОНОМИКА.txt §11"),
+        ("Обновлено:", "15 июля 2026"),
     ]
     for r, (a, b) in enumerate(rows, 1):
         ws.cell(r, 1, a).font = BOLD if a and not b and r in (1, 7) else Font(name="Arial")
@@ -142,7 +143,7 @@ def sheet_fix(wb: Workbook):
 
 def sheet_pakety(wb: Workbook):
     ws = wb.create_sheet("Пакеты")
-    ws["A1"] = "Пакеты нот (как на сайте v2.11.9)"
+    ws["A1"] = "Пакеты нот (как на сайте v2.11.30)"
     ws["A1"].font = HDR
     headers = ["ID", "Нот", "Цена ₽", "₽/нота", "Себест. ₽", "Маржа ₽", "Маржа %"]
     for c, h in enumerate(headers, 1):
@@ -278,12 +279,76 @@ def sheet_podpiska(wb: Workbook):
     set_width(ws, {1: 12, 2: 10, 3: 12, 4: 12, 5: 12})
 
 
+def sheet_promo(wb: Workbook):
+    """Скидка % для бета-тестеров: маржа после GP+НПД и переменной себестоимости."""
+    ws = wb.create_sheet("Промо")
+    ws["A1"] = "Промо для тестеров (GetPlatinum). Жёлтое — меняйте."
+    ws["A1"].font = HDR
+    ws["A3"] = "Скидка промокода, %"
+    style_input(ws["B3"], 0.30)
+    ws["B3"].number_format = PCT
+    ws["A4"] = "Перем. себест. 1 ноты ₽ (из Ввод B15)"
+    style_formula(ws["B4"], "=Ввод!B15")
+    ws["B4"].number_format = RUB
+    ws["A5"] = "GP % + НПД %"
+    style_formula(ws["B5"], "=Ввод!B10+Ввод!B11")
+    ws["B5"].number_format = PCT
+    ws["A6"] = "Рабочий пол ₽/нота (запас)"
+    style_input(ws["B6"], 99)
+    ws["B6"].number_format = RUB
+
+    headers = [
+        "Пакет",
+        "Нот",
+        "Цена ₽",
+        "После скидки ₽",
+        "₽/нота",
+        "Себест. нот ₽",
+        "Маржа ₽",
+        "₽/н ≥ пол?",
+    ]
+    for c, h in enumerate(headers, 1):
+        ws.cell(8, c, h).font = BOLD
+    data = [
+        ("notes_1", 1, 299),
+        ("notes_3", 3, 749),
+        ("notes_5", 5, 1199),
+        ("notes_10", 10, 1799),
+    ]
+    for i, (pid, notes, price) in enumerate(data, 9):
+        ws.cell(i, 1, pid)
+        ws.cell(i, 2, notes)
+        style_input(ws.cell(i, 3), price)
+        ws.cell(i, 3).number_format = RUB
+        # цена после скидки
+        style_formula(ws.cell(i, 4), f"=C{i}*(1-$B$3)")
+        ws.cell(i, 4).number_format = RUB
+        style_formula(ws.cell(i, 5), f"=D{i}/B{i}")
+        ws.cell(i, 5).number_format = RUB
+        # себест: V*notes + (g+n)*цена_после
+        style_formula(ws.cell(i, 6), f"=B{i}*$B$4+D{i}*$B$5")
+        ws.cell(i, 6).number_format = RUB
+        style_formula(ws.cell(i, 7), f"=D{i}-F{i}")
+        ws.cell(i, 7).number_format = RUB
+        style_formula(ws.cell(i, 8), f'=IF(E{i}>=$B$6,"ДА","нет")')
+
+    ws["A14"] = "Рекомендация (текст)"
+    ws["A14"].font = BOLD
+    ws["A15"] = (
+        "Бета: 30–40% комфортно. 50% ок при малом числе тестеров. "
+        ">60% на notes_10 — тонкая маржа. 100% только админка ±ноты (маркетинг)."
+    )
+    ws["A16"] = "См. docs/biznes/ЭКОНОМИКА.txt §11"
+    set_width(ws, {1: 12, 2: 8, 3: 12, 4: 16, 5: 12, 6: 14, 7: 12, 8: 12})
+
+
 def main():
     wb = Workbook()
     sheet_readme(wb)
     sheet_vvod(wb)
     sheet_fix(wb)
     sheet_pakety(wb)
+    sheet_promo(wb)
     sheet_kalk(wb)
     sheet_reklama(wb)
     sheet_balansy(wb)
