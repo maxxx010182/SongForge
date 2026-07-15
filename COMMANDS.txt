@@ -1,60 +1,43 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
+Версия кода/прода: 2.11.20 (backend/app.py, deploy-vps.sh, /api/health)
 
-=== АКТУАЛЬНОЕ СЕЙЧАС (v2.11.20 — исправление CORS для безопасности) ===
+=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — баг: ноты не начисляются после GetPlatinum) ===
 
-# === ШАГ 1. Обновить сайт на сервере (одна команда) ===
+# === ШАГ 1. SSH ===
 ssh root@195.19.20.245
 
+# === ШАГ 2. В папку проекта ===
 cd ~/SongForge
 
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# === ШАГ 3. Логи GetPlatinum / webhook (самое важное) ===
+pm2 logs songforge --lines 200 --nostream | grep -i -E 'getplatinum|webhook|ignored|mark_paid|signature|isSuccess'
 
-# Ждать вывода: === Готово! v2.11.20 ===
+# === ШАГ 4. Последние логи API ===
+pm2 logs songforge --lines 80 --nostream
 
-# === ШАГ 2. Проверить после деплоя ===
+# === ШАГ 5. Заказы в БД ===
+sqlite3 data/songforge.db "SELECT id, user_id, status, provider, provider_payment_id, created_at FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
+
+# === ШАГ 6. Баланс пользователей ===
+sqlite3 data/songforge.db "SELECT id, email, balance FROM users ORDER BY id DESC LIMIT 5;"
+
+# === ШАГ 7. Код обработчика webhook ===
+grep -A 60 "def _handle_getplatinum_webhook" backend/services/payment_service.py
+
+# === ШАГ 8. Перезапуск с .env (если меняли ключи) ===
+pm2 restart songforge --update-env
+
+# Важно: после копирования закрой COMMANDS.txt полностью и открой заново.
+
+# === ШАГ 9. Проверка health (версия должна быть 2.11.20) ===
 curl -s https://sozdaipesnu.ru/api/health
-# Должно: "version":"2.11.20"
-
-# === старые блоки ниже (не копируй пока) ===
-
-# === ШАГ 1. Обновить сайт на сервере (одна команда) ===
-ssh root@195.19.20.245
-
-cd ~/SongForge
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-# Ждать вывода: === Готово! v2.11.19 === (или выше)
-
-# === ШАГ 2. Проверить после деплоя (по одной строке) ===
-curl -s https://sozdaipesnu.ru/api/health
-# Должно: "version":"2.11.19" , "redis":true , "s3":true
+# Ожидаем: "version":"2.11.20" , "redis":true , "s3":true
 
 curl -s https://sozdaipesnu.ru/api/auth/providers
-# vk_enabled:true , email_enabled:true , email_smtp:true
+# Ожидаем: vk_enabled:true , email_enabled:true , email_smtp:true
 
-# === РЕЗУЛЬТАТ ТЕСТА (13.07) ===
-# Пользователь: обновил, затестировал — нота появилась.
-# Текст восстановился + баланс начислился.
-# Фикс v2.11.17 подтверждён. Тест GetPlatinum return + crediting пройден.
 
-# === ДИАГНОСТИКА ОБЛОЖЕК В ФОНОТЕКЕ (13.07) ===
-# Проблема: после генерации обложки урезанные, маленькие, с фоном вокруг.
-# Выполни на сервере для последних треков:
-
-cd ~/SongForge
-sqlite3 data/songforge.db "
-SELECT id, title, image_url_a, image_url_b, created_at 
-FROM generations 
-WHERE image_url_a IS NOT NULL OR image_url_b IS NOT NULL 
-ORDER BY created_at DESC LIMIT 5;
-"
-
-# Пришли вывод. Посмотрим, какие URL и размеры приходят от Suno сейчас.
-
-# === ШАГ 4. Обновление v2.11.19 (аудит: безопасность GetPlatinum webhook) ===
-# Добавлена проверка подписи (HMAC-SHA256 по checksum с использованием API_KEY).
-# Риск фейковых успехов закрыт. Архитектура сохранена.
+=== ДЕПЛОЙ ОБНОВЛЕНИЯ С GITHUB (когда есть новый push) ===
 
 ssh root@195.19.20.245
 
@@ -62,74 +45,41 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.19 ===
+# Ждать: === Готово! v2.11.20 === (или выше, если версию подняли)
 
-# После:
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.19"
+# "version" должен совпадать с backend/app.py
 
-# === ПРОВЕРКА ФИКСА БЕЗОПАСНОСТИ WEBHOOK (v2.11.19) ===
-# Открой COMMANDS.txt полностью заново, если уже был открыт.
-# Копируй по ОДНОЙ строке, вставляй правой кнопкой мыши на сервере.
+
+=== ПРОВЕРКА ЗАЩИТЫ WEBHOOK (v2.11.19, уже на проде) ===
+
+grep -A 25 "def verify_getplatinum_webhook" backend/services/payment_service.py
+
+grep -A 10 "async def payment_webhook" backend/app.py
 
 pm2 logs songforge --lines 30 --nostream | grep -i -E 'getplatinum|webhook|signature|verify|checksum'
 
-# Если пусто — это нормально (нет свежих вызовов). Проверь код напрямую:
-grep -A 25 "def verify_getplatinum_webhook" backend/services/payment_service.py
 
-# И проверь эндпоинт:
-grep -A 10 "async def payment_webhook" backend/app.py
+=== ДИАГНОСТИКА ОБЛОЖЕК В ФОНОТЕКЕ (архив 13.07) ===
 
-# === Логи и диагностика (если нужно) ===
+cd ~/SongForge
+
+sqlite3 data/songforge.db "SELECT id, title, image_url_a, image_url_b, created_at FROM generations WHERE image_url_a IS NOT NULL OR image_url_b IS NOT NULL ORDER BY created_at DESC LIMIT 5;"
+
+
+=== ОБЫЧНЫЕ ОПЕРАЦИИ ===
+
 pm2 logs songforge --lines 40 --nostream
 
 pm2 status
 
-# После любых правок .env:
+# После правок .env:
 pm2 restart songforge --update-env
 
 # ВАЖНО:
-# - После копирования команд — закрой COMMANDS.txt полностью и открой заново (чтобы увидеть свежий текст)
+# - После копирования команд — закрой COMMANDS.txt полностью и открой заново
 # - Копируй по ОДНОЙ строке, вставляй правой кнопкой мыши
 
+
 === ОТКАТ К РАБОЧЕЙ ВЕРСИИ (сайт сломан после деплоя) ===
-
-# На своём Windows (в папке проекта):
-cd C:\Users\makc0\Desktop\SongForge
-
-# Посмотреть коммиты:
-git log --oneline -10
-
-# Откатить index.html к версии ДО поломки (замени ABC123 на коммит из лога выше):
-git checkout ABC123 -- index.html
-
-# Закоммитить и запушить:
-git add index.html
-git commit -m "revert to working"
-git push origin main
-
-# На сервере:
-ssh root@195.19.20.245
-(введи пароль)
-
-# Скачать откатанную версию:
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/index.html" -o ~/SongForge/index.html
-
-# Если TLS — этот:
-curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
-tar -xzf /tmp/sf.tar.gz -C /tmp --strip-components=1 SongForge-main/index.html
-cp /tmp/index.html ~/SongForge/index.html
-rm -f /tmp/sf.tar.gz /tmp/index.html
-
-pm2 restart songforge
-
-# На сайте:
-F12 → Network → Disable cache + правой кнопкой по обновлению → Empty cache and hard reload
-
-# ВАЖНО для вставки:
-Копируй ТОЛЬКО одну строку
-Вставляй правой кнопкой мыши
-Если прыгнуло — стрелками убери перенос, Enter
-Дождись выполнения
-
-Открой COMMANDS.txt заново полностью после правок.
+# См. docs/instrukcii/ — recover / предыдущий tarball; не смешивать с блоком АКТУАЛЬНОЕ выше.
