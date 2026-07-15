@@ -125,7 +125,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.35")
+app = FastAPI(title="SongForge", version="2.11.36")
 
 app.add_middleware(
     CORSMiddleware,
@@ -442,13 +442,26 @@ async def legal_offer():
     return HTMLResponse(render_legal_page("offer"))
 
 
-@app.get("/t/{library_id}")
-async def track_share_short_link(library_id: str):
-    """Короткая ссылка для шаринга — как YouTube / Instagram."""
+@app.get("/t/{library_id}", response_class=HTMLResponse)
+async def track_share_page(library_id: str):
+    """Публичная карточка трека: обложка, плеер, OG-превью. Без скачивания."""
+    from backend.share_page import render_share_track_page
+
     row = cabinet.get_published_library_item(library_id)
     if not row:
         raise HTTPException(status_code=404, detail="Трек не найден или снят с публикации")
-    return RedirectResponse(url=f"/?track={library_id}", status_code=302)
+    author = cabinet.resolve_public_author_name(row)
+    title = (row["title"] or "").strip() or "Без названия"
+    return HTMLResponse(
+        render_share_track_page(
+            site_url=SITE_URL,
+            library_id=library_id,
+            title=title,
+            author_name=author,
+            image_url=row["image_url"] or "",
+            likes=int(row["likes"] or 0),
+        )
+    )
 
 
 @app.get("/SongForgeLogo.png")
@@ -464,7 +477,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.35",
+        "version": "2.11.36",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
