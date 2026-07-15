@@ -1,4 +1,4 @@
-"""Фабрика LLM: yandex | openai_compat (VseGPT и др.).
+"""Фабрика LLM: yandex | openai_compat (VseGPT) | kie (Kie.ai).
 
 Один ключ провайдера → разные модели через LLM_MODEL_PRO / LLM_MODEL_LITE.
 """
@@ -35,7 +35,12 @@ def get_llm_client() -> LlmClient:
         return _client
 
     provider = (LLM_PROVIDER or "yandex").strip().lower()
-    if provider in {"openai_compat", "vsegpt", "openai", "deepseek_proxy"}:
+    if provider in {"kie", "kieai", "kie_ai"}:
+        from backend.services.kie_client import KieClient
+
+        _client = KieClient()
+        log.info("LLM provider: kie (Kie.ai chat)")
+    elif provider in {"openai_compat", "vsegpt", "openai", "deepseek_proxy"}:
         from backend.services.openai_compat_client import OpenaiCompatClient
 
         _client = OpenaiCompatClient()

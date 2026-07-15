@@ -1,28 +1,29 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (LLM multi-model VseGPT ready; v2.11.32)
+Обновлено: 15 июля 2026 (Kie LLM + балансы админки; v2.11.33)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.32** (push → update-now).
+Версия кода: **2.11.33** (push → update-now → .env Kie).
 
 **LLM (важно):**
-  - По умолчанию: Yandex (как раньше).
-  - Опция: LLM_PROVIDER=openai_compat → VseGPT (один ключ, 2+ модели).
-  - PRO = тексты песен (deepseek-v4-pro), LITE = бот/план (deepseek-v4-flash).
-  - Инструкция: docs/instrukcii/LLM-VSEGPT-PROSTO.txt
-  - DeepSeek напрямую — оплата из РФ часто не проходит; VseGPT — обход.
+  - Цель: все тексты через **Kie** (`LLM_PROVIDER=kie`, `KIE_API_KEY`).
+  - PRO = gemini-2.5-pro (тексты), LITE = gemini-2.5-flash (бот).
+  - Инструкция: docs/instrukcii/LLM-KIE-PROSTO.txt
+  - Альтернативы: yandex | openai_compat (VseGPT).
+  - Админка: /admin → «Балансы провайдеров» (Kie + sunoapi.org).
 
 **Поддержка:** support@, SUPPORT-OWNER-PROSTO, SUPPORT-AGENT-SCRIPT.
 
 **Активно:**
-  1) update-now 2.11.32 (код готов, Yandex без .env смены)
-  2) Когда ключ VseGPT — строки в .env из LLM-VSEGPT-PROSTO
-  3) Промо 60% + бета
+  1) update-now 2.11.33
+  2) .env: LLM_PROVIDER=kie + KIE_API_KEY + модели
+  3) pm2 restart --update-env; проверить health + admin балансы
+  4) Промо 60% + бета
 
-Правило версионирования: патч 2.11.32→2.11.33; app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.33→2.11.34; app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

@@ -1,11 +1,9 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.32 — LLM multi-model (Yandex default; VseGPT optional)
+Версия: 2.11.33 — Kie LLM + балансы в админке
 
-=== АКТУАЛЬНОЕ (v2.11.32) ===
+=== АКТУАЛЬНОЕ (v2.11.33) ===
 
-# По умолчанию Yandex. VseGPT — когда будет ключ: docs/instrukcii/LLM-VSEGPT-PROSTO.txt
-# PRO = тексты песен, LITE = помощник (один ключ, две модели)
-
+# 1) Деплой кода
 ssh root@195.19.20.245
 
 cd ~/SongForge
@@ -13,17 +11,22 @@ cd ~/SongForge
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.32"
+# "version":"2.11.33"  "llm_provider":"kie"  (после шага 2)
 
-# --- Включить VseGPT (после ключа) — в nano .env ---
-# LLM_PROVIDER=openai_compat
-# OPENAI_COMPAT_API_KEY=sk-...
-# OPENAI_COMPAT_BASE=https://api.vsegpt.ru/v1
-# LLM_MODEL_PRO=deepseek/deepseek-v4-pro
-# LLM_MODEL_LITE=deepseek/deepseek-v4-flash
+# 2) Включить Kie (тексты) — nano .env, добавить/заменить:
+# LLM_PROVIDER=kie
+# KIE_API_KEY=вставьте_ключ_сюда
+# LLM_MODEL_PRO=gemini-2.5-pro
+# LLM_MODEL_LITE=gemini-2.5-flash
+#
+# Затем:
 # pm2 restart songforge --update-env
+#
+# Полная инструкция: docs/instrukcii/LLM-KIE-PROSTO.txt
+# Админка балансы: https://sozdaipesnu.ru/admin  → «Балансы провайдеров»
 
 
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
+pm2 logs songforge --lines 80

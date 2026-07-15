@@ -9,21 +9,32 @@ load_dotenv(ROOT_DIR / ".env")
 YANDEX_API_KEY = os.getenv("YANDEX_API_KEY", "")
 YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gto6f1fi6j2dpfdlhd")
 
-# LLM: yandex | openai_compat (VseGPT / любой OpenAI-compatible)
-# openai_compat: один ключ, разные model id под роли (тексты vs бот)
+# LLM: yandex | openai_compat (VseGPT) | kie (Kie.ai chat models)
+# openai_compat / kie: один ключ, разные model id под роли (тексты vs бот)
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "yandex").strip().lower()
 OPENAI_COMPAT_API_KEY = os.getenv("OPENAI_COMPAT_API_KEY", "").strip()
 OPENAI_COMPAT_BASE = os.getenv(
     "OPENAI_COMPAT_BASE", "https://api.vsegpt.ru/v1"
 ).strip().rstrip("/")
-# Роли (id из каталога провайдера, напр. VseGPT Docs/Models)
+# Kie.ai — тексты (chat). Баланс: GET /api/v1/chat/credit
+KIE_API_KEY = os.getenv("KIE_API_KEY", "").strip()
+KIE_BASE = os.getenv("KIE_BASE", "https://api.kie.ai").strip().rstrip("/")
+# Роли (id из каталога провайдера)
 # PRO — сильная (lyrics, package); LITE — дешёвая (consultant, analyst fallback)
-LLM_MODEL_PRO = os.getenv(
-    "LLM_MODEL_PRO", "deepseek/deepseek-v4-pro"
-).strip()
-LLM_MODEL_LITE = os.getenv(
-    "LLM_MODEL_LITE", "deepseek/deepseek-v4-flash"
-).strip()
+# Для Kie: gemini-2.5-pro / gemini-2.5-flash (slug = path prefix)
+# Для VseGPT: deepseek/deepseek-v4-pro и т.п.
+_llm_default_pro = (
+    "gemini-2.5-pro"
+    if LLM_PROVIDER in {"kie", "kieai", "kie_ai"}
+    else "deepseek/deepseek-v4-pro"
+)
+_llm_default_lite = (
+    "gemini-2.5-flash"
+    if LLM_PROVIDER in {"kie", "kieai", "kie_ai"}
+    else "deepseek/deepseek-v4-flash"
+)
+LLM_MODEL_PRO = os.getenv("LLM_MODEL_PRO", _llm_default_pro).strip()
+LLM_MODEL_LITE = os.getenv("LLM_MODEL_LITE", _llm_default_lite).strip()
 
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")

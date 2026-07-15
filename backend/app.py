@@ -84,6 +84,7 @@ from backend.settings import (
     SMTP_HOST,
     GUEST_GENERATION_LIMIT,
     LEGACY_API_ENABLED,
+    LLM_PROVIDER,
     PAYMENT_PROVIDER,
     RATE_AUTH_IP_LIMIT,
     RATE_AUTH_IP_WINDOW_SEC,
@@ -124,7 +125,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.32")
+app = FastAPI(title="SongForge", version="2.11.33")
 
 app.add_middleware(
     CORSMiddleware,
@@ -463,12 +464,13 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.32",
+        "version": "2.11.33",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
         "music_provider": MUSIC_PROVIDER,
         "music_providers": music_provider.configured_providers(),
+        "llm_provider": LLM_PROVIDER,
     }
 
 
@@ -496,6 +498,18 @@ async def admin_dashboard(admin_user: dict = Depends(require_admin_user)):
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return AdminDashboardResponse(**admin_service.get_dashboard())
+
+
+@app.get("/api/admin/provider-balances")
+async def admin_provider_balances(admin_user: dict = Depends(require_admin_user)):
+    """Актуальные кредиты Kie + sunoapi.org (для админки)."""
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "dashboard:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    from backend.services.provider_balance_service import get_provider_balances
+
+    return await run_in_threadpool(get_provider_balances)
 
 
 @app.get("/api/admin/generations")

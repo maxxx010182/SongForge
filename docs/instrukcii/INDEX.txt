@@ -1,7 +1,7 @@
 SongForge — оглавление инструкций
 ==================================
 Папка: docs/instrukcii/
-Обновлено: 15.07.2026 (v2.11.31 support)
+Обновлено: 15.07.2026 (v2.11.33 Kie LLM)
 
 КОМАНДЫ СЕРВЕРА (копировать по одной строке):
   COMMANDS.txt  — в корне проекта (SSH, деплой, pm2, backup)
@@ -16,6 +16,8 @@ SongForge — оглавление инструкций
 
 СЕЙЧАС АКТУАЛЬНО
 ----------------
+  LLM-KIE-PROSTO.txt           — тексты через Kie + балансы в админке
+  LLM-VSEGPT-PROSTO.txt        — альтернатива VseGPT
   SUPPORT-OWNER-PROSTO.txt     — support@ простыми словами (ВЛАДЕЛЬЦУ)
   SUPPORT-EMAIL-SEYCHAS.txt    — создать ящик support@
   FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS

@@ -61,6 +61,11 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
     </header>
     <div id="alerts"></div>
     <div class="grid" id="stats"></div>
+    <div class="sec" id="providerBalSec">
+      <h2>Балансы провайдеров <button class="btn" type="button" id="balReload" style="margin-left:8px">Обновить</button></h2>
+      <div class="grid" id="providerBal"></div>
+      <p class="muted" style="font-size:.75rem;margin-top:6px" id="providerBalMeta">Kie = тексты; sunoapi = музыка (если ключ задан)</p>
+    </div>
     <div class="tabs" id="navTabs"></div>
     <div id="panelDash" class="panel active sec"><p class="muted">Обновление каждые 60 сек. Зависшие — статус generating дольше 10 минут.</p></div>
     <div id="panelGen" class="panel sec">
@@ -120,7 +125,34 @@ function renderStats(d){
   document.getElementById('stats').innerHTML=h;
   var al=d.alerts||[];document.getElementById('alerts').innerHTML=al.map(function(a){return'<div class="alert '+esc(a.level)+'">'+esc(a.message)+'</div>';}).join('');
 }
-async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);}
+function fmtCredits(n){
+  if(n==null||n===undefined)return '—';
+  var x=Number(n);
+  if(isNaN(x))return '—';
+  if(x>=1000)return String(Math.round(x));
+  if(x>=10)return x.toFixed(1);
+  return x.toFixed(2);
+}
+function renderProviderBal(d){
+  if(!d){document.getElementById('providerBal').innerHTML='<div class="card"><div class="n muted">—</div><div class="l">нет данных</div></div>';return;}
+  var h='';
+  var kie=d.kie||{};
+  var suno=d.sunoapi||{};
+  h+='<div class="card"><div class="n">'+(kie.ok?fmtCredits(kie.credits):(kie.configured?'err':'off'))+'</div><div class="l">Kie кредиты'+(kie.error?' · '+esc(kie.error):'')+'</div></div>';
+  h+='<div class="card"><div class="n">'+(suno.ok?fmtCredits(suno.credits):(suno.configured?'err':'off'))+'</div><div class="l">SunoAPI кредиты'+(suno.error?' · '+esc(suno.error):'')+'</div></div>';
+  h+='<div class="card"><div class="n" style="font-size:1rem">'+esc(d.llm_provider||'—')+'</div><div class="l">LLM провайдер</div></div>';
+  h+='<div class="card"><div class="n" style="font-size:.85rem;line-height:1.3">PRO '+esc(d.llm_model_pro||'—')+'<br>LITE '+esc(d.llm_model_lite||'—')+'</div><div class="l">Модели текста</div></div>';
+  document.getElementById('providerBal').innerHTML=h;
+}
+async function loadProviderBal(){
+  try{
+    var d=await api('/api/admin/provider-balances');
+    renderProviderBal(d);
+  }catch(e){
+    document.getElementById('providerBal').innerHTML='<div class="card"><div class="n muted">?</div><div class="l">'+esc(e.message||'ошибка')+'</div></div>';
+  }
+}
+async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);loadProviderBal();}
 async function loadGen(){var st=document.getElementById('genFilter').value;var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';var rows=await api('/api/admin/generations'+q);document.getElementById('genBody').innerHTML=rows.map(function(g){
   return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
 }).join('')||'<tr><td colspan="5" class="muted">Пусто</td></tr>';}
@@ -236,6 +268,7 @@ async function init(){
   loadDash();
   if(!has('admins:manage'))document.getElementById('panelAdmins').innerHTML='<p class="muted">Раздел только для super_admin</p>';
   document.getElementById('genReload').onclick=loadGen;
+  document.getElementById('balReload').onclick=loadProviderBal;
   document.getElementById('userSearch').onclick=searchUsers;
   document.getElementById('auditReload').onclick=loadAudit;
   document.getElementById('grantBtn').onclick=function(){

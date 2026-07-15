@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.30**
+**Версия в коде (истина):** **2.11.33**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.32:** multi-model LLM (Yandex default; VseGPT openai_compat optional). PRO=lyrics, LITE=bot.
-- `docs/instrukcii/LLM-VSEGPT-PROSTO.txt`. Деплой 2.11.32; VseGPT — когда ключ.
+- **v2.11.33:** Kie для текстов (`LLM_PROVIDER=kie`), балансы Kie+sunoapi в `/admin`.
+- `docs/instrukcii/LLM-KIE-PROSTO.txt`. Деплой + .env KIE_API_KEY.
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 
