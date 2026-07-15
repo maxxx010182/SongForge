@@ -6,21 +6,21 @@
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.37** (push → update-now).
+Версия кода: **2.11.38** (push → update-now).
 
 **LLM:** Kie; резерв Yandex.
 
-**UI:**
-  - Логотип + эквалайзер
-  - **Шаринг:** `/t/{id}` + OG; обложка для Telegram через
-    `/api/explore/{id}/cover` (прокси с нашего домена).
+**UI / шаринг:**
+  - `/t/{id}` — страница плеера
+  - `/t/{id}/og.jpg` — карточка 1200×630 для Telegram (Pillow)
+  - TG кеширует — нужен @WebpageBot
 
 **Активно:**
-  1) update-now 2.11.37 + сброс кеша превью в TG (@WebpageBot)
+  1) update-now 2.11.38 + pip Pillow если надо + WebpageBot
   2) Промо 60% + бета
-  3) backlog: cron backup/health; UX пакеты вместо попапа 1/5 нот
+  3) backlog: cron; UX пакеты 1/5→все
 
-Правило версионирования: патч 2.11.37→2.11.38; app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.38→2.11.39; app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

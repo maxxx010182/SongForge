@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.37**
+**Версия в коде (истина):** **2.11.38**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,6 +36,6 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.37:** OG-превью Telegram — cover proxy `/api/explore/{id}/cover`.
+- **v2.11.38:** Telegram OG — `/t/{id}/og.jpg` 1200×630 (Pillow).
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 

@@ -40,10 +40,10 @@ def render_share_track_page(
     tid = (library_id or "").strip()
     title_s = (title or "").strip() or "Без названия"
     author_s = (author_name or "").strip() or "Аноним"
-    # Картинка на странице — прямая обложка; для OG — прокси на нашем домене
-    # (Telegram/WhatsApp часто не тянут внешние CDN Suno/S3).
+    # Картинка на странице — прямая обложка; для OG — /t/{id}/og.jpg (1200×630, .jpg).
+    # Telegram надёжнее берёт URL с расширением и «карточный» размер, чем /api/.../cover.
     img_display = _abs_url(site, image_url)
-    og_image = f"{site}/api/explore/{tid}/cover"
+    og_image = f"{site}/t/{tid}/og.jpg"
     listen = f"/api/explore/{tid}/listen"
     share = f"{site}/t/{tid}"
     create_url = f"{site}/?from=share"

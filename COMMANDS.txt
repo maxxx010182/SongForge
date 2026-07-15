@@ -1,7 +1,7 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.37 — превью ссылки в Telegram (OG + cover proxy)
+Версия: 2.11.38 — превью TG: карточка /t/ID/og.jpg 1200x630
 
-=== АКТУАЛЬНОЕ (v2.11.37) ===
+=== АКТУАЛЬНОЕ (v2.11.38) ===
 
 ssh root@195.19.20.245
 
@@ -9,16 +9,19 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.37"
+# если Pillow не встал сам — один раз:
+# source .venv/bin/activate 2>/dev/null; pip install -r requirements.txt; pm2 restart songforge --update-env
 
-# Проверка превью в Telegram:
-# 1) update-now
-# 2) Откройте в браузере: https://sozdaipesnu.ru/api/explore/ID/cover
-#    (ID из ссылки /t/ID) — должна открыться картинка
-# 3) В Telegram: @WebpageBot → отправьте ссылку /t/ID → «Update preview»
-#    или вставьте ссылку в Saved Messages заново (после сброса кеша)
-# 4) Должна появиться карточка с обложкой и названием
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.38"
+
+# Проверка превью-картинки (ID из вашей ссылки /t/ID):
+# curl -sI https://sozdaipesnu.ru/t/ID/og.jpg
+# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg  — должна открыться широкая карточка
+
+# Telegram кеширует старое! Обязательно:
+# 1) @WebpageBot → отправить https://sozdaipesnu.ru/t/ID
+# 2) вставить ссылку В НОВОЕ сообщение (не старое)
 
 
 === ОБЫЧНОЕ ===

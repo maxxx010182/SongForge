@@ -125,7 +125,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.37")
+app = FastAPI(title="SongForge", version="2.11.38")
 
 app.add_middleware(
     CORSMiddleware,
@@ -487,7 +487,7 @@ async def track_share_page(library_id: str, request: Request):
 
 @app.get("/api/explore/{library_id}/cover")
 async def explore_track_cover(library_id: str):
-    """Обложка для OG/Telegram: с нашего домена (прокси или fallback-лого)."""
+    """Сырая обложка (прокси). Для превью TG предпочтительнее /t/{id}/og.jpg."""
     row = cabinet.get_published_library_item(library_id)
     fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
     if not fallback.is_file():
@@ -519,7 +519,6 @@ async def explore_track_cover(library_id: str):
             ctype = (resp.headers.get("content-type") or "image/jpeg").split(";")[0].strip()
             if not ctype.startswith("image/"):
                 ctype = "image/jpeg"
-            # Telegram любит не гигантские файлы
             body = resp.content
             if len(body) > 4_500_000:
                 return None
@@ -541,6 +540,39 @@ async def explore_track_cover(library_id: str):
     )
 
 
+@app.get("/t/{library_id}/og.jpg")
+async def track_share_og_image(library_id: str):
+    """Карточка 1200×630 JPEG для Telegram/WhatsApp (URL с .jpg)."""
+    from backend.og_image import build_og_jpeg
+
+    row = cabinet.get_published_library_item(library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден или снят с публикации")
+    fallback = ROOT_DIR / "assets" / "logo_new.png"
+    if not fallback.is_file():
+        fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+
+    def _build() -> bytes:
+        return build_og_jpeg(
+            cover_url=(row["image_url"] or "").strip(),
+            fallback_path=fallback if fallback.is_file() else None,
+        )
+
+    try:
+        jpeg = await run_in_threadpool(_build)
+    except Exception as exc:
+        log.warning("og.jpg build failed for %s: %s", library_id, exc)
+        raise HTTPException(status_code=500, detail="Не удалось собрать превью") from exc
+    return Response(
+        content=jpeg,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "Content-Disposition": 'inline; filename="og.jpg"',
+        },
+    )
+
+
 @app.get("/SongForgeLogo.png")
 async def get_logo():
     path = ROOT_DIR / "SongForgeLogo.png"
@@ -554,7 +586,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.37",
+        "version": "2.11.38",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
