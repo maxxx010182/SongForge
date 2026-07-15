@@ -1,7 +1,7 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.36 — страница «Поделиться треком» /t/…
+Версия: 2.11.37 — превью ссылки в Telegram (OG + cover proxy)
 
-=== АКТУАЛЬНОЕ (v2.11.36) ===
+=== АКТУАЛЬНОЕ (v2.11.37) ===
 
 ssh root@195.19.20.245
 
@@ -10,13 +10,15 @@ cd ~/SongForge
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.36"
+# "version":"2.11.37"
 
-# Проверка шаринга:
-# 1) Опубликуйте трек из фонотеки
-# 2) «Поделиться» → ссылка https://sozdaipesnu.ru/t/ID
-# 3) Откройте ссылку — обложка, play, эквалайзер, без скачивания
-# 4) «Создать свою песню» → студия
+# Проверка превью в Telegram:
+# 1) update-now
+# 2) Откройте в браузере: https://sozdaipesnu.ru/api/explore/ID/cover
+#    (ID из ссылки /t/ID) — должна открыться картинка
+# 3) В Telegram: @WebpageBot → отправьте ссылку /t/ID → «Update preview»
+#    или вставьте ссылку в Saved Messages заново (после сброса кеша)
+# 4) Должна появиться карточка с обложкой и названием
 
 
 === ОБЫЧНОЕ ===

@@ -40,7 +40,10 @@ def render_share_track_page(
     tid = (library_id or "").strip()
     title_s = (title or "").strip() or "Без названия"
     author_s = (author_name or "").strip() or "Аноним"
-    img = _abs_url(site, image_url)
+    # Картинка на странице — прямая обложка; для OG — прокси на нашем домене
+    # (Telegram/WhatsApp часто не тянут внешние CDN Suno/S3).
+    img_display = _abs_url(site, image_url)
+    og_image = f"{site}/api/explore/{tid}/cover"
     listen = f"/api/explore/{tid}/listen"
     share = f"{site}/t/{tid}"
     create_url = f"{site}/?from=share"
@@ -52,7 +55,7 @@ def render_share_track_page(
         "id": tid,
         "title": title_s,
         "author": author_s,
-        "image": img,
+        "image": img_display,
         "listen": listen,
         "share": share,
     }
@@ -67,17 +70,22 @@ def render_share_track_page(
 <meta name="description" content="{_esc(desc)}">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="{_esc(share)}">
-<meta property="og:type" content="music.song">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
 <meta property="og:site_name" content="СоздайСвоюПесню">
 <meta property="og:title" content="{_esc(title_s)}">
 <meta property="og:description" content="{_esc(desc)}">
 <meta property="og:url" content="{_esc(share)}">
-<meta property="og:image" content="{_esc(img)}">
+<meta property="og:image" content="{_esc(og_image)}">
+<meta property="og:image:secure_url" content="{_esc(og_image)}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="{_esc(title_s)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{_esc(title_s)}">
 <meta name="twitter:description" content="{_esc(desc)}">
-<meta name="twitter:image" content="{_esc(img)}">
+<meta name="twitter:image" content="{_esc(og_image)}">
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" sizes="180x180">
 <meta name="theme-color" content="#09090b">
@@ -170,8 +178,8 @@ a:hover{{text-decoration:underline}}
 
   <div class="card">
     <div class="cover-wrap">
-      <img id="cover" src="{_esc(img)}" alt="{_esc(title_s)}"
-           onerror="this.onerror=null;this.src='/assets/apple-touch-icon.png'">
+      <img id="cover" src="{_esc(img_display)}" alt="{_esc(title_s)}"
+           onerror="this.onerror=null;this.src='/api/explore/{_esc(tid)}/cover'">
       <div class="eq" id="eq" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span>

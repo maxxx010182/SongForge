@@ -125,7 +125,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.36")
+app = FastAPI(title="SongForge", version="2.11.37")
 
 app.add_middleware(
     CORSMiddleware,
@@ -442,8 +442,28 @@ async def legal_offer():
     return HTMLResponse(render_legal_page("offer"))
 
 
+def _public_site_base(request: Request) -> str:
+    """Домен из запроса (https://sozdaipesnu.ru), иначе SITE_URL из .env."""
+    try:
+        host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").strip()
+        proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "https").split(",")[0].strip()
+        if host and "localhost" not in host and not host.startswith("127."):
+            # не светим внутренний :8000 в OG, если снаружи https-домен
+            if host.endswith(":8000") and "sozdaipesnu" not in host:
+                pass
+            else:
+                if "sozdaipesnu.ru" in host or host.replace(".", "").replace(":", "").isalnum():
+                    # предпочитаем https для публичного домена
+                    if "sozdaipesnu.ru" in host:
+                        return f"https://{host.split(':')[0]}"
+                    return f"{proto}://{host}".rstrip("/")
+    except Exception:
+        pass
+    return (SITE_URL or "").rstrip("/") or str(request.base_url).rstrip("/")
+
+
 @app.get("/t/{library_id}", response_class=HTMLResponse)
-async def track_share_page(library_id: str):
+async def track_share_page(library_id: str, request: Request):
     """Публичная карточка трека: обложка, плеер, OG-превью. Без скачивания."""
     from backend.share_page import render_share_track_page
 
@@ -452,15 +472,72 @@ async def track_share_page(library_id: str):
         raise HTTPException(status_code=404, detail="Трек не найден или снят с публикации")
     author = cabinet.resolve_public_author_name(row)
     title = (row["title"] or "").strip() or "Без названия"
+    base = _public_site_base(request)
     return HTMLResponse(
         render_share_track_page(
-            site_url=SITE_URL,
+            site_url=base,
             library_id=library_id,
             title=title,
             author_name=author,
             image_url=row["image_url"] or "",
             likes=int(row["likes"] or 0),
         )
+    )
+
+
+@app.get("/api/explore/{library_id}/cover")
+async def explore_track_cover(library_id: str):
+    """Обложка для OG/Telegram: с нашего домена (прокси или fallback-лого)."""
+    row = cabinet.get_published_library_item(library_id)
+    fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+    if not fallback.is_file():
+        fallback = ROOT_DIR / "SongForgeLogo.png"
+
+    def _fallback() -> FileResponse:
+        if fallback.is_file():
+            return FileResponse(fallback, media_type="image/png")
+        raise HTTPException(status_code=404, detail="Нет обложки")
+
+    if not row:
+        return _fallback()
+    src = (row["image_url"] or "").strip()
+    if not src:
+        return _fallback()
+
+    def _fetch():
+        try:
+            resp = requests.get(
+                src,
+                timeout=20,
+                headers={
+                    "User-Agent": "SongForgeCoverBot/1.0",
+                    "Accept": "image/*,*/*",
+                },
+            )
+            if resp.status_code >= 400 or not resp.content:
+                return None
+            ctype = (resp.headers.get("content-type") or "image/jpeg").split(";")[0].strip()
+            if not ctype.startswith("image/"):
+                ctype = "image/jpeg"
+            # Telegram любит не гигантские файлы
+            body = resp.content
+            if len(body) > 4_500_000:
+                return None
+            return body, ctype
+        except requests.RequestException:
+            return None
+
+    result = await run_in_threadpool(_fetch)
+    if not result:
+        return _fallback()
+    body, ctype = result
+    return Response(
+        content=body,
+        media_type=ctype,
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Content-Disposition": "inline",
+        },
     )
 
 
@@ -477,7 +554,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.36",
+        "version": "2.11.37",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
