@@ -1,6 +1,6 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.24** — оплата GP, ноты OK.
+> **Актуально (15.07.2026):** код **v2.11.25** — lyrics ~4 мин + craft; V5_5 only.
 > Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
 > Runbook нот: `instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`
 
@@ -8,21 +8,21 @@
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.24 на проде. **Ноты после GetPlatinum подтверждены.**
+**Код:** v2.11.25 — длина треков + качество текста (модель **только V5_5**).
 
-**Баг нот (закрыт):**
-- Причина: strict checksum (2.11.19) → verify fail → mark_paid не вызывался; UI врал success по `?payment=success`.
-- Фикс: multi-algo signature (2.11.22) + atomic mark_paid + safe IP + fallback order+IP+shape + UI polling (2.11.24).
-- Документация на повтор: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` + блоки в `COMMANDS.txt`.
+**Что сделано в 2.11.25:**
+- Промпты: полная структура ~4 мин; бриф ≠ текст («что вижу — то пою» запрещён).
+- `lyrics_look_incomplete` + lazy → retry; max_tokens lyrics↑; prompt max 5000.
+- sunoapi `duration: 240` (было 180); ApiPass уже 240.
+- Модель: **V5_5** (без смены на V4_5ALL).
 
 **Статус:**
-- [x] CORS (v2.11.20), Бордо (v2.11.21)
-- [x] Webhook + начисление нот GP (v2.11.24, подтверждено на проде 15.07)
-- [x] Runbook «ноты не пришли» зафиксирован
+- [x] CORS, GP webhook/ноты (2.11.24), runbook
+- [~] Длина/текст — 2.11.25, ждёт подтверждения на проде
 - [~] Rate limiting backend — backlog
 - Чек-лист: `BETA_PRELAUNCH_CHECKLIST.md`
 
-**Следующее (по бете, не срочно):** backend rate limit, guest trial protection, concurrent generations, бэкапы/алерты.
+**Следующее:** деплой 2.11.25 + тест песни; если всё ещё коротко — смотреть объём lyrics в логах / extend.
 
 ---
 

@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.24**
+**Версия в коде (истина):** **2.11.25**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.24:** оплата GP, ноты на проде OK.
-- Runbook при повторе: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` + `COMMANDS.txt` (блоки «Ноты не пришли» / mark_paid).
-- Дальше: бета-чек-лист / NOTES_NEXT (не срочно).
+- **v2.11.25:** lyrics ~4 мин + craft (не «что вижу то пою»); sunoapi duration 240; **только V5_5**.
+- Деплой → тест генерации.
+- GP runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`.
 

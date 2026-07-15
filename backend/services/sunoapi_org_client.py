@@ -71,16 +71,20 @@ class SunoApiOrgClient:
         )
         payload = {
             **fields,
-            "duration": 180,
+            # Цель ~4 мин (как ApiPass duration=240). Офиц. OpenAPI generate
+            # duration не описывает — провайдер может учесть или игнорить;
+            # длина всё равно опирается на объём lyrics + V5_5.
+            "duration": 240,
             "model": self._normalize_model(plan.model_version),
             "callBackUrl": self._callback_url(),
         }
-        log.info(f"FULL PAYLOAD: {payload}")
 
         log.info(
-            "sunoapi.org create: title=%s, model=%s, style_len=%s, lyrics_len=%s",
+            "sunoapi.org create: title=%s, model=%s, duration=%s, "
+            "style_len=%s, lyrics_len=%s",
             fields["title"][:40],
             payload["model"],
+            payload["duration"],
             len(fields["style"]),
             len(fields["prompt"]),
         )

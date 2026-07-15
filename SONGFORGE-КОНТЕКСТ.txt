@@ -1,29 +1,25 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (v2.11.24 — ноты GP OK; runbook зафиксирован)
+Обновлено: 15 июля 2026 (v2.11.25 — lyrics ~4 мин + craft; V5_5 only)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.24** (на проде; ноты после оплаты подтверждены).
+Версия кода: **2.11.25** (push → update-now).
 
-Оплата GP — РАБОТАЕТ (15.07). Что сделали (v2.11.19→2.11.24):
-  - mark_paid: ноты ТОЛЬКО из notes_amount заказа в БД; атомарно pending→paid (без удвоения).
-  - Webhook verify: checksum с секретом ИЛИ fallback (isSuccess + known order UUID + IP GP 212.41.13.* + shape).
-  - IP: X-Real-IP только от localhost nginx (без spoof XFF).
-  - UI: polling /api/payment/orders/{id}; тост «зачислены» только при status=paid.
+**v2.11.25 — длина треков + качество текста (модель только V5_5):**
+  - Промпты unified/classic: полная форма ~4 мин (2000–4500 символов lyrics).
+  - «Бриф ≠ текст»: запрет «что вижу — то пою»; хук, Verse2, Bridge, повтор припева.
+  - QA: lyrics_look_incomplete + lazy → retry Yandex.
+  - sunoapi duration 240 (как ApiPass); prompt max 5000; model V5_5 без смены.
+  - После деплоя: тест генерации — длительность и текст.
 
-Если ноты снова не пришли:
-  1) `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt` — полный runbook
-  2) `COMMANDS.txt` — блоки «Ноты не пришли» / «Ручное начисление»
-  Диагностика: sqlite payment_orders + pm2 logs grep getplatinum|mark_paid|verify
-  Срочно: mark_paid(order_id=…) если pending и оплата в GP подтверждена.
+Оплата GP — OK (2.11.24). Runbook: `docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt`
 
-Активно: можно идти дальше по бете (см. NOTES_NEXT / BETA_PRELAUNCH_CHECKLIST).
-  Backlog рядом: rate limiting backend, guest trial, промпты/длина трека — не срочно.
+Активно: деплой 2.11.25 → тест создания песни (длина ~4 мин + текст).
 
-Правило версионирования: патч 2.11.24→2.11.25; всегда app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.25→2.11.26; всегда app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

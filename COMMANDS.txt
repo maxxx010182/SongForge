@@ -1,52 +1,48 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.24 — оплата GP OK; runbook: docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
+Версия: 2.11.25 — lyrics ~4 мин + craft; sunoapi duration 240; модель V5_5
 
-=== АКТУАЛЬНОЕ (15.07 — ноты GP работают; runbook зафиксирован) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.25: длиннее треки + тексты) ===
 
-# Runbook (полная инструкция): docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
-# Кратко: webhook → verify (checksum ИЛИ order+IP GP+shape) → mark_paid (notes из БД)
-# UI: polling status=paid; без ложного «баланс обновлён»
+# Что в 2.11.25:
+# - unified/classic: полная форма ~4 мин, не «что вижу — то пою»
+# - reject коротких/неполных lyrics → retry
+# - sunoapi duration 240 (как ApiPass); prompt до 5000; модель только V5_5
+# Runbook нот: docs/instrukcii/GETPLATINUM-NOTY-RUNBOOK.txt
 
 ssh root@195.19.20.245
 
 cd ~/SongForge
 
-# --- Деплой ---
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
+# Ждать: === Готово! v2.11.25 ===
+
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.24"+
+# "version":"2.11.25"
+
+# После деплоя: создать песню в AI-продюсере, проверить длительность ~3.5–4+ мин
+# и что текст — песня (структура + хук), а не пересказ идеи.
 
 
 === Ноты не пришли после оплаты (диагностика) ===
 
-# Последние заказы
 sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, price_rub, created_at, paid_at FROM payment_orders ORDER BY created_at DESC LIMIT 8;"
 
-# Один заказ (подставь UUID из ?order=… или из таблицы выше)
 sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, provider_payment_id, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
 
-# Баланс user_id из строки заказа
 sqlite3 data/songforge.db "SELECT id, email, balance FROM users WHERE id='USER_ID';"
 
-# Логи
 pm2 logs songforge --lines 80 --nostream | grep -i -E 'getplatinum|mark_paid|accepted via|verify FAILED|signature'
 
 
 === Ручное начисление (только pending + оплата подтверждена в GP) ===
 
-# 1) Убедись status=pending и notes_amount верный
 sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount FROM payment_orders WHERE id='ORDER_UUID';"
 
-# 2) Начислить (идемпотентно — повтор не удвоит)
 ./venv/bin/python -c "from backend.services.payment_service import PaymentService; print(PaymentService().mark_paid(order_id='ORDER_UUID', provider_payment_id='GP_PAYMENT_ID'))"
 
-# 3) Проверить paid + balance
 sqlite3 data/songforge.db "SELECT id, status, paid_at FROM payment_orders WHERE id='ORDER_UUID';"
 sqlite3 data/songforge.db "SELECT balance FROM users WHERE id='USER_ID';"
-
-# GP_PAYMENT_ID — id платежа в GetPlatinum; если нет — можно ''
-# already_paid / notes_added=0 → уже было paid, не трогать
 
 
 === ОБЫЧНОЕ ===

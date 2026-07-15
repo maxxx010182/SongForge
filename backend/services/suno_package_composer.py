@@ -26,6 +26,7 @@ from backend.utils.text import (
     extract_json,
     lyrics_language_instruction,
     lyrics_look_english,
+    lyrics_look_incomplete,
     lyrics_look_lazy,
     resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
@@ -84,7 +85,7 @@ class SunoPackageComposer:
                     UNIFIED_PACKAGE_SYSTEM,
                     user_text + extra_hint,
                     model=model,
-                    max_tokens=2400,
+                    max_tokens=3500,
                     temperature=temperature,
                 )
                 result = self._parse_response(
@@ -92,8 +93,22 @@ class SunoPackageComposer:
                     idea=idea,
                     analysis=analysis,
                 )
-                if not result or lyrics_look_lazy(result.lyrics, idea):
-                    log.warning("Unified package %s: lazy or empty lyrics", label)
+                if not result:
+                    log.warning("Unified package %s: empty/unparseable", label)
+                    continue
+                if lyrics_look_lazy(result.lyrics, idea):
+                    log.warning(
+                        "Unified package %s: lazy lyrics (len=%s)",
+                        label,
+                        len(result.lyrics),
+                    )
+                    continue
+                if lyrics_look_incomplete(result.lyrics, idea):
+                    log.warning(
+                        "Unified package %s: incomplete structure/len (len=%s)",
+                        label,
+                        len(result.lyrics),
+                    )
                     continue
                 if lang_code == "ru" and lyrics_look_english(result.lyrics):
                     log.warning("Unified package %s: expected Russian lyrics — retry", label)
@@ -116,7 +131,9 @@ class SunoPackageComposer:
         custom_description: str = "",
     ) -> str:
         parts = [
-            f"Описание от пользователя: {idea}",
+            f"БРИФ (не готовый текст — преврати в песню): {idea}",
+            "Задача: полная песня ~4 минуты, качественный сонграйтинг, "
+            "НЕ пересказ брифа «что вижу — то пою».",
             f"Жанр: {analysis.genre} / {analysis.subgenre}",
             f"Настроение: {analysis.mood}",
             f"BPM: {analysis.bpm}",
@@ -125,7 +142,10 @@ class SunoPackageComposer:
             f"Инструменты: {', '.join(analysis.instruments)}",
             f"Атмосфера: {analysis.atmosphere}",
             f"Продакшн: {analysis.production_style}",
-            f"Структура: {analysis.structure}",
+            f"Ориентир структуры: {analysis.structure}",
+            "Обязательная форма lyrics: Verse1 → Pre → Chorus → Verse2 → Pre → "
+            "Chorus → Bridge → Final Chorus → Outro; припев дословно одинаков; "
+            "lyrics 2000–4500 символов (если не детская).",
         ]
         if custom_description.strip():
             parts.append(
@@ -187,6 +207,7 @@ class SunoPackageComposer:
         lyrics = clamp_suno_prompt(lyrics)
         if len(lyrics) < 80:
             return None
+        # Короткий «скелет» отсекаем на compose(); здесь только явный мусор.
 
         style = ensure_russian_vocal_style(style)
         style = compact_suno_style(style, max_len=SUNO_STYLE_MAX_LEN)
@@ -202,8 +223,20 @@ class SunoPackageComposer:
         if not text:
             return text
         first = text.splitlines()[0].strip().lower()
+        # Режиссура вроде [Crowd …] — не вокальная секция; нужен [Verse 1] в начале.
         if first.startswith(
-            ("[verse", "[chorus", "[intro", "[pre-chorus", "[bridge", "[outro", "[crowd")
+            (
+                "[verse",
+                "[chorus",
+                "[intro",
+                "[pre-chorus",
+                "[bridge",
+                "[outro",
+                "[final chorus",
+                "[build",
+                "[drop",
+                "[breakdown",
+            )
         ):
             return text
         return f"[Verse 1]\n{text}"

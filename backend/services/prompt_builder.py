@@ -25,6 +25,7 @@ from backend.utils.text import (
     ensure_russian_vocal_style,
     lyrics_language_instruction,
     lyrics_look_english,
+    lyrics_look_incomplete,
     lyrics_look_lazy,
     resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
@@ -302,7 +303,7 @@ class PromptBuilder:
                     self._yandex.complete(
                         CLASSIC_LYRICS_SYSTEM,
                         user_text + extra_hint,
-                        max_tokens=1400,
+                        max_tokens=3200,
                         temperature=temperature,
                         model=model,
                     )
@@ -310,13 +311,19 @@ class PromptBuilder:
                 lyrics = scrub_idea_echo_from_lyrics(lyrics, idea)
                 lang_code, _, _ = resolve_lyrics_language(idea)
                 wrong_lang = lang_code == "ru" and lyrics_look_english(lyrics)
-                if lyrics and not lyrics_look_lazy(lyrics, idea) and not wrong_lang:
+                lazy = lyrics_look_lazy(lyrics, idea) if lyrics else True
+                incomplete = (
+                    lyrics_look_incomplete(lyrics, idea) if lyrics else True
+                )
+                if lyrics and not lazy and not incomplete and not wrong_lang:
                     return lyrics, source
                 log.info(
-                    "Lyrics attempt %s rejected (lazy=%s wrong_lang=%s)",
+                    "Lyrics attempt %s rejected (lazy=%s incomplete=%s wrong_lang=%s len=%s)",
                     source,
-                    lyrics_look_lazy(lyrics, idea) if lyrics else True,
+                    lazy,
+                    incomplete,
                     wrong_lang,
+                    len(lyrics) if lyrics else 0,
                 )
             except Exception:
                 log.exception("Lyrics attempt %s failed", source)
@@ -335,16 +342,19 @@ class PromptBuilder:
             backing_vocal=False,
         )
         return (
-            f"Тема песни (СТРОГО следуй только этой идее, без добавок): {idea}\n"
+            f"БРИФ (не готовый текст — преврати в песню, не «что вижу — то пою»): {idea}\n"
             f"Жанр: {plan.genre} / {plan.subgenre}\n"
             f"Настроение: {plan.mood}\n"
             f"Энергия: {plan.energy}\n"
             f"BPM: {plan.bpm}\n"
             f"Вокал: {plan.vocal} — {plan.vocal_description}\n"
             f"Атмосфера: {plan.atmosphere}\n"
-            f"Структура: {plan.structure}\n"
-            "ОБЯЗАТЕЛЬНО сделай полную 3–4 минутную песню с развитой структурой (Verse 1 + Pre + Chorus + Verse 2 с развитием + Bridge + Final Chorus + Outro).\n"
-            "Используй конкретные детали из идеи пользователя в тексте.\n"
+            f"Ориентир структуры: {plan.structure}\n"
+            "ОБЯЗАТЕЛЬНО: полная песня ~4 минуты (lyrics 2000–4500 символов).\n"
+            "Форма: Intro? → Verse1 → Pre → Chorus → Verse2 (новый ракурс) → Pre → "
+            "Chorus → Bridge → Final Chorus → Outro. Припев дословно одинаков.\n"
+            "Якоря (имена/места/детали) из брифа — вплетай естественно; "
+            "не пересказывай бриф списком и не копируй фразы брифа в строки.\n"
             f"{screenplay_hint}\n"
             f"{lyrics_language_instruction(idea)}"
         )
@@ -509,25 +519,58 @@ class PromptBuilder:
 
     @staticmethod
     def _fallback_lyrics(idea: str) -> str:
+        # Запасной полноценный каркас ~4 мин, если YandexGPT недоступен.
+        # Идея не вставляется дословно — только общий эмоциональный каркас.
+        _ = (idea or "")[:80]
         return (
-            "[Verse 1]\n"
-            "В сердце тихо тает лёд\n"
-            "Город дышит в синий час\n"
-            "Я ищу свой новый след\n"
-            "Среди звёзд и между нас\n\n"
-            "[Chorus]\n"
-            "Это песня — мой огонь\n"
-            "Звучит внутри и снаружи\n"
-            "Каждый такт ведёт домой\n"
-            "Туда, где слышны только чувства\n\n"
-            "[Verse 2]\n"
-            "Каждый бит — как новый день\n"
-            "Я иду туда, где слышен свет\n"
-            "Пусть мелодия звенит\n"
-            "И не знает больше преград\n\n"
-            "[Chorus]\n"
-            "Это песня — мой огонь\n"
-            "Звучит внутри и снаружи\n\n"
-            "[Outro]\n"
-            "Навсегда."
+            "[Intro - soft pad, distant pulse]\n"
+            "(мм…)\n\n"
+            "[Verse 1 - intimate storytelling]\n"
+            "Ночь ложится на плечи тихо\n"
+            "Свет фонарей рисует путь\n"
+            "Я храню в кармане слово\n"
+            "Что не решался произнести\n"
+            "Шаги по лужам отбивают ритм\n"
+            "Город бережно держит меня\n"
+            "В груди тепло и холод рядом\n"
+            "И я иду навстречу дню\n\n"
+            "[Pre-Chorus - building]\n"
+            "Чуть громче сердце, чуть смелее взгляд\n"
+            "Ещё один вдох — и я готов\n\n"
+            "[Chorus - clear emotional hook]\n"
+            "Держи меня в этом свете\n"
+            "Пока не станет легче дышать\n"
+            "Держи меня в этом свете\n"
+            "Я научусь тебя слышать\n\n"
+            "[Verse 2 - new angle]\n"
+            "Утро стирает вчерашние тени\n"
+            "На стекле чужие следы\n"
+            "Я меняю старые привычки\n"
+            "На честные простые «да»\n"
+            "Пусть ветер сдувает сомнения\n"
+            "Пусть карта ведёт не назад\n"
+            "Я собираю себя по кускам\n"
+            "И снова выбираю путь\n\n"
+            "[Pre-Chorus - building]\n"
+            "Чуть громче сердце, чуть смелее взгляд\n"
+            "Ещё один вдох — и я готов\n\n"
+            "[Chorus - clear emotional hook]\n"
+            "Держи меня в этом свете\n"
+            "Пока не станет легче дышать\n"
+            "Держи меня в этом свете\n"
+            "Я научусь тебя слышать\n\n"
+            "[Bridge - strip-back then lift]\n"
+            "Если тишина ответит первой\n"
+            "Я не убегу — я останусь тут\n"
+            "Между страхом и надеждой\n"
+            "Выберу шаги вперёд\n\n"
+            "[Final Chorus - full, layered vocals]\n"
+            "Держи меня в этом свете\n"
+            "Пока не станет легче дышать\n"
+            "Держи меня в этом свете\n"
+            "Я научусь тебя слышать\n"
+            "(о-о-о)\n\n"
+            "[Outro - fade]\n"
+            "В этом свете…\n"
+            "Я слышу."
         )

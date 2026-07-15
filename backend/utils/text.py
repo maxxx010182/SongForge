@@ -42,10 +42,25 @@ _STRUCTURE_TAGS = (
     "[chorus",
     "[bridge",
     "[outro",
+    "[pre-chorus",
+    "[intro",
+    "[final chorus",
     "[куплет",
     "[припев",
     "[бридж",
     "[аутро",
+)
+
+_SHORT_SONG_MARKERS = (
+    "детск",
+    "kids",
+    "children",
+    "сказк",
+    "колыбел",
+    "lullaby",
+    "для малыш",
+    "для ребён",
+    "для ребен",
 )
 
 
@@ -64,6 +79,40 @@ def _lyric_body_lines(lyrics: str) -> list[str]:
     return lines
 
 
+def idea_allows_short_song(idea: str) -> bool:
+    """Детские/колыбельные — короче; остальные целимся в ~4 минуты."""
+    blob = (idea or "").lower()
+    return any(m in blob for m in _SHORT_SONG_MARKERS)
+
+
+def lyrics_look_incomplete(lyrics: str, idea: str = "") -> bool:
+    """True: слишком короткий текст или нет полноценной формы песни (~4 мин)."""
+    text = clean_text(lyrics)
+    if not text:
+        return True
+    lower = text.lower()
+    short_ok = idea_allows_short_song(idea)
+    min_len = 700 if short_ok else 1400
+    if len(text) < min_len:
+        return True
+    if "[verse" not in lower or "[chorus" not in lower:
+        return True
+    if short_ok:
+        return False
+    verse_n = lower.count("[verse")
+    chorus_n = lower.count("[chorus") + lower.count("[final chorus")
+    has_bridge = "[bridge" in lower
+    # Полная форма: 2 куплета + повтор припева, либо куплет+bridge+2 chorus
+    if verse_n < 2 and not has_bridge:
+        return True
+    if chorus_n < 2 and not has_bridge:
+        return True
+    body = _lyric_body_lines(text)
+    if len(body) < 16:
+        return True
+    return False
+
+
 def lyrics_look_lazy(lyrics: str, idea: str) -> bool:
     """True when lyrics look like a copied user description, not a real song."""
     text = clean_text(lyrics)
@@ -76,13 +125,16 @@ def lyrics_look_lazy(lyrics: str, idea: str) -> bool:
         return True
 
     idea_norm = _normalize_phrase(idea)
+    # Целый бриф вставлен в текст — явный «что вижу то пою»
     if len(idea_norm) >= 16 and idea_norm in _normalize_phrase(text):
         return True
 
     idea_words = [w for w in re.findall(r"[а-яёa-z]{3,}", idea_norm, re.IGNORECASE)]
-    if len(idea_words) >= 2:
+    # Слова из брифа (имена, места) в песне — нормально.
+    # Lazy только если почти весь бриф «протащен» и текст всё ещё короткий/плоский.
+    if len(idea_words) >= 4 and len(text) < 500:
         matched = sum(1 for w in idea_words if w in lower)
-        if matched / len(idea_words) >= 0.5:
+        if matched / len(idea_words) >= 0.85:
             return True
 
     body_lines = _lyric_body_lines(text)
@@ -92,11 +144,11 @@ def lyrics_look_lazy(lyrics: str, idea: str) -> bool:
             idea_norm in first_line_norm or first_line_norm in idea_norm
         ):
             return True
-        if len(idea_words) >= 2:
+        if len(idea_words) >= 3:
             first_words = re.findall(r"[а-яёa-z]{3,}", first_line_norm, re.IGNORECASE)
-            if first_words:
+            if first_words and len(first_line_norm) >= 20:
                 overlap = sum(1 for w in idea_words if w in first_words)
-                if overlap / len(idea_words) >= 0.6:
+                if overlap / len(idea_words) >= 0.7:
                     return True
 
     return False

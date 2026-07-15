@@ -1,4 +1,4 @@
-"""Нормализация полей запроса Suno V5.5 (лимиты ApiPass / руководство интеграции)."""
+"""Нормализация полей запроса Suno V5.5 (лимиты ApiPass / sunoapi.org)."""
 
 from __future__ import annotations
 
@@ -6,10 +6,11 @@ import re
 
 from backend.utils.text import clean_text, truncate
 
-# Руководство по интеграции Suno §1.3: style ≤ 200, prompt ≤ 3000
+# Suno V5.5 / ApiPass: prompt до 5000; style держим компактным (200) для стабильности
+# (docs V5.5 style до 1000 — не раздуваем, качество важнее длины style).
 SUNO_STYLE_MAX_LEN = 200
 SUNO_TITLE_MAX_LEN = 80
-SUNO_PROMPT_MAX_LEN = 3000
+SUNO_PROMPT_MAX_LEN = 5000
 SUNO_NEGATIVE_MAX_LEN = 500
 
 _TITLE_BAD_RE = re.compile(
