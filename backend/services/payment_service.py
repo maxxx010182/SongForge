@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
+import re
 import uuid
 from typing import Any
 
@@ -326,28 +328,125 @@ class PaymentService:
             return None
         return str(form_url)
 
+    @staticmethod
+    def _strip_checksum_from_raw(raw_body: bytes) -> bytes | None:
+        """Убрать поле checksum/signature из JSON-тела, сохранив исходное форматирование."""
+        try:
+            text = raw_body.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+        patterns = (
+            r',\s*"(checksum|Checksum|signature|sign|hash)"\s*:\s*"[^"]*"',
+            r'"(checksum|Checksum|signature|sign|hash)"\s*:\s*"[^"]*"\s*,\s*',
+            r'"(checksum|Checksum|signature|sign|hash)"\s*:\s*"[^"]*"',
+        )
+        for pat in patterns:
+            new_text, n = re.subn(pat, "", text, count=1)
+            if n:
+                return new_text.encode("utf-8")
+        return None
+
     def verify_getplatinum_webhook(self, raw_body: bytes, payload: dict) -> bool:
-        """Проверка подписи GetPlatinum webhook по checksum (HMAC-SHA256).
-        Используем API_KEY как секрет (стандартная практика для таких сервисов).
+        """Проверка подписи GetPlatinum webhook.
+
+        Официальный алгоритм в публичной доке размыт; v2.11.19 угадал HMAC «как Prodamus»
+        и на реальных webhook'ах начал отдавать 400 → ноты не начислялись.
+        Пробуем несколько канонических вариантов (тело без checksum + API key).
         """
         if not GETPLATINUM_API_KEY or not raw_body:
+            log.warning("GetPlatinum verify: missing API key or empty body")
+            return False
+
+        if not isinstance(payload, dict):
             return False
 
         checksum = ""
-        if isinstance(payload, dict):
-            checksum = payload.get("checksum", "") or ""
+        sig_key = ""
+        for key in ("checksum", "Checksum", "signature", "sign", "hash"):
+            val = payload.get(key)
+            if val:
+                checksum = str(val).strip()
+                sig_key = key
+                break
 
-        # Подписываем тело без checksum (как в Prodamus)
-        payload_for_sign = {k: v for k, v in payload.items() if k != "checksum"} if isinstance(payload, dict) else {}
-        body_str = json.dumps(payload_for_sign, ensure_ascii=False, separators=(",", ":"))
+        if not checksum:
+            log.warning(
+                "GetPlatinum verify: no checksum field; keys=%s",
+                list(payload.keys())[:24],
+            )
+            return False
 
-        expected = hmac.new(
-            GETPLATINUM_API_KEY.encode(),
-            body_str.encode(),
-            hashlib.sha256
-        ).hexdigest()
+        secret = GETPLATINUM_API_KEY.encode("utf-8")
+        skip_keys = {sig_key, "checksum", "Checksum", "signature", "sign", "hash"}
+        payload_for_sign = {k: v for k, v in payload.items() if k not in skip_keys}
 
-        return hmac.compare_digest(checksum, expected)
+        body_candidates: list[bytes] = []
+        # 1) raw body с вырезанным полем подписи (сохраняем пробелы/порядок GP)
+        stripped = self._strip_checksum_from_raw(raw_body)
+        if stripped:
+            body_candidates.append(stripped)
+        # 2) пересборка JSON (как пришло / sorted)
+        body_candidates.append(
+            json.dumps(payload_for_sign, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        )
+        body_candidates.append(
+            json.dumps(
+                payload_for_sign, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+            ).encode("utf-8")
+        )
+        body_candidates.append(
+            json.dumps(payload_for_sign, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode(
+                "utf-8"
+            )
+        )
+        # 3) весь raw body как есть (на случай если checksum только в заголовке — редко)
+        body_candidates.append(raw_body)
+
+        # уникальные тела
+        seen: set[bytes] = set()
+        unique_bodies: list[bytes] = []
+        for b in body_candidates:
+            if b and b not in seen:
+                seen.add(b)
+                unique_bodies.append(b)
+
+        checksum_norm = checksum.strip().removeprefix("sha256=").removeprefix("SHA256=")
+        checksum_cmp = checksum_norm.lower()
+        for body in unique_bodies:
+            digest = hmac.new(secret, body, hashlib.sha256).digest()
+            variants = (
+                digest.hex(),
+                base64.b64encode(digest).decode("ascii"),
+                hashlib.sha256(body + secret).hexdigest(),
+                hashlib.sha256(secret + body).hexdigest(),
+                hashlib.sha256(body).hexdigest(),
+                hmac.new(secret, body, hashlib.md5).hexdigest(),
+                hashlib.md5(body + secret).hexdigest(),
+            )
+            for expected in variants:
+                if hmac.compare_digest(checksum_cmp, expected.lower()):
+                    log.info("GetPlatinum webhook signature OK (len_body=%s)", len(body))
+                    return True
+
+        log.warning(
+            "GetPlatinum verify FAILED: sig_key=%s checksum_len=%s checksum_prefix=%s "
+            "keys=%s isSuccess=%s body_len=%s",
+            sig_key,
+            len(checksum),
+            checksum[:12],
+            list(payload.keys())[:20],
+            payload.get("isSuccess"),
+            len(raw_body),
+        )
+        # Укороченный raw для следующего разбора алгоритма (без API key)
+        try:
+            preview = raw_body.decode("utf-8", errors="replace")
+            if len(preview) > 1200:
+                preview = preview[:1200] + "…"
+            log.warning("GetPlatinum webhook raw preview: %s", preview)
+        except Exception:
+            pass
+        return False
 
     def _handle_getplatinum_webhook(self, payload: dict) -> dict | None:
         if not GETPLATINUM_API_KEY:

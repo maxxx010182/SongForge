@@ -1,26 +1,24 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.21** (тема Бордо wine). Прод после update-now.
-> Главный handoff: `../SONGFORGE-КОНТЕКСТ.txt` → блок **«СЕЙЧАС»**.
-> Команды: `../COMMANDS.txt`. Версия в коде: `backend/app.py`.
-> Ниже по файлу — backlog и архив; старые «деплой v2.11.3» и т.п. не перечитывать как текущий план.
+> **Актуально (15.07.2026):** код **v2.11.22** — фикс verify GetPlatinum + Бордо wine.
+> Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
 
 ---
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.21 — тема «Бордо»: accent `#C94B5C` (wine/scarlet), без dusty pink rose.
+**Код:** v2.11.22 — webhook signature: multi-algo (raw strip + HMAC/SHA/MD5); лог raw preview при fail.
 
-**Следующий шаг:** баг GetPlatinum — тост «Баланс обновлён», нота не начисляется  
-→ диагностика webhook/orders (`COMMANDS.txt`) → фикс → bump **2.11.22**.
+**Причина бага нот:** `signature verification failed` → 400 (webhook доходил, mark_paid нет).
 
-**Статус аудита / беты:**
-- [x] GetPlatinum webhook signature (v2.11.19)
-- [x] CORS → SITE_URL (v2.11.20)
-- [x] Бордо: wine palette (v2.11.21)
-- [~] Rate limiting: фронт есть; backend slowapi — backlog
-- [ ] Баг начисления нот после оплаты (критично)
-- Чек-лист: `BETA_PRELAUNCH_CHECKLIST.md` (1% лимита владельца)
+**Следующий шаг:** update-now 2.11.22 → тест оплаты. Если fail — логи raw preview.
+
+**Статус:**
+- [x] CORS (v2.11.20), Бордо (v2.11.21)
+- [~] Webhook signature: v2.11.19 ломал прод; v2.11.22 — исправление, ждёт подтверждения на проде
+- [ ] Подтвердить начисление нот после 2.11.22
+- [~] Rate limiting backend — backlog
+- Чек-лист: `BETA_PRELAUNCH_CHECKLIST.md`
 
 ---
 

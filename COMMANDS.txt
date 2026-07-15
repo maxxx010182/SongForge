@@ -1,95 +1,48 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия кода: 2.11.21 (тема Бордо wine/scarlet). После деплоя health = 2.11.21
+Версия кода: 2.11.22 (фикс подписи GetPlatinum webhook)
 
-=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — деплой v2.11.21 + баг нот GetPlatinum) ===
+=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — деплой v2.11.22, фикс webhook подписи) ===
 
-# === ДЕПЛОЙ v2.11.21 (тема Бордо) — когда закончите тест оплаты ===
-ssh root@195.19.20.245
-cd ~/SongForge
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-# Ждать: === Готово! v2.11.21 ===
-curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.21"
-
-# === ДИАГНОСТИКА БАГА НОТ (можно до/после деплоя) ===
+# Причина бага: GetPlatinum POST webhook приходит, но verify подписи давал 400
+# (лог: GetPlatinum webhook signature verification failed) → mark_paid не вызывался.
 
 # === ШАГ 1. SSH ===
 ssh root@195.19.20.245
 
-# === ШАГ 2. В папку проекта ===
+# === ШАГ 2. Папка ===
 cd ~/SongForge
 
-# === ШАГ 3. Логи GetPlatinum / webhook (самое важное) ===
-pm2 logs songforge --lines 200 --nostream | grep -i -E 'getplatinum|webhook|ignored|mark_paid|signature|isSuccess'
-
-# === ШАГ 4. Последние логи API ===
-pm2 logs songforge --lines 80 --nostream
-
-# === ШАГ 5. Заказы в БД ===
-sqlite3 data/songforge.db "SELECT id, user_id, status, provider, provider_payment_id, created_at FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
-
-# === ШАГ 6. Баланс пользователей ===
-sqlite3 data/songforge.db "SELECT id, email, balance FROM users ORDER BY id DESC LIMIT 5;"
-
-# === ШАГ 7. Код обработчика webhook ===
-grep -A 60 "def _handle_getplatinum_webhook" backend/services/payment_service.py
-
-# === ШАГ 8. Перезапуск с .env (если меняли ключи) ===
-pm2 restart songforge --update-env
-
-# Важно: после копирования закрой COMMANDS.txt полностью и открой заново.
-
-# === ШАГ 9. Проверка health (после деплоя: 2.11.21) ===
-curl -s https://sozdaipesnu.ru/api/health
-# Ожидаем: "version":"2.11.21" , "redis":true , "s3":true
-
-curl -s https://sozdaipesnu.ru/api/auth/providers
-# Ожидаем: vk_enabled:true , email_enabled:true , email_smtp:true
-
-
-=== ДЕПЛОЙ ОБНОВЛЕНИЯ С GITHUB (когда есть новый push) ===
-
-ssh root@195.19.20.245
-
-cd ~/SongForge
-
+# === ШАГ 3. Деплой ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.21 === (или выше, если версию подняли)
+# Ждать: === Готово! v2.11.22 ===
 
+# === ШАГ 4. Health ===
 curl -s https://sozdaipesnu.ru/api/health
-# "version" должен совпадать с backend/app.py
+# "version":"2.11.22"
+
+# === ШАГ 5. Повторный тест оплаты 1 ноты (лучше с новой оплаты) ===
+# После оплаты смотрите логи:
+
+pm2 logs songforge --lines 80 --nostream | grep -i -E 'getplatinum|webhook|signature|mark_paid|verify|FAILED|OK'
+
+# Успех: "GetPlatinum webhook signature OK" и "paid" / баланс вырос
+# Если снова FAILED — в логе будет "raw preview" — пришлите эти строки (без API-ключа).
+
+# === ШАГ 6. Заказы и баланс (диагностика) ===
+sqlite3 data/songforge.db "SELECT id, user_id, status, provider, provider_payment_id, created_at FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
+
+sqlite3 data/songforge.db "SELECT id, email, balance FROM users ORDER BY id DESC LIMIT 5;"
 
 
-=== ПРОВЕРКА ЗАЩИТЫ WEBHOOK (v2.11.19, уже на проде) ===
-
-grep -A 25 "def verify_getplatinum_webhook" backend/services/payment_service.py
-
-grep -A 10 "async def payment_webhook" backend/app.py
-
-pm2 logs songforge --lines 30 --nostream | grep -i -E 'getplatinum|webhook|signature|verify|checksum'
-
-
-=== ДИАГНОСТИКА ОБЛОЖЕК В ФОНОТЕКЕ (архив 13.07) ===
-
-cd ~/SongForge
-
-sqlite3 data/songforge.db "SELECT id, title, image_url_a, image_url_b, created_at FROM generations WHERE image_url_a IS NOT NULL OR image_url_b IS NOT NULL ORDER BY created_at DESC LIMIT 5;"
+=== ЕСЛИ ДЕНЬГИ УЖЕ СПИСАЛИСЬ, А НОТА НЕ ПРИШЛА (ручное начисление) ===
+# Сначала найдите order id (status обычно pending/created) и user_id:
+# sqlite3 ... payment_orders ...
+# Затем напишите ассистенту order id + user id — начислим скриптом/SQL.
+# Не делайте UPDATE balance «на глаз» без сверки order.
 
 
 === ОБЫЧНЫЕ ОПЕРАЦИИ ===
-
 pm2 logs songforge --lines 40 --nostream
-
 pm2 status
-
-# После правок .env:
 pm2 restart songforge --update-env
-
-# ВАЖНО:
-# - После копирования команд — закрой COMMANDS.txt полностью и открой заново
-# - Копируй по ОДНОЙ строке, вставляй правой кнопкой мыши
-
-
-=== ОТКАТ К РАБОЧЕЙ ВЕРСИИ (сайт сломан после деплоя) ===
-# См. docs/instrukcii/ — recover / предыдущий tarball; не смешивать с блоком АКТУАЛЬНОЕ выше.
