@@ -1,9 +1,8 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.34 — эквалайзер плеера + без VseGPT
+Версия: 2.11.35 — логотип в шапке + иконка закладок
 
-=== АКТУАЛЬНОЕ (v2.11.34) ===
+=== АКТУАЛЬНОЕ (v2.11.35) ===
 
-# Деплой
 ssh root@195.19.20.245
 
 cd ~/SongForge
@@ -11,21 +10,14 @@ cd ~/SongForge
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.34"  "llm_provider":"kie"
+# "version":"2.11.35"
 
-# .env уже с Kie — менять не нужно (только если ключ ещё не вписан):
-# nano ~/SongForge/.env
-# LLM_PROVIDER=kie
-# KIE_API_KEY=...
-# LLM_MODEL_PRO=gemini-2.5-pro
-# LLM_MODEL_LITE=gemini-2.5-flash
-# Ctrl+O Enter, Ctrl+X
-# pm2 restart songforge --update-env
-
-# Проверка: play любой трек — эквалайзер на обложке и в мини-плеере
+# После деплоя: откройте сайт, Ctrl+F5 (сброс кеша).
+# В шапке — знак сердце+нота рядом с «СоздайСвоюПесню».
+# Во вкладке браузера — та же иконка.
+# Смена темы в профиле — цвет знака меняется вместе с текстом.
 
 
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
-pm2 logs songforge --lines 80

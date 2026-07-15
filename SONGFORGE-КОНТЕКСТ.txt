@@ -1,29 +1,26 @@
 СОЗДАЙСВОЮПЕСНЮ (SongForge) — КОНТЕКСТ ДЛЯ ПРОДОЛЖЕНИЯ
 ======================================================
-Обновлено: 15 июля 2026 (v2.11.34 эквалайзер + cleanup VseGPT)
+Обновлено: 15 июля 2026 (v2.11.35 логотип + favicon)
 
 ═══════════════════════════════════════
 СЕЙЧАС (читать ПЕРВЫМ при любом старте сессии)
 ═══════════════════════════════════════
 
-Версия кода: **2.11.34** (push → update-now).
+Версия кода: **2.11.35** (push → update-now).
 
-**LLM:**
-  - Основной: **Kie** (`LLM_PROVIDER=kie`, PRO=gemini-2.5-pro, LITE=flash)
-  - Резерв: **Yandex** (вручную LLM_PROVIDER=yandex)
-  - VseGPT / openai_compat — **удалены** из кода
-  - docs/instrukcii/LLM-KIE-PROSTO.txt
-  - Админка: балансы Kie + sunoapi
+**LLM:** Kie (PRO/LITE gemini); резерв Yandex.
 
 **UI:**
-  - Анимированный эквалайзер в окне «Сейчас играет» + мини-плеер (CSS, play/pause)
+  - Эквалайзер в плеере
+  - Логотип: `assets/logo_new.png` + CSS mask (цвет = тема) в шапке и на экране генерации
+  - Favicon: `/assets/favicon-32.png`, apple-touch: `/assets/apple-touch-icon.png`
 
 **Активно:**
-  1) update-now 2.11.34
+  1) update-now 2.11.35 + Ctrl+F5
   2) Промо 60% + бета
-  3) cron backup/health (backlog)
+  3) backlog: cron backup/health; UX пакеты вместо попапа 1/5 нот
 
-Правило версионирования: патч 2.11.34→2.11.35; app.py + deploy + README + COMMANDS + СЕЙЧАС.
+Правило версионирования: патч 2.11.35→2.11.36; app.py + deploy + README + COMMANDS + СЕЙЧАС.
 
 
 ВАЖНОЕ ПРАВИЛО: правки ЛОКАЛЬНО + git commit + git push → на сервере только update-now.sh.

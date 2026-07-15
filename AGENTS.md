@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.34**
+**Версия в коде (истина):** **2.11.35**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,6 @@
 
 ## Сейчас (15.07.2026)
 
-- **v2.11.34:** CSS-эквалайзер в плеере; VseGPT/openai_compat удалены (kie + yandex).
-- Kie на проде; деплой update-now 2.11.34.
+- **v2.11.35:** логотип шапки (logo_new + mask/тема) + favicon/apple-touch.
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**.
 
