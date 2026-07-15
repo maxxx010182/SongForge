@@ -1,13 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.29 — бета-лимиты мягче: concurrent 6/2, trial 8 IP/сутки
+Версия: 2.11.30 — UX до беты: текст в модалке, Скачать MP3, скролл пакетов
 
-=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.29) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.30) ===
 
-# Лимиты (env можно переопределить):
-# MAX_CONCURRENT_GENERATIONS=6  — одновременно «варятся» на всём сервере
-# MAX_CONCURRENT_PER_USER=2     — одновременно на одного user
-# MAX_TRIAL_PER_IP_PER_DAY=8    — пробных с одного IP за день
-# (1 пробная на аккаунт — без изменений)
+# UX:
+# - «Посмотреть текст» = тот, что ушёл в Suno (редактор)
+# - кнопки «Скачать MP3» + «Открыть фонотеку»
+# - Пакеты: скролл вверх к блоку оплаты
+# - модалка результата: шапка зафиксирована, скролл контента
 
 ssh root@195.19.20.245
 
@@ -15,16 +15,13 @@ cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.29 ===
+# Ждать: === Готово! v2.11.30 ===
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.29"
+# "version":"2.11.30"
 
-# Бэкап / health (если ещё не ставил cron — см. ниже)
-chmod +x scripts/backup-db.sh scripts/health-watch.sh
-./scripts/backup-db.sh
-
-# crontab -e:
+# cron backup/health — если ещё не ставил:
+# chmod +x scripts/backup-db.sh scripts/health-watch.sh
 # 15 3 * * * /root/SongForge/scripts/backup-db.sh >> /var/log/songforge-backup.log 2>&1
 # */5 * * * * /root/SongForge/scripts/health-watch.sh >> /var/log/songforge-health.log 2>&1
 

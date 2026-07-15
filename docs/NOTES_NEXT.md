@@ -1,21 +1,19 @@
 # Примечания к следующей правке
 
-> **Актуально (15.07.2026):** код **v2.11.29** — мягкие бета-лимиты 6/2, trial 8 IP.
+> **Актуально (15.07.2026):** код **v2.11.30** — UX до беты + защита 2.11.28–29.
 > Handoff: `../SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**. Команды: `../COMMANDS.txt`.
 
 ---
 
 ## Handoff — актуально (15 июля 2026)
 
-**Код:** v2.11.29 — бета-защита, лимиты смягчены.
+**Код:** v2.11.30.
 
-- Concurrent: **6** global / **2** user
-- Trial: 1/аккаунт + **8**/IP/сутки
-- Rate limit + backup/health scripts
+**UX 2.11.30:** lyrics в модалке = Suno; Скачать MP3; скролл пакетов; sticky header result.
+**Бета-защита:** concurrent 6/2, trial 8 IP/day, rate limit, backup scripts.
 
-**Владельцу:** update-now 2.11.29 → cron → smoke → бета.
-
-**Не-блокеры:** промокод, fingerprint, Telegram-алерт, UI polish.
+**Владельцу:** update-now 2.11.30 → cron → smoke → бета.
+**Промо:** в GP; инструкция тестерам. clientId/телефон — после ТП GP.
 
 ---
 
