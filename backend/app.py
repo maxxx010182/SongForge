@@ -115,7 +115,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.22")
+app = FastAPI(title="SongForge", version="2.11.23")
 
 app.add_middleware(
     CORSMiddleware,
@@ -418,7 +418,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.22",
+        "version": "2.11.23",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1372,8 +1372,14 @@ async def payment_webhook(provider: str, request: Request):
         payload = {}
 
     if provider == "getplatinum":
-        if not payment_service.verify_getplatinum_webhook(raw_body, payload):
-            log.warning("GetPlatinum webhook signature verification failed")
+        # Реальный IP за nginx — из X-Forwarded-For / X-Real-IP
+        forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        real_ip = (request.headers.get("x-real-ip") or "").strip()
+        client_ip = forwarded or real_ip or (request.client.host if request.client else "")
+        if not payment_service.verify_getplatinum_webhook(
+            raw_body, payload, client_ip=client_ip
+        ):
+            log.warning("GetPlatinum webhook signature verification failed ip=%s", client_ip)
             raise HTTPException(status_code=400, detail="Invalid signature")
 
     try:

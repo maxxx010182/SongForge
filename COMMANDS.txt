@@ -1,10 +1,11 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия кода: 2.11.22 (фикс подписи GetPlatinum webhook)
+Версия кода: 2.11.23 (webhook: checksum + fallback pending-order+IP GetPlatinum)
 
-=== АКТУАЛЬНОЕ СЕЙЧАС (15.07 — деплой v2.11.22, фикс webhook подписи) ===
+=== АКТУАЛЬНОЕ (15.07 — деплой v2.11.23 + начисление зависшего заказа) ===
 
-# Причина бага: GetPlatinum POST webhook приходит, но verify подписи давал 400
-# (лог: GetPlatinum webhook signature verification failed) → mark_paid не вызывался.
+# Лог показал: isSuccess=true, checksum есть, но алгоритм GP ≠ HMAC(API_KEY).
+# v2.11.23: если checksum не сошёлся — принимаем webhook при
+#   isSuccess + наш pending dealId + IP 212.41.13.* (реальные IP GP).
 
 # === ШАГ 1. SSH ===
 ssh root@195.19.20.245
@@ -15,34 +16,31 @@ cd ~/SongForge
 # === ШАГ 3. Деплой ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Ждать: === Готово! v2.11.22 ===
+# Ждать: === Готово! v2.11.23 ===
 
 # === ШАГ 4. Health ===
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.22"
+# "version":"2.11.23"
 
-# === ШАГ 5. Повторный тест оплаты 1 ноты (лучше с новой оплаты) ===
-# После оплаты смотрите логи:
+# === ШАГ 5. Начислить УЖЕ оплаченный заказ (если status ещё pending) ===
+# order из лога: 0bab3aa4-8b9f-42b6-96ef-0666e0435c7b
 
-pm2 logs songforge --lines 80 --nostream | grep -i -E 'getplatinum|webhook|signature|mark_paid|verify|FAILED|OK'
+sqlite3 data/songforge.db "SELECT id, user_id, status, notes_amount, price_rub FROM payment_orders WHERE id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b';"
 
-# Успех: "GetPlatinum webhook signature OK" и "paid" / баланс вырос
-# Если снова FAILED — в логе будет "raw preview" — пришлите эти строки (без API-ключа).
+# Если status=pending — начислить (одна команда):
+./venv/bin/python -c "from backend.services.payment_service import PaymentService; r=PaymentService().mark_paid(order_id='0bab3aa4-8b9f-42b6-96ef-0666e0435c7b', provider_payment_id='76871408'); print(r)"
 
-# === ШАГ 6. Заказы и баланс (диагностика) ===
-sqlite3 data/songforge.db "SELECT id, user_id, status, provider, provider_payment_id, created_at FROM payment_orders ORDER BY created_at DESC LIMIT 5;"
+# Проверка баланса user из SELECT выше:
+# sqlite3 data/songforge.db "SELECT id, email, balance FROM users WHERE id='USER_ID_СЮДА';"
 
-sqlite3 data/songforge.db "SELECT id, email, balance FROM users ORDER BY id DESC LIMIT 5;"
+# === ШАГ 6. Новый тест оплаты (после деплоя) ===
+# После оплаты в логах ожидаем либо signature OK, либо:
+#   checksum mismatch, accepted via pending-order+IP
+# и status paid + рост balance.
 
-
-=== ЕСЛИ ДЕНЬГИ УЖЕ СПИСАЛИСЬ, А НОТА НЕ ПРИШЛА (ручное начисление) ===
-# Сначала найдите order id (status обычно pending/created) и user_id:
-# sqlite3 ... payment_orders ...
-# Затем напишите ассистенту order id + user id — начислим скриптом/SQL.
-# Не делайте UPDATE balance «на глаз» без сверки order.
+pm2 logs songforge --lines 50 --nostream | grep -i -E 'getplatinum|webhook|signature|accepted via|mark_paid|FAILED|paid'
 
 
-=== ОБЫЧНЫЕ ОПЕРАЦИИ ===
-pm2 logs songforge --lines 40 --nostream
+=== ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env

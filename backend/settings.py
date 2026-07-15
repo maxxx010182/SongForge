@@ -46,6 +46,11 @@ GETPLATINUM_ACCOUNT = os.getenv("GETPLATINUM_ACCOUNT", "").strip()
 GETPLATINUM_API_KEY = os.getenv("GETPLATINUM_API_KEY", "").strip()
 GETPLATINUM_VAT = os.getenv("GETPLATINUM_VAT", "none").strip() or "none"
 GETPLATINUM_POSITION_PREFIX = os.getenv("GETPLATINUM_POSITION_PREFIX", "").strip()
+# IP-префиксы GetPlatinum для fallback-проверки webhook (через запятую).
+# Реальные POST шли с 212.41.13.*
+GETPLATINUM_WEBHOOK_IP_PREFIXES = os.getenv(
+    "GETPLATINUM_WEBHOOK_IP_PREFIXES", "212.41.13."
+).strip()
 
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))

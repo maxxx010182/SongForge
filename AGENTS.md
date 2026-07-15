@@ -21,12 +21,10 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.22**
-- `backend/app.py` (FastAPI + `/api/health`)
-- `scripts/deploy-vps.sh` / `deploy-local.sh` (`EXPECTED_VERSION`)
-- `README.md`
+**Версия в коде (истина):** **2.11.23**
+- `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
-Деплой: `COMMANDS.txt` (корень). Инструкции: `docs/instrukcii/INDEX.txt`.
+Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
 
 ## Язык
 
@@ -38,6 +36,6 @@
 
 ## Сейчас (15.07.2026)
 
-- Код: **v2.11.22** — фикс проверки подписи GetPlatinum webhook (лог: signature verification failed → 400, ноты не шли).
-- **Сейчас:** задеплоить 2.11.22 → повторить оплату (или прислать новый лог raw preview).
-- Бордо wine — в 2.11.21 (вместе с 2.11.22 уйдёт на прод).
+- **v2.11.23:** GetPlatinum webhook — checksum multi-try + fallback (isSuccess + known order + IP 212.41.13.*).
+- Деплой + ручное mark_paid для `0bab3aa4-…` если ещё pending (см. COMMANDS).
+
