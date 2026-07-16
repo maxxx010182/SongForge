@@ -1,7 +1,7 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.38 — превью TG: карточка /t/ID/og.jpg 1200x630
+Версия: 2.11.39 — вход email: подсказка «Спам» + повтор кода; + превью TG og.jpg
 
-=== АКТУАЛЬНОЕ (v2.11.38) ===
+=== АКТУАЛЬНОЕ (v2.11.39) ===
 
 ssh root@195.19.20.245
 
@@ -13,11 +13,14 @@ curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts
 # source .venv/bin/activate 2>/dev/null; pip install -r requirements.txt; pm2 restart songforge --update-env
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.38"
+# "version":"2.11.39"
 
-# Проверка превью-картинки (ID из вашей ссылки /t/ID):
+# --- После деплоя: вход по email ---
+# В модалке входа → код: подсказка про «Спам» + «Отправить код ещё раз» (через 60 с)
+
+# --- Превью-картинка TG (ID из ссылки /t/ID) ---
 # curl -sI https://sozdaipesnu.ru/t/ID/og.jpg
-# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg  — должна открыться широкая карточка
+# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg  — широкая карточка
 
 # Telegram кеширует старое! Обязательно:
 # 1) @WebpageBot → отправить https://sozdaipesnu.ru/t/ID

@@ -125,7 +125,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.38")
+app = FastAPI(title="SongForge", version="2.11.39")
 
 app.add_middleware(
     CORSMiddleware,
@@ -586,7 +586,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.38",
+        "version": "2.11.39",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1230,7 +1230,7 @@ async def auth_email_request(req: EmailAuthRequest, request: Request):
         f"auth_email:{email_key}",
         limit=5,
         window_sec=3600,
-        detail="На этот email уже отправляли код. Подождите час или проверьте почту.",
+        detail="На этот email уже отправляли код. Подождите час. Проверьте «Входящие» и «Спам».",
     )
     try:
         code = auth_service.request_email_code(req.email)
