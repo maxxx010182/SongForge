@@ -1,30 +1,30 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.39 — вход email: подсказка «Спам» + повтор кода; + превью TG og.jpg
+Версия: 2.11.39 — TG-превью ЕЩЁ НЕ ОК (синяя ссылка); email UX ok в коде
 
-=== АКТУАЛЬНОЕ (v2.11.39) ===
+=== АКТУАЛЬНОЕ (v2.11.39, диагностика TG) ===
 
 ssh root@195.19.20.245
 
 cd ~/SongForge
 
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-# если Pillow не встал сам — один раз:
-# source .venv/bin/activate 2>/dev/null; pip install -r requirements.txt; pm2 restart songforge --update-env
-
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.39"
+# ожидаем "version":"2.11.39"
 
-# --- После деплоя: вход по email ---
-# В модалке входа → код: подсказка про «Спам» + «Отправить код ещё раз» (через 60 с)
-
-# --- Превью-картинка TG (ID из ссылки /t/ID) ---
+# Подставьте реальный ID из ссылки /t/.... :
 # curl -sI https://sozdaipesnu.ru/t/ID/og.jpg
-# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg  — широкая карточка
+# curl -sI https://sozdaipesnu.ru/t/ID
+# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg
 
-# Telegram кеширует старое! Обязательно:
-# 1) @WebpageBot → отправить https://sozdaipesnu.ru/t/ID
-# 2) вставить ссылку В НОВОЕ сообщение (не старое)
+# если og.jpg 500/ошибка — Pillow + рестарт:
+# source .venv/bin/activate 2>/dev/null; pip install -r requirements.txt; pm2 restart songforge --update-env
+# pm2 logs songforge --lines 50
+
+# Telegram:
+# 1) @WebpageBot → https://sozdaipesnu.ru/t/ID
+# 2) ссылка НОВЫМ сообщением
+
+# повторный деплой при необходимости:
+# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 
 === ОБЫЧНОЕ ===
