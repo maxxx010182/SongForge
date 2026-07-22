@@ -1,20 +1,16 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.41 на проде — TG без карточек на ВСЁМ домене (VK/Макс ок)
+Версия: 2.11.41 — TG без карточек на всём домене; SSL ок; VK/Макс ок
 
-=== АКТУАЛЬНОЕ (TG = домен/SSL, не meta) ===
-
-ssh root@195.19.20.245
-
-# Цепочка сертификата (Telegram часто падает, если нет intermediate):
-echo | openssl s_client -connect sozdaipesnu.ru:443 -servername sozdaipesnu.ru 2>/dev/null | openssl x509 -noout -subject -issuer -dates
-
-echo | openssl s_client -connect sozdaipesnu.ru:443 -servername sozdaipesnu.ru -showcerts 2>/dev/null | grep -E 'subject=|issuer=|Verify return code'
-
-# Сколько сертификатов в цепочке (нужно ≥2: сайт + intermediate):
-echo | openssl s_client -connect sozdaipesnu.ru:443 -servername sozdaipesnu.ru -showcerts 2>/dev/null | grep -c 'BEGIN CERTIFICATE'
+=== АКТУАЛЬНОЕ ===
+# SSL: Verify 0, 4 certs — не чинить
+# Meta: не пилить ради TG (ВК/Макс уже показывают карточки)
+# Выбор: Cloudflare / backlog / тикет TG — см. СЕЙЧАС в SONGFORGE-КОНТЕКСТ.txt
 
 
 === ОБЫЧНОЕ ===
+ssh root@195.19.20.245
 curl -s https://sozdaipesnu.ru/api/health
 pm2 status
 pm2 restart songforge --update-env
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
