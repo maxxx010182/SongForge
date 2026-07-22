@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.40**
+**Версия в коде (истина):** **2.11.41**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -34,10 +34,9 @@
 
 **В чате:** один шаг за раз; backlog — в контекст/NOTES; команды — в `COMMANDS.txt`.
 
-## Сейчас (22.07.2026, пауза)
+## Сейчас (22.07.2026)
 
-- GitHub **2.11.40** push ok (`b056912`). **Прод не катили** (owner выключился).
-- След. сеанс: update-now.sh → health → HEAD og.jpg → WebpageBot (см. СЕЙЧАС).
+- Прод **2.11.40**; код **2.11.41** (bot HTML для TG). Деплой — update-now.sh.
 - Правило владельца: **commit+push сразу сам**, без спроса.
 - Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**. Один шаг, простой русский.
 

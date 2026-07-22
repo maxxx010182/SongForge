@@ -127,7 +127,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.40")
+app = FastAPI(title="SongForge", version="2.11.41")
 
 app.add_middleware(
     CORSMiddleware,
@@ -409,7 +409,7 @@ async def google_site_verification():
     return PlainTextResponse(path.read_text(encoding="utf-8"))
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def get_index():
     return FileResponse(ROOT_DIR / "index.html")
 
@@ -467,7 +467,11 @@ def _public_site_base(request: Request) -> str:
 @app.api_route("/t/{library_id}", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def track_share_page(library_id: str, request: Request):
     """Публичная карточка трека: обложка, плеер, OG-превью. Без скачивания."""
-    from backend.share_page import render_share_track_page
+    from backend.share_page import (
+        is_link_preview_bot,
+        render_share_bot_page,
+        render_share_track_page,
+    )
 
     row = cabinet.get_published_library_item(library_id)
     if not row:
@@ -475,6 +479,8 @@ async def track_share_page(library_id: str, request: Request):
     author = cabinet.resolve_public_author_name(row)
     title = (row["title"] or "").strip() or "Без названия"
     base = _public_site_base(request)
+    cover = (row["image_url"] or "").strip()
+    bot = is_link_preview_bot(request.headers.get("user-agent"))
 
     # Прогрев og.jpg на диск (только GET) — бот Telegram часто ходит сразу за картинкой.
     if request.method == "GET":
@@ -485,7 +491,6 @@ async def track_share_page(library_id: str, request: Request):
             if not fallback.is_file():
                 fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
             og_dir = UPLOADS_DIR / "og"
-            cover = (row["image_url"] or "").strip()
             await run_in_threadpool(
                 ensure_og_jpeg_file,
                 library_id=library_id,
@@ -496,16 +501,25 @@ async def track_share_page(library_id: str, request: Request):
         except Exception as exc:
             log.warning("og warm-up failed for %s: %s", library_id, exc)
 
-    html = render_share_track_page(
-        site_url=base,
-        library_id=library_id,
-        title=title,
-        author_name=author,
-        image_url=row["image_url"] or "",
-        likes=int(row["likes"] or 0),
-    )
+    if bot:
+        html = render_share_bot_page(
+            site_url=base,
+            library_id=library_id,
+            title=title,
+            author_name=author,
+            image_url=cover,
+        )
+    else:
+        html = render_share_track_page(
+            site_url=base,
+            library_id=library_id,
+            title=title,
+            author_name=author,
+            image_url=cover,
+            likes=int(row["likes"] or 0),
+        )
     headers = {
-        "Cache-Control": "public, max-age=300",
+        "Cache-Control": "public, max-age=60" if bot else "public, max-age=300",
         "X-Content-Type-Options": "nosniff",
     }
     if request.method == "HEAD":
@@ -602,11 +616,11 @@ async def track_share_og_image(library_id: str):
     except Exception as exc:
         log.warning("og.jpg build failed for %s: %s", library_id, exc)
         raise HTTPException(status_code=500, detail="Не удалось собрать превью") from exc
+    # Без filename/Content-Disposition: TG иногда не строит карточку, если
+    # картинка отдаётся «как вложение».
     return FileResponse(
         path,
         media_type="image/jpeg",
-        filename="og.jpg",
-        content_disposition_type="inline",
         headers={
             "Cache-Control": "public, max-age=86400",
             "X-Content-Type-Options": "nosniff",
@@ -614,7 +628,7 @@ async def track_share_og_image(library_id: str):
     )
 
 
-@app.get("/SongForgeLogo.png")
+@app.api_route("/SongForgeLogo.png", methods=["GET", "HEAD"])
 async def get_logo():
     path = ROOT_DIR / "SongForgeLogo.png"
     if not path.is_file():
@@ -627,7 +641,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.40",
+        "version": "2.11.41",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),

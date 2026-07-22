@@ -1,24 +1,23 @@
 # Примечания к следующей правке
 
-> **Актуально (22.07.2026, пауза):** GitHub **2.11.40** (`b056912` push ok). Прод **не обновляли**.  
-> След. сеанс: `update-now.sh` → health 2.11.40 → HEAD og.jpg → WebpageBot.  
+> **Актуально (22.07.2026):** прод **2.11.40**; код **2.11.41** — минимальный HTML для TG-бота.  
+> След.: `update-now.sh` → health 2.11.41 → WebpageBot `?v=241`.  
 > Handoff: `SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**.
 
 ---
 
-## Handoff — 22 июля 2026 (пауза; 2.11.40 в GitHub)
+## Handoff — 22 июля 2026 (TG: бот ходит, карточки нет)
 
 ### Статус
-- Диагностика на 2.11.39: GET og.jpg + meta **ок**; HEAD **405**; чужие TG-карточки **есть**
-- WebpageBot «updated», под нашей — **только URL**
-- Код **2.11.40** push: HEAD + кэш `uploads/og/`, FileResponse, warm-up
-- Owner: «пуш всегда сразу»; выключился **до деплоя**
+- 2.11.40 на проде: HEAD og.jpg **200**; meta/JPEG ок; microlink видит карточку
+- nginx: `TelegramBot` GET page+og.jpg **200**, в TG всё равно только URL
+- Вывод: не «бот не достучался»; нужен другой разбор HTML/картинки
+- 2.11.41: bot-only HTML, без Content-Disposition на og.jpg, проще description
 
-### Следующий шаг (при включении)
-1. `update-now.sh` (COMMANDS.txt)
-2. health `2.11.40`; `curl -sI` og.jpg → **200**
-3. WebpageBot + новое сообщение в Избранное  
-   тест: `/t/8bf09a78-bade-431a-9c18-27e45236a83c`
+### Следующий шаг
+1. `update-now.sh` → health `2.11.41`
+2. WebpageBot + `...?v=241` + новое в Избранное
+3. Если снова нет — nginx gzip_disable TelegramBot; тест главной в TG
 
 ### Backlog
 1. UX пакеты: не попап 1/5, а все пакеты

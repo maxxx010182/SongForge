@@ -27,6 +27,108 @@ def _abs_url(site_url: str, path_or_url: str) -> str:
     return f"{base}/{raw.lstrip('/')}"
 
 
+def is_link_preview_bot(user_agent: str | None) -> bool:
+    """Боты превью (Telegram/VK/WhatsApp и т.п.) — отдаём минимальный HTML."""
+    ua = (user_agent or "").lower()
+    if not ua:
+        return False
+    needles = (
+        "telegrambot",
+        "twitterbot",
+        "facebookexternalhit",
+        "facebot",
+        "linkedinbot",
+        "vkshare",
+        "odklbot",
+        "slackbot",
+        "whatsapp",
+        "discordbot",
+        "embedly",
+        "pinterest",
+        "redditbot",
+        "skypeuripreview",
+    )
+    return any(n in ua for n in needles)
+
+
+def _share_meta(
+    *,
+    site_url: str,
+    library_id: str,
+    title: str,
+    author_name: str,
+    image_url: str,
+) -> dict[str, str]:
+    site = (site_url or "").rstrip("/")
+    tid = (library_id or "").strip()
+    title_s = (title or "").strip() or "Без названия"
+    author_s = (author_name or "").strip() or "Аноним"
+    # Без «ёлочек» и mid-dot — у хрупких парсеров TG иногда ломается разбор meta.
+    desc = f"{title_s} - {author_s}. Слушай на sozdaipesnu.ru"
+    return {
+        "site": site,
+        "tid": tid,
+        "title_s": title_s,
+        "author_s": author_s,
+        "img_display": _abs_url(site, image_url),
+        "og_image": f"{site}/t/{tid}/og.jpg",
+        "share": f"{site}/t/{tid}",
+        "desc": desc,
+    }
+
+
+def render_share_bot_page(
+    *,
+    site_url: str,
+    library_id: str,
+    title: str,
+    author_name: str,
+    image_url: str,
+) -> str:
+    """Минимальный HTML только с OG/Twitter — для TelegramBot и аналогов.
+
+    Полная страница с CSS/JS иногда мешает разбору; боту нужен только head.
+    """
+    m = _share_meta(
+        site_url=site_url,
+        library_id=library_id,
+        title=title,
+        author_name=author_name,
+        image_url=image_url,
+    )
+    return f"""<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>{_esc(m['title_s'])} | СоздайСвоюПесню</title>
+<meta name="description" content="{_esc(m['desc'])}">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="{_esc(m['share'])}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="СоздайСвоюПесню">
+<meta property="og:title" content="{_esc(m['title_s'])}">
+<meta property="og:description" content="{_esc(m['desc'])}">
+<meta property="og:url" content="{_esc(m['share'])}">
+<meta property="og:image" content="{_esc(m['og_image'])}">
+<meta property="og:image:secure_url" content="{_esc(m['og_image'])}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{_esc(m['title_s'])}">
+<meta name="twitter:description" content="{_esc(m['desc'])}">
+<meta name="twitter:image" content="{_esc(m['og_image'])}">
+<link rel="image_src" href="{_esc(m['og_image'])}">
+</head>
+<body>
+<h1>{_esc(m['title_s'])}</h1>
+<p>{_esc(m['author_s'])}</p>
+<p><a href="{_esc(m['share'])}">Открыть трек</a></p>
+</body>
+</html>
+"""
+
+
 def render_share_track_page(
     *,
     site_url: str,
@@ -36,20 +138,27 @@ def render_share_track_page(
     image_url: str,
     likes: int = 0,
 ) -> str:
-    site = (site_url or "").rstrip("/")
-    tid = (library_id or "").strip()
-    title_s = (title or "").strip() or "Без названия"
-    author_s = (author_name or "").strip() or "Аноним"
+    m = _share_meta(
+        site_url=site_url,
+        library_id=library_id,
+        title=title,
+        author_name=author_name,
+        image_url=image_url,
+    )
+    site = m["site"]
+    tid = m["tid"]
+    title_s = m["title_s"]
+    author_s = m["author_s"]
     # Картинка на странице — прямая обложка; для OG — /t/{id}/og.jpg (1200×630, .jpg).
     # Telegram надёжнее берёт URL с расширением и «карточный» размер, чем /api/.../cover.
-    img_display = _abs_url(site, image_url)
-    og_image = f"{site}/t/{tid}/og.jpg"
+    img_display = m["img_display"]
+    og_image = m["og_image"]
     listen = f"/api/explore/{tid}/listen"
-    share = f"{site}/t/{tid}"
+    share = m["share"]
     create_url = f"{site}/?from=share"
     explore_url = f"{site}/?track={tid}"
 
-    desc = f"«{title_s}» — {author_s} · слушай на СоздайСвоюПесню"
+    desc = m["desc"]
 
     payload = {
         "id": tid,

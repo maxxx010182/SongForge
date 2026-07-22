@@ -1,21 +1,26 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.40 в GitHub — ДЕПЛОЙ ЕЩЁ НЕ ДЕЛАЛИ (пауза 22.07)
+Версия: 2.11.41 — фикс TG-превью (минимальный HTML для ботов)
 
-=== АКТУАЛЬНОЕ (вкл. ПК → деплой 2.11.40) ===
+=== АКТУАЛЬНОЕ (деплой 2.11.41 + проверка TG) ===
 
 ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# ожидаем "version":"2.11.40"
+# ожидаем "version":"2.11.41"
 
-# HEAD должен быть 200 (раньше 405):
-curl -sI https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c/og.jpg
+# как видит бот (короткий HTML, не 11KB):
+curl -s -A "TelegramBot (like TwitterBot)" "https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c" | head -20
 
-# Telegram после деплоя:
-# 1) @WebpageBot → https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c
-# 2) та же ссылка НОВЫМ сообщением себе в Избранное
+# без Content-Disposition filename:
+curl -sI "https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c/og.jpg"
+
+# Telegram:
+# 1) @WebpageBot → https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c?v=241
+# 2) та же ссылка с ?v=241 НОВЫМ сообщением в Избранное
+# 3) сразу логи:
+grep -iE 'Telegram|/t/8bf09a78' /var/log/nginx/access.log | tail -20
 
 
 === ОБЫЧНОЕ ===
