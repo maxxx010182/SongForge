@@ -1,23 +1,23 @@
 # Примечания к следующей правке
 
-> **Актуально (22.07.2026):** прод **2.11.40**; код **2.11.41** — минимальный HTML для TG-бота.  
-> След.: `update-now.sh` → health 2.11.41 → WebpageBot `?v=241`.  
+> **Актуально (22.07.2026):** прод **2.11.41**. TG **без карточек на всём домене** (главная = B).  
+> ВК/Макс — карточки **есть**. Meta ок. Дальше: SSL-цепочка → Cloudflare/IP/TG.  
 > Handoff: `SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**.
 
 ---
 
-## Handoff — 22 июля 2026 (TG: бот ходит, карточки нет)
+## Handoff — 22 июля 2026 (TG: домен, не /t/)
 
 ### Статус
-- 2.11.40 на проде: HEAD og.jpg **200**; meta/JPEG ок; microlink видит карточку
-- nginx: `TelegramBot` GET page+og.jpg **200**, в TG всё равно только URL
-- Вывод: не «бот не достучался»; нужен другой разбор HTML/картинки
-- 2.11.41: bot-only HTML, без Content-Disposition на og.jpg, проще description
+- 2.11.41: bot HTML, HEAD, og cache — на проде
+- TG: и `/t/...`, и **главная** — только URL
+- ВК + Макс — превью **есть** → OG/meta **не** корень
+- TelegramBot GET 200 в nginx → достучался, карточки всё равно нет
 
 ### Следующий шаг
-1. `update-now.sh` → health `2.11.41`
-2. WebpageBot + `...?v=241` + новое в Избранное
-3. Если снова нет — nginx gzip_disable TelegramBot; тест главной в TG
+1. `openssl s_client` (COMMANDS.txt) — fullchain / Verify return code
+2. Если SSL ок: Cloudflare proxy **или** смена/проверка IP хостинга **или** bugs.telegram.org
+3. **Не** пилить meta ради TG, пока домен в TG мёртв
 
 ### Backlog
 1. UX пакеты: не попап 1/5, а все пакеты
