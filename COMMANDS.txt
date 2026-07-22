@@ -1,11 +1,9 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.40 — TG-превью: HEAD + кэш og.jpg (после деплоя — WebpageBot)
+Версия: 2.11.40 в GitHub — ДЕПЛОЙ ЕЩЁ НЕ ДЕЛАЛИ (пауза 22.07)
 
-=== АКТУАЛЬНОЕ (v2.11.40, фикс TG-превью) ===
+=== АКТУАЛЬНОЕ (вкл. ПК → деплой 2.11.40) ===
 
 ssh root@195.19.20.245
-
-cd ~/SongForge
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
@@ -14,7 +12,6 @@ curl -s https://sozdaipesnu.ru/api/health
 
 # HEAD должен быть 200 (раньше 405):
 curl -sI https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c/og.jpg
-curl -sI https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c
 
 # Telegram после деплоя:
 # 1) @WebpageBot → https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c

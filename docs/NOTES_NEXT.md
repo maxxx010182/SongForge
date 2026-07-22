@@ -1,21 +1,24 @@
 # Примечания к следующей правке
 
-> **Актуально (22.07.2026):** код **2.11.40** — HEAD + кэш og.jpg для TG. Ждём push/деплой и проверку WebpageBot.  
+> **Актуально (22.07.2026, пауза):** GitHub **2.11.40** (`b056912` push ok). Прод **не обновляли**.  
+> След. сеанс: `update-now.sh` → health 2.11.40 → HEAD og.jpg → WebpageBot.  
 > Handoff: `SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**.
 
 ---
 
-## Handoff — 22 июля 2026 (фикс TG 2.11.40)
+## Handoff — 22 июля 2026 (пауза; 2.11.40 в GitHub)
 
 ### Статус
-- Диагностика: GET og.jpg + meta **ок**; HEAD был **405**; чужие ссылки в TG с карточкой
-- WebpageBot «updated», под нашей ссылкой **пусто** (только URL)
-- Код: **2.11.40** — `api_route` GET+HEAD, `uploads/og/` кэш, FileResponse, warm-up
+- Диагностика на 2.11.39: GET og.jpg + meta **ок**; HEAD **405**; чужие TG-карточки **есть**
+- WebpageBot «updated», под нашей — **только URL**
+- Код **2.11.40** push: HEAD + кэш `uploads/og/`, FileResponse, warm-up
+- Owner: «пуш всегда сразу»; выключился **до деплоя**
 
-### Следующий шаг
-1. commit + push + `update-now.sh`
-2. health `2.11.40`; `curl -sI` og.jpg → **200** (не 405)
-3. WebpageBot + новое сообщение в Избранное
+### Следующий шаг (при включении)
+1. `update-now.sh` (COMMANDS.txt)
+2. health `2.11.40`; `curl -sI` og.jpg → **200**
+3. WebpageBot + новое сообщение в Избранное  
+   тест: `/t/8bf09a78-bade-431a-9c18-27e45236a83c`
 
 ### Backlog
 1. UX пакеты: не попап 1/5, а все пакеты
