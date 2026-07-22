@@ -1,15 +1,17 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.41 — TG без карточек на всём домене; SSL ок; VK/Макс ок
+Версия: 2.11.41 на проде — пауза 22.07 вечер
 
-=== АКТУАЛЬНОЕ ===
-# SSL: Verify 0, 4 certs — не чинить
-# Meta: не пилить ради TG (ВК/Макс уже показывают карточки)
-# Выбор: Cloudflare / backlog / тикет TG — см. СЕЙЧАС в SONGFORGE-КОНТЕКСТ.txt
+=== АКТУАЛЬНОЕ (завтра) ===
+# Сначала: SONGFORGE-КОНТЕКСТ.txt → СЕЙЧАС
+# TG-карточки: не meta; выбор владельца 1 Cloudflare / 2 backlog / 3 тикет / 4 бот
+# Деплой не нужен, пока нет новой версии
+
+ssh root@195.19.20.245
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.41"
 
 
 === ОБЫЧНОЕ ===
-ssh root@195.19.20.245
-curl -s https://sozdaipesnu.ru/api/health
 pm2 status
 pm2 restart songforge --update-env
 
