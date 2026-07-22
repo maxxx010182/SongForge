@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import io
+import re
+import time
 from pathlib import Path
 
 import requests
@@ -11,6 +13,8 @@ from backend.logger import log
 
 _OG_W = 1200
 _OG_H = 630
+_OG_CACHE_TTL_SEC = 86400
+_SAFE_ID = re.compile(r"^[a-fA-F0-9-]{8,64}$")
 
 
 def _fetch_bytes(url: str) -> bytes | None:
@@ -19,7 +23,7 @@ def _fetch_bytes(url: str) -> bytes | None:
     try:
         resp = requests.get(
             url,
-            timeout=20,
+            timeout=12,
             headers={
                 "User-Agent": "SongForgeCoverBot/1.0",
                 "Accept": "image/*,*/*",
@@ -99,5 +103,39 @@ def build_og_jpeg(
         pass
 
     out = io.BytesIO()
-    bg.save(out, format="JPEG", quality=88, optimize=True)
+    # progressive=False — baseline JPEG, надёжнее для превью-ботов
+    bg.save(out, format="JPEG", quality=88, optimize=True, progressive=False)
     return out.getvalue()
+
+
+def og_cache_path(cache_dir: Path, library_id: str) -> Path | None:
+    tid = (library_id or "").strip()
+    if not _SAFE_ID.match(tid):
+        return None
+    return cache_dir / f"{tid}.jpg"
+
+
+def ensure_og_jpeg_file(
+    *,
+    library_id: str,
+    cover_url: str,
+    cache_dir: Path,
+    fallback_path: Path | None = None,
+    max_age_sec: int = _OG_CACHE_TTL_SEC,
+) -> Path:
+    """JPEG на диске: отдача через FileResponse (GET/HEAD) без сборки каждый раз."""
+    path = og_cache_path(cache_dir, library_id)
+    if path is None:
+        raise ValueError("bad library_id")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    if path.is_file() and path.stat().st_size > 500:
+        age = time.time() - path.stat().st_mtime
+        if age < max_age_sec:
+            return path
+    jpeg = build_og_jpeg(cover_url=cover_url, fallback_path=fallback_path)
+    if not jpeg or len(jpeg) < 500:
+        raise RuntimeError("empty og jpeg")
+    tmp = path.with_suffix(".jpg.tmp")
+    tmp.write_bytes(jpeg)
+    tmp.replace(path)
+    return path

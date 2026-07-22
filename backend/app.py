@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 import requests
 from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -125,7 +127,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.39")
+app = FastAPI(title="SongForge", version="2.11.40")
 
 app.add_middleware(
     CORSMiddleware,
@@ -462,7 +464,7 @@ def _public_site_base(request: Request) -> str:
     return (SITE_URL or "").rstrip("/") or str(request.base_url).rstrip("/")
 
 
-@app.get("/t/{library_id}", response_class=HTMLResponse)
+@app.api_route("/t/{library_id}", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def track_share_page(library_id: str, request: Request):
     """Публичная карточка трека: обложка, плеер, OG-превью. Без скачивания."""
     from backend.share_page import render_share_track_page
@@ -473,16 +475,47 @@ async def track_share_page(library_id: str, request: Request):
     author = cabinet.resolve_public_author_name(row)
     title = (row["title"] or "").strip() or "Без названия"
     base = _public_site_base(request)
-    return HTMLResponse(
-        render_share_track_page(
-            site_url=base,
-            library_id=library_id,
-            title=title,
-            author_name=author,
-            image_url=row["image_url"] or "",
-            likes=int(row["likes"] or 0),
-        )
+
+    # Прогрев og.jpg на диск (только GET) — бот Telegram часто ходит сразу за картинкой.
+    if request.method == "GET":
+        try:
+            from backend.og_image import ensure_og_jpeg_file
+
+            fallback = ROOT_DIR / "assets" / "logo_new.png"
+            if not fallback.is_file():
+                fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+            og_dir = UPLOADS_DIR / "og"
+            cover = (row["image_url"] or "").strip()
+            await run_in_threadpool(
+                ensure_og_jpeg_file,
+                library_id=library_id,
+                cover_url=cover,
+                cache_dir=og_dir,
+                fallback_path=fallback if fallback.is_file() else None,
+            )
+        except Exception as exc:
+            log.warning("og warm-up failed for %s: %s", library_id, exc)
+
+    html = render_share_track_page(
+        site_url=base,
+        library_id=library_id,
+        title=title,
+        author_name=author,
+        image_url=row["image_url"] or "",
+        likes=int(row["likes"] or 0),
     )
+    headers = {
+        "Cache-Control": "public, max-age=300",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if request.method == "HEAD":
+        raw = html.encode("utf-8")
+        return Response(
+            content=b"",
+            media_type="text/html; charset=utf-8",
+            headers={**headers, "Content-Length": str(len(raw))},
+        )
+    return HTMLResponse(content=html, headers=headers)
 
 
 @app.get("/api/explore/{library_id}/cover")
@@ -540,10 +573,13 @@ async def explore_track_cover(library_id: str):
     )
 
 
-@app.get("/t/{library_id}/og.jpg")
+@app.api_route("/t/{library_id}/og.jpg", methods=["GET", "HEAD"])
 async def track_share_og_image(library_id: str):
-    """Карточка 1200×630 JPEG для Telegram/WhatsApp (URL с .jpg)."""
-    from backend.og_image import build_og_jpeg
+    """Карточка 1200×630 JPEG для Telegram/WhatsApp (URL с .jpg).
+
+    FileResponse + кэш на диске: корректный HEAD (боты) и быстрый повторный GET.
+    """
+    from backend.og_image import ensure_og_jpeg_file
 
     row = cabinet.get_published_library_item(library_id)
     if not row:
@@ -551,24 +587,29 @@ async def track_share_og_image(library_id: str):
     fallback = ROOT_DIR / "assets" / "logo_new.png"
     if not fallback.is_file():
         fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+    og_dir = UPLOADS_DIR / "og"
 
-    def _build() -> bytes:
-        return build_og_jpeg(
+    def _ensure() -> Path:
+        return ensure_og_jpeg_file(
+            library_id=library_id,
             cover_url=(row["image_url"] or "").strip(),
+            cache_dir=og_dir,
             fallback_path=fallback if fallback.is_file() else None,
         )
 
     try:
-        jpeg = await run_in_threadpool(_build)
+        path = await run_in_threadpool(_ensure)
     except Exception as exc:
         log.warning("og.jpg build failed for %s: %s", library_id, exc)
         raise HTTPException(status_code=500, detail="Не удалось собрать превью") from exc
-    return Response(
-        content=jpeg,
+    return FileResponse(
+        path,
         media_type="image/jpeg",
+        filename="og.jpg",
+        content_disposition_type="inline",
         headers={
-            "Cache-Control": "public, max-age=3600",
-            "Content-Disposition": 'inline; filename="og.jpg"',
+            "Cache-Control": "public, max-age=86400",
+            "X-Content-Type-Options": "nosniff",
         },
     )
 
@@ -586,7 +627,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.39",
+        "version": "2.11.40",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),

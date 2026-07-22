@@ -86,6 +86,7 @@ def render_share_track_page(
 <meta name="twitter:title" content="{_esc(title_s)}">
 <meta name="twitter:description" content="{_esc(desc)}">
 <meta name="twitter:image" content="{_esc(og_image)}">
+<link rel="image_src" href="{_esc(og_image)}">
 <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" sizes="180x180">
 <meta name="theme-color" content="#09090b">

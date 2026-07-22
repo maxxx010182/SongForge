@@ -1,30 +1,24 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.39 — TG-превью ЕЩЁ НЕ ОК (синяя ссылка); email UX ok в коде
+Версия: 2.11.40 — TG-превью: HEAD + кэш og.jpg (после деплоя — WebpageBot)
 
-=== АКТУАЛЬНОЕ (v2.11.39, диагностика TG) ===
+=== АКТУАЛЬНОЕ (v2.11.40, фикс TG-превью) ===
 
 ssh root@195.19.20.245
 
 cd ~/SongForge
 
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
 curl -s https://sozdaipesnu.ru/api/health
-# ожидаем "version":"2.11.39"
+# ожидаем "version":"2.11.40"
 
-# Подставьте реальный ID из ссылки /t/.... :
-# curl -sI https://sozdaipesnu.ru/t/ID/og.jpg
-# curl -sI https://sozdaipesnu.ru/t/ID
-# в браузере: https://sozdaipesnu.ru/t/ID/og.jpg
+# HEAD должен быть 200 (раньше 405):
+curl -sI https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c/og.jpg
+curl -sI https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c
 
-# если og.jpg 500/ошибка — Pillow + рестарт:
-# source .venv/bin/activate 2>/dev/null; pip install -r requirements.txt; pm2 restart songforge --update-env
-# pm2 logs songforge --lines 50
-
-# Telegram:
-# 1) @WebpageBot → https://sozdaipesnu.ru/t/ID
-# 2) ссылка НОВЫМ сообщением
-
-# повторный деплой при необходимости:
-# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Telegram после деплоя:
+# 1) @WebpageBot → https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c
+# 2) та же ссылка НОВЫМ сообщением себе в Избранное
 
 
 === ОБЫЧНОЕ ===
