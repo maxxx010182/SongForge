@@ -11,7 +11,7 @@ _PAGES = {
     "terms": {
         "title": "Пользовательское соглашение",
         "subtitle": "Сервис «СоздайСвоюПесню» (sozdaipesnu.ru)",
-        "updated": "8 июля 2026 г.",
+        "updated": "23 июля 2026 г.",
         "file": "agreement.html",
     },
     "privacy": {
