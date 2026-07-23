@@ -44,13 +44,19 @@
 Timeweb/Beget «под сайт-визитку» — всё на русском, поддержка РФ.
 
 
-КНОПКА НА СЕРВИС
-----------------
-Сейчас: кнопка → https://sozdaipesnu.ru  (нормально для старта).
+КНОПКИ НА СЕРВИС (уже в index.html)
+-----------------------------------
+Все CTA → sozdaipesnu.ru с UTM:
+  utm_source=landing
+  utm_medium=web
+  utm_campaign=gift_song
+  utm_content=nav|hero|povody|final
 
-Позже (регистрация «с ленда»): отдельная задача — ссылка вида
-  https://sozdaipesnu.ru/?... или /auth
-чтобы сразу открывался вход. Не блокирует заливку ленда.
+После своего домена ленда — в <head> заменить og:url / og:image
+на https://ВАШ-ДОМЕН/ и https://ВАШ-ДОМЕН/assets/og-cover.jpg
+(файл assets/og-cover.jpg уже лежит в папке).
+
+Позже: регистрация «с ленда» — отдельная задача.
 
 
 НЕ КЛАДИТЕ СЮДА
