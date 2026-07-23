@@ -23,9 +23,9 @@
 
 **СЛЕД. ШАГ (бета / продвижение):**
   1) Оффер: `docs/instrukcii/BETA-OFFER.txt` (BETA50 в GP → рассылка)
-  2) Лендинг воронки: папка **`landing/`** — владелец заливает HTML+assets;
-     хостинг ОТДЕЛЬНО от VPS сервиса (свой домен + дешёвый хостинг РФ / Pages)
-  3) Потом: smoke/cron; SEO; мессенджеры; рег. с ленда — позже
+  2) Лендинг: папка **`landing/`** (UTM/meta готовы).
+     Инструкция хостинг+домен: **`docs/instrukcii/LANDING-HOSTING.txt`**
+  3) Потом: BETA50 в GP; smoke/cron; SEO; мессенджеры
 
 Правило: commit+push сразу сам. Язык: простой русский, один шаг.
 Тест-ссылка: https://sozdaipesnu.ru/t/8bf09a78-bade-431a-9c18-27e45236a83c

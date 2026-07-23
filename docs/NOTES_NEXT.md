@@ -1,8 +1,8 @@
 # Примечания к следующей правке
 
 > **Актуально (23.07.2026):** прод+GitHub **2.11.41**.  
-> Оффер беты: `docs/instrukcii/BETA-OFFER.txt` (BETA50 −50% ×25).  
-> След.: создать код в GP → разослать 10–20.  
+> Лендинг: `landing/` + инструкция `docs/instrukcii/LANDING-HOSTING.txt`.  
+> Бета: `docs/instrukcii/BETA-OFFER.txt` (BETA50).  
 > Handoff: `SONGFORGE-КОНТЕКСТ.txt` → **СЕЙЧАС**.
 
 ---
