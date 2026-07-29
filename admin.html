@@ -112,7 +112,7 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
 </div>
 <script>
 var me=null;var fetchOpts={credentials:'include'};
-function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 function has(p){return me&&me.permissions&&me.permissions.indexOf(p)>=0;}
 async function api(path,opts){opts=opts||{};var r=await fetch(path,Object.assign({credentials:'include'},opts));var d=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(d.detail||r.statusText);return d;}
 function showGate(msg){document.getElementById('gate').classList.remove('hidden');document.getElementById('app').classList.add('hidden');if(msg)document.getElementById('gateMsg').textContent=msg;}

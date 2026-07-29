@@ -41,7 +41,6 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_generations_task_id ON generations(task_id)"
         )
         _migrate_generations_columns(conn)
-        _migrate_users_columns(conn)
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_generations_user_id ON generations(user_id)"
         )
@@ -63,6 +62,10 @@ def init_db() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
         )
+        # Миграция колонок users должна идти ПОСЛЕ создания таблицы —
+        # иначе на свежей БД (новый сервер / восстановление) ALTER TABLE падает
+        # с "no such table: users" и init_db() полностью не срабатывает.
+        _migrate_users_columns(conn)
 
         conn.execute(
             """

@@ -60,6 +60,11 @@ RATE_GEN_IP_LIMIT = int(os.getenv("RATE_GEN_IP_LIMIT", "12"))
 RATE_GEN_IP_WINDOW_SEC = int(os.getenv("RATE_GEN_IP_WINDOW_SEC", "60"))
 RATE_MUSIC_IP_LIMIT = int(os.getenv("RATE_MUSIC_IP_LIMIT", "6"))
 RATE_MUSIC_IP_WINDOW_SEC = int(os.getenv("RATE_MUSIC_IP_WINDOW_SEC", "60"))
+# Попытки ввода кода (не запроса) — защита от подбора 6-значного кода.
+RATE_AUTH_VERIFY_EMAIL_LIMIT = int(os.getenv("RATE_AUTH_VERIFY_EMAIL_LIMIT", "10"))
+RATE_AUTH_VERIFY_EMAIL_WINDOW_SEC = int(os.getenv("RATE_AUTH_VERIFY_EMAIL_WINDOW_SEC", "900"))  # 15 мин
+RATE_AUTH_VERIFY_IP_LIMIT = int(os.getenv("RATE_AUTH_VERIFY_IP_LIMIT", "20"))
+RATE_AUTH_VERIFY_IP_WINDOW_SEC = int(os.getenv("RATE_AUTH_VERIFY_IP_WINDOW_SEC", "900"))  # 15 мин
 
 SITE_URL = os.getenv("SITE_URL", "http://195.19.20.245:8000").rstrip("/")
 PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "stub").strip().lower()

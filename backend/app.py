@@ -90,6 +90,10 @@ from backend.settings import (
     PAYMENT_PROVIDER,
     RATE_AUTH_IP_LIMIT,
     RATE_AUTH_IP_WINDOW_SEC,
+    RATE_AUTH_VERIFY_EMAIL_LIMIT,
+    RATE_AUTH_VERIFY_EMAIL_WINDOW_SEC,
+    RATE_AUTH_VERIFY_IP_LIMIT,
+    RATE_AUTH_VERIFY_IP_WINDOW_SEC,
     RATE_GEN_IP_LIMIT,
     RATE_GEN_IP_WINDOW_SEC,
     RATE_MUSIC_IP_LIMIT,
@@ -1320,8 +1324,24 @@ async def auth_email_request(req: EmailAuthRequest, request: Request):
 async def auth_email_verify(
     req: EmailVerifyRequest,
     response: Response,
+    request: Request,
     guest_id: str = Depends(get_guest_id),
 ):
+    ip = _client_ip(request) or "unknown"
+    email_key = (req.email or "").strip().lower()
+    # Защита от подбора 6-значного кода: лимит попыток и по email, и по IP.
+    _rate_or_429(
+        f"auth_verify_ip:{ip}",
+        limit=RATE_AUTH_VERIFY_IP_LIMIT,
+        window_sec=RATE_AUTH_VERIFY_IP_WINDOW_SEC,
+        detail="Слишком много попыток входа. Подождите 15 минут.",
+    )
+    _rate_or_429(
+        f"auth_verify_email:{email_key}",
+        limit=RATE_AUTH_VERIFY_EMAIL_LIMIT,
+        window_sec=RATE_AUTH_VERIFY_EMAIL_WINDOW_SEC,
+        detail="Слишком много попыток для этого email. Запросите новый код через 15 минут.",
+    )
     try:
         user, token = auth_service.verify_email_code(req.email, req.code)
         return _complete_login(
