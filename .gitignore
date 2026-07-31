@@ -32,3 +32,6 @@ nohup.out
 terminals/
 agent-tools/
 mcps/
+
+# Node.js (Tailwind CSS build)
+node_modules/
