@@ -1,15 +1,15 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.53 — clientId снова как утром (без двоеточия)
+Версия: 2.11.53 на проде — оплата GP снова работает
 
-=== СЕЙЧАС ===
+=== АКТУАЛЬНОЕ ===
+# Деплой не нужен.
+# clientId GetPlatinum = id пользователя (не user:order).
+
 ssh root@195.19.20.245
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.53"
 
-# С компьютера: Пакеты → 1 нота → один клик.
-# Если снова ошибка:
 
-pm2 logs songforge --lines 30 --nostream
+=== ОБЫЧНОЕ ===
+pm2 status
+pm2 restart songforge --update-env
