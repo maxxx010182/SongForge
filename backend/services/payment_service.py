@@ -7,7 +7,6 @@ import hashlib
 import hmac
 import json
 import re
-import time
 import uuid
 from typing import Any
 
@@ -68,7 +67,6 @@ class PaymentService:
         package_id: str,
         user_email: str = "",
         user_display_name: str = "",
-        receipt_email: str = "",
     ) -> dict:
         package = PACKAGES.get(package_id)
         if not package:
@@ -104,7 +102,6 @@ class PaymentService:
             provider=provider,
             user_email=user_email,
             user_display_name=user_display_name,
-            receipt_email=receipt_email,
         )
 
         return {
@@ -225,7 +222,6 @@ class PaymentService:
         provider: str,
         user_email: str = "",
         user_display_name: str = "",
-        receipt_email: str = "",
     ) -> str | None:
         if provider == "stub":
             return None
@@ -236,20 +232,8 @@ class PaymentService:
                 package=package,
                 user_email=user_email,
                 user_display_name=user_display_name,
-                receipt_email=receipt_email,
             )
         return None
-
-    @staticmethod
-    def _gp_receipt_email(*, user_id: str, user_email: str, receipt_email: str) -> str:
-        """GP: для заказа нужен email или телефон (кассовый чек). Без обоих — errorCode=1."""
-        for raw in (receipt_email, user_email):
-            val = (raw or "").strip()
-            if val and "@" in val:
-                lower = val.lower()
-                if not any(bad in lower for bad in ("example.com", "test.local")):
-                    return val
-        return f"{user_id}@users.sozdaipesnu.ru"
 
     def _init_getplatinum_payment(
         self,
@@ -259,8 +243,8 @@ class PaymentService:
         package: dict,
         user_email: str,
         user_display_name: str,
-        receipt_email: str = "",
     ) -> str | None:
+        """Создание ссылки — как в рабочем 2.11.43 (до экспериментов с API v2)."""
         if not GETPLATINUM_API_KEY or not GETPLATINUM_ACCOUNT:
             log.warning("GetPlatinum: не заданы GETPLATINUM_API_KEY / GETPLATINUM_ACCOUNT")
             return None
@@ -277,26 +261,24 @@ class PaymentService:
             return None
 
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
-        init_urls = [
-            f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url",
-        ]
+        url = f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url"
         notes = int(package["notes"])
-        # GetPlatinum API: amount и price в копейках (14900 = 149.00 RUB)
         amount = int(package["price_rub"]) * 100
         position_name = (
             f"Пакет {notes} {'нота' if notes == 1 else 'ноты' if 2 <= notes <= 4 else 'нот'} "
             f"— СоздайСвоюПесню"
         )
 
-        # GP docs: email или телефон обязателен, иначе заказ не создаётся.
-        client_params: dict[str, Any] = {
-            "clientId": user_id,
-            "email": self._gp_receipt_email(
-                user_id=user_id,
-                user_email=user_email,
-                receipt_email=receipt_email,
-            ),
-        }
+        safe_email = ""
+        if user_email and "@" in user_email:
+            lower_email = user_email.lower()
+            if not any(
+                bad in lower_email
+                for bad in (".local", "sozdaipesnu.local", "songforge.local", "test.local", "example.com")
+            ):
+                safe_email = user_email
+
+        safe_name = ""
 
         payload = {
             "dealId": order_id,
@@ -311,69 +293,50 @@ class PaymentService:
                     "vat": GETPLATINUM_VAT,
                 }
             ],
-            "clientParams": client_params,
+            "clientParams": {
+                "clientId": user_id,
+                "email": safe_email,
+                "name": safe_name,
+            },
             "notificationUrl": f"{SITE_URL}/api/payment/webhook/getplatinum",
             "successUrl": f"{SITE_URL}/?payment=success&order={order_id}",
             "failUrl": f"{SITE_URL}/?payment=failed",
             "customParams": {"package_id": package["id"], "notes": notes},
         }
 
-        headers = {
-            "Authorization": f"Bearer {GETPLATINUM_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        last_error = ""
-        for url in init_urls:
-            for attempt in (1, 2):
-                try:
-                    response = requests.post(
-                        url, headers=headers, json=payload, timeout=30
-                    )
-                    data = response.json() if response.content else {}
-                except requests.RequestException as exc:
-                    last_error = str(exc)
-                    log.error("GetPlatinum init-payment-url failed url=%s: %s", url, exc)
-                    break
-                if response.status_code == 404:
-                    log.warning("GetPlatinum init 404, пробуем следующий URL: %s", url)
-                    break
-                if response.status_code >= 400:
-                    last_error = f"HTTP {response.status_code} {data}"
-                    log.error(
-                        "GetPlatinum init-payment-url HTTP %s url=%s: %s",
-                        response.status_code,
-                        url,
-                        data,
-                    )
-                    if attempt == 1:
-                        time.sleep(1)
-                        continue
-                    return None
-                error_code = data.get("errorCode")
-                if error_code not in (None, 0, "0"):
-                    last_error = str(data.get("errorMessage") or data)
-                    log.error(
-                        "GetPlatinum errorCode=%s url=%s: %s",
-                        error_code,
-                        url,
-                        data,
-                    )
-                    # Тот же dealId после errorCode=1 иногда отдаёт formUrl,
-                    # но страница GP потом пишет «не удалось создать заказ».
-                    return None
-                form_url = data.get("formUrl") or data.get("paymentUrl") or data.get("url")
-                if form_url:
-                    log.info("GetPlatinum formUrl OK via %s", url)
-                    return str(form_url)
-                last_error = f"нет formUrl: {data}"
-                log.error("GetPlatinum: нет formUrl url=%s: %s", url, data)
-                if attempt == 1:
-                    time.sleep(1)
-                    continue
-                return None
-        if last_error:
-            log.error("GetPlatinum init исчерпан: %s", last_error)
-        return None
+        try:
+            response = requests.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {GETPLATINUM_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=30,
+            )
+            data = response.json() if response.content else {}
+        except requests.RequestException as exc:
+            log.error("GetPlatinum init-payment-url failed: %s", exc)
+            return None
+
+        if response.status_code >= 400:
+            log.error(
+                "GetPlatinum init-payment-url HTTP %s: %s",
+                response.status_code,
+                data,
+            )
+            return None
+
+        error_code = data.get("errorCode")
+        if error_code not in (None, 0, "0"):
+            log.error("GetPlatinum errorCode=%s: %s", error_code, data)
+            return None
+
+        form_url = data.get("formUrl") or data.get("paymentUrl") or data.get("url")
+        if not form_url:
+            log.error("GetPlatinum: нет formUrl в ответе: %s", data)
+            return None
+        return str(form_url)
 
     @staticmethod
     def _strip_checksum_from_raw(raw_body: bytes) -> bytes | None:

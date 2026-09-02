@@ -1,15 +1,15 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.49 — GP требует email для заказа
+Версия: GitHub 2.11.50 — откат создания ссылки GP к рабочему коду 2.11.43
 
-=== СЕЙЧАС (деплой 2.11.49) ===
+=== СЕЙЧАС (деплой 2.11.50) ===
 ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.49"
+# "version":"2.11.50"
 
-# На сайте: Пакеты → оплата. Если входа через Telegram — спросит email для чека.
+# Потом: Пакеты → 1 нота → Перейти к оплате. Должна открыться форма GP как раньше.
 
 
 === ОБЫЧНОЕ ===
