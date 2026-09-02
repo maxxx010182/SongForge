@@ -68,6 +68,7 @@ class PaymentService:
         package_id: str,
         user_email: str = "",
         user_display_name: str = "",
+        receipt_email: str = "",
     ) -> dict:
         package = PACKAGES.get(package_id)
         if not package:
@@ -103,6 +104,7 @@ class PaymentService:
             provider=provider,
             user_email=user_email,
             user_display_name=user_display_name,
+            receipt_email=receipt_email,
         )
 
         return {
@@ -223,6 +225,7 @@ class PaymentService:
         provider: str,
         user_email: str = "",
         user_display_name: str = "",
+        receipt_email: str = "",
     ) -> str | None:
         if provider == "stub":
             return None
@@ -233,8 +236,20 @@ class PaymentService:
                 package=package,
                 user_email=user_email,
                 user_display_name=user_display_name,
+                receipt_email=receipt_email,
             )
         return None
+
+    @staticmethod
+    def _gp_receipt_email(*, user_id: str, user_email: str, receipt_email: str) -> str:
+        """GP: для заказа нужен email или телефон (кассовый чек). Без обоих — errorCode=1."""
+        for raw in (receipt_email, user_email):
+            val = (raw or "").strip()
+            if val and "@" in val:
+                lower = val.lower()
+                if not any(bad in lower for bad in ("example.com", "test.local")):
+                    return val
+        return f"{user_id}@users.sozdaipesnu.ru"
 
     def _init_getplatinum_payment(
         self,
@@ -244,6 +259,7 @@ class PaymentService:
         package: dict,
         user_email: str,
         user_display_name: str,
+        receipt_email: str = "",
     ) -> str | None:
         if not GETPLATINUM_API_KEY or not GETPLATINUM_ACCOUNT:
             log.warning("GetPlatinum: не заданы GETPLATINUM_API_KEY / GETPLATINUM_ACCOUNT")
@@ -261,12 +277,8 @@ class PaymentService:
             return None
 
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
-        # GP: сначала X-Checksum (уже v2), методы init — пока v1.
-        # Сегодня живые оплаты прошли через v1; v2 init отдавал errorCode=1
-        # и битую formUrl («Не удалось создать заказ (2)» на их странице).
         init_urls = [
             f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url",
-            f"https://{account}.getplatinum.ru/api/public/v2/pay/init-payment-url",
         ]
         notes = int(package["notes"])
         # GetPlatinum API: amount и price в копейках (14900 = 149.00 RUB)
@@ -276,19 +288,15 @@ class PaymentService:
             f"— СоздайСвоюПесню"
         )
 
-        # Для GetPlatinum важно передавать реальные контактные данные,
-        # чтобы чеки (через Мой налог) приходили на правильную почту.
-        # Платформенный display_name — это ник, а не ФИО.
-        # Пустые email/name не шлём: v2 валидирует format:email и падает на "".
-        safe_email = ""
-        if user_email and "@" in user_email:
-            lower_email = user_email.lower()
-            if not any(bad in lower_email for bad in (".local", "sozdaipesnu.local", "songforge.local", "test.local", "example.com")):
-                safe_email = user_email
-
-        client_params: dict[str, Any] = {"clientId": user_id}
-        if safe_email:
-            client_params["email"] = safe_email
+        # GP docs: email или телефон обязателен, иначе заказ не создаётся.
+        client_params: dict[str, Any] = {
+            "clientId": user_id,
+            "email": self._gp_receipt_email(
+                user_id=user_id,
+                user_email=user_email,
+                receipt_email=receipt_email,
+            ),
+        }
 
         payload = {
             "dealId": order_id,

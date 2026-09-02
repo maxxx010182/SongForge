@@ -351,6 +351,7 @@ class PaymentPackage(BaseModel):
 
 class CreatePaymentOrderRequest(BaseModel):
     package_id: str
+    receipt_email: str = ""
 
 
 class PaymentOrderResponse(BaseModel):

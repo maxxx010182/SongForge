@@ -25,6 +25,20 @@ def test_x_checksum_header_official_v2():
         assert svc._verify_x_checksum_header(body, "") is False
 
 
+def test_gp_receipt_email_required_by_docs():
+    uid = "user-1"
+    assert PaymentService._gp_receipt_email(
+        user_id=uid, user_email="", receipt_email="a@b.ru"
+    ) == "a@b.ru"
+    assert PaymentService._gp_receipt_email(
+        user_id=uid, user_email="real@mail.ru", receipt_email=""
+    ) == "real@mail.ru"
+    fallback = PaymentService._gp_receipt_email(
+        user_id=uid, user_email="", receipt_email=""
+    )
+    assert fallback.endswith("@users.sozdaipesnu.ru")
+
+
 def test_user_status_message_has_no_env_secrets():
     msg = PaymentService._status_message("getplatinum", None)
     assert ".env" not in msg

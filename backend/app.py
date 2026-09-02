@@ -131,7 +131,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.48")
+app = FastAPI(title="SongForge", version="2.11.49")
 
 app.add_middleware(
     CORSMiddleware,
@@ -645,7 +645,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.48",
+        "version": "2.11.49",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1593,6 +1593,7 @@ async def create_payment_order(
             package_id=req.package_id,
             user_email=str(user.get("email") or ""),
             user_display_name=str(user.get("display_name") or ""),
+            receipt_email=str(req.receipt_email or ""),
         )
         return PaymentOrderResponse(
             order_id=order["order_id"],
