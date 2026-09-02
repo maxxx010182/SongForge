@@ -1,22 +1,17 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.45 — прод пока 2.11.43
+Версия: GitHub 2.11.46 — прод 2.11.45
 
-=== СЕЙЧАС ===
-# 1) На телефоне: закрыть вкладку и открыть sozdaipesnu.ru заново (должно стать 2 ноты)
-# 2) Если всё ещё 1 — на сервере проверить БД:
+=== СЕЙЧАС (логи, потом деплой) ===
+# Уже под ssh:
 
-cd ~/SongForge
+pm2 logs songforge --lines 80 --nostream
 
-sqlite3 data/songforge.db "SELECT id, status, notes_amount, paid_at FROM payment_orders WHERE user_id='d63cae1b-eca0-495d-a7ad-8194ab2483fd' ORDER BY created_at;"
-
-sqlite3 data/songforge.db "SELECT balance FROM users WHERE id='d63cae1b-eca0-495d-a7ad-8194ab2483fd';"
-
-# 3) Потом деплой 2.11.45 (починка экрана после оплаты):
+# Потом деплой 2.11.46 (ссылка GP v2 + человеческое сообщение об ошибке):
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.45"
+# "version":"2.11.46"
 
 
 === ОБЫЧНОЕ ===

@@ -25,6 +25,14 @@ def test_x_checksum_header_official_v2():
         assert svc._verify_x_checksum_header(body, "") is False
 
 
+def test_user_status_message_has_no_env_secrets():
+    msg = PaymentService._status_message("getplatinum", None)
+    assert ".env" not in msg
+    assert "API" not in msg
+    assert "prefix" not in msg.lower()
+    assert "support@sozdaipesnu.ru" in msg
+
+
 def test_webhook_accepts_x_checksum_without_ip_fallback():
     body = b'{"dealId":"abc","isSuccess":true,"notificationType":1,"paymentData":{"amount":14900}}'
     key = "TestApiKey"

@@ -1655,11 +1655,9 @@ async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();retu
   try{
     var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});
     var data=await res.json().catch(function(){return{}});
-    if(!res.ok){alert(data.detail||'Не удалось создать заказ');return;}
+    if(!res.ok){alert(data.detail||'Не удалось открыть оплату. Попробуйте ещё раз.');return;}
     if(data.payment_url){if(btn)btn.dataset.keepDisabled='1';window.location.href=data.payment_url;return;}
-    document.getElementById('paymentCheckoutText').textContent=data.message||'Заказ создан. Оплата подключается.';
-    document.getElementById('paymentCheckoutOrder').textContent='Заказ '+data.order_id+' • '+activePacket.songs+' нот • '+activePacket.price+'₽';
-    document.getElementById('paymentCheckoutModal').classList.remove('hidden');
+    alert(data.message||'Не удалось открыть оплату. Подождите минуту и нажмите ещё раз.');
   }catch(e){
     if(e&&e.name==='AbortError')return;
     alert('Не удалось открыть оплату. Подождите пару секунд и нажмите ещё раз.');
