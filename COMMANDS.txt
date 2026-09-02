@@ -1,16 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.43 на проде — цены + подпись GP v2
+Версия: GitHub 2.11.44 — прод пока 2.11.43
 
-=== АКТУАЛЬНОЕ ===
-# Деплой 2.11.43 уже на проде. Новых команд не нужно.
-# Владелец: тестовая оплата 1 ноты → 149.00 RUB на форме GP
-
+=== СЕЙЧАС (деплой 2.11.44) ===
 ssh root@195.19.20.245
-curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.43"
 
-curl -s https://sozdaipesnu.ru/api/payment/packages
-# 149 / 375 / 599 / 899
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.44"
 
 
 === ОБЫЧНОЕ ===
