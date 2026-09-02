@@ -261,10 +261,12 @@ class PaymentService:
             return None
 
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
-        # v2 — актуальный путь; v1 оставляем запасным, если v2 ещё не включён на аккаунте.
+        # GP: сначала X-Checksum (уже v2), методы init — пока v1.
+        # Сегодня живые оплаты прошли через v1; v2 init отдавал errorCode=1
+        # и битую formUrl («Не удалось создать заказ (2)» на их странице).
         init_urls = [
-            f"https://{account}.getplatinum.ru/api/public/v2/pay/init-payment-url",
             f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url",
+            f"https://{account}.getplatinum.ru/api/public/v2/pay/init-payment-url",
         ]
         notes = int(package["notes"])
         # GetPlatinum API: amount и price в копейках (14900 = 149.00 RUB)
