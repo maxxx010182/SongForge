@@ -1786,10 +1786,9 @@ document.getElementById('commentsModalSubmit').addEventListener('click',submitCo
 
 initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');setExpertStyleMode('presets');switchToView('create');renderHomeExplore();renderFAQ('all');
 
-// Восстановление состояния студии после возврата из оплаты И после входа (auth) для гостей
-// Обёрнуто в async IIFE, чтобы не было top-level await
-(async function restoreStudioState() {
+(async function boot() {
   try {
+    await loadData();
     var qs = new URLSearchParams(window.location.search);
     var payParam = qs.get('payment');
     var payOrder = qs.get('order') || '';
@@ -1798,16 +1797,16 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
         window.history.replaceState({}, '', window.location.pathname);
       }
       if (payParam === 'success') {
-        // Не врём «баланс обновлён», пока сервер не подтвердил status=paid (webhook).
         showToast('Оплата принята, ждём подтверждение…');
         var paidOk = false;
         var startBal = getBalance();
-        for (var attempt = 0; attempt < 12; attempt++) {
-          if (payOrder && session.loggedIn) {
+        for (var attempt = 0; attempt < 16; attempt++) {
+          if (payOrder) {
             try {
               var oRes = await fetch('/api/payment/orders/' + encodeURIComponent(payOrder), fetchOpts);
               var oData = await oRes.json().catch(function(){ return {}; });
               if (oRes.ok && oData && String(oData.status || '').toLowerCase() === 'paid') {
+                if (oData.balance != null) applyServerBalance(oData.balance);
                 paidOk = true;
                 break;
               }
@@ -1825,14 +1824,9 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
         }
       }
     }
-
-    // Восстанавливаем то, что гость писал в студии (идея, текст и т.д.)
-    // Это покрывает возврат после входа (TG/VK редирект) и после оплаты
     restorePendingStudioState();
   } catch(e) { /* ignore */ }
 })();
-
-loadData();
 </script>
 <!-- COOKIE CONSENT BANNER -->
 <div id="cookieBanner" class="hidden fixed bottom-0 inset-x-0 z-[10002] p-4">
