@@ -64,7 +64,7 @@ def main() -> int:
             }
         ],
         "clientParams": {
-            "clientId": "test-user",
+            "clientId": str(uuid.uuid4()),
             "email": "test@example.com",
             "name": "Test",
         },

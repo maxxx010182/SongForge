@@ -1,8 +1,17 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: прод 2.11.50 — GP сам отвечает errorCode=1, править код бесполезно
+Версия: GitHub 2.11.51 — новый clientId на каждый платёж
 
-=== СЕЙЧАС ===
-# Письмо в GP: docs/instrukcii/GETPLATINUM-OSHIBKA-ZAKAZ.txt
-# Куда: support@getplatinum.ru  или Telegram @getplatinum_bot
+=== СЕЙЧАС (деплой 2.11.51) ===
+ssh root@195.19.20.245
 
-# На сервере больше ничего жать не нужно.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.51"
+
+# Потом с телефона: Пакеты → 1 нота → один клик.
+
+
+=== ОБЫЧНОЕ ===
+cd ~/SongForge
+./venv/bin/python scripts/test_getplatinum.py
