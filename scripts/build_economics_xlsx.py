@@ -145,16 +145,16 @@ def sheet_fix(wb: Workbook):
 
 def sheet_pakety(wb: Workbook):
     ws = wb.create_sheet("Пакеты")
-    ws["A1"] = "Пакеты нот (как на сайте v2.11.30)"
+    ws["A1"] = "Пакеты нот (как на сайте v2.11.42)"
     ws["A1"].font = HDR
     headers = ["ID", "Нот", "Цена ₽", "₽/нота", "Себест. ₽", "Маржа ₽", "Маржа %"]
     for c, h in enumerate(headers, 1):
         ws.cell(3, c, h).font = BOLD
     data = [
-        ("notes_1", 1, 299),
-        ("notes_3", 3, 749),
-        ("notes_5", 5, 1199),
-        ("notes_10", 10, 1799),
+        ("notes_1", 1, 149),
+        ("notes_3", 3, 375),
+        ("notes_5", 5, 599),
+        ("notes_10", 10, 899),
     ]
     for i, (pid, notes, price) in enumerate(data, 4):
         ws.cell(i, 1, pid)
@@ -312,10 +312,10 @@ def sheet_promo(wb: Workbook):
     for c, h in enumerate(headers, 1):
         ws.cell(8, c, h).font = BOLD
     data = [
-        ("notes_1", 1, 299),
-        ("notes_3", 3, 749),
-        ("notes_5", 5, 1199),
-        ("notes_10", 10, 1799),
+        ("notes_1", 1, 149),
+        ("notes_3", 3, 375),
+        ("notes_5", 5, 599),
+        ("notes_10", 10, 899),
     ]
     for i, (pid, notes, price) in enumerate(data, 9):
         ws.cell(i, 1, pid)

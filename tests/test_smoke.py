@@ -94,8 +94,11 @@ def test_payment_packages():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) >= 1
-    assert "price_rub" in data[0]
+    by_id = {p["id"]: p for p in data}
+    assert by_id["notes_1"]["price_rub"] == 149
+    assert by_id["notes_3"]["price_rub"] == 375
+    assert by_id["notes_5"]["price_rub"] == 599
+    assert by_id["notes_10"]["price_rub"] == 899
 
 
 def test_explore_listen_not_found():

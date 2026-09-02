@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.41**
+**Версия в коде (истина):** **2.11.42**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -36,7 +36,7 @@
 
 ## Сейчас (23.07.2026, сохранись)
 
-- Прод **2.11.41**. Лендинг в `landing/` + `docs/instrukcii/LANDING-HOSTING.txt`. Бета: `BETA-OFFER.txt`.
-- След. у владельца: BETA50 в GP; домен+хостинг ленда. Мессенджеры/meta TG — не пилить.
+- Код **2.11.42** (цены 149/375/599/899). Деплой — COMMANDS.txt.
+- След. у владельца: деплой + проверка 149.00 на форме GP. BETA50 не ставить. Ленд — позже.
 - Правило: **commit+push сразу сам**. Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**. Простой русский.
 

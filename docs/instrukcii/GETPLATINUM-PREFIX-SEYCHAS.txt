@@ -72,6 +72,7 @@ cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
 bash scripts/deploy-vps.sh
 
 На форме оплаты должно быть 1199.00 RUB (не 11.99).
+После v2.11.42 пакет 1 нота = 149.00 RUB, пакет 5 нот = 599.00 RUB.
 
 
 ШАГ 1. Найти число prefix в ЛК GetPlatinum (если probe не помог)

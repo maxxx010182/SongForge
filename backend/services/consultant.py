@@ -5,8 +5,38 @@ from __future__ import annotations
 from pathlib import Path
 
 from backend.services.llm_factory import get_llm_client
+from backend.services.payment_service import PACKAGES
 from backend.settings import ROOT_DIR
 from backend.utils.text import clean_text
+
+
+def _note_word(n: int) -> str:
+    if n == 1:
+        return "нота"
+    if 2 <= n <= 4:
+        return "ноты"
+    return "нот"
+
+
+def _packages_system_line() -> str:
+    parts = [
+        f"{p['notes']} {_note_word(int(p['notes']))} {p['price_rub']} ₽"
+        for p in PACKAGES.values()
+    ]
+    return "• Пакеты: " + ", ".join(parts) + ".\n"
+
+
+def _packages_faq() -> str:
+    one = PACKAGES["notes_1"]["price_rub"]
+    rest = []
+    for key in ("notes_3", "notes_5", "notes_10"):
+        p = PACKAGES[key]
+        n = int(p["notes"])
+        rest.append(f"{n} {_note_word(n)} — {p['price_rub']} ₽")
+    return (
+        f"1 нота = {one} ₽ — одна генерация и 2 варианта песни. "
+        f"Пакеты: {', '.join(rest)}. Раздел «Пакеты»."
+    )
 
 _SUPPORT_EMAIL = "support@sozdaipesnu.ru"
 _USER_GUIDE = ROOT_DIR / "docs" / "public" / "USER_GUIDE.md"
@@ -34,7 +64,7 @@ class ConsultantService:
         "Факты о сервисе:\n"
         "• После входа — 1 пробная генерация (2 варианта, превью ~30 сек).\n"
         "• 1 нота = 1 создание песни = 2 полных трека в фонотеку.\n"
-        "• Пакеты: 1 нота 299 ₽, 3 — 749 ₽, 5 — 1199 ₽, 10 — 1799 ₽.\n"
+        f"{_packages_system_line()}"
         "• Оплата через GetPlatinum (карты, СБП и др.).\n"
         "• Промокод (если выдан) вводится на форме оплаты GetPlatinum, не на главной сайта.\n"
         "• Музыка обычно 3–5 минут. AI-продюсер — быстро; Расширенный — свой текст и настройки.\n"
@@ -51,10 +81,7 @@ class ConsultantService:
     )
 
     FAQ = {
-        "цена": (
-            "1 нота = 299 ₽ — одна генерация и 2 варианта песни. "
-            "Пакеты: 3 ноты — 749 ₽, 5 — 1199 ₽, 10 — 1799 ₽. Раздел «Пакеты»."
-        ),
+        "цена": _packages_faq(),
         "сколько": "Текст — обычно быстро. Музыка — примерно 3–5 минут, иногда дольше.",
         "жанр": (
             "Напишите жанр в описании идеи (реп, рок, джаз…). "

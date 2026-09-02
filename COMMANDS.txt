@@ -1,14 +1,16 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.41 на проде — пауза 22.07 вечер
+Версия: 2.11.42 — цены 149 / 375 / 599 / 899
 
-=== АКТУАЛЬНОЕ (завтра) ===
-# Сначала: SONGFORGE-КОНТЕКСТ.txt → СЕЙЧАС
-# TG-карточки: не meta; выбор владельца 1 Cloudflare / 2 backlog / 3 тикет / 4 бот
-# Деплой не нужен, пока нет новой версии
-
+=== СЕЙЧАС (деплой 2.11.42) ===
 ssh root@195.19.20.245
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.41"
+# "version":"2.11.42"
+
+curl -s https://sozdaipesnu.ru/api/payment/packages
+# 149 / 375 / 599 / 899
 
 
 === ОБЫЧНОЕ ===

@@ -28,28 +28,28 @@ PACKAGES: dict[str, dict[str, Any]] = {
     "notes_1": {
         "id": "notes_1",
         "notes": 1,
-        "price_rub": 299,
+        "price_rub": 149,
         "label": "Попробовать",
         "discount": "",
     },
     "notes_3": {
         "id": "notes_3",
         "notes": 3,
-        "price_rub": 749,
+        "price_rub": 375,
         "label": "Популярный",
         "discount": "−16%",
     },
     "notes_5": {
         "id": "notes_5",
         "notes": 5,
-        "price_rub": 1199,
+        "price_rub": 599,
         "label": "Творческий",
         "discount": "−20%",
     },
     "notes_10": {
         "id": "notes_10",
         "notes": 10,
-        "price_rub": 1799,
+        "price_rub": 899,
         "label": "Продюсер",
         "discount": "−40%",
     },
@@ -262,7 +262,7 @@ class PaymentService:
         account = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
         url = f"https://{account}.getplatinum.ru/api/public/pay/init-payment-url"
         notes = int(package["notes"])
-        # GetPlatinum API: amount и price в копейках (119900 = 1199.00 RUB)
+        # GetPlatinum API: amount и price в копейках (14900 = 149.00 RUB)
         amount = int(package["price_rub"]) * 100
         position_name = (
             f"Пакет {notes} {'нота' if notes == 1 else 'ноты' if 2 <= notes <= 4 else 'нот'} "

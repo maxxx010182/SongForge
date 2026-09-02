@@ -836,7 +836,7 @@
         </div>
         <div class="bg-gradient-to-r from-yellow-400/10 to-amber-400/10 rounded-2xl p-4 border border-yellow-400/20">
             <div class="font-semibold text-sm">🎵 Полные версии</div>
-            <div class="text-xs text-zinc-400 mt-1"><span class="text-yellow-400 font-bold">1 нота = 299₽</span> — 2 варианта навсегда в фонотеке.</div>
+            <div class="text-xs text-zinc-400 mt-1"><span class="text-yellow-400 font-bold">1 нота = 149₽</span> — 2 варианта навсегда в фонотеке.</div>
             <button onclick="switchToView('payment')" class="mt-3 w-full bg-yellow-400 text-black py-2 rounded-xl text-xs font-bold hover:bg-yellow-300 transition">Купить ноты</button>
         </div>
         <button id="openChatBtn" class="w-full bg-white/5 border border-white/10 text-zinc-300 py-3 rounded-2xl text-sm hover:bg-white/10 transition flex items-center justify-center gap-2">
@@ -1026,9 +1026,9 @@
         <button id="creditModalClose" class="absolute top-4 right-4 text-zinc-500 hover:text-white text-2xl leading-none">&times;</button>
         <div class="text-xl font-bold mb-2">Купить ноту</div>
         <p class="text-sm text-zinc-400 mb-1">1 нота = 1 генерация = 2 варианта песни в фонотеке.</p>
-        <p class="text-sm text-zinc-300 mb-5">Стоимость: <span class="text-yellow-400 font-semibold">299 ₽</span></p>
-        <button id="buy1CreditBtn" class="w-full upgrade-btn py-3 rounded-2xl mb-3">Купить 1 ноту (299 ₽)</button>
-        <button id="buy5CreditsBtn" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-2xl text-sm transition">Купить 5 нот (1199 ₽) <span class="text-emerald-400 text-xs">−20%</span></button>
+        <p class="text-sm text-zinc-300 mb-5">Стоимость: <span class="text-yellow-400 font-semibold">149 ₽</span></p>
+        <button id="buy1CreditBtn" class="w-full upgrade-btn py-3 rounded-2xl mb-3">Купить 1 ноту (149 ₽)</button>
+        <button id="buy5CreditsBtn" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-2xl text-sm transition">Купить 5 нот (599 ₽) <span class="text-emerald-400 text-xs">−20%</span></button>
         <p class="text-[11px] text-zinc-600 mt-4 text-center">После покупки песни навсегда останутся в вашей фонотеке.</p>
     </div>
 </div>
@@ -1079,7 +1079,7 @@ var authEmailStep='request';
 var AUTH_RESEND_COOLDOWN_SEC=60;
 var authResendTimer=null;
 var authResendLeft=0;
-var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:299,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:149,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_PRODUCER="Например: лиричная поп-песня о встрече после долгой разлуки...";
 var IDEA_PLACEHOLDER_EXPERT="Например: грустная поп-песня о расставании, спокойный женский голос";
 var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты и характер композиции — без текста песни.";
@@ -1430,10 +1430,10 @@ function playPlayerDefault(){if(!playerDefaultTrack||!playerDefaultTrack.url)ret
 
 async function renderPackets() {
     var packets = [
-        { price: 299, songs: 1, label: "Попробовать", discount: "" },
-        { price: 749, songs: 3, label: "Популярный", discount: "−16%" },
-        { price: 1199, songs: 5, label: "Творческий", discount: "−20%" },
-        { price: 1799, songs: 10, label: "Продюсер", discount: "−40%" }
+        { price: 149, songs: 1, label: "Попробовать", discount: "" },
+        { price: 375, songs: 3, label: "Популярный", discount: "−16%" },
+        { price: 599, songs: 5, label: "Творческий", discount: "−20%" },
+        { price: 899, songs: 10, label: "Продюсер", discount: "−40%" }
     ];
     try {
         var res = await fetch('/api/payment/packages');
@@ -1668,7 +1668,7 @@ var faqs = [
     { cat:"how", q:"Можно ли редактировать текст перед созданием музыки?", a:"Да! После генерации текста есть кнопка «Редактировать»." },
     { cat:"how", q:"Сколько стоит превью?", a:"1 пробная генерация бесплатно: 2 варианта, превью по 30 секунд каждый. Полные версии (до 4 минут) — за 1 ноту." },
     { cat:"how", q:"Чем демо-версия отличается от полной?", a:"Демо — 30 секунд. Полная — до 4 минут, высокое качество, навсегда в фонотеке." },
-    { cat:"price", q:"Сколько стоит создать песню?", a:"1 нота = 299₽ (2 варианта, полные версии). Пакеты: 3=749₽, 5=1199₽, 10=1799₽." },
+    { cat:"price", q:"Сколько стоит создать песню?", a:"1 нота = 149₽ (2 варианта, полные версии). Пакеты: 3=375₽, 5=599₽, 10=899₽." },
     { cat:"price", q:"Как оплатить?", a:"В разделе «Пакеты» выберите пакет нот и нажмите «Перейти к оплате». Подключаем Продамус и другие способы для РФ." },
     { cat:"price", q:"Можно ли вернуть деньги?", a:"Возврат не предусмотрен. При техническом сбое восстановим генерацию бесплатно." },
     { cat:"price", q:"Баланс сгорит, если не использую?", a:"Нет, ноты хранятся без ограничения по времени." },
