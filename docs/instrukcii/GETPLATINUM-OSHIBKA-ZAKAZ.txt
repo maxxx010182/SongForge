@@ -1,0 +1,68 @@
+Письмо в поддержку GetPlatinum
+Тема: init-payment-url возвращает errorCode=1 «Не удалось создать заказ (2)»
+Дата: 02.09.2026
+Сайт: https://sozdaipesnu.ru
+Аккаунт GP: sozdaisvoyupesnu
+
+Куда: support@getplatinum.ru  или Telegram @getplatinum_bot
+
+Скопируйте блок ниже целиком.
+
+
+════════════════════════════════════════════════════════
+ТЕКСТ ДЛЯ ВСТАВКИ В ТИКЕТ
+════════════════════════════════════════════════════════
+
+Здравствуйте!
+
+Аккаунт GetPlatinum: sozdaisvoyupesnu
+Сайт: https://sozdaipesnu.ru
+
+С сегодняшнего дня метод создания заказа перестал возвращать ссылку на оплату.
+
+Запрос:
+POST https://sozdaisvoyupesnu.getplatinum.ru/api/public/pay/init-payment-url
+Authorization: Bearer (API-ключ организации)
+
+Тело (пример тестового запроса, новый dealId каждый раз):
+
+{
+  "dealId": "2834b96a-127d-4ca3-979d-c415f713e733",
+  "currency": "RUB",
+  "amount": 29900,
+  "positions": [
+    {
+      "prefix": 1,
+      "name": "Тест SongForge — 1 нота",
+      "price": 29900,
+      "quantity": 1,
+      "vat": "none"
+    }
+  ],
+  "clientParams": {
+    "clientId": "test-user",
+    "email": "test@example.com",
+    "name": "Test"
+  },
+  "notificationUrl": "https://sozdaipesnu.ru/api/payment/webhook/getplatinum",
+  "successUrl": "https://sozdaipesnu.ru/?payment=success",
+  "failUrl": "https://sozdaipesnu.ru/?payment=failed"
+}
+
+Ответ HTTP 200:
+{
+  "dealId": "2834b96a-127d-4ca3-979d-c415f713e733",
+  "formUrl": null,
+  "errorCode": 1,
+  "errorMessage": "Не удалось создать заказ (2)"
+}
+
+Утром 02.09.2026 два платежа через тот же метод прошли успешно (ноты начислились по webhook).
+После этого любой новый init-payment-url даёт errorCode=1, в том числе тестовый запрос не с сайта.
+
+Прошу подсказать:
+1) что означает errorMessage «Не удалось создать заказ (2)»;
+2) почему formUrl стал null;
+3) не отключён ли приём оплат / касса / методы оплаты по организации.
+
+Спасибо.

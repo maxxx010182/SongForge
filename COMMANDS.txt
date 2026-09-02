@@ -1,17 +1,8 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.50 — откат создания ссылки GP к рабочему коду 2.11.43
+Версия: прод 2.11.50 — GP сам отвечает errorCode=1, править код бесполезно
 
-=== СЕЙЧАС (деплой 2.11.50) ===
-ssh root@195.19.20.245
+=== СЕЙЧАС ===
+# Письмо в GP: docs/instrukcii/GETPLATINUM-OSHIBKA-ZAKAZ.txt
+# Куда: support@getplatinum.ru  или Telegram @getplatinum_bot
 
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
-
-curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.50"
-
-# Потом: Пакеты → 1 нота → Перейти к оплате. Должна открыться форма GP как раньше.
-
-
-=== ОБЫЧНОЕ ===
-pm2 status
-pm2 restart songforge --update-env
+# На сервере больше ничего жать не нужно.
