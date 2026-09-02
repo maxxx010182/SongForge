@@ -294,10 +294,7 @@ class PaymentService:
                 }
             ],
             "clientParams": {
-                # Новый id на каждый платёж: GP после пачки неуспешных init
-                # по одному clientId отвечает errorCode=1 «Не удалось создать заказ (2)».
-                # Новый пользователь с компьютера при этом открывается нормально.
-                "clientId": f"{user_id}:{order_id}",
+                "clientId": user_id,
                 "email": safe_email,
                 "name": safe_name,
             },

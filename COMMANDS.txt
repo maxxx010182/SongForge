@@ -1,17 +1,15 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.52 — подробный лог запроса/ответа GP
+Версия: GitHub 2.11.53 — clientId снова как утром (без двоеточия)
 
 === СЕЙЧАС ===
-# 1) деплой
 ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.52"
+# "version":"2.11.53"
 
-# 2) На телефоне один клик «купить» (ошибка).
-# 3) На компьютере другим пользователем один клик «купить» (успех).
-# 4) Сразу логи:
+# С компьютера: Пакеты → 1 нота → один клик.
+# Если снова ошибка:
 
-pm2 logs songforge --lines 60 --nostream
+pm2 logs songforge --lines 30 --nostream
