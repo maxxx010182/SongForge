@@ -368,6 +368,75 @@ class PaymentService:
         return obj
 
     @staticmethod
+    def _getplatinum_api_key() -> str:
+        return (GETPLATINUM_API_KEY or "").strip().strip('"').strip("'")
+
+    def _verify_x_checksum_header(self, raw_body: bytes, checksum_header: str) -> bool:
+        """Официальная подпись v2 (и миграция v1): HMAC-SHA256(raw body, API key) hex UPPER.
+
+        Docs: https://getplatinum.ru/help/api#section/Obrabotka-kollbeka/Kontrolnaya-podpis-v2
+        Checksum в JSON v2 нет — только заголовок X-Checksum. Тело не пересобирать.
+        """
+        received = (checksum_header or "").strip()
+        api_key = self._getplatinum_api_key()
+        if not received or not api_key or not raw_body:
+            return False
+        expected = hmac.new(
+            api_key.encode("utf-8"),
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest().upper()
+        got = received.removeprefix("sha256=").removeprefix("SHA256=").strip().upper()
+        if len(got) != len(expected):
+            return False
+        if hmac.compare_digest(expected, got):
+            log.info("GetPlatinum webhook signature OK (X-Checksum)")
+            return True
+        return False
+
+    def _verify_v1_json_checksum(self, payload: dict) -> bool:
+        """Legacy JSON checksum v1: HMAC-SHA256 по отсортированным полям key;value;"""
+        checksum = ""
+        for key in ("checksum", "Checksum"):
+            val = payload.get(key)
+            if val:
+                checksum = str(val).strip()
+                break
+        api_key = self._getplatinum_api_key()
+        if not checksum or not api_key:
+            return False
+        items = [
+            (k, v)
+            for k, v in payload.items()
+            if k not in ("checksum", "Checksum", "customParams")
+        ]
+        items.sort(key=lambda kv: kv[0].lower())
+        parts: list[str] = []
+        for key, value in items:
+            if isinstance(value, bool):
+                serialized = "1" if value else "0"
+            elif isinstance(value, (dict, list)):
+                serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            elif value is None:
+                serialized = ""
+            else:
+                serialized = str(value)
+            parts.append(f"{key};{serialized};")
+        sign_string = "".join(parts)
+        expected = hmac.new(
+            api_key.encode("utf-8"),
+            sign_string.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest().upper()
+        got = checksum.upper()
+        if len(got) != len(expected):
+            return False
+        if hmac.compare_digest(expected, got):
+            log.info("GetPlatinum webhook signature OK (JSON checksum v1)")
+            return True
+        return False
+
+    @staticmethod
     def _client_ip_allowed(client_ip: str) -> bool:
         ip = (client_ip or "").strip()
         if not ip:
@@ -507,12 +576,14 @@ class PaymentService:
         payload: dict,
         *,
         client_ip: str = "",
+        checksum_header: str = "",
     ) -> bool:
         """Проверка webhook GetPlatinum (безопасность + доставка нот).
 
         Доверие к начислению:
-        1) checksum с секретом (если алгоритм совпал) — идеально;
-        2) иначе fallback ТОЛЬКО если одновременно:
+        1) X-Checksum (HMAC-SHA256 сырого тела, API v2) — основной путь;
+        2) JSON checksum v1 / запасные схемы с секретом;
+        3) иначе fallback ТОЛЬКО если одновременно:
            - isSuccess=true (GP говорит «оплачено»),
            - dealId есть у нас в payment_orders (UUID создаём только мы),
            - IP из сети GetPlatinum (по умолчанию 212.41.13.*),
@@ -522,6 +593,10 @@ class PaymentService:
         if not isinstance(payload, dict) or not raw_body:
             return False
 
+        if self._verify_x_checksum_header(raw_body, checksum_header):
+            return True
+        if self._verify_v1_json_checksum(payload):
+            return True
         if self._verify_getplatinum_checksum(raw_body, payload):
             return True
 

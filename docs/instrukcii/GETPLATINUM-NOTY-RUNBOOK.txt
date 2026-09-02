@@ -37,7 +37,9 @@ SongForge — RUNBOOK: ноты после оплаты GetPlatinum
 
 Доверие к начислению (одно из двух):
 
-A) checksum с секретом (HMAC/SHA/MD5 варианты в коде) — идеально
+A) X-Checksum (v2): HMAC-SHA256 от сырого тела, ключ = API-ключ, hex UPPER
+   Docs: getplatinum.ru/help/api → Контрольная подпись v2
+   JSON-поле checksum в v2 больше не присылают.
 
 B) fallback (если checksum не сошёлся) — ВСЕ условия сразу:
    - isSuccess = true
