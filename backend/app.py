@@ -131,7 +131,7 @@ showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
 
-app = FastAPI(title="SongForge", version="2.11.51")
+app = FastAPI(title="SongForge", version="2.11.52")
 
 app.add_middleware(
     CORSMiddleware,
@@ -645,7 +645,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.51",
+        "version": "2.11.52",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -1588,6 +1588,13 @@ async def create_payment_order(
         detail="Слишком много попыток оплаты. Подождите несколько минут.",
     )
     try:
+        log.info(
+            "create-order user=%s pkg=%s email_set=%s ua=%s",
+            user.get("id"),
+            req.package_id,
+            "yes" if str(user.get("email") or "").strip() else "no",
+            (request.headers.get("user-agent") or "")[:180],
+        )
         order = payment_service.create_order(
             user_id=user["id"],
             package_id=req.package_id,

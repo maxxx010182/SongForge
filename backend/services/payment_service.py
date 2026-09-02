@@ -307,6 +307,18 @@ class PaymentService:
             "customParams": {"package_id": package["id"], "notes": notes},
         }
 
+        log.info(
+            "GetPlatinum init send url=%s dealId=%s clientId=%s amount=%s notes=%s "
+            "prefix=%s vat=%s email_set=%s",
+            url,
+            order_id,
+            payload["clientParams"]["clientId"],
+            amount,
+            notes,
+            position_prefix,
+            GETPLATINUM_VAT,
+            "yes" if safe_email else "no",
+        )
         try:
             response = requests.post(
                 url,
@@ -321,6 +333,13 @@ class PaymentService:
         except requests.RequestException as exc:
             log.error("GetPlatinum init-payment-url failed: %s", exc)
             return None
+        log.info(
+            "GetPlatinum init recv HTTP %s errorCode=%s formUrl=%s body=%s",
+            response.status_code,
+            data.get("errorCode"),
+            "yes" if (data.get("formUrl") or data.get("paymentUrl") or data.get("url")) else "no",
+            data,
+        )
 
         if response.status_code >= 400:
             log.error(
