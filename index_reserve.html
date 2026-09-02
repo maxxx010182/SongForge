@@ -1641,6 +1641,14 @@ document.getElementById('createSongBtn').addEventListener('click',createSongWith
 document.getElementById('createDemoBtn').addEventListener('click',createSongExpert);
 
 function closePaymentCheckout(){document.getElementById('paymentCheckoutModal').classList.add('hidden');}
+function resetPaymentButton(){
+  var btn=document.getElementById('paymentConfirmBtn');
+  if(!btn)return;
+  btn.disabled=false;
+  delete btn.dataset.keepDisabled;
+  btn.textContent=btn.dataset.label||'💳 Перейти к оплате';
+}
+window.addEventListener('pageshow',resetPaymentButton);
 async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();return;}
   var btn=document.getElementById('paymentConfirmBtn');
   if(btn&&btn.disabled)return;
@@ -1657,7 +1665,7 @@ async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();retu
     if(e&&e.name==='AbortError')return;
     alert('Не удалось открыть оплату. Подождите пару секунд и нажмите ещё раз.');
   }finally{
-    if(btn&&btn.dataset.keepDisabled!=='1'){btn.disabled=false;if(btn.dataset.label)btn.textContent=btn.dataset.label;}
+    if(!btn||btn.dataset.keepDisabled!=='1')resetPaymentButton();
   }
 }
 document.getElementById('paymentConfirmBtn').addEventListener('click',startPaymentCheckout);
@@ -1786,6 +1794,7 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
 
 (async function boot() {
   try {
+    resetPaymentButton();
     await loadData();
     var qs = new URLSearchParams(window.location.search);
     var payParam = qs.get('payment');

@@ -343,15 +343,13 @@ class PaymentService:
                 if error_code not in (None, 0, "0"):
                     last_error = str(data.get("errorMessage") or data)
                     log.error(
-                        "GetPlatinum errorCode=%s url=%s attempt=%s: %s",
+                        "GetPlatinum errorCode=%s url=%s: %s",
                         error_code,
                         url,
-                        attempt,
                         data,
                     )
-                    if attempt == 1:
-                        time.sleep(1)
-                        continue
+                    # Тот же dealId после errorCode=1 иногда отдаёт formUrl,
+                    # но страница GP потом пишет «не удалось создать заказ».
                     return None
                 form_url = data.get("formUrl") or data.get("paymentUrl") or data.get("url")
                 if form_url:

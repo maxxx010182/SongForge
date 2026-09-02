@@ -1,17 +1,15 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: GitHub 2.11.46 — прод 2.11.45
+Версия: GitHub 2.11.47 — прод 2.11.46
 
-=== СЕЙЧАС (логи, потом деплой) ===
-# Уже под ssh:
+=== СЕЙЧАС (деплой 2.11.47) ===
+# На телефоне пока: закрыть вкладку сайта и открыть заново — кнопка оживёт
 
-pm2 logs songforge --lines 80 --nostream
-
-# Потом деплой 2.11.46 (ссылка GP v2 + человеческое сообщение об ошибке):
+ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.46"
+# "version":"2.11.47"
 
 
 === ОБЫЧНОЕ ===
