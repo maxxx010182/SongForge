@@ -645,7 +645,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.48"
+        "version": "2.11.48",
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
