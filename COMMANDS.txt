@@ -1,15 +1,19 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.54 — «Похожее на хиты» свои идеи, не заглушка
+Версия: 2.11.54 на проде — хиты ок, деплой не нужен
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.54
+# Завтра: токен MAX-бота в .env (не в чат).
+# Бот: https://max.ru/id720401732483_bot
+# Как: docs/instrukcii/MAX-БОТ-ВЛАДЕЛЬЦУ.txt шаг 3
 
 ssh root@195.19.20.245
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+nano ~/SongForge/.env
+# добавить: MAX_BOT_TOKEN=...
+# Ctrl+O, Enter, Ctrl+X
+# мне в чат только: «токен в .env»
 
 curl -s https://sozdaipesnu.ru/api/health
-# ждать: "version":"2.11.54"
+# "version":"2.11.54"
 
 
 === ОБЫЧНОЕ ===
