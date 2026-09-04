@@ -2,10 +2,12 @@ SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО 
 Версия: 2.11.54 — «Похожее на хиты» свои идеи, не заглушка
 
 === АКТУАЛЬНОЕ ===
-# После push: задеплоить 2.11.54
+# Деплой 2.11.54
 
 ssh root@195.19.20.245
-bash ~/SongForge/scripts/update-now.sh
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
 curl -s https://sozdaipesnu.ru/api/health
 # ждать: "version":"2.11.54"
 
@@ -13,3 +15,5 @@ curl -s https://sozdaipesnu.ru/api/health
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
