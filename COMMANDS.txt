@@ -1,21 +1,18 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.59 — «привет» снова спрашивает подарок/бизнес, нужен деплой
+Версия: прод 2.11.58. Деплой патчей бота не делаем.
+Сценарий: docs/instrukcii/MAX-ПРОДАЖНИК.txt
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.59 (сброс sqlite больше не обязателен)
-
-ssh root@195.19.20.245
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Ждём обложку. Потом один релиз продажника, не 2.11.59 отдельно.
 
 curl -s https://sozdaipesnu.ru/api/health
-# ждать: "version":"2.11.59"
-
-# Потом в MAX: «Начать» или напишите «привет»
-# Должно спросить: В подарок / Для бизнеса
+# "version":"2.11.58"
 
 
 === ОБЫЧНОЕ ===
+ssh root@195.19.20.245
 pm2 status
 pm2 restart songforge --update-env
 pm2 restart songforge-worker --update-env
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
