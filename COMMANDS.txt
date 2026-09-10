@@ -1,13 +1,15 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.55 на проде — бот MAX, деплой не нужен
+Версия: 2.11.56 — новые тексты бота MAX, нужен деплой
 
 === АКТУАЛЬНОЕ ===
-# Проверить бота: https://max.ru/id720401732483_bot
-# «Начать» → «Принимаю». Результат — в чат.
+# Деплой 2.11.56
+
+ssh root@195.19.20.245
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.55"
-# "max_bot": true
+# ждать: "version":"2.11.56"
 
 
 === ОБЫЧНОЕ ===

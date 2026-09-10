@@ -81,12 +81,19 @@ def test_gate_on_bot_started():
             }
         )
         assert api.sent
-        assert "Принимаю" in api.sent[0]["text"]
+        assert "стоп" in api.sent[0]["text"].lower()
+        assert "проба" in api.sent[0]["text"].lower()
+        labels = [
+            btn.get("text")
+            for row in api.sent[0]["buttons"]
+            for btn in row
+        ]
         payloads = [
             btn.get("payload")
             for row in api.sent[0]["buttons"]
             for btn in row
         ]
+        assert "Поехали" in labels
         assert "accept" in payloads
     finally:
         _cleanup(max_user_id)
@@ -205,7 +212,7 @@ def test_free_text_whom():
         )
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief_whom"] == "бабушке"
-        assert "характером" in api.sent[-1]["text"].lower()
+        assert "должна быть" in api.sent[-1]["text"].lower()
     finally:
         _cleanup(max_user_id)
 

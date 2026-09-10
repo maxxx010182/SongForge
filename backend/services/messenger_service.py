@@ -21,8 +21,8 @@ STAGE_STOPPED = "stopped"
 
 WHOM_LABELS = {
     "mom": "маме",
-    "her": "ей",
-    "him": "ему",
+    "her": "любимой",
+    "him": "любимому",
     "friend": "другу",
     "self": "себе",
 }
