@@ -2,27 +2,34 @@ SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО 
 Версия: 2.11.55 — бот MAX, нужен деплой
 
 === АКТУАЛЬНОЕ ===
-# Репозиторий закрытый: raw.githubusercontent.com даёт 404.
-# Скрипт уже на сервере — запускай его:
-
-bash ~/SongForge/scripts/update-now.sh
-
-# Если и он 404 (скачать архив с GitHub не вышло):
+# Как всегда. Сначала длинная строка.
+# Скрипт сам поднимает songforge и worker; если версия старая — эту же строку ещё раз.
 
 cd ~/SongForge
 
-git pull origin main
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-pm2 restart songforge --update-env
+# Если эта строка дала 404 — запасной путь (DEPLOY-SEYCHAS):
+
+curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
+
+tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
+
+cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
+
+bash scripts/deploy-vps.sh
+
+# Дождаться: === Готово! v2.11.55 ===
+# Если версия старая — длинную curl-строку (или bash scripts/deploy-vps.sh) ещё раз.
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.55"
 # "max_bot": true
 
-# Потом в MAX: открыть бота и нажать «Начать»
-# https://max.ru/id720401732483_bot
+# Потом в MAX: https://max.ru/id720401732483_bot  → «Начать»
 
 
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
+pm2 restart songforge-worker --update-env
