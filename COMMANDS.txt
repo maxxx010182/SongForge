@@ -1,32 +1,37 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
 Версия: 2.11.55 — бот MAX, нужен деплой
 
-=== АКТУАЛЬНОЕ ===
-# Как всегда. Сначала длинная строка.
-# Скрипт сам поднимает songforge и worker; если версия старая — эту же строку ещё раз.
+=== АКТУАЛЬНОЕ (GitHub закрыт = 404) ===
+# Путь без GitHub: архив с рабочего стола. Инструкция: docs/instrukcii/DEPLOY-LOCAL.txt
+# Архив: C:\Users\makc0\Desktop\songforge-update.tar.gz
+# Залить в /tmp/songforge-update.tar.gz (WinSCP или scp).
 
 cd ~/SongForge
 
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+tar -xzf /tmp/songforge-update.tar.gz scripts/deploy-local.sh
 
-# Если эта строка дала 404 — запасной путь (DEPLOY-SEYCHAS):
+bash scripts/deploy-local.sh
 
-curl -fsSL "https://codeload.github.com/maxxx010182/SongForge/tar.gz/main" -o /tmp/sf.tar.gz
-
-tar -xzf /tmp/sf.tar.gz -C /tmp SongForge-main/scripts/deploy-vps.sh
-
-cp /tmp/SongForge-main/scripts/deploy-vps.sh scripts/deploy-vps.sh
-
-bash scripts/deploy-vps.sh
-
+# Скрипт сам перезапускает ДВА процесса: songforge и worker.
 # Дождаться: === Готово! v2.11.55 ===
-# Если версия старая — длинную curl-строку (или bash scripts/deploy-vps.sh) ещё раз.
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.55"
 # "max_bot": true
 
-# Потом в MAX: https://max.ru/id720401732483_bot  → «Начать»
+# Если скрипт ругнулся на версию — файлы уже скопированы, тогда:
+
+pm2 restart songforge --update-env
+
+pm2 restart songforge-worker --update-env
+
+
+=== ЕСЛИ GITHUB ОТКРЫТ (как раньше) ===
+cd ~/SongForge
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+# Если версия старая — эту же длинную строку ещё раз.
 
 
 === ОБЫЧНОЕ ===

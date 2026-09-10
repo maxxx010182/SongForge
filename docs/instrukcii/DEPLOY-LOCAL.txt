@@ -1,0 +1,44 @@
+SongForge — деплой с рабочего стола (без GitHub)
+================================================
+Когда raw.githubusercontent.com / codeload дают 404
+(репозиторий закрытый). Архив с Windows → сервер.
+
+Скрипт: scripts/deploy-local.sh
+Он сам перезапускает ДВА процесса: songforge и songforge-worker.
+
+
+НА WINDOWS
+----------
+Архив уже можно собрать из папки проекта.
+Имя файла: songforge-update.tar.gz
+Кладём на Рабочий стол.
+
+Залить на сервер (WinSCP или одна строка в PowerShell):
+
+scp C:\Users\makc0\Desktop\songforge-update.tar.gz root@195.19.20.245:/tmp/songforge-update.tar.gz
+
+
+НА СЕРВЕРЕ (по одной строке)
+----------------------------
+cd ~/SongForge
+
+tar -xzf /tmp/songforge-update.tar.gz scripts/deploy-local.sh
+
+bash scripts/deploy-local.sh
+
+Дождаться: === Готово! v2.11.55 ===
+
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.55"
+# "max_bot": true
+
+Если скрипт скопировал файлы, но ругнулся на версию —
+это старый скрипт на сервере. Тогда два перезапуска:
+
+pm2 restart songforge --update-env
+
+pm2 restart songforge-worker --update-env
+
+
+Обычный путь (если GitHub открыт): COMMANDS.txt → update-now.sh
+Запасной с GitHub: DEPLOY-SEYCHAS.txt

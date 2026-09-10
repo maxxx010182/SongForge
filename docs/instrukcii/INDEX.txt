@@ -20,7 +20,8 @@ SongForge — оглавление инструкций
   SUPPORT-OWNER-PROSTO.txt     — support@ простыми словами (ВЛАДЕЛЬЦУ)
   SUPPORT-EMAIL-SEYCHAS.txt    — создать ящик support@
   FULL-DEPLOY-FROM-SCRATCH.txt — новый VPS
-  DEPLOY-SEYCHAS.txt           — если update-now падает
+  DEPLOY-SEYCHAS.txt           — если update-now падает (ещё GitHub)
+  DEPLOY-LOCAL.txt             — если GitHub 404: архив с рабочего стола
   GETPLATINUM-NOTY-RUNBOOK.txt — ноты не пришли
   GETPLATINUM-PISMO-TELEFON.txt
 
