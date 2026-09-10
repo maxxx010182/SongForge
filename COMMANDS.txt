@@ -1,20 +1,24 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.56 на проде — пауза до завтра, деплой не нужен
+Версия: 2.11.56 на проде — сброс теста бота MAX
 
 === АКТУАЛЬНОЕ ===
-# Завтра: бот → «Начать» заново.
-# https://max.ru/id720401732483_bot
-# Скрины: папка screens/ в проекте
-# Потом: одна обложка к первому экрану.
+# Сброс воронки, чтобы снова показать «Поехали».
+# Старые пузыри в чате MAX не стираются — это история.
 
-curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.56"
-# "max_bot": true
+cd ~/SongForge
+
+sqlite3 data/songforge.db "DELETE FROM messenger_consents; UPDATE messenger_contacts SET funnel_stage='gate', messages_ok=0, brief='', brief_whom='', brief_mood='', stopped_at=NULL, blocked_at=NULL, user_id=NULL;"
+
+# Потом в MAX: https://max.ru/id720401732483_bot
+# «Начать» — должно прийти НОВОЕ: кнопка «Поехали».
 
 
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
 pm2 restart songforge-worker --update-env
+
+curl -s https://sozdaipesnu.ru/api/health
+# "version":"2.11.56"
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
