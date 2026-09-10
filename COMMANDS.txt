@@ -2,8 +2,18 @@ SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО 
 Версия: 2.11.55 — бот MAX, нужен деплой
 
 === АКТУАЛЬНОЕ ===
-# После пуша: обновить прод (одна строка)
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Репозиторий закрытый: raw.githubusercontent.com даёт 404.
+# Скрипт уже на сервере — запускай его:
+
+bash ~/SongForge/scripts/update-now.sh
+
+# Если и он 404 (скачать архив с GitHub не вышло):
+
+cd ~/SongForge
+
+git pull origin main
+
+pm2 restart songforge --update-env
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.55"
@@ -16,5 +26,3 @@ curl -s https://sozdaipesnu.ru/api/health
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
