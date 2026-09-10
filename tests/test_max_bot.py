@@ -212,7 +212,7 @@ def test_free_text_whom():
         )
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief_whom"] == "бабушке"
-        assert "должна быть" in api.sent[-1]["text"].lower()
+        assert "какой она" in api.sent[-1]["text"].lower()
     finally:
         _cleanup(max_user_id)
 

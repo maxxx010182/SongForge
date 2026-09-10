@@ -53,19 +53,17 @@ LATER_WORDS = {
 }
 
 GATE_TEXT = (
-    "Есть слова, которые вслух не выходят. Их как раз кладут в песню.\n\n"
-    "Сейчас набросаем — кому и про что. Через минут пять будут два варианта. "
-    "Первая проба бесплатно.\n\n"
-    "«Поехали» — как галочка на сайте: соглашение, политика и редкие сообщения сюда. "
-    "Стоп в любой момент: напишите «стоп»."
+    "Есть вещи, которые открыткой не скажешь. Песня — скажет.\n\n"
+    "Первая проба бесплатно: два варианта, минут пять.\n\n"
+    "«Поехали» — соглашение и политика, как на сайте. Редкие сообщения сюда. "
+    "Стоп — напишите «стоп»."
 )
-WHOM_TEXT = (
-    "Кому первую песню? Жмите кнопку — или напишите своими словами."
+WHOM_TEXT = "Кому песню?"
+MOOD_TEXT = "Какой она будет?"
+LATER_TEXT = (
+    "Без имени тоже можно. Чаще дарят маме или любимым — "
+    "ткните, слова потом поправим."
 )
-MOOD_TEXT = (
-    "Какой она должна быть? Жмите — или напишите, каким человеком её услышат."
-)
-LATER_TEXT = "Хорошо. Как будет мысль, кому песня — напишите или жмите кнопку."
 STOP_TEXT = (
     "Ок, молчу. Если передумаете — напишите сюда. "
     "Документы и данные: support@sozdaipesnu.ru"
@@ -102,7 +100,6 @@ def _whom_buttons() -> list[list[dict]]:
         [
             _callback_btn("Другу", "whom:friend"),
             _callback_btn("Себе", "whom:self"),
-            _callback_btn("Пока смотрю", "whom:later"),
         ],
     ]
 
@@ -399,7 +396,7 @@ class MaxBot:
         stage = contact.get("funnel_stage") or STAGE_GATE
         if stage in {STAGE_GATE, STAGE_TALK}:
             if _is_later(text):
-                self._send(contact, LATER_TEXT)
+                self._send(contact, LATER_TEXT, _whom_buttons())
                 return
             self._apply_whom(contact, text)
             return
@@ -417,14 +414,14 @@ class MaxBot:
             contact = self.messenger.accept(contact, user_id=user["id"], name=name)
         except Exception:
             log.exception("MAX accept failed")
-            self._send(contact, "Не получилось сохранить согласие. Напишите «принимаю» ещё раз.")
+            self._send(contact, "Не получилось сохранить. Нажмите «Поехали» ещё раз.")
             return
         self._send(contact, WHOM_TEXT, _whom_buttons())
 
     def _apply_whom(self, contact: dict, raw: str) -> None:
         key = (raw or "").strip().lower()
         if key in {"later", "skip"} or _is_later(raw):
-            self._send(contact, LATER_TEXT)
+            self._send(contact, LATER_TEXT, _whom_buttons())
             return
         whom = WHOM_LABELS.get(key, (raw or "").strip())
         if not whom:
