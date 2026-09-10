@@ -40,6 +40,17 @@ STOP_WORDS = {
     "unsubscribe",
 }
 START_WORDS = {"/start", "start", "начать", "старт"}
+GREETING_WORDS = {
+    "привет",
+    "здравствуй",
+    "здравствуйте",
+    "хай",
+    "hello",
+    "hi",
+    "добрый",
+    "добрый день",
+    "добрый вечер",
+}
 ACCEPT_WORDS = {
     "принимаю",
     "принять",
@@ -230,6 +241,11 @@ def _is_later(text: str) -> bool:
     return low in LATER_WORDS or "пока слушаю" in low
 
 
+def _is_greeting(text: str) -> bool:
+    low = text.lower().strip().strip("!.?")
+    return low in GREETING_WORDS or low.startswith("привет")
+
+
 class MaxBot:
     def __init__(
         self,
@@ -364,6 +380,9 @@ class MaxBot:
 
     def _continue_funnel(self, contact: dict) -> None:
         stage = contact.get("funnel_stage") or STAGE_GATE
+        if not (contact.get("segment") or "").strip():
+            self._send(contact, SEGMENT_TEXT, _segment_buttons())
+            return
         if stage in {STAGE_GATE, STAGE_SEGMENT}:
             self._send(contact, SEGMENT_TEXT, _segment_buttons())
             return
@@ -447,7 +466,7 @@ class MaxBot:
             else:
                 self._send_gate(contact)
             return
-        if _is_start(text):
+        if _is_start(text) or _is_greeting(text):
             self._continue_funnel(contact)
             return
         stage = contact.get("funnel_stage") or STAGE_GATE

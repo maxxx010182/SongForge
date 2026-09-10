@@ -223,6 +223,41 @@ def test_login_token_and_me_brief():
         _cleanup(bot_user)
 
 
+def test_greeting_without_segment_asks_gift_or_business():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        contact = MessengerService().get_by_max(max_user_id)
+        from backend.database.db import get_connection
+
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_contacts SET funnel_stage='mood', segment='' WHERE id=?",
+                (contact["id"],),
+            )
+        bot.handle_update(
+            {
+                "update_type": "message_created",
+                "message": {
+                    "sender": {
+                        "user_id": int(max_user_id),
+                        "is_bot": False,
+                        "name": f"tmax_{max_user_id}",
+                    },
+                    "recipient": {"chat_type": "dialog", "user_id": int(max_user_id)},
+                    "body": {"text": "привет"},
+                },
+            }
+        )
+        last = api.sent[-1]
+        assert "для дела" in last["text"].lower() or "бизнеса" in last["text"].lower()
+        payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
+        assert "segment:gift" in payloads
+        assert "segment:business" in payloads
+    finally:
+        _cleanup(max_user_id)
+
+
 def test_business_branch_sends_studio_brief():
     bot, api, max_user_id = _bot()
     try:
