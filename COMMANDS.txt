@@ -2,24 +2,19 @@ SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО 
 Версия: 2.11.55 — бот MAX, нужен деплой
 
 === АКТУАЛЬНОЕ ===
-# GitHub снова открыт. Как раньше: одна длинная строка.
-# Скрипт сам поднимает songforge и worker; если версия старая — запускает ещё раз.
+# Деплой 2.11.55
 
-cd ~/SongForge
+ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# Дождаться: === Готово! v2.11.55 ===
-# Если версия старая — эту же длинную строку ещё раз.
-
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.55"
-# "max_bot": true
-
-# Потом в MAX: https://max.ru/id720401732483_bot  → «Начать»
+# ждать: "version":"2.11.55"
 
 
 === ОБЫЧНОЕ ===
 pm2 status
 pm2 restart songforge --update-env
 pm2 restart songforge-worker --update-env
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
