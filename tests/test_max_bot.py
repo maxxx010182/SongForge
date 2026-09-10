@@ -65,6 +65,20 @@ def _bot() -> tuple[MaxBot, FakeApi, str]:
     return bot, api, max_user_id
 
 
+def _cb(bot: MaxBot, max_user_id: str, payload: str, name: str | None = None) -> None:
+    name = name or f"tmax_{max_user_id}"
+    bot.handle_update(
+        {
+            "update_type": "message_callback",
+            "callback": {
+                "callback_id": payload,
+                "payload": payload,
+                "user": {"user_id": int(max_user_id), "name": name},
+            },
+        }
+    )
+
+
 def test_compose_brief():
     assert compose_brief("маме", "тепло") == "Песня маме. Тепло."
     assert compose_brief("себе", "") == "Песня себе."
@@ -109,36 +123,10 @@ def test_accept_whom_mood_sends_studio_link():
                 "chat_id": int(max_user_id),
             }
         )
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb1",
-                    "payload": "accept",
-                    "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
-                },
-            }
-        )
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb2",
-                    "payload": "whom:mom",
-                    "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
-                },
-            }
-        )
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb3",
-                    "payload": "mood:warm",
-                    "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
-                },
-            }
-        )
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "segment:gift")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:warm")
         last = api.sent[-1]
         assert "маме" in last["text"].lower()
         assert "тепло" in last["text"].lower()
@@ -190,16 +178,8 @@ def test_stop_command():
 def test_free_text_whom():
     bot, api, max_user_id = _bot()
     try:
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb1",
-                    "payload": "accept",
-                    "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
-                },
-            }
-        )
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "segment:gift")
         bot.handle_update(
             {
                 "update_type": "message_created",
@@ -224,36 +204,10 @@ def test_login_token_and_me_brief():
     bot, api, _ = _bot()
     bot_user = max_user_id
     try:
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb1",
-                    "payload": "accept",
-                    "user": {"user_id": int(bot_user), "name": f"tmax_{bot_user}"},
-                },
-            }
-        )
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb2",
-                    "payload": "whom:mom",
-                    "user": {"user_id": int(bot_user), "name": f"tmax_{bot_user}"},
-                },
-            }
-        )
-        bot.handle_update(
-            {
-                "update_type": "message_callback",
-                "callback": {
-                    "callback_id": "cb3",
-                    "payload": "mood:warm",
-                    "user": {"user_id": int(bot_user), "name": f"tmax_{bot_user}"},
-                },
-            }
-        )
+        _cb(bot, bot_user, "accept")
+        _cb(bot, bot_user, "segment:gift")
+        _cb(bot, bot_user, "whom:mom")
+        _cb(bot, bot_user, "mood:warm")
         contact = MessengerService().get_by_max(bot_user)
         token = MessengerService().make_login_token(contact["id"])
         client = TestClient(app)
@@ -267,6 +221,26 @@ def test_login_token_and_me_brief():
         assert "маме" in data["messenger_brief"].lower()
     finally:
         _cleanup(bot_user)
+
+
+def test_business_branch_sends_studio_brief():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "segment:business")
+        _cb(bot, max_user_id, "bizgoal:jingle")
+        _cb(bot, max_user_id, "biztone:light")
+        last = api.sent[-1]
+        assert "джингл" in last["text"].lower()
+        assert "юмором" in last["text"].lower()
+        assert "два варианта" in last["text"].lower()
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["segment"] == "business"
+        assert contact["brief"].startswith("Для бизнеса")
+        urls = [btn.get("url", "") for row in last["buttons"] for btn in row]
+        assert any("/api/auth/max?m=" in url for url in urls)
+    finally:
+        _cleanup(max_user_id)
 
 
 def test_webhook_rejects_bad_secret():

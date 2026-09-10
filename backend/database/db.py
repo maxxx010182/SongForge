@@ -268,6 +268,7 @@ def init_db() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_messenger_contacts_user ON messenger_contacts(user_id)"
         )
+        _migrate_messenger_columns(conn)
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS messenger_consents (
@@ -387,6 +388,14 @@ def _dedupe_real_user_display_names(conn: sqlite3.Connection) -> None:
                 seen[cand_key] = row["id"]
                 break
             suffix += 1
+
+
+def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(messenger_contacts)")}
+    if "segment" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN segment TEXT NOT NULL DEFAULT ''"
+        )
 
 
 def _migrate_engagement_columns(conn: sqlite3.Connection) -> None:

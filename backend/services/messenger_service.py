@@ -14,8 +14,11 @@ from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 LEGAL_DOC_VERSION = "2026-07"
 LOGIN_TTL_SEC = 7 * 24 * 3600
 STAGE_GATE = "gate"
+STAGE_SEGMENT = "segment"
 STAGE_TALK = "talk"
 STAGE_MOOD = "mood"
+STAGE_BIZ_GOAL = "biz_goal"
+STAGE_BIZ_TONE = "biz_tone"
 STAGE_SENT = "sent_to_site"
 STAGE_STOPPED = "stopped"
 
@@ -30,6 +33,16 @@ MOOD_LABELS = {
     "warm": "тепло",
     "character": "с характером",
     "both": "тепло и с характером",
+}
+BIZ_GOAL_LABELS = {
+    "ads": "реклама и контент",
+    "jingle": "джингл бренда",
+    "client": "подарок клиенту",
+    "event": "корпоратив",
+}
+BIZ_TONE_LABELS = {
+    "serious": "серьёзно и статусно",
+    "light": "легко, с юмором",
 }
 
 
@@ -46,6 +59,16 @@ def webhook_secret() -> str:
 def _link_secret() -> bytes:
     raw = (MAX_WEBHOOK_SECRET or MAX_BOT_TOKEN or "dev").strip()
     return hmac.new(b"sf-max-link", raw.encode("utf-8"), hashlib.sha256).digest()
+
+
+def compose_brief_business(goal: str, tone: str) -> str:
+    goal = (goal or "").strip()
+    tone = (tone or "").strip()
+    if goal and tone:
+        return f"Для бизнеса: {goal}. {tone[0].upper() + tone[1:]}."
+    if goal:
+        return f"Для бизнеса: {goal}."
+    return tone
 
 
 def compose_brief(whom: str, mood: str) -> str:
@@ -179,7 +202,7 @@ class MessengerService:
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (user_id, STAGE_TALK, now, contact["id"]),
+                (user_id, STAGE_SEGMENT, now, contact["id"]),
             )
             self._add_consent(
                 conn,
@@ -210,7 +233,7 @@ class MessengerService:
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (STAGE_STOPPED, STAGE_TALK, now, contact["id"]),
+                (STAGE_STOPPED, STAGE_SEGMENT, now, contact["id"]),
             )
             self._add_consent(conn, contact_id=contact["id"], kind="messages")
         return self.get_by_max(contact["max_user_id"]) or contact
@@ -242,6 +265,52 @@ class MessengerService:
                 """,
                 (now, now, now, contact["id"]),
             )
+
+    def set_segment(self, contact: dict, segment: str) -> dict:
+        segment = "business" if segment == "business" else "gift"
+        next_stage = STAGE_BIZ_GOAL if segment == "business" else STAGE_TALK
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET segment = ?, funnel_stage = ?, last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (segment, next_stage, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_biz_goal(self, contact: dict, goal: str) -> dict:
+        brief = compose_brief_business(goal, contact.get("brief_mood") or "")
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_whom = ?, brief = ?, funnel_stage = ?,
+                    last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (goal, brief, STAGE_BIZ_TONE, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_biz_tone(self, contact: dict, tone: str) -> dict:
+        goal = contact.get("brief_whom") or ""
+        brief = compose_brief_business(goal, tone)
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_mood = ?, brief = ?, funnel_stage = ?,
+                    last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (tone, brief, STAGE_SENT, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_whom(self, contact: dict, whom: str) -> dict:
         brief = compose_brief(whom, contact.get("brief_mood") or "")

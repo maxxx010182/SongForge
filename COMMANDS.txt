@@ -1,21 +1,19 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.57 — убрали тупик бота, нужен деплой
+Версия: 2.11.58 — подарок / бизнес в боте MAX, нужен деплой
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.57
+# Деплой 2.11.58
 
 ssh root@195.19.20.245
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# ждать: "version":"2.11.57"
-
-# Сброс воронки, чтобы снова «Поехали»:
+# ждать: "version":"2.11.58"
 
 cd ~/SongForge
 
-sqlite3 data/songforge.db "DELETE FROM messenger_consents; UPDATE messenger_contacts SET funnel_stage='gate', messages_ok=0, brief='', brief_whom='', brief_mood='', stopped_at=NULL, blocked_at=NULL, user_id=NULL;"
+sqlite3 data/songforge.db "DELETE FROM messenger_consents; UPDATE messenger_contacts SET funnel_stage='gate', messages_ok=0, brief='', brief_whom='', brief_mood='', segment='', stopped_at=NULL, blocked_at=NULL, user_id=NULL;"
 
 # Потом в MAX: «Начать»
 

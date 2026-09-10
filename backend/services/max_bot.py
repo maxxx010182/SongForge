@@ -6,9 +6,14 @@ from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
 from backend.services.messenger_service import (
+    BIZ_GOAL_LABELS,
+    BIZ_TONE_LABELS,
     MOOD_LABELS,
+    STAGE_BIZ_GOAL,
+    STAGE_BIZ_TONE,
     STAGE_GATE,
     STAGE_MOOD,
+    STAGE_SEGMENT,
     STAGE_SENT,
     STAGE_STOPPED,
     STAGE_TALK,
@@ -58,8 +63,11 @@ GATE_TEXT = (
     "«Поехали» — соглашение и политика, как на сайте. Редкие сообщения сюда. "
     "Стоп — напишите «стоп»."
 )
+SEGMENT_TEXT = "Эта песня — близкому человеку или для дела?"
 WHOM_TEXT = "Кому песню?"
 MOOD_TEXT = "Какой она будет?"
+BIZ_GOAL_TEXT = "Для чего трек?"
+BIZ_TONE_TEXT = "Как должен звучать бренд в песне?"
 LATER_TEXT = (
     "Без имени тоже можно. Чаще дарят маме или любимым — "
     "ткните, слова потом поправим."
@@ -111,6 +119,37 @@ def _mood_buttons() -> list[list[dict]]:
             _callback_btn("С характером", "mood:character"),
         ],
         [_callback_btn("И то и то", "mood:both")],
+    ]
+
+
+def _segment_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("В подарок", "segment:gift"),
+            _callback_btn("Для бизнеса", "segment:business"),
+        ]
+    ]
+
+
+def _biz_goal_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Реклама", "bizgoal:ads"),
+            _callback_btn("Джингл", "bizgoal:jingle"),
+        ],
+        [
+            _callback_btn("Клиенту", "bizgoal:client"),
+            _callback_btn("Корпоратив", "bizgoal:event"),
+        ],
+    ]
+
+
+def _biz_tone_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Серьёзно", "biztone:serious"),
+            _callback_btn("С юмором", "biztone:light"),
+        ]
     ]
 
 
@@ -325,11 +364,20 @@ class MaxBot:
 
     def _continue_funnel(self, contact: dict) -> None:
         stage = contact.get("funnel_stage") or STAGE_GATE
-        if stage in {STAGE_GATE, STAGE_TALK}:
+        if stage in {STAGE_GATE, STAGE_SEGMENT}:
+            self._send(contact, SEGMENT_TEXT, _segment_buttons())
+            return
+        if stage == STAGE_TALK:
             self._send(contact, WHOM_TEXT, _whom_buttons())
             return
         if stage == STAGE_MOOD:
             self._send(contact, MOOD_TEXT, _mood_buttons())
+            return
+        if stage == STAGE_BIZ_GOAL:
+            self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
+            return
+        if stage == STAGE_BIZ_TONE:
+            self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
             return
         self._send_studio(contact)
 
@@ -358,11 +406,20 @@ class MaxBot:
             else:
                 self._send_gate(contact)
             return
+        if payload.startswith("segment:"):
+            self._apply_segment(contact, payload.split(":", 1)[1])
+            return
         if payload.startswith("whom:"):
             self._apply_whom(contact, payload.split(":", 1)[1])
             return
         if payload.startswith("mood:"):
             self._apply_mood(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("bizgoal:"):
+            self._apply_biz_goal(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("biztone:"):
+            self._apply_biz_tone(contact, payload.split(":", 1)[1])
 
     def _on_text(self, update: dict, contact: dict, *, name: str) -> None:
         text = _message_text(update)
@@ -394,7 +451,10 @@ class MaxBot:
             self._continue_funnel(contact)
             return
         stage = contact.get("funnel_stage") or STAGE_GATE
-        if stage in {STAGE_GATE, STAGE_TALK}:
+        if stage in {STAGE_GATE, STAGE_SEGMENT}:
+            self._apply_segment(contact, text)
+            return
+        if stage == STAGE_TALK:
             if _is_later(text):
                 self._send(contact, LATER_TEXT, _whom_buttons())
                 return
@@ -402,6 +462,12 @@ class MaxBot:
             return
         if stage == STAGE_MOOD:
             self._apply_mood(contact, text)
+            return
+        if stage == STAGE_BIZ_GOAL:
+            self._apply_biz_goal(contact, text)
+            return
+        if stage == STAGE_BIZ_TONE:
+            self._apply_biz_tone(contact, text)
             return
         self._send_studio(contact, extra="Черновик на месте. Ссылка живая.")
 
@@ -415,6 +481,21 @@ class MaxBot:
         except Exception:
             log.exception("MAX accept failed")
             self._send(contact, "Не получилось сохранить. Нажмите «Поехали» ещё раз.")
+            return
+        self._send(contact, SEGMENT_TEXT, _segment_buttons())
+
+    def _apply_segment(self, contact: dict, raw: str) -> None:
+        key = (raw or "").strip().lower()
+        if key in {"business", "бизнес", "дела", "бренд", "реклама", "джингл"}:
+            segment = "business"
+        elif key in {"gift", "подарок", "близкому", "близкий"} or "подар" in key:
+            segment = "gift"
+        else:
+            self._send(contact, SEGMENT_TEXT, _segment_buttons())
+            return
+        contact = self.messenger.set_segment(contact, segment)
+        if segment == "business":
+            self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
             return
         self._send(contact, WHOM_TEXT, _whom_buttons())
 
@@ -437,6 +518,24 @@ class MaxBot:
             self._send(contact, MOOD_TEXT, _mood_buttons())
             return
         contact = self.messenger.set_mood(contact, mood)
+        self._send_studio(contact)
+
+    def _apply_biz_goal(self, contact: dict, raw: str) -> None:
+        key = (raw or "").strip().lower()
+        goal = BIZ_GOAL_LABELS.get(key, (raw or "").strip())
+        if not goal:
+            self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
+            return
+        contact = self.messenger.set_biz_goal(contact, goal)
+        self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
+
+    def _apply_biz_tone(self, contact: dict, raw: str) -> None:
+        key = (raw or "").strip().lower()
+        tone = BIZ_TONE_LABELS.get(key, (raw or "").strip())
+        if not tone:
+            self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
+            return
+        contact = self.messenger.set_biz_tone(contact, tone)
         self._send_studio(contact)
 
     def _send_studio(self, contact: dict, extra: str = "") -> None:
