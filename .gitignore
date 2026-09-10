@@ -30,6 +30,7 @@ nohup.out
 
 # Cursor / agent (ne v repozitorii)
 terminals/
+screens/
 agent-tools/
 mcps/
 
