@@ -236,6 +236,58 @@ def init_db() -> None:
             """
         )
 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messenger_contacts (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                max_user_id TEXT,
+                vk_user_id TEXT,
+                tg_user_id TEXT,
+                funnel_stage TEXT NOT NULL DEFAULT 'gate',
+                brief TEXT NOT NULL DEFAULT '',
+                brief_whom TEXT NOT NULL DEFAULT '',
+                brief_mood TEXT NOT NULL DEFAULT '',
+                last_channel TEXT NOT NULL DEFAULT '',
+                max_chat_id TEXT,
+                messages_ok INTEGER NOT NULL DEFAULT 0,
+                stopped_at TEXT,
+                blocked_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_messenger_contacts_max
+            ON messenger_contacts(max_user_id)
+            WHERE max_user_id IS NOT NULL AND TRIM(max_user_id) != ''
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_messenger_contacts_user ON messenger_contacts(user_id)"
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messenger_consents (
+                id TEXT PRIMARY KEY,
+                contact_id TEXT NOT NULL,
+                channel TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                doc_version TEXT,
+                created_at TEXT NOT NULL,
+                details_json TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_messenger_consents_contact
+            ON messenger_consents(contact_id)
+            """
+        )
+
 def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(user_library)")}
     if "published_at" not in existing:

@@ -1,4 +1,6 @@
+import hmac
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import requests
@@ -69,6 +71,8 @@ from backend.services.telegram_auth import verify_telegram_login
 from backend.services.vk_auth import VkAuthService
 from backend.services.cabinet_service import CabinetService
 from backend.services.consultant import ConsultantService
+from backend.services.max_bot import MaxBot
+from backend.services.messenger_service import MessengerService, webhook_secret
 from backend.services.beta_guards import BetaGuards
 from backend.services.generation_quota_service import GenerationQuotaService
 from backend.services.guest_service import GuestService
@@ -87,6 +91,7 @@ from backend.settings import (
     GUEST_GENERATION_LIMIT,
     LEGACY_API_ENABLED,
     LLM_PROVIDER,
+    MAX_BOT_TOKEN,
     PAYMENT_PROVIDER,
     RATE_AUTH_IP_LIMIT,
     RATE_AUTH_IP_WINDOW_SEC,
@@ -130,8 +135,20 @@ admin_service = AdminService()
 showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
+messenger_service = MessengerService()
+max_bot = MaxBot(auth=auth_service, messenger=messenger_service)
 
-app = FastAPI(title="SongForge", version="2.11.54")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        await run_in_threadpool(max_bot.subscribe_webhook)
+    except Exception:
+        log.exception("MAX webhook subscribe failed")
+    yield
+
+
+app = FastAPI(title="SongForge", version="2.11.55", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -645,7 +662,8 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.54",
+        "version": "2.11.55",
+        "max_bot": bool(MAX_BOT_TOKEN),
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
         "generating": history.count_generating(),
@@ -658,6 +676,25 @@ async def health():
 @app.post("/api/webhooks/sunoapi")
 async def sunoapi_webhook(_payload: dict | None = None):
     """Заглушка для callBackUrl sunoapi.org — статус опрашиваем через poll."""
+    return {"ok": True}
+
+
+@app.post("/api/webhooks/max")
+async def max_webhook(request: Request):
+    if not MAX_BOT_TOKEN:
+        raise HTTPException(status_code=503, detail="MAX bot is not configured")
+    secret = webhook_secret()
+    incoming = (request.headers.get("x-max-bot-api-secret") or "").strip()
+    if not secret or not incoming or not hmac.compare_digest(incoming, secret):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = None
+    try:
+        await run_in_threadpool(max_bot.handle_payload, payload)
+    except Exception:
+        log.exception("MAX webhook handler failed")
     return {"ok": True}
 
 
@@ -1047,12 +1084,14 @@ async def get_me(
         remaining = generation_quota.user_trial_remaining(user["id"])
     else:
         remaining = 0
+    brief = messenger_service.get_brief_for_user(user["id"]) if user else ""
     return MeResponse(
         logged_in=bool(user),
         user=_user_info(user) if user else None,
         guest_remaining=remaining,
         guest_limit=GUEST_GENERATION_LIMIT,
         payment_provider=PAYMENT_PROVIDER,
+        messenger_brief=brief,
     )
 
 
@@ -1469,7 +1508,27 @@ async def vk_auth_callback(
         return redirect
 
 
-@app.get("/api/profile/nickname-available")
+@app.get("/api/auth/max")
+async def auth_max(
+    m: str | None = None,
+    guest_id: str = Depends(get_guest_id),
+):
+    token = (m or "").strip()
+    contact = messenger_service.verify_login_token(token) if token else None
+    if not contact or not contact.get("user_id"):
+        return RedirectResponse(f"{SITE_URL}/?auth_error=max")
+    user = auth_service.get_user_by_id(contact["user_id"])
+    if not user:
+        return RedirectResponse(f"{SITE_URL}/?auth_error=max")
+    session_token = auth_service.create_session(user["id"])
+    redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
+    redirect.set_cookie(AuthService.COOKIE_NAME, session_token, **_session_cookie_kwargs())
+    try:
+        cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
+        generation_quota.sync_guest_trial_on_login(guest_id=guest_id, user_id=user["id"])
+    except Exception as link_exc:
+        log.warning("MAX guest linking failed (login still succeeded): %s", link_exc)
+    return redirect
 async def check_nickname_available(
     display_name: str,
     user: dict | None = Depends(get_optional_user),
@@ -2134,9 +2193,11 @@ async def music_status(
 async def consultant_chat(
     req: ConsultantRequest,
     guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
 ):
     try:
-        reply = consultant.reply(req.message, req.context)
+        brief = messenger_service.get_brief_for_user(user["id"]) if user else ""
+        reply = consultant.reply(req.message, req.context, brief=brief)
         return ConsultantResponse(success=True, reply=reply)
     except Exception as exc:
         log.exception("consultant failed")

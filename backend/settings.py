@@ -112,6 +112,12 @@ VK_APP_ID = os.getenv("VK_APP_ID", "").strip()
 VK_APP_SECRET = os.getenv("VK_APP_SECRET", "").strip()
 VK_AUTH_BASE = os.getenv("VK_AUTH_BASE", "https://id.vk.ru").strip().rstrip("/")
 
+# --- MAX-бот (воронка в чат, студия на сайте) ---
+MAX_BOT_TOKEN = os.getenv("MAX_BOT_TOKEN", "").strip()
+MAX_BOT_USERNAME = os.getenv("MAX_BOT_USERNAME", "id720401732483_bot").strip().lstrip("@")
+# Опционально: свой секрет вебхука. Пусто — стабильно считаем из токена.
+MAX_WEBHOOK_SECRET = os.getenv("MAX_WEBHOOK_SECRET", "").strip()
+
 # --- Админ-панель (/admin) ---
 # Только эти email при первом входе в /admin становятся super_admin (через запятую).
 ADMIN_BOOTSTRAP_EMAILS: frozenset[str] = frozenset(

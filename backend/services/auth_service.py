@@ -26,6 +26,17 @@ class AuthService:
             FROM users WHERE id = ?
         """
 
+    def get_user_by_id(self, user_id: str | None) -> dict | None:
+        if not user_id:
+            return None
+        with get_connection() as conn:
+            row = conn.execute(
+                self._user_by_id_sql()
+                + " AND COALESCE(is_persona, 0) = 0",
+                (user_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def get_user_by_session(self, token: str | None) -> dict | None:
         if not token:
             return None
@@ -144,7 +155,24 @@ class AuthService:
         token = self.create_session(user["id"])
         return user, token
 
-    def _login_oauth_provider(
+    def _unique_display_name(self, conn, desired: str, fallback: str) -> str:
+        candidates = [desired.strip(), fallback, f"{fallback}_{secrets.token_hex(3)}"]
+        for name in candidates:
+            if not name:
+                continue
+            row = conn.execute(
+                """
+                SELECT id FROM users
+                WHERE LOWER(TRIM(display_name)) = LOWER(?)
+                  AND COALESCE(is_persona, 0) = 0
+                """,
+                (name,),
+            ).fetchone()
+            if not row:
+                return name
+        return f"{fallback}_{uuid.uuid4().hex[:8]}"
+
+    def _get_or_create_oauth_user(
         self,
         *,
         provider: str,
@@ -152,7 +180,7 @@ class AuthService:
         display_name: str,
         metadata: dict | None = None,
         email: str | None = None,
-    ) -> tuple[dict, str]:
+    ) -> dict:
         provider_user_id = str(provider_user_id).strip()
         if not provider_user_id:
             raise ValueError("Идентификатор провайдера обязателен")
@@ -174,6 +202,9 @@ class AuthService:
                 user_id = identity["user_id"]
             else:
                 user_id = str(uuid.uuid4())
+                display = self._unique_display_name(
+                    conn, display, f"{provider}_{provider_user_id}"
+                )
                 conn.execute(
                     """
                     INSERT INTO users (
@@ -200,9 +231,53 @@ class AuthService:
 
             user_row = conn.execute(self._user_by_id_sql(), (user_id,)).fetchone()
 
-        user = dict(user_row)
+        return dict(user_row)
+
+    def _login_oauth_provider(
+        self,
+        *,
+        provider: str,
+        provider_user_id: str,
+        display_name: str,
+        metadata: dict | None = None,
+        email: str | None = None,
+    ) -> tuple[dict, str]:
+        user = self._get_or_create_oauth_user(
+            provider=provider,
+            provider_user_id=provider_user_id,
+            display_name=display_name,
+            metadata=metadata,
+            email=email,
+        )
         token = self.create_session(user["id"])
         return user, token
+
+    def ensure_max_user(
+        self,
+        *,
+        max_user_id: str,
+        name: str = "",
+        username: str = "",
+    ) -> dict:
+        display = (name or "").strip() or f"max_{max_user_id}"
+        return self._get_or_create_oauth_user(
+            provider="max",
+            provider_user_id=str(max_user_id),
+            display_name=display,
+            metadata={"username": username, "name": name},
+        )
+
+    def login_max(
+        self,
+        *,
+        max_user_id: str,
+        name: str = "",
+        username: str = "",
+    ) -> tuple[dict, str]:
+        user = self.ensure_max_user(
+            max_user_id=max_user_id, name=name, username=username
+        )
+        return user, self.create_session(user["id"])
 
     def login_telegram(
         self,

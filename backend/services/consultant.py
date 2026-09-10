@@ -130,7 +130,7 @@ class ConsultantService:
             base += "\n\nКраткая инструкция для пользователей (опирайся на неё):\n" + self._guide
         return base
 
-    def reply(self, message: str, context: str = "") -> str:
+    def reply(self, message: str, context: str = "", brief: str = "") -> str:
         message = message.strip()
         if not message:
             return (
@@ -139,8 +139,17 @@ class ConsultantService:
             )
 
         user_text = message
+        prefix_parts = []
+        if brief.strip():
+            prefix_parts.append(
+                "Идея уже собрана в боте MAX: "
+                + brief.strip()
+                + ". Не спрашивай заново, кому песня."
+            )
         if context.strip():
-            user_text = f"Контекст: {context.strip()}\n\nВопрос: {message}"
+            prefix_parts.append("Контекст: " + context.strip())
+        if prefix_parts:
+            user_text = "\n".join(prefix_parts) + "\n\nВопрос: " + message
 
         try:
             # LITE — дешёвая/быстрая модель для живого общения

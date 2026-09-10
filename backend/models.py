@@ -252,6 +252,7 @@ class MeResponse(BaseModel):
     guest_remaining: int = 0
     guest_limit: int = 1
     payment_provider: str = "stub"
+    messenger_brief: str = ""
 
 
 class HistoryItem(BaseModel):
