@@ -8,6 +8,8 @@ import json
 import time
 import uuid
 
+from datetime import datetime, timedelta, timezone
+
 from backend.database.db import get_connection, init_db, utc_now
 from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 
@@ -29,11 +31,12 @@ WHOM_LABELS = {
     "friend": "другу",
     "self": "себе",
 }
-MOOD_LABELS = {
-    "warm": "тепло",
-    "character": "с характером",
-    "both": "тепло и с характером",
+OCCASION_LABELS = {
+    "birthday": "день рождения",
+    "just": "просто так",
+    "holiday": "скоро праздник",
 }
+MOOD_LABELS = OCCASION_LABELS
 BIZ_GOAL_LABELS = {
     "ads": "реклама и контент",
     "jingle": "джингл бренда",
@@ -197,12 +200,16 @@ class MessengerService:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET user_id = ?, funnel_stage = ?, messages_ok = 1,
+                SET user_id = ?, funnel_stage = ?, segment = CASE
+                        WHEN TRIM(COALESCE(segment, '')) = '' THEN 'gift'
+                        ELSE segment
+                    END,
+                    messages_ok = 1,
                     stopped_at = NULL, blocked_at = NULL,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (user_id, STAGE_SEGMENT, now, contact["id"]),
+                (user_id, STAGE_TALK, now, contact["id"]),
             )
             self._add_consent(
                 conn,
@@ -233,7 +240,7 @@ class MessengerService:
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (STAGE_STOPPED, STAGE_SEGMENT, now, contact["id"]),
+                (STAGE_STOPPED, STAGE_TALK, now, contact["id"]),
             )
             self._add_consent(conn, contact_id=contact["id"], kind="messages")
         return self.get_by_max(contact["max_user_id"]) or contact
@@ -245,6 +252,7 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET messages_ok = 0, stopped_at = ?, funnel_stage = ?,
+                    next_nudge_at = NULL,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
@@ -327,7 +335,7 @@ class MessengerService:
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
-    def set_mood(self, contact: dict, mood: str) -> dict:
+    def set_mood(self, contact: dict, mood: str, *, occasion_key: str = "") -> dict:
         whom = contact.get("brief_whom") or ""
         brief = compose_brief(whom, mood)
         now = utc_now()
@@ -335,24 +343,28 @@ class MessengerService:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET brief_mood = ?, brief = ?, funnel_stage = ?,
+                SET brief_mood = ?, occasion_key = ?, brief = ?, funnel_stage = ?,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (mood, brief, STAGE_SENT, now, contact["id"]),
+                (mood, occasion_key, brief, STAGE_SENT, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def mark_sent_to_site(self, contact: dict) -> dict:
         now = utc_now()
+        nudge_at = (
+            datetime.now(timezone.utc) + timedelta(hours=2)
+        ).isoformat()
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET funnel_stage = ?, last_channel = 'max', updated_at = ?
+                SET funnel_stage = ?, last_channel = 'max', updated_at = ?,
+                    nudge_step = 0, next_nudge_at = ?
                 WHERE id = ?
                 """,
-                (STAGE_SENT, now, contact["id"]),
+                (STAGE_SENT, now, nudge_at, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 

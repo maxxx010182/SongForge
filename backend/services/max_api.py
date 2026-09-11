@@ -104,12 +104,18 @@ class MaxApi:
         user_id: int | str,
         text: str,
         buttons: list[list[dict]] | None = None,
+        image_url: str | None = None,
     ) -> bool:
         body: dict = {"text": text}
+        attachments: list[dict] = []
+        if image_url:
+            attachments.append({"type": "image", "payload": {"url": image_url}})
         if buttons:
-            body["attachments"] = [
+            attachments.append(
                 {"type": "inline_keyboard", "payload": {"buttons": buttons}}
-            ]
+            )
+        if attachments:
+            body["attachments"] = attachments
         data = self._request(
             "POST",
             "/messages",

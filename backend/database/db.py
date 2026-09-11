@@ -396,6 +396,18 @@ def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE messenger_contacts ADD COLUMN segment TEXT NOT NULL DEFAULT ''"
         )
+    if "occasion_key" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN occasion_key TEXT NOT NULL DEFAULT ''"
+        )
+    if "nudge_step" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN nudge_step INTEGER NOT NULL DEFAULT 0"
+        )
+    if "next_nudge_at" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN next_nudge_at TEXT"
+        )
 
 
 def _migrate_engagement_columns(conn: sqlite3.Connection) -> None:

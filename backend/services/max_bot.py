@@ -8,13 +8,12 @@ from backend.services.max_api import MaxApi
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
-    MOOD_LABELS,
+    OCCASION_LABELS,
     STAGE_BIZ_GOAL,
     STAGE_BIZ_TONE,
     STAGE_GATE,
     STAGE_MOOD,
     STAGE_SEGMENT,
-    STAGE_SENT,
     STAGE_STOPPED,
     STAGE_TALK,
     WHOM_LABELS,
@@ -75,8 +74,17 @@ GATE_TEXT = (
     "Стоп — напишите «стоп»."
 )
 SEGMENT_TEXT = "Эта песня — близкому человеку или для дела?"
-WHOM_TEXT = "Кому песню?"
-MOOD_TEXT = "Какой она будет?"
+WHOM_TEXT = "Кому эта песня?"
+MOOD_TEXT = "Повод какой? День рождения, просто так, или дата на носу?"
+BIZ_WORDS = {
+    "business",
+    "бизнес",
+    "дела",
+    "бренд",
+    "реклама",
+    "джингл",
+    "корпоратив",
+}
 BIZ_GOAL_TEXT = "Для чего трек?"
 BIZ_TONE_TEXT = "Как должен звучать бренд в песне?"
 LATER_TEXT = (
@@ -126,11 +134,23 @@ def _whom_buttons() -> list[list[dict]]:
 def _mood_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Тёплая", "mood:warm"),
-            _callback_btn("С характером", "mood:character"),
+            _callback_btn("День рождения", "mood:birthday"),
+            _callback_btn("Просто так", "mood:just"),
         ],
-        [_callback_btn("И то и то", "mood:both")],
+        [_callback_btn("Скоро праздник", "mood:holiday")],
     ]
+
+
+def _cover_url() -> str:
+    base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
+    return f"{base}/assets/max-cover.jpg"
+
+
+def _looks_business(raw: str) -> bool:
+    key = (raw or "").strip().lower()
+    if key in BIZ_WORDS:
+        return True
+    return any(word in key for word in ("реклам", "бренд", "джингл", "корпоратив"))
 
 
 def _segment_buttons() -> list[list[dict]]:
@@ -341,11 +361,20 @@ class MaxBot:
         if update_type == "message_created":
             self._on_text(update, contact, name=name)
 
-    def _send(self, contact: dict, text: str, buttons: list[list[dict]] | None = None) -> None:
+    def _send(
+        self,
+        contact: dict,
+        text: str,
+        buttons: list[list[dict]] | None = None,
+        *,
+        image_url: str | None = None,
+    ) -> None:
         user_id = contact.get("max_user_id")
         if not user_id:
             return
-        ok = self.api.send_message(user_id=user_id, text=text, buttons=buttons)
+        ok = self.api.send_message(
+            user_id=user_id, text=text, buttons=buttons, image_url=image_url
+        )
         if not ok:
             log.warning("MAX send_message failed for user %s", user_id)
 
@@ -376,17 +405,20 @@ class MaxBot:
         self._send_gate(contact)
 
     def _send_gate(self, contact: dict) -> None:
-        self._send(contact, GATE_TEXT, _legal_buttons())
+        self._send(contact, GATE_TEXT, _legal_buttons(), image_url=_cover_url())
 
     def _continue_funnel(self, contact: dict) -> None:
         stage = contact.get("funnel_stage") or STAGE_GATE
-        if not (contact.get("segment") or "").strip():
-            self._send(contact, SEGMENT_TEXT, _segment_buttons())
+        if (contact.get("segment") or "") == "business":
+            if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_BIZ_GOAL}:
+                self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
+                return
+            if stage == STAGE_BIZ_TONE:
+                self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
+                return
+            self._send_studio(contact)
             return
-        if stage in {STAGE_GATE, STAGE_SEGMENT}:
-            self._send(contact, SEGMENT_TEXT, _segment_buttons())
-            return
-        if stage == STAGE_TALK:
+        if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_TALK}:
             self._send(contact, WHOM_TEXT, _whom_buttons())
             return
         if stage == STAGE_MOOD:
@@ -470,10 +502,10 @@ class MaxBot:
             self._continue_funnel(contact)
             return
         stage = contact.get("funnel_stage") or STAGE_GATE
-        if stage in {STAGE_GATE, STAGE_SEGMENT}:
-            self._apply_segment(contact, text)
-            return
-        if stage == STAGE_TALK:
+        if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_TALK}:
+            if _looks_business(text):
+                self._apply_segment(contact, "business")
+                return
             if _is_later(text):
                 self._send(contact, LATER_TEXT, _whom_buttons())
                 return
@@ -501,7 +533,7 @@ class MaxBot:
             log.exception("MAX accept failed")
             self._send(contact, "Не получилось сохранить. Нажмите «Поехали» ещё раз.")
             return
-        self._send(contact, SEGMENT_TEXT, _segment_buttons())
+        self._send(contact, WHOM_TEXT, _whom_buttons())
 
     def _apply_segment(self, contact: dict, raw: str) -> None:
         key = (raw or "").strip().lower()
@@ -523,6 +555,9 @@ class MaxBot:
         if key in {"later", "skip"} or _is_later(raw):
             self._send(contact, LATER_TEXT, _whom_buttons())
             return
+        if _looks_business(raw):
+            self._apply_segment(contact, "business")
+            return
         whom = WHOM_LABELS.get(key, (raw or "").strip())
         if not whom:
             self._send(contact, WHOM_TEXT, _whom_buttons())
@@ -532,11 +567,25 @@ class MaxBot:
 
     def _apply_mood(self, contact: dict, raw: str) -> None:
         key = (raw or "").strip().lower()
-        mood = MOOD_LABELS.get(key, (raw or "").strip())
+        aliases = {
+            "др": "birthday",
+            "день рождения": "birthday",
+            "просто так": "just",
+            "просто": "just",
+            "праздник": "holiday",
+            "скоро праздник": "holiday",
+        }
+        mapped_key = key if key in OCCASION_LABELS else aliases.get(key, "")
+        if mapped_key:
+            mood = OCCASION_LABELS[mapped_key]
+            occasion_key = mapped_key
+        else:
+            mood = (raw or "").strip()
+            occasion_key = ""
         if not mood:
             self._send(contact, MOOD_TEXT, _mood_buttons())
             return
-        contact = self.messenger.set_mood(contact, mood)
+        contact = self.messenger.set_mood(contact, mood, occasion_key=occasion_key)
         self._send_studio(contact)
 
     def _apply_biz_goal(self, contact: dict, raw: str) -> None:
@@ -561,8 +610,9 @@ class MaxBot:
         if not contact.get("user_id"):
             self._send_gate(contact)
             return
-        brief = (contact.get("brief") or "").strip()
-        hold = brief.replace("Песня ", "").rstrip(".")
+        whom = (contact.get("brief_whom") or "").strip()
+        mood = (contact.get("brief_mood") or "").strip()
+        hold = ", ".join(part for part in (whom, mood) if part)
         url = self.messenger.studio_url(contact)
         lines = []
         if extra:
@@ -572,8 +622,7 @@ class MaxBot:
         else:
             lines.append("Держу вашу идею.")
         lines.append(
-            "Сейчас открою студию — одна бесплатная проба, два варианта. "
-            "Помощнику на сайте уже передам, о чём речь, чтобы не начинать с нуля."
+            "Сейчас открою студию — одна проба, два варианта, минут пять. Я тут."
         )
         self.messenger.mark_sent_to_site(contact)
         self._send(contact, "\n\n".join(lines), _studio_buttons(url))

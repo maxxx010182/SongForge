@@ -24,8 +24,15 @@ class FakeApi:
     def configured(self) -> bool:
         return True
 
-    def send_message(self, *, user_id, text, buttons=None) -> bool:
-        self.sent.append({"user_id": str(user_id), "text": text, "buttons": buttons or []})
+    def send_message(self, *, user_id, text, buttons=None, image_url=None) -> bool:
+        self.sent.append(
+            {
+                "user_id": str(user_id),
+                "text": text,
+                "buttons": buttons or [],
+                "image_url": image_url,
+            }
+        )
         return True
 
     def answer_callback(self, callback_id: str, *, notification: str = "") -> bool:
@@ -80,7 +87,7 @@ def _cb(bot: MaxBot, max_user_id: str, payload: str, name: str | None = None) ->
 
 
 def test_compose_brief():
-    assert compose_brief("маме", "тепло") == "Песня маме. Тепло."
+    assert compose_brief("маме", "день рождения") == "Песня маме. День рождения."
     assert compose_brief("себе", "") == "Песня себе."
 
 
@@ -97,6 +104,8 @@ def test_gate_on_bot_started():
         assert api.sent
         assert "стоп" in api.sent[0]["text"].lower()
         assert "проба" in api.sent[0]["text"].lower()
+        assert api.sent[0]["image_url"]
+        assert api.sent[0]["image_url"].endswith("/assets/max-cover.jpg")
         labels = [
             btn.get("text")
             for row in api.sent[0]["buttons"]
@@ -124,12 +133,11 @@ def test_accept_whom_mood_sends_studio_link():
             }
         )
         _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "segment:gift")
         _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:warm")
+        _cb(bot, max_user_id, "mood:birthday")
         last = api.sent[-1]
         assert "маме" in last["text"].lower()
-        assert "тепло" in last["text"].lower()
+        assert "день рождения" in last["text"].lower()
         urls = [
             btn.get("url", "")
             for row in last["buttons"]
@@ -138,6 +146,8 @@ def test_accept_whom_mood_sends_studio_link():
         assert any("/api/auth/max?m=" in url for url in urls)
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief"].startswith("Песня маме")
+        assert contact["occasion_key"] == "birthday"
+        assert contact["next_nudge_at"]
         assert contact["user_id"]
         assert contact["messages_ok"] == 1
     finally:
@@ -179,7 +189,6 @@ def test_free_text_whom():
     bot, api, max_user_id = _bot()
     try:
         _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "segment:gift")
         bot.handle_update(
             {
                 "update_type": "message_created",
@@ -192,7 +201,7 @@ def test_free_text_whom():
         )
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief_whom"] == "бабушке"
-        assert "какой она" in api.sent[-1]["text"].lower()
+        assert "повод" in api.sent[-1]["text"].lower()
     finally:
         _cleanup(max_user_id)
 
@@ -205,9 +214,8 @@ def test_login_token_and_me_brief():
     bot_user = max_user_id
     try:
         _cb(bot, bot_user, "accept")
-        _cb(bot, bot_user, "segment:gift")
         _cb(bot, bot_user, "whom:mom")
-        _cb(bot, bot_user, "mood:warm")
+        _cb(bot, bot_user, "mood:birthday")
         contact = MessengerService().get_by_max(bot_user)
         token = MessengerService().make_login_token(contact["id"])
         client = TestClient(app)
@@ -223,18 +231,10 @@ def test_login_token_and_me_brief():
         _cleanup(bot_user)
 
 
-def test_greeting_without_segment_asks_gift_or_business():
+def test_greeting_keeps_whom_step():
     bot, api, max_user_id = _bot()
     try:
         _cb(bot, max_user_id, "accept")
-        contact = MessengerService().get_by_max(max_user_id)
-        from backend.database.db import get_connection
-
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE messenger_contacts SET funnel_stage='mood', segment='' WHERE id=?",
-                (contact["id"],),
-            )
         bot.handle_update(
             {
                 "update_type": "message_created",
@@ -250,10 +250,10 @@ def test_greeting_without_segment_asks_gift_or_business():
             }
         )
         last = api.sent[-1]
-        assert "для дела" in last["text"].lower() or "бизнеса" in last["text"].lower()
-        payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
-        assert "segment:gift" in payloads
-        assert "segment:business" in payloads
+        assert "кому" in last["text"].lower()
+        payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
+        assert "whom:mom" in payloads
+        assert "segment:business" not in payloads
     finally:
         _cleanup(max_user_id)
 
@@ -262,7 +262,20 @@ def test_business_branch_sends_studio_brief():
     bot, api, max_user_id = _bot()
     try:
         _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "segment:business")
+        bot.handle_update(
+            {
+                "update_type": "message_created",
+                "message": {
+                    "sender": {
+                        "user_id": int(max_user_id),
+                        "is_bot": False,
+                        "name": f"tmax_{max_user_id}",
+                    },
+                    "recipient": {"chat_type": "dialog", "user_id": int(max_user_id)},
+                    "body": {"text": "для рекламы бренда"},
+                },
+            }
+        )
         _cb(bot, max_user_id, "bizgoal:jingle")
         _cb(bot, max_user_id, "biztone:light")
         last = api.sent[-1]
