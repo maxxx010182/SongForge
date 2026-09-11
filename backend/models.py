@@ -303,6 +303,7 @@ class ExploreItem(BaseModel):
     listen_url: str = ""
     liked_by_me: bool = False
     comment_count: int = 0
+    similar_idea: str = ""
 
 
 class TrackCommentItem(BaseModel):

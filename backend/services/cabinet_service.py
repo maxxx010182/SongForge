@@ -5,6 +5,33 @@ from backend.database.db import get_connection, init_db, utc_now
 from backend.services.audio_access_service import AudioAccessService
 
 
+def compose_similar_idea(
+    *,
+    idea: str = "",
+    optimized_idea: str = "",
+    style: str = "",
+    genre: str = "",
+) -> str:
+    """Текст в поле идеи по кнопке «Похожее»: промпт хита, не «в стиле названия»."""
+    idea = (idea or "").strip()
+    optimized_idea = (optimized_idea or "").strip()
+    style = (style or "").strip()
+    genre = (genre or "").strip()
+    theme = idea or optimized_idea
+    parts: list[str] = []
+    if theme:
+        parts.append(theme)
+    if style:
+        blob = "\n".join(parts).lower()
+        if style.lower() not in blob:
+            parts.append("Стиль и звучание: " + style)
+    if parts:
+        return "\n\n".join(parts)
+    if genre:
+        return f"Трек в жанре {genre}, атмосферный и запоминающийся."
+    return ""
+
+
 class CabinetService:
     def __init__(self) -> None:
         init_db()
@@ -358,6 +385,9 @@ class CabinetService:
                     ul.*,
                     u.display_name,
                     u.avatar_url,
+                    g.idea AS gen_idea,
+                    g.optimized_idea AS gen_optimized_idea,
+                    g.style AS gen_style,
                     (
                         SELECT COUNT(*)
                         FROM track_likes tl
@@ -377,6 +407,7 @@ class CabinetService:
                     END AS liked_by_me
                 FROM user_library ul
                 LEFT JOIN users u ON u.id = ul.user_id
+                LEFT JOIN generations g ON g.id = ul.generation_id
                 WHERE ul.published_at IS NOT NULL
                 ORDER BY likes_count DESC, ul.published_at DESC
                 LIMIT {limit}
@@ -390,10 +421,17 @@ class CabinetService:
         likes = row["likes_count"] if "likes_count" in row.keys() else row["likes"]
         liked = bool(row["liked_by_me"]) if "liked_by_me" in row.keys() else False
         comments = row["comment_count"] if "comment_count" in row.keys() else 0
+        keys = row.keys()
+        idea = (row["gen_idea"] or "") if "gen_idea" in keys else ""
+        optimized = (
+            (row["gen_optimized_idea"] or "") if "gen_optimized_idea" in keys else ""
+        )
+        style = (row["gen_style"] or "") if "gen_style" in keys else ""
+        genre = row["genre"] or ""
         return {
             "id": row["id"],
             "title": row["title"] or "Без названия",
-            "genre": row["genre"] or "",
+            "genre": genre,
             "image_url": row["image_url"] or "",
             "duration": row["duration"] or 0,
             "likes": int(likes or 0),
@@ -403,6 +441,12 @@ class CabinetService:
             "listen_url": f"/api/explore/{row['id']}/listen",
             "liked_by_me": liked,
             "comment_count": int(comments or 0),
+            "similar_idea": compose_similar_idea(
+                idea=idea,
+                optimized_idea=optimized,
+                style=style,
+                genre=genre,
+            ),
         }
 
     def link_generation_to_user(self, *, production_id: str, user_id: str) -> None:
