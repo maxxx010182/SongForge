@@ -52,9 +52,11 @@ def _cleanup(max_user_id: str) -> None:
         ).fetchone()
         if not row:
             return
+        conn.execute("DELETE FROM messenger_followups WHERE contact_id = ?", (row["id"],))
         conn.execute("DELETE FROM messenger_consents WHERE contact_id = ?", (row["id"],))
         conn.execute("DELETE FROM messenger_contacts WHERE id = ?", (row["id"],))
         if row["user_id"]:
+            conn.execute("DELETE FROM generations WHERE user_id = ?", (row["user_id"],))
             conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["user_id"],))
             conn.execute(
                 "DELETE FROM auth_identities WHERE user_id = ? AND provider = 'max'",
@@ -351,13 +353,13 @@ def test_nudge_three_steps_then_silence():
 
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
-        assert "черновик на месте" in api.sent[-1]["text"].lower()
+        assert "черновик уже" in api.sent[-1]["text"].lower()
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["nudge_step"] == 1
 
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
-        assert "крутилка" in api.sent[-1]["text"].lower()
+        assert "не вышло зайти" in api.sent[-1]["text"].lower()
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["nudge_step"] == 2
 
@@ -391,6 +393,98 @@ def test_nudge_skips_stopped():
         api.sent.clear()
         assert bot.process_due_nudges() == 0
         assert api.sent == []
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_ready_followup_waits_if_on_site_then_sends():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:birthday")
+        svc = MessengerService()
+        contact = svc.get_by_max(max_user_id)
+        gen_id = str(uuid.uuid4())
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO generations (
+                    id, created_at, status, user_id, purchased, title
+                ) VALUES (?, '2026-09-11T10:00:00', 'success', ?, 0, 'Тест')
+                """,
+                (gen_id, contact["user_id"]),
+            )
+        svc.on_generation_ready(user_id=contact["user_id"], generation_id=gen_id)
+        contact = svc.get_by_max(max_user_id)
+        assert not contact["next_nudge_at"]
+        svc.touch_site(contact["user_id"])
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ?",
+                ("2000-01-01T00:00:00+00:00", gen_id),
+            )
+        api.sent.clear()
+        assert bot.process_due_followups() == 0
+        assert api.sent == []
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_contacts SET last_site_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", contact["id"]),
+            )
+            conn.execute(
+                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ?",
+                ("2000-01-01T00:00:00+00:00", gen_id),
+            )
+        assert bot.process_due_followups() == 1
+        last = api.sent[-1]
+        assert "уже готово" in last["text"].lower()
+        labels = [btn.get("text") for row in last["buttons"] for btn in row]
+        assert "Слушать" in labels
+        assert any("open=listen" in (btn.get("url") or "") for row in last["buttons"] for btn in row)
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_unpaid_followup_after_preview():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:just")
+        svc = MessengerService()
+        contact = svc.get_by_max(max_user_id)
+        gen_id = str(uuid.uuid4())
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO generations (
+                    id, created_at, status, user_id, purchased, title
+                ) VALUES (?, '2026-09-11T10:00:00', 'success', ?, 0, 'Тест')
+                """,
+                (gen_id, contact["user_id"]),
+            )
+        svc.on_generation_ready(user_id=contact["user_id"], generation_id=gen_id)
+        svc.on_preview_played(user_id=contact["user_id"], generation_id=gen_id)
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_contacts SET last_site_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", contact["id"]),
+            )
+            conn.execute(
+                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ? AND kind = ?",
+                ("2000-01-01T00:00:00+00:00", gen_id, "unpaid_preview"),
+            )
+        api.sent.clear()
+        assert bot.process_due_followups() == 1
+        last = api.sent[-1]
+        assert "не забрал" in last["text"].lower()
+        labels = [btn.get("text") for row in last["buttons"] for btn in row]
+        assert "Забрать песню" in labels
+        assert "Расширенный режим" in labels
+        svc.on_generation_purchased(user_id=contact["user_id"], generation_id=gen_id)
+        api.sent.clear()
+        assert bot.process_due_followups() == 0
     finally:
         _cleanup(max_user_id)
 

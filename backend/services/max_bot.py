@@ -97,9 +97,18 @@ STOP_TEXT = (
 )
 RESUME_TEXT = "Снова на связи. Продолжим?"
 NUDGE_TEXTS = (
-    "Черновик на месте. Ссылка живая.",
-    "Если крутилка или не пускает — напиши, гляну. Черновик никуда не делся.",
-    "Отложим? Идея никуда не денется. Если больше не писать — скажите «стоп».",
+    "Черновик уже в студии. Осталось открыть — и услышать первый вариант.",
+    "Не вышло зайти? Напиши — гляну. Идея на месте, ссылка живая.",
+    "Отложим? Идея никуда не денется. Если не писать — скажи «стоп».",
+)
+READY_LISTEN_TEXT = (
+    "Уже готово — два варианта ждут.\n\n"
+    "Открой и послушай, как звучит то, что хотели сказать."
+)
+UNPAID_PREVIEW_TEXT = (
+    "Превью послушал, а песню так и не забрал.\n\n"
+    "Не то попало? В расширенном режиме можно собрать звучание иначе — "
+    "часто именно там получается вещь, которую оставляют себе."
 )
 
 
@@ -667,4 +676,63 @@ class MaxBot:
                     contact.get("max_user_id"),
                     step,
                 )
+        return sent
+
+    def process_due_followups(self, *, limit: int = 20) -> int:
+        sent = 0
+        for job in self.messenger.list_due_followups(limit=limit):
+            contact = self.messenger.get_by_id(job.get("contact_id") or "")
+            if not contact or not self.messenger.can_message(contact):
+                self.messenger.cancel_followup(job["id"])
+                continue
+            gen = self.messenger.generation_followup_state(job.get("generation_id") or "")
+            if not gen or (gen.get("status") or "") != "success":
+                self.messenger.cancel_followup(job["id"])
+                continue
+            if int(gen.get("purchased") or 0):
+                self.messenger.cancel_followup(job["id"])
+                continue
+            kind = job.get("kind") or ""
+            if kind == "ready_listen":
+                if gen.get("previewed_at"):
+                    self.messenger.cancel_followup(job["id"])
+                    continue
+                if self.messenger.site_is_recent(contact, minutes=3):
+                    self.messenger.delay_followup(job["id"], minutes=5)
+                    continue
+                text = READY_LISTEN_TEXT
+                buttons = [[
+                    _link_btn(
+                        "Слушать",
+                        self.messenger.studio_url(contact, open_to="listen"),
+                    )
+                ]]
+            elif kind == "unpaid_preview":
+                if self.messenger.site_is_recent(contact, minutes=3):
+                    self.messenger.delay_followup(job["id"], minutes=30)
+                    continue
+                text = UNPAID_PREVIEW_TEXT
+                buttons = [
+                    [_link_btn(
+                        "Забрать песню",
+                        self.messenger.studio_url(contact, open_to="listen"),
+                    )],
+                    [_link_btn(
+                        "Расширенный режим",
+                        self.messenger.studio_url(contact, open_to="expert"),
+                    )],
+                ]
+            else:
+                self.messenger.cancel_followup(job["id"])
+                continue
+            ok = self.api.send_message(
+                user_id=contact["max_user_id"],
+                text=text,
+                buttons=buttons,
+            )
+            if ok:
+                self.messenger.mark_followup_sent(job["id"])
+                sent += 1
+            else:
+                self.messenger.delay_followup(job["id"], minutes=15)
         return sent

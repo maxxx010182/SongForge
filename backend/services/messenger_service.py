@@ -96,6 +96,16 @@ class MessengerService:
     def __init__(self) -> None:
         init_db()
 
+    def get_by_id(self, contact_id: str) -> dict | None:
+        if not contact_id:
+            return None
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM messenger_contacts WHERE id = ?",
+                (contact_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def get_by_max(self, max_user_id: str | int) -> dict | None:
         max_user_id = str(max_user_id).strip()
         if not max_user_id:
@@ -121,6 +131,39 @@ class MessengerService:
                 (user_id,),
             ).fetchone()
         return (row["brief"] or "").strip() if row else ""
+
+    def get_max_contact_for_user(self, user_id: str) -> dict | None:
+        if not user_id:
+            return None
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT * FROM messenger_contacts
+                WHERE user_id = ?
+                  AND max_user_id IS NOT NULL
+                  AND TRIM(max_user_id) != ''
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (user_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def touch_site(self, user_id: str) -> None:
+        if not user_id:
+            return
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET last_site_at = ?, updated_at = ?
+                WHERE user_id = ?
+                  AND max_user_id IS NOT NULL
+                  AND TRIM(max_user_id) != ''
+                """,
+                (now, now, user_id),
+            )
 
     def get_or_create_by_max(
         self,
@@ -497,7 +540,220 @@ class MessengerService:
             return None
         return dict(row)
 
-    def studio_url(self, contact: dict) -> str:
+    def studio_url(self, contact: dict, *, open_to: str = "") -> str:
         token = self.make_login_token(contact["id"])
         base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
-        return f"{base}/api/auth/max?m={token}"
+        url = f"{base}/api/auth/max?m={token}"
+        if open_to in {"listen", "expert"}:
+            url += f"&open={open_to}"
+        return url
+
+    def silence_studio_nudges(self, contact: dict) -> None:
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET next_nudge_at = NULL, nudge_step = 9, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, contact["id"]),
+            )
+
+    def _cancel_followups(
+        self,
+        *,
+        contact_id: str | None = None,
+        generation_id: str | None = None,
+        kind: str | None = None,
+    ) -> None:
+        now = utc_now()
+        clauses = ["canceled_at IS NULL", "sent_at IS NULL"]
+        params: list = []
+        if contact_id:
+            clauses.append("contact_id = ?")
+            params.append(contact_id)
+        if generation_id:
+            clauses.append("generation_id = ?")
+            params.append(generation_id)
+        if kind:
+            clauses.append("kind = ?")
+            params.append(kind)
+        if len(params) < 1:
+            return
+        with get_connection() as conn:
+            conn.execute(
+                f"UPDATE messenger_followups SET canceled_at = ? WHERE {' AND '.join(clauses)}",
+                [now, *params],
+            )
+
+    def schedule_followup(
+        self,
+        *,
+        contact: dict,
+        kind: str,
+        generation_id: str,
+        hours: int = 0,
+        minutes: int = 0,
+        days: int = 0,
+    ) -> None:
+        self._cancel_followups(
+            contact_id=contact["id"],
+            generation_id=generation_id,
+            kind=kind,
+        )
+        now = utc_now()
+        due = (
+            datetime.now(timezone.utc)
+            + timedelta(days=days, hours=hours, minutes=minutes)
+        ).isoformat()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO messenger_followups (
+                    id, contact_id, user_id, generation_id, kind,
+                    due_at, sent_at, canceled_at, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    contact["id"],
+                    contact.get("user_id") or "",
+                    generation_id,
+                    kind,
+                    due,
+                    now,
+                ),
+            )
+
+    def on_generation_ready(self, *, user_id: str, generation_id: str) -> None:
+        contact = self.get_max_contact_for_user(user_id)
+        if not contact or not self.can_message(contact):
+            return
+        self.silence_studio_nudges(contact)
+        state = self.generation_followup_state(generation_id)
+        if int(state.get("purchased") or 0):
+            return
+        self.schedule_followup(
+            contact=contact,
+            kind="ready_listen",
+            generation_id=generation_id,
+            minutes=5,
+        )
+
+    def on_preview_played(self, *, user_id: str, generation_id: str) -> None:
+        if not user_id or not generation_id:
+            return
+        now = utc_now()
+        purchased = 0
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE generations
+                SET previewed_at = COALESCE(previewed_at, ?)
+                WHERE id = ?
+                """,
+                (now, generation_id),
+            )
+            row = conn.execute(
+                "SELECT purchased FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            purchased = int(row["purchased"] or 0) if row else 0
+        self.touch_site(user_id)
+        contact = self.get_max_contact_for_user(user_id)
+        if not contact or not self.can_message(contact):
+            return
+        self._cancel_followups(
+            contact_id=contact["id"],
+            generation_id=generation_id,
+            kind="ready_listen",
+        )
+        if purchased:
+            self._cancel_followups(
+                contact_id=contact["id"],
+                generation_id=generation_id,
+                kind="unpaid_preview",
+            )
+            return
+        self.schedule_followup(
+            contact=contact,
+            kind="unpaid_preview",
+            generation_id=generation_id,
+            days=1,
+        )
+
+    def on_generation_purchased(self, *, user_id: str, generation_id: str) -> None:
+        contact = self.get_max_contact_for_user(user_id)
+        if not contact:
+            return
+        self._cancel_followups(contact_id=contact["id"], generation_id=generation_id)
+
+    def list_due_followups(self, *, limit: int = 20) -> list[dict]:
+        now = utc_now()
+        limit = max(1, min(int(limit), 50))
+        with get_connection() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT * FROM messenger_followups
+                WHERE sent_at IS NULL
+                  AND canceled_at IS NULL
+                  AND due_at <= ?
+                ORDER BY due_at ASC
+                LIMIT {limit}
+                """,
+                (now,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_followup_sent(self, followup_id: str) -> None:
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_followups SET sent_at = ? WHERE id = ?",
+                (utc_now(), followup_id),
+            )
+
+    def delay_followup(self, followup_id: str, *, minutes: int) -> None:
+        later = (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat()
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_followups SET due_at = ? WHERE id = ? AND sent_at IS NULL",
+                (later, followup_id),
+            )
+
+    def cancel_followup(self, followup_id: str) -> None:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_followups
+                SET canceled_at = ?
+                WHERE id = ? AND sent_at IS NULL
+                """,
+                (utc_now(), followup_id),
+            )
+
+    def generation_followup_state(self, generation_id: str) -> dict:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT id, user_id, purchased, previewed_at, status, title
+                FROM generations WHERE id = ?
+                """,
+                (generation_id,),
+            ).fetchone()
+        if not row:
+            return {}
+        return dict(row)
+
+    def site_is_recent(self, contact: dict, *, minutes: int = 3) -> bool:
+        raw = (contact.get("last_site_at") or "").strip()
+        if not raw:
+            return False
+        try:
+            seen = datetime.fromisoformat(raw)
+        except ValueError:
+            return False
+        if seen.tzinfo is None:
+            seen = seen.replace(tzinfo=timezone.utc)
+        delta = datetime.now(timezone.utc) - seen.astimezone(timezone.utc)
+        return delta.total_seconds() <= minutes * 60

@@ -34,8 +34,9 @@ def run_forever() -> None:
             last_nudge = now
             try:
                 sent = max_bot.process_due_nudges()
-                if sent:
-                    log.info("MAX nudges sent: %s", sent)
+                extra = max_bot.process_due_followups()
+                if sent or extra:
+                    log.info("MAX nudges sent: %s followups: %s", sent, extra)
             except Exception:
                 log.exception("MAX nudge pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)

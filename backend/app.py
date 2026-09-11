@@ -1082,6 +1082,10 @@ async def get_me(
 ):
     if user:
         remaining = generation_quota.user_trial_remaining(user["id"])
+        try:
+            messenger_service.touch_site(user["id"])
+        except Exception:
+            pass
     else:
         remaining = 0
     brief = messenger_service.get_brief_for_user(user["id"]) if user else ""
@@ -1111,11 +1115,18 @@ async def get_history_preview(
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
     try:
-        return cabinet.get_history_preview(
+        result = cabinet.get_history_preview(
             user_id=user["id"],
             generation_id=generation_id,
             variant=variant,
         )
+        try:
+            messenger_service.on_preview_played(
+                user_id=user["id"], generation_id=generation_id
+            )
+        except Exception:
+            log.warning("MAX preview followup failed for %s", generation_id)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1511,6 +1522,7 @@ async def vk_auth_callback(
 @app.get("/api/auth/max")
 async def auth_max(
     m: str | None = None,
+    open: str | None = None,
     guest_id: str = Depends(get_guest_id),
 ):
     token = (m or "").strip()
@@ -1521,10 +1533,15 @@ async def auth_max(
     if not user:
         return RedirectResponse(f"{SITE_URL}/?auth_error=max")
     session_token = auth_service.create_session(user["id"])
-    redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
+    dest = (open or "").strip().lower()
+    loc = f"{SITE_URL}/?auth=ok"
+    if dest in {"listen", "expert"}:
+        loc += f"&open={dest}"
+    redirect = RedirectResponse(loc)
     redirect.set_cookie(AuthService.COOKIE_NAME, session_token, **_session_cookie_kwargs())
     try:
         messenger_service.note_studio_opened(contact)
+        messenger_service.touch_site(user["id"])
     except Exception:
         log.warning("MAX studio-open nudge skip failed for %s", contact.get("id"))
     try:
@@ -1622,10 +1639,17 @@ async def purchase_generation(
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт")
     try:
-        return cabinet.purchase_generation(
+        result = cabinet.purchase_generation(
             user_id=user["id"],
             generation_id=generation_id,
         )
+        try:
+            messenger_service.on_generation_purchased(
+                user_id=user["id"], generation_id=generation_id
+            )
+        except Exception:
+            log.warning("MAX purchase followup cancel failed for %s", generation_id)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1766,6 +1790,13 @@ async def stream_audio_preview(
     if row["purchased"]:
         raise HTTPException(status_code=400, detail="Трек уже куплен — откройте фонотеку")
     source = audio_access.resolve_source_url(row, variant)
+    if user:
+        try:
+            messenger_service.on_preview_played(
+                user_id=user["id"], generation_id=production_id
+            )
+        except Exception:
+            log.warning("MAX preview followup failed for %s", production_id)
     return audio_access.stream_preview(source)
 
 

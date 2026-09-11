@@ -288,6 +288,25 @@ def init_db() -> None:
             ON messenger_consents(contact_id)
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messenger_followups (
+                id TEXT PRIMARY KEY,
+                contact_id TEXT NOT NULL,
+                user_id TEXT,
+                generation_id TEXT,
+                kind TEXT NOT NULL,
+                due_at TEXT NOT NULL,
+                sent_at TEXT,
+                canceled_at TEXT,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_messenger_followups_due "
+            "ON messenger_followups(due_at)"
+        )
 
 def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(user_library)")}
@@ -408,6 +427,8 @@ def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE messenger_contacts ADD COLUMN next_nudge_at TEXT"
         )
+    if "last_site_at" not in existing:
+        conn.execute("ALTER TABLE messenger_contacts ADD COLUMN last_site_at TEXT")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_messenger_nudge ON messenger_contacts(next_nudge_at)"
     )
@@ -438,6 +459,7 @@ def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
         "progress_hint": "TEXT",
         "storage_synced": "INTEGER NOT NULL DEFAULT 0",
         "music_provider": "TEXT NOT NULL DEFAULT 'apipass'",
+        "previewed_at": "TEXT",
     }
     for column, col_type in additions.items():
         if column not in existing:

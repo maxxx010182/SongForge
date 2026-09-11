@@ -83,6 +83,17 @@ class MusicPollService:
                 if not self._cabinet.complete_prepaid_generation(production_id):
                     self._cabinet.sync_library_audio_from_generation(production_id)
                 self._storage.mirror_generation(production_id)
+                user_id = (production.get("user_id") or "").strip()
+                if user_id:
+                    try:
+                        from backend.services.messenger_service import MessengerService
+
+                        MessengerService().on_generation_ready(
+                            user_id=user_id,
+                            generation_id=production_id,
+                        )
+                    except Exception:
+                        log.exception("MAX ready followup failed for %s", production_id)
             self._queue.remove_poll(task_id=task_id)
             return "success"
 
