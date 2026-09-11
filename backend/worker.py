@@ -5,12 +5,17 @@ from __future__ import annotations
 import time
 
 from backend.logger import log
+from backend.services.max_bot import MaxBot
 from backend.services.music_poll_service import MusicPollService
 from backend.settings import WORKER_POLL_INTERVAL_SEC
+
+NUDGE_EVERY_SEC = 30
 
 
 def run_forever() -> None:
     poll_service = MusicPollService()
+    max_bot = MaxBot()
+    last_nudge = 0.0
     log.info(
         "SongForge worker started (poll interval=%ss)",
         WORKER_POLL_INTERVAL_SEC,
@@ -24,6 +29,15 @@ def run_forever() -> None:
                 poll_service.process_task(task_id)
             except Exception:
                 log.exception("Worker task failed: %s", task_id)
+        now = time.time()
+        if now - last_nudge >= NUDGE_EVERY_SEC:
+            last_nudge = now
+            try:
+                sent = max_bot.process_due_nudges()
+                if sent:
+                    log.info("MAX nudges sent: %s", sent)
+            except Exception:
+                log.exception("MAX nudge pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)
 
 

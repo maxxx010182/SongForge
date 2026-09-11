@@ -74,6 +74,10 @@ def compose_brief_business(goal: str, tone: str) -> str:
     return tone
 
 
+def _iso_after(*, hours: int = 0, days: int = 0) -> str:
+    return (datetime.now(timezone.utc) + timedelta(hours=hours, days=days)).isoformat()
+
+
 def compose_brief(whom: str, mood: str) -> str:
     whom = (whom or "").strip()
     mood = (mood or "").strip()
@@ -353,9 +357,6 @@ class MessengerService:
 
     def mark_sent_to_site(self, contact: dict) -> dict:
         now = utc_now()
-        nudge_at = (
-            datetime.now(timezone.utc) + timedelta(hours=2)
-        ).isoformat()
         with get_connection() as conn:
             conn.execute(
                 """
@@ -364,9 +365,83 @@ class MessengerService:
                     nudge_step = 0, next_nudge_at = ?
                 WHERE id = ?
                 """,
-                (STAGE_SENT, now, nudge_at, contact["id"]),
+                (STAGE_SENT, now, _iso_after(hours=2), contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
+
+    def note_studio_opened(self, contact: dict) -> dict:
+        """Открыл студию по ссылке — 2-часовой пинг не нужен, сутки оставляем."""
+        if int(contact.get("nudge_step") or 0) != 0:
+            return contact
+        if not (contact.get("next_nudge_at") or "").strip():
+            return contact
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET next_nudge_at = ?, updated_at = ?
+                WHERE id = ? AND nudge_step = 0 AND next_nudge_at IS NOT NULL
+                """,
+                (_iso_after(hours=24), now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def list_due_nudges(self, *, limit: int = 20) -> list[dict]:
+        now = utc_now()
+        limit = max(1, min(int(limit), 50))
+        with get_connection() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT * FROM messenger_contacts
+                WHERE next_nudge_at IS NOT NULL
+                  AND TRIM(next_nudge_at) != ''
+                  AND next_nudge_at <= ?
+                  AND messages_ok = 1
+                  AND blocked_at IS NULL
+                  AND funnel_stage = ?
+                  AND COALESCE(nudge_step, 0) < 3
+                ORDER BY next_nudge_at ASC
+                LIMIT {limit}
+                """,
+                (now, STAGE_SENT),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def advance_nudge(self, contact: dict) -> dict:
+        step = int(contact.get("nudge_step") or 0)
+        now = utc_now()
+        if step <= 0:
+            next_at = _iso_after(hours=24)
+            new_step = 1
+        elif step == 1:
+            next_at = _iso_after(days=4)
+            new_step = 2
+        else:
+            next_at = None
+            new_step = 3
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET nudge_step = ?, next_nudge_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (new_step, next_at, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def delay_nudge(self, contact: dict, *, minutes: int = 15) -> None:
+        later = (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET next_nudge_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (later, utc_now(), contact["id"]),
+            )
 
     def has_legal(self, contact: dict) -> bool:
         if contact.get("user_id"):

@@ -326,3 +326,88 @@ def test_webhook_secret_stable():
         b = webhook_secret()
         assert a == b
         assert len(a) >= 5
+
+
+def _force_nudge_due(contact_id: str) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE messenger_contacts SET next_nudge_at = ? WHERE id = ?",
+            ("2000-01-01T00:00:00+00:00", contact_id),
+        )
+
+
+def test_nudge_three_steps_then_silence():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:birthday")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["nudge_step"] == 0
+        assert contact["next_nudge_at"]
+        api.sent.clear()
+        assert bot.process_due_nudges() == 0
+        assert api.sent == []
+
+        _force_nudge_due(contact["id"])
+        assert bot.process_due_nudges() == 1
+        assert "черновик на месте" in api.sent[-1]["text"].lower()
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["nudge_step"] == 1
+
+        _force_nudge_due(contact["id"])
+        assert bot.process_due_nudges() == 1
+        assert "крутилка" in api.sent[-1]["text"].lower()
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["nudge_step"] == 2
+
+        _force_nudge_due(contact["id"])
+        assert bot.process_due_nudges() == 1
+        last = api.sent[-1]
+        assert "отложим" in last["text"].lower()
+        assert "стоп" in last["text"].lower()
+        payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
+        assert "stop_nudge" in payloads
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["nudge_step"] == 3
+        assert not contact["next_nudge_at"]
+
+        api.sent.clear()
+        assert bot.process_due_nudges() == 0
+        assert api.sent == []
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_nudge_skips_stopped():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:just")
+        contact = MessengerService().get_by_max(max_user_id)
+        MessengerService().stop(contact)
+        _force_nudge_due(contact["id"])
+        api.sent.clear()
+        assert bot.process_due_nudges() == 0
+        assert api.sent == []
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_studio_open_skips_two_hour_nudge():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "mood:holiday")
+        svc = MessengerService()
+        contact = svc.get_by_max(max_user_id)
+        first = contact["next_nudge_at"]
+        contact = svc.note_studio_opened(contact)
+        later = contact["next_nudge_at"]
+        assert later > first
+        api.sent.clear()
+        assert bot.process_due_nudges() == 0
+    finally:
+        _cleanup(max_user_id)

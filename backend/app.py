@@ -1524,6 +1524,10 @@ async def auth_max(
     redirect = RedirectResponse(f"{SITE_URL}/?auth=ok")
     redirect.set_cookie(AuthService.COOKIE_NAME, session_token, **_session_cookie_kwargs())
     try:
+        messenger_service.note_studio_opened(contact)
+    except Exception:
+        log.warning("MAX studio-open nudge skip failed for %s", contact.get("id"))
+    try:
         cabinet.link_guest_generations(guest_id=guest_id, user_id=user["id"])
         generation_quota.sync_guest_trial_on_login(guest_id=guest_id, user_id=user["id"])
     except Exception as link_exc:

@@ -96,6 +96,11 @@ STOP_TEXT = (
     "Документы и данные: support@sozdaipesnu.ru"
 )
 RESUME_TEXT = "Снова на связи. Продолжим?"
+NUDGE_TEXTS = (
+    "Черновик на месте. Ссылка живая.",
+    "Если крутилка или не пускает — напиши, гляну. Черновик никуда не делся.",
+    "Отложим? Идея никуда не денется. Если больше не писать — скажите «стоп».",
+)
 
 
 def _callback_btn(text: str, payload: str) -> dict:
@@ -447,6 +452,10 @@ class MaxBot:
             contact = self.messenger.resume_messages(contact)
             self._continue_funnel(contact)
             return
+        if payload == "stop_nudge":
+            self.messenger.stop(contact)
+            self._send(contact, STOP_TEXT)
+            return
         if not self.messenger.can_message(contact):
             if self.messenger.has_legal(contact):
                 self._send(
@@ -626,3 +635,36 @@ class MaxBot:
         )
         self.messenger.mark_sent_to_site(contact)
         self._send(contact, "\n\n".join(lines), _studio_buttons(url))
+
+    def process_due_nudges(self, *, limit: int = 20) -> int:
+        sent = 0
+        for contact in self.messenger.list_due_nudges(limit=limit):
+            if not self.messenger.can_message(contact):
+                self.messenger.delay_nudge(contact, minutes=60)
+                continue
+            if not contact.get("user_id") or not contact.get("max_user_id"):
+                continue
+            step = int(contact.get("nudge_step") or 0)
+            if step < 0 or step > 2:
+                continue
+            text = NUDGE_TEXTS[step]
+            url = self.messenger.studio_url(contact)
+            buttons = _studio_buttons(url)
+            if step == 2:
+                buttons = buttons + [[_callback_btn("Стоп", "stop_nudge")]]
+            ok = self.api.send_message(
+                user_id=contact["max_user_id"],
+                text=text,
+                buttons=buttons,
+            )
+            if ok:
+                self.messenger.advance_nudge(contact)
+                sent += 1
+            else:
+                self.messenger.delay_nudge(contact, minutes=15)
+                log.warning(
+                    "MAX nudge send failed for user %s step %s",
+                    contact.get("max_user_id"),
+                    step,
+                )
+        return sent
