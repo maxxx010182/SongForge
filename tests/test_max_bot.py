@@ -129,28 +129,31 @@ def _finish_gift(
     _cb(bot, max_user_id, whom)
     _cb(bot, max_user_id, occasion)
     _cb(bot, max_user_id, "detail:skip")
-    _cb(bot, max_user_id, "sound:warm")
+    _cb(bot, max_user_id, "genre:pop")
+    _cb(bot, max_user_id, "sound:uplifting")
     _cb(bot, max_user_id, "voice:female")
+    _cb(bot, max_user_id, "confirm:ok")
 
 
 def test_compose_brief():
     text = compose_brief("маме", "день рождения")
     assert "маме" in text.lower()
     assert "день рождения" in text.lower()
-    assert not text.lower().startswith("песня-подарок")
+    assert "кому:" not in text.lower()
     rich = compose_brief(
         "маме",
         "день рождения",
         detail="свет на кухне",
-        sound="тепло и близко",
+        sound="спокойно",
         voice="женский",
+        genre="Поп",
     )
     assert "свет на кухне" in rich
     assert "женский" in rich.lower()
-    assert "тепло" in rich.lower()
-    self_song = compose_brief("", "ностальгия", plot="just")
-    assert "не указан" in self_song.lower()
-    assert "ностальгия" in self_song.lower()
+    assert "поп" in rich.lower()
+    self_song = compose_brief("", "про коня в поле", plot="just")
+    assert "коня" in self_song.lower()
+    assert "не указан" not in self_song.lower()
 
 
 def test_gate_on_bot_started():
@@ -166,8 +169,10 @@ def test_gate_on_bot_started():
         assert api.sent
         first = api.sent[0]["text"].lower()
         assert "стоп" not in first
-        assert "говорится" in first or "спеть" in first
+        assert "мурашек" in first or "говорится" in first
         labels = [btn.get("text") for row in api.sent[0]["buttons"] for btn in row]
+        urls = [btn.get("url") or "" for row in api.sent[0]["buttons"] for btn in row]
+        assert any("/legal/offer" in u for u in urls)
         assert any("услышать" in (t or "").lower() for t in labels)
         assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
         if api.sent[0]["image_url"]:
@@ -202,9 +207,10 @@ def test_accept_whom_mood_sends_studio_link():
         last = api.sent[-1]
         assert "маме" in last["text"].lower()
         assert "день рождения" in last["text"].lower()
-        assert "слуша" in " ".join(
+        joined = " ".join(
             btn.get("text", "") for row in last["buttons"] for btn in row
         ).lower()
+        assert "песней" in joined or "вперёд" in joined
         urls = [
             btn.get("url", "")
             for row in last["buttons"]
@@ -611,7 +617,8 @@ def test_voice_garbage_reasks():
         _cb(bot, max_user_id, "whom:mom")
         _cb(bot, max_user_id, "occasion:just")
         _cb(bot, max_user_id, "detail:skip")
-        _cb(bot, max_user_id, "sound:warm")
+        _cb(bot, max_user_id, "genre:pop")
+        _cb(bot, max_user_id, "sound:uplifting")
         _text(bot, max_user_id, "синий трактор")
         contact = MessengerService().get_by_max(max_user_id)
         assert (contact.get("brief_voice") or "") == ""
@@ -629,10 +636,11 @@ def test_nobody_goes_to_self_theme_not_birthday():
         _cb(bot, max_user_id, "accept")
         _cb(bot, max_user_id, "whom:nobody")
         last = api.sent[-1]["text"].lower()
-        assert "почувствовать" in last
+        assert "о чём" in last or "о чем" in last
+        assert "про тебя" not in last
         assert "день рождения" not in last
         payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
-        assert "theme:chapter" in payloads
+        assert "about:write" in payloads
         assert "occasion:birthday" not in payloads
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["segment"] == "just"
@@ -647,15 +655,18 @@ def test_detail_lands_in_studio_brief():
         _cb(bot, max_user_id, "whom:mom")
         _cb(bot, max_user_id, "occasion:birthday")
         _text(bot, max_user_id, "Елена, всегда оставляла свет на кухне")
-        _cb(bot, max_user_id, "sound:warm")
+        _cb(bot, max_user_id, "genre:pop")
+        _cb(bot, max_user_id, "sound:peaceful")
         _cb(bot, max_user_id, "voice:female")
         contact = MessengerService().get_by_max(max_user_id)
         brief = (contact.get("brief") or "").lower()
         assert "свет на кухне" in brief
         assert "маме" in brief
         assert "женский" in brief
+        assert "кому:" not in brief
         last = api.sent[-1]["text"].lower()
-        assert "держу" in last
+        assert "держу" not in last
+        assert "сверим" in last
         assert "свет на кухне" in last
     finally:
         _cleanup(max_user_id)

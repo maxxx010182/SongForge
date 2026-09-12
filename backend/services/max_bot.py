@@ -6,22 +6,27 @@ from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
 from backend.services.max_funnel import (
+    ABOUT_TEXT,
+    ABOUT_WAIT,
     BIZ_DETAIL_TEXT,
     BIZ_GOAL_TEXT,
     BIZ_SWITCH_TEXT,
     BIZ_TONE_TEXT,
+    CONFIRM_FOOTER,
     DETAIL_JUST,
     DETAIL_WAIT,
     FAQ_TEXT,
     GATE_RETURN_TEXT,
     GATE_TEXT,
+    GENRE_TEXT,
+    GENRE_WAIT,
     GREET_STAY_TEXT,
     LATER_TEXT,
     OCCASION_TEXT,
     RESUME_TEXT,
     SOUND_TEXT,
     STOP_TEXT,
-    STUDIO_FOOTER,
+    STUDIO_CTA,
     THEME_TEXT,
     UNSAID_TEXT,
     UNSAID_WAIT,
@@ -32,12 +37,14 @@ from backend.services.max_funnel import (
     WHOM_WRITE_PROMPT,
     biz_studio_mirror,
     detail_gift_text,
+    human_recap,
     is_just_plot,
     is_price_question,
     is_skip,
     looks_business,
     occasion_key_of,
     parse_detail,
+    parse_genre,
     parse_occasion,
     parse_sound,
     parse_theme,
@@ -50,12 +57,14 @@ from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
     OCCASION_LABELS,
-    SOUND_LABELS,
+    STAGE_ABOUT,
     STAGE_BIZ_DETAIL,
     STAGE_BIZ_GOAL,
     STAGE_BIZ_TONE,
+    STAGE_CONFIRM,
     STAGE_DETAIL,
     STAGE_GATE,
+    STAGE_GENRE,
     STAGE_MOOD,
     STAGE_OCCASION,
     STAGE_SEGMENT,
@@ -64,6 +73,8 @@ from backend.services.messenger_service import (
     STAGE_THEME,
     STAGE_UNSAID,
     STAGE_VOICE,
+    GENRE_LABELS,
+    SOUND_LABELS,
     THEME_LABELS,
     VOICE_LABELS,
     WHOM_LABELS,
@@ -136,16 +147,16 @@ def _link_btn(text: str, url: str) -> dict:
 
 
 def _legal_buttons(*, returning: bool = False) -> list[list[dict]]:
+    del returning
     base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
-    rows = [[_callback_btn("Хочу услышать", "accept")]]
-    if not returning:
-        rows.append(
-            [
-                _link_btn("Соглашение", f"{base}/legal/terms"),
-                _link_btn("Политика", f"{base}/legal/privacy"),
-            ]
-        )
-    return rows
+    return [
+        [_callback_btn("Хочу услышать", "accept")],
+        [
+            _link_btn("Соглашение", f"{base}/legal/terms"),
+            _link_btn("Политика", f"{base}/legal/privacy"),
+            _link_btn("Оферта", f"{base}/legal/offer"),
+        ],
+    ]
 
 
 def _whom_buttons() -> list[list[dict]]:
@@ -180,13 +191,56 @@ def _occasion_buttons() -> list[list[dict]]:
     ]
 
 
-def _theme_buttons() -> list[list[dict]]:
+def _about_buttons() -> list[list[dict]]:
     return [
-        [_callback_btn("📖 Новая глава", "theme:chapter")],
-        [_callback_btn("🕊 Отпустить и выдохнуть", "theme:release")],
-        [_callback_btn("✨ Кайф от момента", "theme:high")],
-        [_callback_btn("🌇 Ностальгия", "theme:nostalgia")],
-        [_callback_btn("🤷 Пока не знаю, но хочу свою песню", "theme:dunno")],
+        [_callback_btn("✍️ Напишу своими словами", "about:write")],
+        [
+            _callback_btn("Про любовь", "about:love"),
+            _callback_btn("Про случай", "about:story"),
+        ],
+        [_callback_btn("Про настроение", "about:feeling")],
+        [_callback_btn("⏭ Пока без темы", "about:skip")],
+    ]
+
+
+def _theme_buttons() -> list[list[dict]]:
+    return _about_buttons()
+
+
+def _genre_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Поп", "genre:pop"),
+            _callback_btn("Рок", "genre:rock"),
+            _callback_btn("Реп", "genre:rap"),
+        ],
+        [
+            _callback_btn("Электронная", "genre:electronic"),
+            _callback_btn("Ло-фай", "genre:lofi"),
+            _callback_btn("Баллада", "genre:ballad"),
+        ],
+        [_callback_btn("✍️ Своими словами", "genre:write")],
+    ]
+
+
+def _confirm_buttons() -> list[list[dict]]:
+    return [
+        [_callback_btn("Так, поехали", "confirm:ok")],
+        [_callback_btn("Хочу поправить", "confirm:edit")],
+    ]
+
+
+def _edit_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Кому", "edit:whom"),
+            _callback_btn("О чём", "edit:about"),
+        ],
+        [
+            _callback_btn("Жанр", "edit:genre"),
+            _callback_btn("Настроение", "edit:mood"),
+            _callback_btn("Голос", "edit:voice"),
+        ],
     ]
 
 
@@ -215,14 +269,18 @@ def _unsaid_buttons() -> list[list[dict]]:
 def _sound_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("🤗 Тепло и близко", "sound:warm"),
-            _callback_btn("🌸 Нежно", "sound:soft"),
+            _callback_btn("Энергично", "sound:uplifting"),
+            _callback_btn("Романтично", "sound:romantic"),
         ],
         [
-            _callback_btn("🔥 Драйв", "sound:drive"),
-            _callback_btn("😄 С улыбкой", "sound:smile"),
+            _callback_btn("Спокойно", "sound:peaceful"),
+            _callback_btn("Меланхолично", "sound:melancholy"),
         ],
-        [_callback_btn("🏆 Как гимн", "sound:anthem")],
+        [
+            _callback_btn("Эпично", "sound:adventurous"),
+            _callback_btn("Вечеринка", "sound:party"),
+        ],
+        [_callback_btn("✍️ Своими словами", "sound:write")],
     ]
 
 
@@ -270,7 +328,7 @@ def _cover_url() -> str:
     return f"{base}/assets/max-cover.jpg"
 
 
-def _studio_buttons(url: str, label: str = "🎧 Слушать первый вариант") -> list[list[dict]]:
+def _studio_buttons(url: str, label: str = "Вперёд и с песней!") -> list[list[dict]]:
     return [[_link_btn(label, url)]]
 
 
@@ -518,7 +576,26 @@ class MaxBot:
         self._send(contact, _join(prefix, OCCASION_TEXT), _occasion_buttons())
 
     def _send_theme(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, THEME_TEXT), _theme_buttons())
+        self._send_about(contact, prefix)
+
+    def _send_about(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, ABOUT_TEXT), _about_buttons())
+
+    def _send_genre(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, GENRE_TEXT), _genre_buttons())
+
+    def _send_confirm(self, contact: dict, prefix: str = "") -> None:
+        recap = human_recap(
+            whom=contact.get("brief_whom") or "",
+            occasion=contact.get("brief_mood") or "",
+            detail=contact.get("brief_detail") or "",
+            genre=contact.get("brief_genre") or "",
+            sound=contact.get("brief_sound") or "",
+            voice=contact.get("brief_voice") or "",
+            plot=contact.get("segment") or "gift",
+        )
+        text = _join(prefix, recap + "\n" + CONFIRM_FOOTER)
+        self._send(contact, text, _confirm_buttons())
 
     def _send_detail(self, contact: dict, prefix: str = "") -> None:
         if is_just_plot(contact.get("brief_whom") or "", contact.get("segment") or ""):
@@ -566,8 +643,20 @@ class MaxBot:
         if stage in {STAGE_OCCASION, STAGE_MOOD}:
             self._send_occasion(contact, prefix)
             return
-        if stage == STAGE_THEME:
-            self._send_theme(contact, prefix)
+        if stage in {STAGE_THEME, STAGE_ABOUT}:
+            if awaiting == "about":
+                self._send(contact, _join(prefix, ABOUT_WAIT), _about_buttons())
+                return
+            self._send_about(contact, prefix)
+            return
+        if stage == STAGE_GENRE:
+            if awaiting == "genre":
+                self._send(contact, _join(prefix, GENRE_WAIT), _genre_buttons())
+                return
+            self._send_genre(contact, prefix)
+            return
+        if stage == STAGE_CONFIRM:
+            self._send_confirm(contact, prefix)
             return
         if stage == STAGE_UNSAID:
             if awaiting == "unsaid":
@@ -582,6 +671,9 @@ class MaxBot:
             self._send_detail(contact, prefix)
             return
         if stage == STAGE_SOUND:
+            if awaiting == "mood":
+                self._send(contact, _join(prefix, "Напиши настроение своими словами."), _sound_buttons())
+                return
             self._send_sound(contact, prefix)
             return
         if stage == STAGE_VOICE:
@@ -630,8 +722,17 @@ class MaxBot:
         if payload.startswith("occasion:") or payload.startswith("mood:"):
             self._apply_occasion(contact, payload.split(":", 1)[1])
             return
-        if payload.startswith("theme:"):
-            self._apply_theme(contact, payload.split(":", 1)[1])
+        if payload.startswith("theme:") or payload.startswith("about:"):
+            self._apply_about(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("genre:"):
+            self._apply_genre(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("confirm:"):
+            self._apply_confirm(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("edit:"):
+            self._apply_edit(contact, payload.split(":", 1)[1])
             return
         if payload.startswith("detail:"):
             self._apply_detail(contact, payload.split(":", 1)[1])
@@ -700,11 +801,20 @@ class MaxBot:
         if awaiting == "whom":
             self._apply_whom(contact, text)
             return
+        if awaiting == "about":
+            self._apply_about(contact, text)
+            return
         if awaiting == "detail":
             self._apply_detail(contact, text)
             return
         if awaiting == "unsaid":
             self._apply_unsaid(contact, text)
+            return
+        if awaiting == "genre":
+            self._apply_genre(contact, text)
+            return
+        if awaiting == "mood":
+            self._apply_sound(contact, text)
             return
         if awaiting == "biz_detail":
             self._apply_biz_detail(contact, text)
@@ -716,8 +826,14 @@ class MaxBot:
         if stage in {STAGE_OCCASION, STAGE_MOOD}:
             self._apply_occasion(contact, text)
             return
-        if stage == STAGE_THEME:
-            self._apply_theme(contact, text)
+        if stage in {STAGE_THEME, STAGE_ABOUT}:
+            self._apply_about(contact, text)
+            return
+        if stage == STAGE_GENRE:
+            self._apply_genre(contact, text)
+            return
+        if stage == STAGE_CONFIRM:
+            self._apply_confirm(contact, text)
             return
         if stage == STAGE_DETAIL:
             self._apply_detail(contact, text)
@@ -771,9 +887,9 @@ class MaxBot:
             return
         contact = self.messenger.set_whom(contact, whom, detail=leftover, plot=plot)
         if plot == "just":
-            self._send_theme(contact, "Тогда без адресата — про тебя.")
+            self._send_about(contact)
             return
-        self._send_occasion(contact, f"Держу: {whom}. Погнали дальше.")
+        self._send_occasion(contact, f"Ок, {whom}.")
 
     def _apply_occasion(self, contact: dict, raw: str) -> None:
         if raw in OCCASION_LABELS:
@@ -789,21 +905,31 @@ class MaxBot:
         if key == "unsaid":
             self._send_unsaid(contact, "Понимаю. Тогда пойдём мягче.")
             return
-        whom = contact.get("brief_whom") or "это"
-        self._send_detail(contact, f"Ясно: {whom}, {mood}. Ещё один штрих — и почти готово.")
+        self._send_detail(contact, "Ещё один штрих — живая деталь, и картина соберётся.")
 
     def _apply_theme(self, contact: dict, raw: str) -> None:
-        if raw in THEME_LABELS:
-            theme = THEME_LABELS[raw]
-            key = raw
-        else:
-            theme = parse_theme(raw)
-            key = theme_key_of(theme or "")
-        if not theme:
-            self._send_theme(contact)
+        self._apply_about(contact, raw)
+
+    def _apply_about(self, contact: dict, raw: str) -> None:
+        if raw == "write":
+            contact = self.messenger.set_await(contact, "about")
+            self._send(contact, ABOUT_WAIT)
             return
-        contact = self.messenger.set_theme(contact, theme, theme_key=key)
-        self._send_detail(contact, f"Держу: {theme}. Давай добавим что-то живое.")
+        if raw in {"love", "story", "feeling"}:
+            contact = self.messenger.set_await(contact, "about")
+            hint = THEME_LABELS.get(raw, "")
+            self._send(contact, f"Ок, {hint}. Напиши чуть подробнее — своими словами.")
+            return
+        if raw == "skip" or is_skip(raw):
+            contact = self.messenger.set_about(contact, "")
+            self._send_detail(contact)
+            return
+        theme = parse_theme(raw)
+        if not theme:
+            self._send_about(contact)
+            return
+        contact = self.messenger.set_about(contact, theme)
+        self._send_detail(contact, "Хорошо. Если есть сцена или момент — можно добавить.")
 
     def _apply_detail(self, contact: dict, raw: str) -> None:
         if raw in {"phrase", "scene"}:
@@ -813,13 +939,13 @@ class MaxBot:
         if raw == "skip" or is_skip(raw):
             detail = (contact.get("brief_detail") or "").strip()
             contact = self.messenger.set_detail(contact, detail)
-            self._send_sound(contact)
+            self._send_genre(contact)
             return
         parsed = parse_detail(raw)
         detail = "" if parsed is None else parsed
         contact = self.messenger.set_detail(contact, detail)
-        prefix = f"Держу: {detail}. Уже чувствую, куда идти дальше." if detail else ""
-        self._send_sound(contact, prefix)
+        prefix = "Хорошая деталь." if detail else ""
+        self._send_genre(contact, prefix)
 
     def _apply_unsaid(self, contact: dict, raw: str) -> None:
         if raw == "write":
@@ -828,22 +954,41 @@ class MaxBot:
             return
         if raw == "skip" or is_skip(raw):
             contact = self.messenger.set_detail(contact, contact.get("brief_detail") or "")
-            self._send_sound(contact, "Держу. Это никуда не денется — просто зазвучит по-другому.")
+            self._send_genre(contact, "Это никуда не денется — просто зазвучит иначе.")
             return
         parsed = parse_detail(raw)
         contact = self.messenger.set_detail(contact, parsed or "")
-        self._send_sound(contact, "Держу. Это никуда не денется — просто зазвучит по-другому.")
+        self._send_genre(contact, "Это никуда не денется — просто зазвучит иначе.")
+
+    def _apply_genre(self, contact: dict, raw: str) -> None:
+        if raw == "write":
+            contact = self.messenger.set_await(contact, "genre")
+            self._send(contact, GENRE_WAIT)
+            return
+        if raw in GENRE_LABELS:
+            genre = GENRE_LABELS[raw]
+        else:
+            genre = parse_genre(raw)
+        if genre is None:
+            self._send_genre(contact)
+            return
+        contact = self.messenger.set_genre(contact, genre or "")
+        self._send_sound(contact)
 
     def _apply_sound(self, contact: dict, raw: str) -> None:
+        if raw == "write":
+            contact = self.messenger.set_await(contact, "mood")
+            self._send(contact, "Напиши настроение своими словами.")
+            return
         if raw in SOUND_LABELS:
             sound = SOUND_LABELS[raw]
         else:
             sound = parse_sound(raw)
         if not sound:
-            self._send_sound(contact, "Ткни, как звучит — или напиши своими словами.")
+            self._send_sound(contact, "Ткни настроение — или напиши своими словами.")
             return
         contact = self.messenger.set_sound(contact, sound)
-        self._send_voice(contact, f"{sound} — понял. Последний штрих.")
+        self._send_voice(contact, "Последний штрих.")
 
     def _apply_voice(self, contact: dict, raw: str) -> None:
         if raw in VOICE_LABELS:
@@ -854,7 +999,37 @@ class MaxBot:
             self._send(contact, VOICE_RETRY_TEXT, _voice_buttons())
             return
         contact = self.messenger.set_voice(contact, voice)
-        self._send_studio(contact)
+        self._send_confirm(contact)
+
+    def _apply_confirm(self, contact: dict, raw: str) -> None:
+        key = (raw or "").strip().lower()
+        if key in {"ok", "так", "поехали", "да", "всё так", "все так"}:
+            self._send_studio(contact)
+            return
+        if key in {"edit", "поправить", "хочу поправить"}:
+            self._send(contact, "Что поменять?", _edit_buttons())
+            return
+        self._send_confirm(contact)
+
+    def _apply_edit(self, contact: dict, raw: str) -> None:
+        key = (raw or "").strip().lower()
+        mapping = {
+            "whom": STAGE_TALK,
+            "about": STAGE_ABOUT,
+            "genre": STAGE_GENRE,
+            "mood": STAGE_SOUND,
+            "voice": STAGE_VOICE,
+        }
+        stage = mapping.get(key)
+        if not stage:
+            self._send(contact, "Что поменять?", _edit_buttons())
+            return
+        if key == "about" and not is_just_plot(
+            contact.get("brief_whom") or "", contact.get("segment") or ""
+        ):
+            stage = STAGE_OCCASION
+        contact = self.messenger.set_stage(contact, stage)
+        self._continue_funnel(contact)
 
     def _apply_biz_goal(self, contact: dict, raw: str) -> None:
         if raw in {"personal", "личное", "не то"}:
@@ -897,24 +1072,30 @@ class MaxBot:
             return
         url = self.messenger.studio_url(contact)
         if (contact.get("segment") or "") == "business":
-            text = biz_studio_mirror(
-                contact.get("brief_whom") or "",
-                contact.get("brief_detail") or "",
-                contact.get("brief_mood") or "",
+            text = (
+                biz_studio_mirror(
+                    contact.get("brief_whom") or "",
+                    contact.get("brief_detail") or "",
+                    contact.get("brief_mood") or "",
+                )
+                + "\n\n"
+                + STUDIO_CTA
             )
             if extra:
                 text = extra + "\n\n" + text
             self.messenger.mark_sent_to_site(contact)
             self._send(contact, text, _studio_buttons(url))
             return
-        text = studio_mirror(
+        recap = human_recap(
             whom=contact.get("brief_whom") or "",
             occasion=contact.get("brief_mood") or "",
             detail=contact.get("brief_detail") or "",
+            genre=contact.get("brief_genre") or "",
             sound=contact.get("brief_sound") or "",
             voice=contact.get("brief_voice") or "",
             plot=contact.get("segment") or "gift",
         )
+        text = recap + "\n\n" + STUDIO_CTA
         if extra:
             text = extra + "\n\n" + text
         self.messenger.mark_sent_to_site(contact)

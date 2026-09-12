@@ -7,6 +7,7 @@ import re
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
+    GENRE_LABELS,
     OCCASION_LABELS,
     SOUND_LABELS,
     THEME_LABELS,
@@ -15,17 +16,22 @@ from backend.services.messenger_service import (
 )
 
 GATE_TEXT = (
-    "Есть то, что вслух не говорится — но можно спеть.\n"
-    "Расскажи в двух словах, кому и о чём — и услышишь, как это звучит, уже сегодня.\n\n"
-    "Продолжая, вы соглашаетесь с соглашением и политикой. "
-    "Иногда будем писать по делу в этот чат."
+    "Есть то, что вслух не говорится — но в песне будет по-настоящему до мурашек.\n"
+    "Расскажи в двух словах, кому и о чём — и услышишь, как это звучит, уже через несколько мгновений.\n\n"
+    "Нажимая «Хочу услышать», вы соглашаетесь с соглашением, политикой и офертой.\n"
+    "Документы откроются на сайте. Потом просто вернитесь в этот чат — ничего не собьётся."
 )
 GATE_RETURN_TEXT = GATE_TEXT
 WHOM_TEXT = "Для кого рождается песня?"
 WHOM_RETRY = "Точнее не скажу — выбери, кому, или напиши прямо здесь 🙂"
 WHOM_WRITE_PROMPT = "Напиши, кому — имя или как зовёте."
 OCCASION_TEXT = "А повод какой?"
-THEME_TEXT = "Тогда это про тебя. Что сейчас важнее всего почувствовать в песне?"
+ABOUT_TEXT = (
+    "Ок, без адресата. Тогда о чём песня?\n"
+    "Хоть про коня, хоть про город, хоть про настроение — как есть, своими словами."
+)
+ABOUT_WAIT = "Пиши сюда, о чём она. Двух-трёх фраз хватит."
+THEME_TEXT = ABOUT_TEXT
 DETAIL_GIFT = (
     "Одна деталь — и песня оживёт. Может, фраза, которую {whom} всегда говорит? "
     "Привычка? Момент, который запомнился?"
@@ -34,9 +40,19 @@ DETAIL_WAIT = "Напиши её сюда — как есть, без красо
 UNSAID_TEXT = "Что стоит в горле, но так и не сказалось? Не нужно красиво — можно просто как есть."
 UNSAID_WAIT = "Пиши как есть. Это останется между нами и песней."
 DETAIL_JUST = "Была сцена или момент, который стоит вшить в текст?"
-SOUND_TEXT = "А как должно звучать?"
+SOUND_TEXT = "Какое настроение?"
+GENRE_TEXT = "В каком жанре это звучит?"
+GENRE_WAIT = "Напиши жанр своими словами — поп, шансон, джаз, как слышится."
 VOICE_TEXT = "Чей голос споёт это?"
 VOICE_RETRY_TEXT = "Голос лучше ткнуть — так первая проба звучит вернее."
+CONFIRM_FOOTER = (
+    "Так?\n"
+    "Если что-то не то — можно поправить."
+)
+STUDIO_CTA = (
+    "Сейчас откроется твоя студия на сайте. Пожелания уже в описании.\n"
+    "Останется нажать «Создать песню». MAX спросит про переход на сайт — это мы, всё в порядке."
+)
 FAQ_TEXT = (
     "Первая проба бесплатна. Сколько нот — увидишь в студии, после того как услышишь.\n"
     "Сначала соберём, кому песня."
@@ -49,7 +65,7 @@ BIZ_SWITCH_TEXT = "А, это по делу — тоже к нам, только
 BIZ_GOAL_TEXT = "Для чего нужна песня?"
 BIZ_DETAIL_TEXT = "В двух словах — о чём бренд/повод/ролик? Что должно считываться с первых секунд?"
 BIZ_TONE_TEXT = "Какой тон нужен?"
-STUDIO_FOOTER = "Первая проба бесплатна — два варианта, минут пять."
+STUDIO_FOOTER = STUDIO_CTA
 
 DETAIL_MAX = 500
 WHOM_MAX = 40
@@ -142,14 +158,29 @@ OCCASION_ALIASES = {
     "вслух": "unsaid",
 }
 SOUND_ALIASES = {
-    "тепло": "warm",
-    "тепло и близко": "warm",
-    "нежно": "soft",
-    "драйв": "drive",
-    "погромче": "drive",
-    "с улыбкой": "smile",
-    "гимн": "anthem",
-    "как гимн": "anthem",
+    "энергич": "uplifting",
+    "романт": "romantic",
+    "спокой": "peaceful",
+    "меланхол": "melancholy",
+    "груст": "melancholy",
+    "эпич": "adventurous",
+    "гимн": "adventurous",
+    "вечерин": "party",
+    "тепло": "peaceful",
+    "нежно": "romantic",
+    "драйв": "uplifting",
+}
+GENRE_ALIASES = {
+    "поп": "pop",
+    "рок": "rock",
+    "реп": "rap",
+    "рэп": "rap",
+    "электрон": "electronic",
+    "ло-фай": "lofi",
+    "lofi": "lofi",
+    "lo-fi": "lofi",
+    "баллада": "ballad",
+    "шансон": "ballad",
 }
 VOICE_ALIASES = {
     "женский": "female",
@@ -294,6 +325,25 @@ def parse_theme(raw: str) -> str | None:
     return text[:OCCASION_MAX]
 
 
+def parse_genre(raw: str) -> str | None:
+    text = (raw or "").strip()
+    if not text or is_skip(text):
+        return ""
+    key = _norm(text)
+    if key in FILLER_WORDS:
+        return None
+    if key in GENRE_LABELS:
+        return GENRE_LABELS[key]
+    if key in GENRE_ALIASES:
+        return GENRE_LABELS[GENRE_ALIASES[key]]
+    for alias, mapped in GENRE_ALIASES.items():
+        if alias in key:
+            return GENRE_LABELS[mapped]
+    if len(text) < 2 or len(text) > SOUND_MAX:
+        return None
+    return text[:SOUND_MAX]
+
+
 def parse_sound(raw: str) -> str | None:
     text = (raw or "").strip()
     if not text or is_skip(text):
@@ -349,6 +399,38 @@ def theme_key_of(label: str) -> str:
     return ""
 
 
+def human_recap(
+    *,
+    whom: str,
+    occasion: str,
+    detail: str,
+    genre: str,
+    sound: str,
+    voice: str,
+    plot: str = "gift",
+) -> str:
+    bits = []
+    if plot == "just" or not (whom or "").strip():
+        if occasion:
+            bits.append(f"песня про «{occasion}»")
+        else:
+            bits.append("песня без адресата")
+    else:
+        bits.append(f"песня {whom}")
+        if occasion:
+            bits.append(occasion)
+    if detail:
+        bits.append(detail)
+    if genre:
+        bits.append(f"жанр {genre.lower()}")
+    if sound:
+        bits.append(sound)
+    voice_bit = _voice_for_mirror(voice)
+    if voice_bit:
+        bits.append(voice_bit)
+    return "Давай сверим: " + ", ".join(bits) + "."
+
+
 def studio_mirror(
     *,
     whom: str,
@@ -357,26 +439,18 @@ def studio_mirror(
     sound: str,
     voice: str,
     plot: str = "gift",
+    genre: str = "",
 ) -> str:
-    bits = []
-    if plot == "just" or not (whom or "").strip():
-        bits.append("это про тебя самого")
-        if occasion:
-            bits.append(occasion)
-    else:
-        bits.append(whom)
-        if occasion:
-            bits.append(occasion)
-    if sound:
-        bits.append(sound)
-    voice_bit = _voice_for_mirror(voice)
-    if voice_bit:
-        bits.append(voice_bit)
-    head = "Держу: " + ", ".join(bits)
-    if detail:
-        head += f" — и «{detail}»"
-    head += "."
-    return head + "\n" + STUDIO_FOOTER
+    recap = human_recap(
+        whom=whom,
+        occasion=occasion,
+        detail=detail,
+        genre=genre,
+        sound=sound,
+        voice=voice,
+        plot=plot,
+    )
+    return recap + "\n\n" + STUDIO_CTA
 
 
 def _voice_for_mirror(voice: str) -> str:

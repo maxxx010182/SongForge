@@ -21,10 +21,13 @@ STAGE_TALK = "talk"
 STAGE_OCCASION = "occasion"
 STAGE_MOOD = "mood"
 STAGE_THEME = "theme"
+STAGE_ABOUT = "about"
 STAGE_DETAIL = "detail"
 STAGE_UNSAID = "unsaid"
+STAGE_GENRE = "genre"
 STAGE_SOUND = "sound"
 STAGE_VOICE = "voice"
+STAGE_CONFIRM = "confirm"
 STAGE_BIZ_GOAL = "biz_goal"
 STAGE_BIZ_DETAIL = "biz_detail"
 STAGE_BIZ_TONE = "biz_tone"
@@ -50,18 +53,35 @@ OCCASION_LABELS = {
 }
 MOOD_LABELS = OCCASION_LABELS
 THEME_LABELS = {
+    "love": "про любовь",
+    "story": "про случай из жизни",
+    "feeling": "про чувство или настроение",
     "chapter": "новая глава",
     "release": "отпустить и выдохнуть",
     "high": "кайф от момента",
     "nostalgia": "ностальгия",
-    "dunno": "пока не знаю, но хочу свою песню",
+    "dunno": "пока не знаю",
+}
+GENRE_LABELS = {
+    "pop": "Поп",
+    "rock": "Рок",
+    "rap": "Реп",
+    "electronic": "Электронная",
+    "lofi": "Ло-фай",
+    "ballad": "Баллада",
 }
 SOUND_LABELS = {
-    "warm": "тепло и близко",
-    "soft": "нежно",
-    "drive": "драйв",
-    "smile": "с улыбкой",
-    "anthem": "как гимн",
+    "uplifting": "энергично",
+    "romantic": "романтично",
+    "peaceful": "спокойно",
+    "melancholy": "меланхолично",
+    "adventurous": "эпично",
+    "party": "вечеринка",
+    "warm": "спокойно",
+    "soft": "романтично",
+    "drive": "энергично",
+    "smile": "радостно",
+    "anthem": "эпично",
 }
 VOICE_LABELS = {
     "female": "женский",
@@ -127,6 +147,15 @@ def _cap(text: str) -> str:
     return text[0].upper() + text[1:]
 
 
+_EMPTY_ABOUT = {
+    "пока не знаю",
+    "пока не знаю, но хочу свою песню",
+    "не указан",
+    "не указан (для себя)",
+    "конкретно никому",
+}
+
+
 def compose_brief(
     whom: str,
     mood: str,
@@ -134,43 +163,50 @@ def compose_brief(
     sound: str = "",
     voice: str = "",
     plot: str = "gift",
+    genre: str = "",
 ) -> str:
     whom = (whom or "").strip()
     mood = (mood or "").strip()
+    if mood.lower() in _EMPTY_ABOUT:
+        mood = ""
     detail = (detail or "").strip()
     sound = (sound or "").strip()
     voice = (voice or "").strip()
+    genre = (genre or "").strip()
     plot = (plot or "gift").strip() or "gift"
     just = plot == "just" or whom.lower() in {"себе", "мне", "для себя"}
-    lines: list[str] = []
+    parts: list[str] = []
     if just:
-        lines.append("Кому: не указан (для себя)")
         if mood:
-            lines.append(f"Тема: {mood}")
+            parts.append(f"Песня про {mood}.")
+        elif detail:
+            parts.append("Песня без адресата.")
+        else:
+            parts.append("Песня без конкретного адресата.")
     else:
+        head = "Песня"
         if whom:
-            lines.append(f"Кому: {whom}")
+            head += f" {whom}"
         if mood:
-            lines.append(f"Повод: {mood}")
+            head += f", {mood}"
+        parts.append(head + ".")
     if detail:
-        lines.append(f"Деталь: {detail}")
+        parts.append(detail if detail.endswith((".", "!", "?")) else detail + ".")
+    if genre:
+        parts.append(f"Жанр {genre}.")
     if sound:
-        lines.append(f"Тон: {sound}")
+        parts.append(f"Настроение: {sound}.")
     if voice == "дуэт":
-        lines.append("Голос: дуэт")
-        lines.append("Дуэт, мужской и женский голос.")
+        parts.append("Дуэт, мужской и женский голос.")
     elif voice in {"женский", "мужской"}:
-        lines.append(f"Голос: {voice}")
-        lines.append(f"{_cap(voice)} голос.")
-    elif voice:
-        lines.append("Голос: на усмотрение продюсера")
+        parts.append(f"{_cap(voice)} голос.")
     if just:
-        lines.append("Заметка: личная история, без адресата")
-    elif "не могу сказать" in mood.lower():
-        lines.append("Заметка: то, что не выговаривается вслух. Мягко, без пафоса")
+        parts.append("Цельная песня по теме, не открытка.")
+    elif "не могу сказать" in (mood or "").lower():
+        parts.append("Мягко: то, что не выговаривается вслух. Без пафоса.")
     elif whom or mood or detail:
-        lines.append("Заметка: тёплая личная сцена, без пафоса")
-    return "\n".join(lines).strip()
+        parts.append("Чтобы адресат узнал себя с первой строки. Без канцелярита.")
+    return " ".join(parts).strip()
 
 
 class MessengerService:
@@ -424,6 +460,19 @@ class MessengerService:
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
+    def set_stage(self, contact: dict, stage: str) -> dict:
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET funnel_stage = ?, funnel_await = '', last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (stage, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
     def set_await(self, contact: dict, kind: str) -> dict:
         now = utc_now()
         with get_connection() as conn:
@@ -492,9 +541,16 @@ class MessengerService:
         detail = overrides.get("brief_detail", contact.get("brief_detail") or "")
         sound = overrides.get("brief_sound", contact.get("brief_sound") or "")
         voice = overrides.get("brief_voice", contact.get("brief_voice") or "")
+        genre = overrides.get("brief_genre", contact.get("brief_genre") or "")
         plot = overrides.get("segment", contact.get("segment") or "gift")
         return compose_brief(
-            whom, mood, detail=detail, sound=sound, voice=voice, plot=plot
+            whom,
+            mood,
+            detail=detail,
+            sound=sound,
+            voice=voice,
+            plot=plot,
+            genre=genre,
         )
 
     def reset_song(self, contact: dict) -> dict:
@@ -505,7 +561,7 @@ class MessengerService:
                 UPDATE messenger_contacts
                 SET funnel_stage = ?, brief = '', brief_whom = '', brief_mood = '',
                     brief_detail = '', brief_sound = '', brief_voice = '',
-                    occasion_key = '', segment = '', funnel_await = '',
+                    brief_genre = '', occasion_key = '', segment = '', funnel_await = '',
                     nudge_step = 0, next_nudge_at = NULL,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
@@ -517,7 +573,7 @@ class MessengerService:
     def set_whom(self, contact: dict, whom: str, *, detail: str = "", plot: str = "gift") -> dict:
         extra = (detail or "").strip() or (contact.get("brief_detail") or "")
         plot = "just" if plot == "just" else "gift"
-        stage = STAGE_THEME if plot == "just" else STAGE_OCCASION
+        stage = STAGE_ABOUT if plot == "just" else STAGE_OCCASION
         brief = self._gift_brief(
             contact, brief_whom=whom, brief_detail=extra, segment=plot
         )
@@ -565,6 +621,24 @@ class MessengerService:
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
+    def set_about(self, contact: dict, about: str) -> dict:
+        return self.set_theme(contact, about, theme_key="")
+
+    def set_genre(self, contact: dict, genre: str) -> dict:
+        brief = self._gift_brief(contact, brief_genre=genre)
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_genre = ?, brief = ?, funnel_stage = ?,
+                    funnel_await = '', last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (genre, brief, STAGE_SOUND, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
     def set_mood(self, contact: dict, mood: str, *, occasion_key: str = "") -> dict:
         return self.set_occasion(contact, mood, occasion_key=occasion_key)
 
@@ -579,7 +653,7 @@ class MessengerService:
                     funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (detail, brief, STAGE_SOUND, now, contact["id"]),
+                (detail, brief, STAGE_GENRE, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -609,7 +683,7 @@ class MessengerService:
                     funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (voice, brief, STAGE_VOICE, now, contact["id"]),
+                (voice, brief, STAGE_CONFIRM, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
