@@ -54,8 +54,10 @@ OCCASION_LABELS = {
 MOOD_LABELS = OCCASION_LABELS
 THEME_LABELS = {
     "love": "про любовь",
-    "story": "про случай из жизни",
-    "feeling": "про чувство или настроение",
+    "story": "про случай",
+    "feeling": "про настроение",
+    "road": "про дорогу",
+    "self": "про себя",
     "chapter": "новая глава",
     "release": "отпустить и выдохнуть",
     "high": "кайф от момента",

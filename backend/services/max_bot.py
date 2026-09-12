@@ -181,7 +181,7 @@ def _whom_buttons() -> list[list[dict]]:
         ],
         [
             _callback_btn("Моей половинке", "whom:partner"),
-            _callback_btn("Дружбану / подруге", "whom:friend"),
+            _callback_btn("Дружбану / подружке", "whom:friend"),
         ],
         [
             _callback_btn("Без конкретики", "whom:nobody"),
@@ -206,13 +206,18 @@ def _occasion_buttons() -> list[list[dict]]:
 
 def _about_buttons() -> list[list[dict]]:
     return [
-        [_callback_btn("✍️ Напишу своими словами", "about:write")],
         [
             _callback_btn("Про любовь", "about:love"),
             _callback_btn("Про случай", "about:story"),
         ],
-        [_callback_btn("Про настроение", "about:feeling")],
-        [_callback_btn("⏭ Пока без темы", "about:skip")],
+        [
+            _callback_btn("Про настроение", "about:feeling"),
+            _callback_btn("Про дорогу", "about:road"),
+        ],
+        [
+            _callback_btn("Про себя", "about:self"),
+            _callback_btn("Напишу сам", "about:write"),
+        ],
     ]
 
 
@@ -992,14 +997,14 @@ class MaxBot:
             contact = self.messenger.set_await(contact, "about")
             self._send(contact, ABOUT_WAIT)
             return
-        if raw in {"love", "story", "feeling"}:
+        if raw in {"love", "story", "feeling", "road", "self"}:
             theme = THEME_LABELS.get(raw, raw)
             contact = self.messenger.set_about(contact, theme)
             self._send_detail(contact, "Хорошо. Если есть сцена или момент — можно добавить.")
             return
         if raw == "skip" or is_skip(raw):
-            contact = self.messenger.set_about(contact, "")
-            self._send_detail(contact)
+            contact = self.messenger.set_await(contact, "about")
+            self._send(contact, ABOUT_WAIT)
             return
         theme = parse_theme(raw)
         if not theme:

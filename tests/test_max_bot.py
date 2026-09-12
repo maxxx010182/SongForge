@@ -728,8 +728,12 @@ def test_nobody_goes_to_self_theme_not_birthday():
         assert "о чём" in last or "о чем" in last
         assert "про тебя" not in last
         assert "день рождения" not in last
-        payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
-        assert "about:write" in payloads
+        about_rows = api.sent[-1]["buttons"]
+        assert len(about_rows) == 3
+        assert all(len(row) == 2 for row in about_rows)
+        payloads = [btn.get("payload") or "" for row in about_rows for btn in row]
+        assert payloads[-1] == "about:write"
+        assert "about:skip" not in payloads
         assert "occasion:birthday" not in payloads
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["segment"] == "just"
