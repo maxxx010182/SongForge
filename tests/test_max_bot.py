@@ -24,16 +24,28 @@ class FakeApi:
     def configured(self) -> bool:
         return True
 
-    def send_message(self, *, user_id, text, buttons=None, image_url=None) -> bool:
+    def send_message(
+        self,
+        *,
+        user_id,
+        text,
+        buttons=None,
+        image_url=None,
+        image_payload=None,
+    ) -> bool:
         self.sent.append(
             {
                 "user_id": str(user_id),
                 "text": text,
                 "buttons": buttons or [],
                 "image_url": image_url,
+                "image_payload": image_payload,
             }
         )
         return True
+
+    def get_cover_payload(self):
+        return None
 
     def answer_callback(self, callback_id: str, *, notification: str = "") -> bool:
         self.callbacks.append(callback_id)
@@ -88,9 +100,55 @@ def _cb(bot: MaxBot, max_user_id: str, payload: str, name: str | None = None) ->
     )
 
 
+def _text(bot: MaxBot, max_user_id: str, text: str, name: str | None = None) -> None:
+    name = name or f"tmax_{max_user_id}"
+    bot.handle_update(
+        {
+            "update_type": "message_created",
+            "message": {
+                "sender": {
+                    "user_id": int(max_user_id),
+                    "is_bot": False,
+                    "name": name,
+                },
+                "recipient": {"chat_type": "dialog", "user_id": int(max_user_id)},
+                "body": {"text": text},
+            },
+        }
+    )
+
+
+def _finish_gift(
+    bot: MaxBot,
+    max_user_id: str,
+    *,
+    whom: str = "whom:mom",
+    occasion: str = "occasion:birthday",
+) -> None:
+    _cb(bot, max_user_id, "accept")
+    _cb(bot, max_user_id, whom)
+    _cb(bot, max_user_id, occasion)
+    _cb(bot, max_user_id, "detail:skip")
+    _cb(bot, max_user_id, "sound:warm")
+    _cb(bot, max_user_id, "voice:female")
+
+
 def test_compose_brief():
-    assert compose_brief("маме", "день рождения") == "Песня маме. День рождения."
-    assert compose_brief("себе", "") == "Песня себе."
+    text = compose_brief("маме", "день рождения")
+    assert "маме" in text.lower()
+    assert "день рождения" in text.lower()
+    rich = compose_brief(
+        "маме",
+        "день рождения",
+        detail="свет на кухне",
+        sound="тепло и близко",
+        voice="женский",
+    )
+    assert "свет на кухне" in rich
+    assert "женский" in rich.lower()
+    assert "тепло" in rich.lower()
+    self_song = compose_brief("себе", "новая глава")
+    assert "для себя" in self_song.lower()
 
 
 def test_gate_on_bot_started():
@@ -106,8 +164,9 @@ def test_gate_on_bot_started():
         assert api.sent
         assert "стоп" in api.sent[0]["text"].lower()
         assert "проба" in api.sent[0]["text"].lower()
-        assert api.sent[0]["image_url"]
-        assert api.sent[0]["image_url"].endswith("/assets/max-cover.jpg")
+        assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
+        if api.sent[0]["image_url"]:
+            assert api.sent[0]["image_url"].endswith("/assets/max-cover.jpg")
         labels = [
             btn.get("text")
             for row in api.sent[0]["buttons"]
@@ -134,12 +193,13 @@ def test_accept_whom_mood_sends_studio_link():
                 "chat_id": int(max_user_id),
             }
         )
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:birthday")
+        _finish_gift(bot, max_user_id)
         last = api.sent[-1]
         assert "маме" in last["text"].lower()
         assert "день рождения" in last["text"].lower()
+        assert "услышать" in " ".join(
+            btn.get("text", "") for row in last["buttons"] for btn in row
+        ).lower()
         urls = [
             btn.get("url", "")
             for row in last["buttons"]
@@ -147,7 +207,8 @@ def test_accept_whom_mood_sends_studio_link():
         ]
         assert any("/api/auth/max?m=" in url for url in urls)
         contact = MessengerService().get_by_max(max_user_id)
-        assert contact["brief"].startswith("Песня маме")
+        assert "маме" in contact["brief"].lower()
+        assert "женский" in contact["brief"].lower()
         assert contact["occasion_key"] == "birthday"
         assert contact["next_nudge_at"]
         assert contact["user_id"]
@@ -203,7 +264,9 @@ def test_free_text_whom():
         )
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief_whom"] == "бабушке"
-        assert "повод" in api.sent[-1]["text"].lower()
+        assert "привет" not in contact["brief"].lower()
+        last = api.sent[-1]["text"].lower()
+        assert "дате" in last or "сердца" in last or "повод" in last
     finally:
         _cleanup(max_user_id)
 
@@ -215,9 +278,7 @@ def test_login_token_and_me_brief():
     bot, api, _ = _bot()
     bot_user = max_user_id
     try:
-        _cb(bot, bot_user, "accept")
-        _cb(bot, bot_user, "whom:mom")
-        _cb(bot, bot_user, "mood:birthday")
+        _finish_gift(bot, bot_user)
         contact = MessengerService().get_by_max(bot_user)
         token = MessengerService().make_login_token(contact["id"])
         client = TestClient(app)
@@ -252,10 +313,12 @@ def test_greeting_keeps_whom_step():
             }
         )
         last = api.sent[-1]
-        assert "кому" in last["text"].lower()
+        assert "кого" in last["text"].lower()
         payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
         assert "whom:mom" in payloads
         assert "segment:business" not in payloads
+        contact = MessengerService().get_by_max(max_user_id)
+        assert (contact.get("brief_whom") or "") == ""
     finally:
         _cleanup(max_user_id)
 
@@ -341,9 +404,7 @@ def _force_nudge_due(contact_id: str) -> None:
 def test_nudge_three_steps_then_silence():
     bot, api, max_user_id = _bot()
     try:
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:birthday")
+        _finish_gift(bot, max_user_id)
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["nudge_step"] == 0
         assert contact["next_nudge_at"]
@@ -384,9 +445,7 @@ def test_nudge_three_steps_then_silence():
 def test_nudge_skips_stopped():
     bot, api, max_user_id = _bot()
     try:
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:just")
+        _finish_gift(bot, max_user_id, occasion="occasion:just")
         contact = MessengerService().get_by_max(max_user_id)
         MessengerService().stop(contact)
         _force_nudge_due(contact["id"])
@@ -400,9 +459,7 @@ def test_nudge_skips_stopped():
 def test_ready_followup_waits_if_on_site_then_sends():
     bot, api, max_user_id = _bot()
     try:
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:birthday")
+        _finish_gift(bot, max_user_id)
         svc = MessengerService()
         contact = svc.get_by_max(max_user_id)
         gen_id = str(uuid.uuid4())
@@ -449,9 +506,7 @@ def test_ready_followup_waits_if_on_site_then_sends():
 def test_unpaid_followup_after_preview():
     bot, api, max_user_id = _bot()
     try:
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:just")
+        _finish_gift(bot, max_user_id, occasion="occasion:just")
         svc = MessengerService()
         contact = svc.get_by_max(max_user_id)
         gen_id = str(uuid.uuid4())
@@ -492,9 +547,7 @@ def test_unpaid_followup_after_preview():
 def test_studio_open_skips_two_hour_nudge():
     bot, api, max_user_id = _bot()
     try:
-        _cb(bot, max_user_id, "accept")
-        _cb(bot, max_user_id, "whom:mom")
-        _cb(bot, max_user_id, "mood:holiday")
+        _finish_gift(bot, max_user_id, occasion="occasion:holiday")
         svc = MessengerService()
         contact = svc.get_by_max(max_user_id)
         first = contact["next_nudge_at"]
@@ -503,5 +556,86 @@ def test_studio_open_skips_two_hour_nudge():
         assert later > first
         api.sent.clear()
         assert bot.process_due_nudges() == 0
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_bot_started_resets_old_brief_and_sends_cover():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _text(bot, max_user_id, "бабушке")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["brief_whom"] == "бабушке"
+        api.sent.clear()
+        bot.handle_update(
+            {
+                "update_type": "bot_started",
+                "chat_id": int(max_user_id),
+                "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
+            }
+        )
+        contact = MessengerService().get_by_max(max_user_id)
+        assert (contact.get("brief_whom") or "") == ""
+        assert contact["funnel_stage"] == "gate"
+        first = api.sent[0]["text"].lower()
+        assert "проба" in first
+        assert "дате" not in first
+        assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_price_question_does_not_become_whom():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _text(bot, max_user_id, "сколько стоит?")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert (contact.get("brief_whom") or "") == ""
+        last = api.sent[-1]
+        assert "бесплатн" in last["text"].lower() or "проба" in last["text"].lower()
+        payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
+        assert "whom:mom" in payloads
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_voice_garbage_reasks():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:just")
+        _cb(bot, max_user_id, "detail:skip")
+        _cb(bot, max_user_id, "sound:warm")
+        _text(bot, max_user_id, "синий трактор")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert (contact.get("brief_voice") or "") == ""
+        last = api.sent[-1]["text"].lower()
+        assert "голос" in last
+        payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
+        assert "voice:female" in payloads
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_detail_lands_in_studio_brief():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _text(bot, max_user_id, "Елена, всегда оставляла свет на кухне")
+        _cb(bot, max_user_id, "sound:warm")
+        _cb(bot, max_user_id, "voice:female")
+        contact = MessengerService().get_by_max(max_user_id)
+        brief = (contact.get("brief") or "").lower()
+        assert "свет на кухне" in brief
+        assert "маме" in brief
+        assert "женский" in brief
+        last = api.sent[-1]["text"].lower()
+        assert "черновик" in last
+        assert "свет на кухне" in last
     finally:
         _cleanup(max_user_id)

@@ -148,7 +148,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.59", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.60", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -662,7 +662,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.59",
+        "version": "2.11.60",
         "max_bot": bool(MAX_BOT_TOKEN),
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),

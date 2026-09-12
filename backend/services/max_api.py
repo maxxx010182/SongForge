@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import requests
@@ -9,6 +10,9 @@ import requests
 from backend.logger import log
 from backend.settings import DATA_DIR, ROOT_DIR
 from backend.settings import MAX_BOT_TOKEN
+
+COVER_PATH = ROOT_DIR / "assets" / "max-cover.jpg"
+_COVER_CACHE = DATA_DIR / "max_cover_upload.json"
 
 MAX_API_BASE = "https://platform-api2.max.ru"
 _CERTS_DIR = ROOT_DIR / "backend" / "certs"
@@ -98,6 +102,76 @@ class MaxApi:
     def me(self) -> dict | None:
         return self._request("GET", "/me")
 
+    def upload_image(self, path: Path) -> dict | None:
+        if not self.token or not path.is_file():
+            return None
+        meta = self._request("POST", "/uploads", params={"type": "image"})
+        if not meta:
+            return None
+        url = str(meta.get("url") or "")
+        if not url:
+            return None
+        try:
+            with path.open("rb") as fh:
+                resp = requests.post(
+                    url,
+                    files={"data": (path.name, fh, "image/jpeg")},
+                    timeout=40,
+                    verify=_tls_verify(),
+                )
+        except requests.RequestException:
+            log.exception("MAX image upload failed")
+            return None
+        if resp.status_code >= 400:
+            log.warning(
+                "MAX image upload -> %s %s",
+                resp.status_code,
+                (resp.text or "")[:200],
+            )
+            return None
+        try:
+            data = resp.json()
+        except ValueError:
+            log.warning("MAX image upload: not JSON")
+            return None
+        if not isinstance(data, dict):
+            return None
+        token = data.get("token")
+        photos = data.get("photos")
+        if token:
+            return {"token": token}
+        if isinstance(photos, dict) and photos:
+            return {"photos": photos}
+        if data.get("payload") and isinstance(data["payload"], dict):
+            return data["payload"]
+        return None
+
+    def get_cover_payload(self) -> dict | None:
+        if not COVER_PATH.is_file():
+            return None
+        mtime = int(COVER_PATH.stat().st_mtime)
+        if _COVER_CACHE.is_file():
+            try:
+                saved = json.loads(_COVER_CACHE.read_text(encoding="utf-8"))
+                if int(saved.get("mtime") or 0) == mtime and isinstance(
+                    saved.get("payload"), dict
+                ):
+                    return saved["payload"]
+            except (OSError, ValueError, TypeError):
+                pass
+        payload = self.upload_image(COVER_PATH)
+        if not payload:
+            return None
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            _COVER_CACHE.write_text(
+                json.dumps({"mtime": mtime, "payload": payload}),
+                encoding="utf-8",
+            )
+        except OSError:
+            log.warning("MAX cover cache write failed")
+        return payload
+
     def send_message(
         self,
         *,
@@ -105,10 +179,13 @@ class MaxApi:
         text: str,
         buttons: list[list[dict]] | None = None,
         image_url: str | None = None,
+        image_payload: dict | None = None,
     ) -> bool:
         body: dict = {"text": text}
         attachments: list[dict] = []
-        if image_url:
+        if image_payload:
+            attachments.append({"type": "image", "payload": image_payload})
+        elif image_url:
             attachments.append({"type": "image", "payload": {"url": image_url}})
         if buttons:
             attachments.append(

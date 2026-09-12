@@ -1,21 +1,55 @@
-"""Воронка бота MAX: ворота согласий → кому → настроение → ссылка в студию."""
+"""Воронка бота MAX: обложка → кому → повод → деталь → звук → голос → студия."""
 
 from __future__ import annotations
 
 from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
+from backend.services.max_funnel import (
+    FAQ_TEXT,
+    GATE_RETURN_TEXT,
+    GATE_TEXT,
+    GREET_STAY_TEXT,
+    LATER_TEXT,
+    OCCASION_TEXT,
+    RESUME_TEXT,
+    SOUND_TEXT,
+    STOP_TEXT,
+    VOICE_RETRY_TEXT,
+    VOICE_TEXT,
+    WHOM_TEXT,
+    detail_text,
+    is_price_question,
+    is_self,
+    is_skip,
+    occasion_key_of,
+    parse_detail,
+    parse_occasion,
+    parse_self_detail,
+    parse_sound,
+    parse_voice,
+    parse_whom,
+    studio_mirror,
+    whom_reaction,
+)
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
     OCCASION_LABELS,
+    SOUND_LABELS,
     STAGE_BIZ_GOAL,
     STAGE_BIZ_TONE,
+    STAGE_DETAIL,
     STAGE_GATE,
     STAGE_MOOD,
+    STAGE_OCCASION,
     STAGE_SEGMENT,
+    STAGE_SENT,
+    STAGE_SOUND,
     STAGE_STOPPED,
     STAGE_TALK,
+    STAGE_VOICE,
+    VOICE_LABELS,
     WHOM_LABELS,
     MessengerService,
     webhook_secret,
@@ -66,20 +100,9 @@ LATER_WORDS = {
     "потом",
     "не сейчас",
 }
-
-GATE_TEXT = (
-    "Есть вещи, которые открыткой не скажешь. Песня — скажет.\n\n"
-    "Первая проба бесплатно: два варианта, минут пять.\n\n"
-    "«Поехали» — соглашение и политика, как на сайте. Редкие сообщения сюда. "
-    "Стоп — напишите «стоп»."
-)
-SEGMENT_TEXT = "Эта песня — близкому человеку или для дела?"
-WHOM_TEXT = "Кому эта песня?"
-MOOD_TEXT = "Повод какой? День рождения, просто так, или дата на носу?"
 BIZ_WORDS = {
     "business",
     "бизнес",
-    "дела",
     "бренд",
     "реклама",
     "джингл",
@@ -87,15 +110,6 @@ BIZ_WORDS = {
 }
 BIZ_GOAL_TEXT = "Для чего трек?"
 BIZ_TONE_TEXT = "Как должен звучать бренд в песне?"
-LATER_TEXT = (
-    "Без имени тоже можно. Чаще дарят маме или любимым — "
-    "ткните, слова потом поправим."
-)
-STOP_TEXT = (
-    "Ок, молчу. Если передумаете — напишите сюда. "
-    "Документы и данные: support@sozdaipesnu.ru"
-)
-RESUME_TEXT = "Снова на связи. Продолжим?"
 NUDGE_TEXTS = (
     "Черновик уже в студии. Осталось открыть — и услышать первый вариант.",
     "Не вышло зайти? Напиши — гляну. Идея на месте, ссылка живая.",
@@ -120,38 +134,88 @@ def _link_btn(text: str, url: str) -> dict:
     return {"type": "link", "text": text[:64], "url": url}
 
 
-def _legal_buttons() -> list[list[dict]]:
+def _legal_buttons(*, returning: bool = False) -> list[list[dict]]:
     base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
-    return [
-        [_callback_btn("Поехали", "accept")],
-        [
-            _link_btn("Соглашение", f"{base}/legal/terms"),
-            _link_btn("Политика", f"{base}/legal/privacy"),
-        ],
-    ]
+    rows = [[_callback_btn("Поехали", "accept")]]
+    if not returning:
+        rows.append(
+            [
+                _link_btn("Соглашение", f"{base}/legal/terms"),
+                _link_btn("Политика", f"{base}/legal/privacy"),
+            ]
+        )
+    return rows
 
 
 def _whom_buttons() -> list[list[dict]]:
     return [
         [
             _callback_btn("Маме", "whom:mom"),
-            _callback_btn("Любимой", "whom:her"),
-            _callback_btn("Любимому", "whom:him"),
+            _callback_btn("Папе", "whom:dad"),
+            _callback_btn("Ей", "whom:her"),
         ],
         [
+            _callback_btn("Ему", "whom:him"),
             _callback_btn("Другу", "whom:friend"),
             _callback_btn("Себе", "whom:self"),
         ],
     ]
 
 
-def _mood_buttons() -> list[list[dict]]:
+def _occasion_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("День рождения", "mood:birthday"),
-            _callback_btn("Просто так", "mood:just"),
+            _callback_btn("День рождения", "occasion:birthday"),
+            _callback_btn("Годовщина", "occasion:anniversary"),
         ],
-        [_callback_btn("Скоро праздник", "mood:holiday")],
+        [
+            _callback_btn("Просто так", "occasion:just"),
+            _callback_btn("Скоро праздник", "occasion:holiday"),
+        ],
+        [_callback_btn("Хочу сказать и не могу вслух", "occasion:unsaid")],
+    ]
+
+
+def _detail_buttons(whom: str) -> list[list[dict]]:
+    if is_self(whom):
+        return [
+            [
+                _callback_btn("Новая глава", "detail:chapter"),
+                _callback_btn("Злость", "detail:anger"),
+            ],
+            [
+                _callback_btn("Кайф", "detail:high"),
+                _callback_btn("Ностальгия", "detail:nostalgia"),
+            ],
+            [
+                _callback_btn("Просто хочу свою песню", "detail:own"),
+                _callback_btn("Пока без этого", "detail:skip"),
+            ],
+        ]
+    return [[_callback_btn("Пока без этого", "detail:skip")]]
+
+
+def _sound_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Тепло и близко", "sound:warm"),
+            _callback_btn("Нежно", "sound:soft"),
+        ],
+        [
+            _callback_btn("Драйв", "sound:drive"),
+            _callback_btn("С улыбкой", "sound:smile"),
+        ],
+        [_callback_btn("Как гимн", "sound:anthem")],
+    ]
+
+
+def _voice_buttons() -> list[list[dict]]:
+    return [
+        [
+            _callback_btn("Женский", "voice:female"),
+            _callback_btn("Мужской", "voice:male"),
+            _callback_btn("Решите сами", "voice:auto"),
+        ]
     ]
 
 
@@ -199,7 +263,7 @@ def _biz_tone_buttons() -> list[list[dict]]:
 
 
 def _studio_buttons(url: str) -> list[list[dict]]:
-    return [[_link_btn("Открыть студию", url)]]
+    return [[_link_btn("Услышать первый вариант", url)]]
 
 
 def _as_int(value) -> int | None:
@@ -278,6 +342,13 @@ def _is_later(text: str) -> bool:
 def _is_greeting(text: str) -> bool:
     low = text.lower().strip().strip("!.?")
     return low in GREETING_WORDS or low.startswith("привет")
+
+
+def _join(prefix: str, text: str) -> str:
+    prefix = (prefix or "").strip()
+    if prefix:
+        return f"{prefix}\n\n{text}"
+    return text
 
 
 class MaxBot:
@@ -382,15 +453,31 @@ class MaxBot:
         buttons: list[list[dict]] | None = None,
         *,
         image_url: str | None = None,
+        image_payload: dict | None = None,
     ) -> None:
         user_id = contact.get("max_user_id")
         if not user_id:
             return
         ok = self.api.send_message(
-            user_id=user_id, text=text, buttons=buttons, image_url=image_url
+            user_id=user_id,
+            text=text,
+            buttons=buttons,
+            image_url=image_url,
+            image_payload=image_payload,
         )
         if not ok:
             log.warning("MAX send_message failed for user %s", user_id)
+
+    def _cover_payload(self) -> dict | None:
+        getter = getattr(self.api, "get_cover_payload", None)
+        if not callable(getter):
+            return None
+        try:
+            payload = getter()
+        except Exception:
+            log.exception("MAX cover upload failed")
+            return None
+        return payload if isinstance(payload, dict) else None
 
     def _on_stopped(self, update: dict) -> None:
         user_id, _, _ = _user_from_update(update)
@@ -406,43 +493,85 @@ class MaxBot:
                 max_user_id=contact["max_user_id"],
                 chat_id=contact.get("max_chat_id"),
             )
-        if self.messenger.can_message(contact):
-            self._continue_funnel(contact)
-            return
-        if self.messenger.has_legal(contact):
-            self._send(
-                contact,
-                RESUME_TEXT,
-                [[_callback_btn("Продолжить", "resume")]],
-            )
-            return
+        if contact.get("stopped_at") and not contact.get("messages_ok"):
+            if self.messenger.has_legal(contact):
+                contact = self.messenger.resume_messages(contact)
+            else:
+                self._send_gate(contact)
+                return
+        contact = self.messenger.reset_song(contact)
         self._send_gate(contact)
 
     def _send_gate(self, contact: dict) -> None:
-        self._send(contact, GATE_TEXT, _legal_buttons(), image_url=_cover_url())
+        returning = self.messenger.has_legal(contact)
+        text = GATE_RETURN_TEXT if returning else GATE_TEXT
+        payload = self._cover_payload()
+        self._send(
+            contact,
+            text,
+            _legal_buttons(returning=returning),
+            image_payload=payload,
+            image_url=None if payload else _cover_url(),
+        )
 
-    def _continue_funnel(self, contact: dict) -> None:
+    def _send_whom(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, WHOM_TEXT), _whom_buttons())
+
+    def _send_occasion(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, OCCASION_TEXT), _occasion_buttons())
+
+    def _send_detail(self, contact: dict, prefix: str = "") -> None:
+        whom = contact.get("brief_whom") or ""
+        self._send(
+            contact,
+            _join(prefix, detail_text(whom)),
+            _detail_buttons(whom),
+        )
+
+    def _send_sound(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, SOUND_TEXT), _sound_buttons())
+
+    def _send_voice(self, contact: dict, prefix: str = "") -> None:
+        self._send(contact, _join(prefix, VOICE_TEXT), _voice_buttons())
+
+    def _stay(self, contact: dict, extra: str = "") -> None:
+        prefix = extra or GREET_STAY_TEXT
+        self._continue_funnel(contact, prefix=prefix)
+
+    def _continue_funnel(self, contact: dict, prefix: str = "") -> None:
         stage = contact.get("funnel_stage") or STAGE_GATE
         if (contact.get("segment") or "") == "business":
             if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_BIZ_GOAL}:
-                self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
+                self._send(contact, _join(prefix, BIZ_GOAL_TEXT), _biz_goal_buttons())
                 return
             if stage == STAGE_BIZ_TONE:
-                self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
+                self._send(contact, _join(prefix, BIZ_TONE_TEXT), _biz_tone_buttons())
                 return
             self._send_studio(contact)
             return
-        if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_TALK}:
-            self._send(contact, WHOM_TEXT, _whom_buttons())
+        if stage == STAGE_GATE:
+            self._send_gate(contact)
             return
-        if stage == STAGE_MOOD:
-            self._send(contact, MOOD_TEXT, _mood_buttons())
+        if stage in {STAGE_SEGMENT, STAGE_TALK}:
+            self._send_whom(contact, prefix)
+            return
+        if stage in {STAGE_OCCASION, STAGE_MOOD}:
+            self._send_occasion(contact, prefix)
+            return
+        if stage == STAGE_DETAIL:
+            self._send_detail(contact, prefix)
+            return
+        if stage == STAGE_SOUND:
+            self._send_sound(contact, prefix)
+            return
+        if stage == STAGE_VOICE:
+            self._send_voice(contact, prefix)
             return
         if stage == STAGE_BIZ_GOAL:
-            self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
+            self._send(contact, _join(prefix, BIZ_GOAL_TEXT), _biz_goal_buttons())
             return
         if stage == STAGE_BIZ_TONE:
-            self._send(contact, BIZ_TONE_TEXT, _biz_tone_buttons())
+            self._send(contact, _join(prefix, BIZ_TONE_TEXT), _biz_tone_buttons())
             return
         self._send_studio(contact)
 
@@ -459,7 +588,8 @@ class MaxBot:
             return
         if payload == "resume":
             contact = self.messenger.resume_messages(contact)
-            self._continue_funnel(contact)
+            contact = self.messenger.reset_song(contact)
+            self._send_gate(contact)
             return
         if payload == "stop_nudge":
             self.messenger.stop(contact)
@@ -481,8 +611,17 @@ class MaxBot:
         if payload.startswith("whom:"):
             self._apply_whom(contact, payload.split(":", 1)[1])
             return
-        if payload.startswith("mood:"):
-            self._apply_mood(contact, payload.split(":", 1)[1])
+        if payload.startswith("occasion:") or payload.startswith("mood:"):
+            self._apply_occasion(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("detail:"):
+            self._apply_detail(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("sound:"):
+            self._apply_sound(contact, payload.split(":", 1)[1])
+            return
+        if payload.startswith("voice:"):
+            self._apply_voice(contact, payload.split(":", 1)[1])
             return
         if payload.startswith("bizgoal:"):
             self._apply_biz_goal(contact, payload.split(":", 1)[1])
@@ -505,7 +644,8 @@ class MaxBot:
             if _is_accept_text(text) or _is_start(text) or text.lower() in {"продолжить"}:
                 if self.messenger.has_legal(contact):
                     contact = self.messenger.resume_messages(contact)
-                    self._continue_funnel(contact)
+                    contact = self.messenger.reset_song(contact)
+                    self._send_gate(contact)
                     return
             if self.messenger.has_legal(contact):
                 self._send(
@@ -516,8 +656,21 @@ class MaxBot:
             else:
                 self._send_gate(contact)
             return
-        if _is_start(text) or _is_greeting(text):
-            self._continue_funnel(contact)
+        if _is_start(text):
+            contact = self.messenger.reset_song(contact)
+            self._send_gate(contact)
+            return
+        if _is_accept_text(text) and (contact.get("funnel_stage") or "") in {
+            STAGE_GATE,
+            STAGE_SEGMENT,
+        }:
+            self._accept(contact, name=name)
+            return
+        if _is_greeting(text):
+            self._stay(contact)
+            return
+        if is_price_question(text):
+            self._stay(contact, FAQ_TEXT)
             return
         stage = contact.get("funnel_stage") or STAGE_GATE
         if stage in {STAGE_GATE, STAGE_SEGMENT, STAGE_TALK}:
@@ -529,8 +682,17 @@ class MaxBot:
                 return
             self._apply_whom(contact, text)
             return
-        if stage == STAGE_MOOD:
-            self._apply_mood(contact, text)
+        if stage in {STAGE_OCCASION, STAGE_MOOD}:
+            self._apply_occasion(contact, text)
+            return
+        if stage == STAGE_DETAIL:
+            self._apply_detail(contact, text)
+            return
+        if stage == STAGE_SOUND:
+            self._apply_sound(contact, text)
+            return
+        if stage == STAGE_VOICE:
+            self._apply_voice(contact, text)
             return
         if stage == STAGE_BIZ_GOAL:
             self._apply_biz_goal(contact, text)
@@ -551,7 +713,7 @@ class MaxBot:
             log.exception("MAX accept failed")
             self._send(contact, "Не получилось сохранить. Нажмите «Поехали» ещё раз.")
             return
-        self._send(contact, WHOM_TEXT, _whom_buttons())
+        self._send_whom(contact)
 
     def _apply_segment(self, contact: dict, raw: str) -> None:
         key = (raw or "").strip().lower()
@@ -560,50 +722,75 @@ class MaxBot:
         elif key in {"gift", "подарок", "близкому", "близкий"} or "подар" in key:
             segment = "gift"
         else:
-            self._send(contact, SEGMENT_TEXT, _segment_buttons())
+            self._send(contact, "Эта песня — близкому человеку или для дела?", _segment_buttons())
             return
         contact = self.messenger.set_segment(contact, segment)
         if segment == "business":
             self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
             return
-        self._send(contact, WHOM_TEXT, _whom_buttons())
+        self._send_whom(contact)
 
     def _apply_whom(self, contact: dict, raw: str) -> None:
-        key = (raw or "").strip().lower()
-        if key in {"later", "skip"} or _is_later(raw):
+        if _is_later(raw) or is_skip(raw):
             self._send(contact, LATER_TEXT, _whom_buttons())
             return
         if _looks_business(raw):
             self._apply_segment(contact, "business")
             return
-        whom = WHOM_LABELS.get(key, (raw or "").strip())
+        whom, leftover = parse_whom(raw)
         if not whom:
-            self._send(contact, WHOM_TEXT, _whom_buttons())
+            self._send_whom(contact, "Это для кого — маме, ей, себе? Можно ткнуть или написать.")
             return
-        contact = self.messenger.set_whom(contact, whom)
-        self._send(contact, MOOD_TEXT, _mood_buttons())
+        contact = self.messenger.set_whom(contact, whom, detail=leftover)
+        self._send_occasion(contact, whom_reaction(whom))
 
-    def _apply_mood(self, contact: dict, raw: str) -> None:
-        key = (raw or "").strip().lower()
-        aliases = {
-            "др": "birthday",
-            "день рождения": "birthday",
-            "просто так": "just",
-            "просто": "just",
-            "праздник": "holiday",
-            "скоро праздник": "holiday",
-        }
-        mapped_key = key if key in OCCASION_LABELS else aliases.get(key, "")
-        if mapped_key:
-            mood = OCCASION_LABELS[mapped_key]
-            occasion_key = mapped_key
+    def _apply_occasion(self, contact: dict, raw: str) -> None:
+        if raw in OCCASION_LABELS:
+            mood = OCCASION_LABELS[raw]
+            key = raw
         else:
-            mood = (raw or "").strip()
-            occasion_key = ""
+            mood = parse_occasion(raw)
+            key = occasion_key_of(mood or "")
         if not mood:
-            self._send(contact, MOOD_TEXT, _mood_buttons())
+            self._send_occasion(contact, "Напишите повод своими словами — или ткните вариант.")
             return
-        contact = self.messenger.set_mood(contact, mood, occasion_key=occasion_key)
+        contact = self.messenger.set_occasion(contact, mood, occasion_key=key)
+        self._send_detail(contact)
+
+    def _apply_detail(self, contact: dict, raw: str) -> None:
+        whom = contact.get("brief_whom") or ""
+        if raw == "skip" or is_skip(raw):
+            detail = (contact.get("brief_detail") or "").strip()
+        elif is_self(whom):
+            parsed = parse_self_detail(raw)
+            detail = "" if parsed is None else parsed
+        else:
+            parsed = parse_detail(raw)
+            detail = "" if parsed is None else parsed
+        contact = self.messenger.set_detail(contact, detail)
+        prefix = "Вот из этого уже песня, не открытка." if detail else ""
+        self._send_sound(contact, prefix)
+
+    def _apply_sound(self, contact: dict, raw: str) -> None:
+        if raw in SOUND_LABELS:
+            sound = SOUND_LABELS[raw]
+        else:
+            sound = parse_sound(raw)
+        if not sound:
+            self._send_sound(contact, "Ткните, как звучит — или напишите жанр своими словами.")
+            return
+        contact = self.messenger.set_sound(contact, sound)
+        self._send_voice(contact)
+
+    def _apply_voice(self, contact: dict, raw: str) -> None:
+        if raw in VOICE_LABELS:
+            voice = VOICE_LABELS[raw]
+        else:
+            voice = parse_voice(raw)
+        if not voice:
+            self._send(contact, VOICE_RETRY_TEXT, _voice_buttons())
+            return
+        contact = self.messenger.set_voice(contact, voice)
         self._send_studio(contact)
 
     def _apply_biz_goal(self, contact: dict, raw: str) -> None:
@@ -628,22 +815,36 @@ class MaxBot:
         if not contact.get("user_id"):
             self._send_gate(contact)
             return
-        whom = (contact.get("brief_whom") or "").strip()
-        mood = (contact.get("brief_mood") or "").strip()
-        hold = ", ".join(part for part in (whom, mood) if part)
+        if (contact.get("segment") or "") == "business":
+            whom = (contact.get("brief_whom") or "").strip()
+            mood = (contact.get("brief_mood") or "").strip()
+            hold = ", ".join(part for part in (whom, mood) if part)
+            url = self.messenger.studio_url(contact)
+            lines = []
+            if extra:
+                lines.append(extra)
+            if hold:
+                lines.append(f"Держу: {hold}.")
+            else:
+                lines.append("Держу вашу идею.")
+            lines.append(
+                "Сейчас открою студию — одна проба, два варианта, минут пять."
+            )
+            self.messenger.mark_sent_to_site(contact)
+            self._send(contact, "\n\n".join(lines), [[_link_btn("Открыть студию", url)]])
+            return
         url = self.messenger.studio_url(contact)
-        lines = []
-        if extra:
-            lines.append(extra)
-        if hold:
-            lines.append(f"Держу: {hold}.")
-        else:
-            lines.append("Держу вашу идею.")
-        lines.append(
-            "Сейчас открою студию — одна проба, два варианта, минут пять. Я тут."
+        text = studio_mirror(
+            whom=contact.get("brief_whom") or "",
+            occasion=contact.get("brief_mood") or "",
+            detail=contact.get("brief_detail") or "",
+            sound=contact.get("brief_sound") or "",
+            voice=contact.get("brief_voice") or "",
         )
+        if extra:
+            text = extra + "\n\n" + text
         self.messenger.mark_sent_to_site(contact)
-        self._send(contact, "\n\n".join(lines), _studio_buttons(url))
+        self._send(contact, text, _studio_buttons(url))
 
     def process_due_nudges(self, *, limit: int = 20) -> int:
         sent = 0

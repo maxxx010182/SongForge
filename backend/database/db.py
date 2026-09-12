@@ -248,6 +248,9 @@ def init_db() -> None:
                 brief TEXT NOT NULL DEFAULT '',
                 brief_whom TEXT NOT NULL DEFAULT '',
                 brief_mood TEXT NOT NULL DEFAULT '',
+                brief_detail TEXT NOT NULL DEFAULT '',
+                brief_sound TEXT NOT NULL DEFAULT '',
+                brief_voice TEXT NOT NULL DEFAULT '',
                 last_channel TEXT NOT NULL DEFAULT '',
                 max_chat_id TEXT,
                 messages_ok INTEGER NOT NULL DEFAULT 0,
@@ -429,6 +432,18 @@ def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
         )
     if "last_site_at" not in existing:
         conn.execute("ALTER TABLE messenger_contacts ADD COLUMN last_site_at TEXT")
+    if "brief_detail" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN brief_detail TEXT NOT NULL DEFAULT ''"
+        )
+    if "brief_sound" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN brief_sound TEXT NOT NULL DEFAULT ''"
+        )
+    if "brief_voice" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN brief_voice TEXT NOT NULL DEFAULT ''"
+        )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_messenger_nudge ON messenger_contacts(next_nudge_at)"
     )
