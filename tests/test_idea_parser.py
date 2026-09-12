@@ -83,3 +83,27 @@ def test_infer_genre_rep_without_yo():
     genre, sub = infer_genre_from_idea("Жанр реп про Тюмень на стадионе")
     assert genre == "Hip-Hop"
     assert "Hip-Hop" in sub or "hip" in sub.lower()
+
+
+def test_gift_brief_is_not_rock():
+    from backend.services.messenger_service import compose_brief
+
+    brief = compose_brief(
+        "маме",
+        "день рождения",
+        detail="свет на кухне",
+        sound="тепло и близко",
+        voice="женский",
+    )
+    parsed = parse_idea(brief)
+    assert parsed.genre != "Рок"
+    assert "рок" not in (parsed.genre or "").lower()
+    assert parsed.vocal_hint == "female"
+    genre, _ = infer_genre_from_idea(brief)
+    assert genre != "Rock"
+
+
+def test_explicit_rock_still_detected():
+    parsed = parse_idea("мощный рок про дорогу")
+    assert parsed.genre == "Рок"
+    assert infer_genre_from_idea("мощный рок про дорогу")[0] == "Rock"

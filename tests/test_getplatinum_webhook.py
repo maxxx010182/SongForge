@@ -33,6 +33,23 @@ def test_user_status_message_has_no_env_secrets():
     assert "support@sozdaipesnu.ru" in msg
 
 
+def test_checksum_rejects_offername_as_hmac_key():
+    """Поле offerName не должно быть секретом подписи."""
+    deal = "11111111-2222-3333-4444-555555555555"
+    offer = "notes_1"
+    checksum = hmac.new(offer.encode("utf-8"), deal.encode("utf-8"), hashlib.sha256).hexdigest()
+    payload = {
+        "dealId": deal,
+        "isSuccess": True,
+        "offerName": offer,
+        "checksum": checksum,
+        "paymentData": {"amount": 14900},
+    }
+    svc = PaymentService()
+    with patch("backend.services.payment_service.GETPLATINUM_API_KEY", "RealSecretKey"):
+        assert svc._verify_getplatinum_checksum(b"{}", payload) is False
+
+
 def test_webhook_accepts_x_checksum_without_ip_fallback():
     body = b'{"dealId":"abc","isSuccess":true,"notificationType":1,"paymentData":{"amount":14900}}'
     key = "TestApiKey"

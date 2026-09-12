@@ -1,5 +1,48 @@
 """Genre and mood resolution — shared helpers without service dependencies."""
 
+from __future__ import annotations
+
+import re
+
+# Короткие ключи дают ложные срабатывания внутри слов: подарок→рок, сказать→ска.
+_SHORT_GENRE_KEYS = frozenset(
+    {
+        "рок",
+        "ска",
+        "поп",
+        "реп",
+        "rap",
+        "pop",
+        "edm",
+        "rnb",
+        "ska",
+        "soul",
+        "folk",
+        "funk",
+        "jazz",
+        "rock",
+        "trap",
+        "house",
+        "blues",
+        "metal",
+        "punk",
+        "drill",
+    }
+)
+_WORD_CHARS = r"0-9a-zа-яё"
+
+
+def text_has_keyword(text: str, keyword: str) -> bool:
+    """True, если ключ в тексте. Короткие ключи — только как отдельное слово."""
+    needle = (keyword or "").strip().lower()
+    hay = (text or "").lower()
+    if not needle or not hay:
+        return False
+    if len(needle) <= 3 or needle in _SHORT_GENRE_KEYS:
+        pat = rf"(?<![{_WORD_CHARS}]){re.escape(needle)}(?![{_WORD_CHARS}])"
+        return re.search(pat, hay) is not None
+    return needle in hay
+
 _GENRE_FROM_UI: dict[str, str] = {
     "поп": "Pop",
     "рок": "Rock",
@@ -148,7 +191,7 @@ SUBGENRE_BY_GENRE: dict[str, str] = {
 def infer_genre_from_idea(idea: str) -> tuple[str, str]:
     text = idea.lower()
     for genre, subgenre, keywords in _GENRE_HINTS:
-        if any(word in text for word in keywords):
+        if any(text_has_keyword(text, word) for word in keywords):
             return genre, subgenre
     return "Pop", "Modern Pop"
 
@@ -156,7 +199,7 @@ def infer_genre_from_idea(idea: str) -> tuple[str, str]:
 def infer_mood_from_idea(idea: str) -> str:
     text = idea.lower()
     for mood, keywords in _MOOD_HINTS:
-        if any(word in text for word in keywords):
+        if any(text_has_keyword(text, word) for word in keywords):
             return mood
     return "uplifting"
 

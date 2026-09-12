@@ -126,7 +126,7 @@ def compose_brief(
             head += "."
         lines.append(head)
     elif whom or mood:
-        head = "Песня-подарок"
+        head = "Песня"
         if whom:
             head += f" {whom}"
         if mood:

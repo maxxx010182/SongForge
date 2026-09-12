@@ -500,12 +500,7 @@ class PaymentService:
         if GETPLATINUM_API_KEY:
             k = GETPLATINUM_API_KEY.strip().strip('"').strip("'")
             secrets.append(k.encode("utf-8"))
-        if GETPLATINUM_ACCOUNT:
-            acc = GETPLATINUM_ACCOUNT.strip().lower().removesuffix(".getplatinum.ru")
-            secrets.append(acc.encode("utf-8"))
-        offer = str(payload.get("offerName") or "").strip()
-        if offer:
-            secrets.append(offer.encode("utf-8"))
+        # Не использовать offerName / slug аккаунта как HMAC-ключ — их знает клиент.
 
         skip_keys = {sig_key, "checksum", "Checksum", "signature", "sign", "hash"}
         payload_for_sign = {k: v for k, v in payload.items() if k not in skip_keys}

@@ -5,7 +5,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from backend.services.genre_resolver import infer_genre_from_idea, infer_mood_from_idea, resolve_genre
+from backend.services.genre_resolver import (
+    infer_genre_from_idea,
+    infer_mood_from_idea,
+    resolve_genre,
+    text_has_keyword,
+)
 
 _RAP_GENRES = {"hip-hop", "hip hop", "trap", "drill"}
 
@@ -199,6 +204,8 @@ def _find_genre_keyword(text: str) -> tuple[str, bool]:
     best_pos = len(lower) + 1
     best_genre = ""
     for keyword, genre_ui in _GENRE_KEYWORDS:
+        if not text_has_keyword(lower, keyword):
+            continue
         pos = lower.find(keyword)
         if pos != -1 and pos < best_pos:
             best_pos = pos
