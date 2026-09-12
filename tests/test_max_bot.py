@@ -137,6 +137,7 @@ def test_compose_brief():
     text = compose_brief("маме", "день рождения")
     assert "маме" in text.lower()
     assert "день рождения" in text.lower()
+    assert not text.lower().startswith("песня-подарок")
     rich = compose_brief(
         "маме",
         "день рождения",
@@ -147,8 +148,9 @@ def test_compose_brief():
     assert "свет на кухне" in rich
     assert "женский" in rich.lower()
     assert "тепло" in rich.lower()
-    self_song = compose_brief("себе", "новая глава")
-    assert "для себя" in self_song.lower()
+    self_song = compose_brief("", "ностальгия", plot="just")
+    assert "не указан" in self_song.lower()
+    assert "ностальгия" in self_song.lower()
 
 
 def test_gate_on_bot_started():
@@ -162,8 +164,11 @@ def test_gate_on_bot_started():
             }
         )
         assert api.sent
-        assert "стоп" in api.sent[0]["text"].lower()
-        assert "проба" in api.sent[0]["text"].lower()
+        first = api.sent[0]["text"].lower()
+        assert "стоп" not in first
+        assert "говорится" in first or "спеть" in first
+        labels = [btn.get("text") for row in api.sent[0]["buttons"] for btn in row]
+        assert any("услышать" in (t or "").lower() for t in labels)
         assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
         if api.sent[0]["image_url"]:
             assert api.sent[0]["image_url"].endswith("/assets/max-cover.jpg")
@@ -177,7 +182,7 @@ def test_gate_on_bot_started():
             for row in api.sent[0]["buttons"]
             for btn in row
         ]
-        assert "Поехали" in labels
+        assert any("услышать" in (t or "").lower() for t in labels)
         assert "accept" in payloads
     finally:
         _cleanup(max_user_id)
@@ -197,7 +202,7 @@ def test_accept_whom_mood_sends_studio_link():
         last = api.sent[-1]
         assert "маме" in last["text"].lower()
         assert "день рождения" in last["text"].lower()
-        assert "услышать" in " ".join(
+        assert "слуша" in " ".join(
             btn.get("text", "") for row in last["buttons"] for btn in row
         ).lower()
         urls = [
@@ -341,15 +346,14 @@ def test_business_branch_sends_studio_brief():
                 },
             }
         )
-        _cb(bot, max_user_id, "bizgoal:jingle")
-        _cb(bot, max_user_id, "biztone:light")
+        _cb(bot, max_user_id, "bizgoal:ads")
+        _cb(bot, max_user_id, "bizdetail:skip")
+        _cb(bot, max_user_id, "biztone:friendly")
         last = api.sent[-1]
-        assert "джингл" in last["text"].lower()
-        assert "юмором" in last["text"].lower()
-        assert "два варианта" in last["text"].lower()
+        assert "реклам" in last["text"].lower() or "собрал" in last["text"].lower()
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["segment"] == "business"
-        assert contact["brief"].startswith("Для бизнеса")
+        assert "бизнес" in contact["brief"].lower()
         urls = [btn.get("url", "") for row in last["buttons"] for btn in row]
         assert any("/api/auth/max?m=" in url for url in urls)
     finally:
@@ -414,21 +418,20 @@ def test_nudge_three_steps_then_silence():
 
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
-        assert "черновик уже" in api.sent[-1]["text"].lower()
+        assert "ещё здесь" in api.sent[-1]["text"].lower()
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["nudge_step"] == 1
 
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
-        assert "не вышло зайти" in api.sent[-1]["text"].lower()
+        assert "студия" in api.sent[-1]["text"].lower()
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["nudge_step"] == 2
 
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
         last = api.sent[-1]
-        assert "отложим" in last["text"].lower()
-        assert "стоп" in last["text"].lower()
+        assert "вернёшься" in last["text"].lower() or "не страшно" in last["text"].lower()
         payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
         assert "stop_nudge" in payloads
         contact = MessengerService().get_by_max(max_user_id)
@@ -579,7 +582,7 @@ def test_bot_started_resets_old_brief_and_sends_cover():
         assert (contact.get("brief_whom") or "") == ""
         assert contact["funnel_stage"] == "gate"
         first = api.sent[0]["text"].lower()
-        assert "проба" in first
+        assert "спеть" in first or "говорится" in first
         assert "дате" not in first
         assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
     finally:
@@ -620,6 +623,23 @@ def test_voice_garbage_reasks():
         _cleanup(max_user_id)
 
 
+def test_nobody_goes_to_self_theme_not_birthday():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:nobody")
+        last = api.sent[-1]["text"].lower()
+        assert "почувствовать" in last
+        assert "день рождения" not in last
+        payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
+        assert "theme:chapter" in payloads
+        assert "occasion:birthday" not in payloads
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["segment"] == "just"
+    finally:
+        _cleanup(max_user_id)
+
+
 def test_detail_lands_in_studio_brief():
     bot, api, max_user_id = _bot()
     try:
@@ -635,7 +655,7 @@ def test_detail_lands_in_studio_brief():
         assert "маме" in brief
         assert "женский" in brief
         last = api.sent[-1]["text"].lower()
-        assert "черновик" in last
+        assert "держу" in last
         assert "свет на кухне" in last
     finally:
         _cleanup(max_user_id)

@@ -19,11 +19,14 @@ STAGE_GATE = "gate"
 STAGE_SEGMENT = "segment"
 STAGE_TALK = "talk"
 STAGE_OCCASION = "occasion"
-STAGE_MOOD = "mood"  # старый шаг = повод; Начать сбрасывает
+STAGE_MOOD = "mood"
+STAGE_THEME = "theme"
 STAGE_DETAIL = "detail"
+STAGE_UNSAID = "unsaid"
 STAGE_SOUND = "sound"
 STAGE_VOICE = "voice"
 STAGE_BIZ_GOAL = "biz_goal"
+STAGE_BIZ_DETAIL = "biz_detail"
 STAGE_BIZ_TONE = "biz_tone"
 STAGE_SENT = "sent_to_site"
 STAGE_STOPPED = "stopped"
@@ -31,19 +34,28 @@ STAGE_STOPPED = "stopped"
 WHOM_LABELS = {
     "mom": "маме",
     "dad": "папе",
-    "her": "ей",
-    "him": "ему",
-    "friend": "другу",
-    "self": "себе",
+    "partner": "половинке",
+    "buddy": "дружбану",
+    "pal": "подругане",
+    "her": "половинке",
+    "him": "половинке",
+    "friend": "дружбану",
 }
 OCCASION_LABELS = {
     "birthday": "день рождения",
     "anniversary": "годовщина",
-    "just": "просто так",
+    "just": "просто так, без повода",
     "holiday": "скоро праздник",
-    "unsaid": "хочу сказать и не могу вслух",
+    "unsaid": "не могу сказать вслух",
 }
 MOOD_LABELS = OCCASION_LABELS
+THEME_LABELS = {
+    "chapter": "новая глава",
+    "release": "отпустить и выдохнуть",
+    "high": "кайф от момента",
+    "nostalgia": "ностальгия",
+    "dunno": "пока не знаю, но хочу свою песню",
+}
 SOUND_LABELS = {
     "warm": "тепло и близко",
     "soft": "нежно",
@@ -54,17 +66,23 @@ SOUND_LABELS = {
 VOICE_LABELS = {
     "female": "женский",
     "male": "мужской",
+    "duet": "дуэт",
     "auto": "на усмотрение",
 }
 BIZ_GOAL_LABELS = {
-    "ads": "реклама и контент",
-    "jingle": "джингл бренда",
-    "client": "подарок клиенту",
-    "event": "корпоратив",
+    "ads": "реклама / бренд",
+    "event": "корпоратив, праздник компании",
+    "video": "саундтрек к видео",
+    "jingle": "реклама / бренд",
+    "client": "корпоратив, праздник компании",
 }
 BIZ_TONE_LABELS = {
-    "serious": "серьёзно и статусно",
-    "light": "легко, с юмором",
+    "energy": "энергично",
+    "solid": "солидно",
+    "friendly": "дружелюбно",
+    "atmosphere": "атмосферно",
+    "serious": "солидно",
+    "light": "дружелюбно",
 }
 
 
@@ -83,14 +101,19 @@ def _link_secret() -> bytes:
     return hmac.new(b"sf-max-link", raw.encode("utf-8"), hashlib.sha256).digest()
 
 
-def compose_brief_business(goal: str, tone: str) -> str:
-    goal = (goal or "").strip()
-    tone = (tone or "").strip()
-    if goal and tone:
-        return f"Для бизнеса: {goal}. {tone[0].upper() + tone[1:]}."
+def compose_brief_business(goal: str, tone: str, detail: str = "") -> str:
+    lines = []
     if goal:
-        return f"Для бизнеса: {goal}."
-    return tone
+        lines.append(f"Тип: бизнес — {goal}")
+    else:
+        lines.append("Тип: бизнес")
+    if detail:
+        lines.append(f"Деталь: {detail}")
+    if tone:
+        lines.append(f"Тон: {tone}")
+    lines.append("Голос: на усмотрение продюсера")
+    lines.append("Заметка: рекламный формат, не личный подарок")
+    return "\n".join(lines)
 
 
 def _iso_after(*, hours: int = 0, days: int = 0) -> str:
@@ -110,50 +133,43 @@ def compose_brief(
     detail: str = "",
     sound: str = "",
     voice: str = "",
+    plot: str = "gift",
 ) -> str:
     whom = (whom or "").strip()
     mood = (mood or "").strip()
     detail = (detail or "").strip()
     sound = (sound or "").strip()
     voice = (voice or "").strip()
-    self_song = whom.lower() in {"себе", "мне", "для себя"}
+    plot = (plot or "gift").strip() or "gift"
+    just = plot == "just" or whom.lower() in {"себе", "мне", "для себя"}
     lines: list[str] = []
-    if self_song:
-        head = "Песня для себя"
+    if just:
+        lines.append("Кому: не указан (для себя)")
         if mood:
-            head += f". {_cap(mood)}."
-        else:
-            head += "."
-        lines.append(head)
-    elif whom or mood:
-        head = "Песня"
+            lines.append(f"Тема: {mood}")
+    else:
         if whom:
-            head += f" {whom}"
+            lines.append(f"Кому: {whom}")
         if mood:
-            head += f". {_cap(mood)}."
-        else:
-            head += "."
-        lines.append(head)
-    tone_bits = []
-    if sound:
-        tone_bits.append(f"Тон: {sound}")
-    if voice in {"женский", "мужской"}:
-        tone_bits.append(f"Голос: {voice}")
-    if tone_bits:
-        lines.append(". ".join(tone_bits) + ".")
-    if voice == "женский":
-        lines.append("Женский голос.")
-    elif voice == "мужской":
-        lines.append("Мужской голос.")
+            lines.append(f"Повод: {mood}")
     if detail:
-        lines.append(f"Живая деталь для текста: {detail}")
-    if self_song:
-        lines.append("Написать от первого лица, как личный трек, не подарок.")
+        lines.append(f"Деталь: {detail}")
+    if sound:
+        lines.append(f"Тон: {sound}")
+    if voice == "дуэт":
+        lines.append("Голос: дуэт")
+        lines.append("Дуэт, мужской и женский голос.")
+    elif voice in {"женский", "мужской"}:
+        lines.append(f"Голос: {voice}")
+        lines.append(f"{_cap(voice)} голос.")
+    elif voice:
+        lines.append("Голос: на усмотрение продюсера")
+    if just:
+        lines.append("Заметка: личная история, без адресата")
+    elif "не могу сказать" in mood.lower():
+        lines.append("Заметка: то, что не выговаривается вслух. Мягко, без пафоса")
     elif whom or mood or detail:
-        lines.append(
-            "Написать так, чтобы адресат узнал себя с первой строки. "
-            "Это личный жест, не открытка."
-        )
+        lines.append("Заметка: тёплая личная сцена, без пафоса")
     return "\n".join(lines).strip()
 
 
@@ -388,48 +404,85 @@ class MessengerService:
             )
 
     def set_segment(self, contact: dict, segment: str) -> dict:
-        segment = "business" if segment == "business" else "gift"
-        next_stage = STAGE_BIZ_GOAL if segment == "business" else STAGE_TALK
+        if segment == "business":
+            next_stage = STAGE_BIZ_GOAL
+        elif segment == "just":
+            next_stage = STAGE_THEME
+        else:
+            segment = "gift"
+            next_stage = STAGE_TALK
         now = utc_now()
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET segment = ?, funnel_stage = ?, last_channel = 'max', updated_at = ?
+                SET segment = ?, funnel_stage = ?, funnel_await = '',
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
                 (segment, next_stage, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
-    def set_biz_goal(self, contact: dict, goal: str) -> dict:
-        brief = compose_brief_business(goal, contact.get("brief_mood") or "")
+    def set_await(self, contact: dict, kind: str) -> dict:
         now = utc_now()
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET brief_whom = ?, brief = ?, funnel_stage = ?,
+                SET funnel_await = ?, last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (kind or "", now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_biz_goal(self, contact: dict, goal: str) -> dict:
+        brief = compose_brief_business(
+            goal, contact.get("brief_mood") or "", contact.get("brief_detail") or ""
+        )
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_whom = ?, brief = ?, funnel_stage = ?, funnel_await = '',
+                    segment = 'business', last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (goal, brief, STAGE_BIZ_DETAIL, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_biz_detail(self, contact: dict, detail: str) -> dict:
+        goal = contact.get("brief_whom") or ""
+        brief = compose_brief_business(goal, contact.get("brief_mood") or "", detail)
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_detail = ?, brief = ?, funnel_stage = ?, funnel_await = '',
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (goal, brief, STAGE_BIZ_TONE, now, contact["id"]),
+                (detail, brief, STAGE_BIZ_TONE, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_biz_tone(self, contact: dict, tone: str) -> dict:
         goal = contact.get("brief_whom") or ""
-        brief = compose_brief_business(goal, tone)
+        brief = compose_brief_business(goal, tone, contact.get("brief_detail") or "")
         now = utc_now()
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET brief_mood = ?, brief = ?, funnel_stage = ?,
+                SET brief_mood = ?, brief = ?, funnel_stage = ?, funnel_await = '',
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (tone, brief, STAGE_SENT, now, contact["id"]),
+                (tone, brief, STAGE_VOICE, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -439,7 +492,10 @@ class MessengerService:
         detail = overrides.get("brief_detail", contact.get("brief_detail") or "")
         sound = overrides.get("brief_sound", contact.get("brief_sound") or "")
         voice = overrides.get("brief_voice", contact.get("brief_voice") or "")
-        return compose_brief(whom, mood, detail=detail, sound=sound, voice=voice)
+        plot = overrides.get("segment", contact.get("segment") or "gift")
+        return compose_brief(
+            whom, mood, detail=detail, sound=sound, voice=voice, plot=plot
+        )
 
     def reset_song(self, contact: dict) -> dict:
         now = utc_now()
@@ -449,7 +505,7 @@ class MessengerService:
                 UPDATE messenger_contacts
                 SET funnel_stage = ?, brief = '', brief_whom = '', brief_mood = '',
                     brief_detail = '', brief_sound = '', brief_voice = '',
-                    occasion_key = '', segment = '',
+                    occasion_key = '', segment = '', funnel_await = '',
                     nudge_step = 0, next_nudge_at = NULL,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
@@ -458,23 +514,28 @@ class MessengerService:
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
-    def set_whom(self, contact: dict, whom: str, *, detail: str = "") -> dict:
+    def set_whom(self, contact: dict, whom: str, *, detail: str = "", plot: str = "gift") -> dict:
         extra = (detail or "").strip() or (contact.get("brief_detail") or "")
-        brief = self._gift_brief(contact, brief_whom=whom, brief_detail=extra)
+        plot = "just" if plot == "just" else "gift"
+        stage = STAGE_THEME if plot == "just" else STAGE_OCCASION
+        brief = self._gift_brief(
+            contact, brief_whom=whom, brief_detail=extra, segment=plot
+        )
         now = utc_now()
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_whom = ?, brief_detail = ?, brief = ?, funnel_stage = ?,
-                    last_channel = 'max', updated_at = ?
+                    segment = ?, funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (whom, extra, brief, STAGE_OCCASION, now, contact["id"]),
+                (whom, extra, brief, stage, plot, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_occasion(self, contact: dict, mood: str, *, occasion_key: str = "") -> dict:
+        next_stage = STAGE_UNSAID if occasion_key == "unsaid" else STAGE_DETAIL
         brief = self._gift_brief(contact, brief_mood=mood)
         now = utc_now()
         with get_connection() as conn:
@@ -482,10 +543,25 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET brief_mood = ?, occasion_key = ?, brief = ?, funnel_stage = ?,
-                    last_channel = 'max', updated_at = ?
+                    funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (mood, occasion_key, brief, STAGE_DETAIL, now, contact["id"]),
+                (mood, occasion_key, brief, next_stage, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_theme(self, contact: dict, theme: str, *, theme_key: str = "") -> dict:
+        brief = self._gift_brief(contact, brief_mood=theme, segment="just")
+        now = utc_now()
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_mood = ?, occasion_key = ?, brief = ?, funnel_stage = ?,
+                    segment = 'just', funnel_await = '', last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (theme, theme_key, brief, STAGE_DETAIL, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -500,7 +576,7 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET brief_detail = ?, brief = ?, funnel_stage = ?,
-                    last_channel = 'max', updated_at = ?
+                    funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
                 (detail, brief, STAGE_SOUND, now, contact["id"]),
@@ -515,7 +591,7 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET brief_sound = ?, brief = ?, funnel_stage = ?,
-                    last_channel = 'max', updated_at = ?
+                    funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
                 (sound, brief, STAGE_VOICE, now, contact["id"]),
@@ -530,7 +606,7 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET brief_voice = ?, brief = ?, funnel_stage = ?,
-                    last_channel = 'max', updated_at = ?
+                    funnel_await = '', last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
                 (voice, brief, STAGE_VOICE, now, contact["id"]),
