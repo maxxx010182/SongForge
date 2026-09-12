@@ -176,17 +176,16 @@ def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
 def _whom_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("👩 Моей маме", "whom:mom"),
-            _callback_btn("👨 Моему папе", "whom:dad"),
-        ],
-        [_callback_btn("❤️ Моей половинке", "whom:partner")],
-        [
-            _callback_btn("🤙 Дружбану", "whom:buddy"),
-            _callback_btn("💛 Подругане", "whom:pal"),
+            _callback_btn("Моей маме", "whom:mom"),
+            _callback_btn("Моему папе", "whom:dad"),
         ],
         [
-            _callback_btn("✍️ Напишу сам", "whom:write"),
-            _callback_btn("🌌 Конкретно никому", "whom:nobody"),
+            _callback_btn("Половинке", "whom:partner"),
+            _callback_btn("Другу", "whom:friend"),
+        ],
+        [
+            _callback_btn("Напишу сам", "whom:write"),
+            _callback_btn("Ни для кого", "whom:nobody"),
         ],
     ]
 

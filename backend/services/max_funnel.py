@@ -27,7 +27,7 @@ WHOM_RETRY = "Точнее не скажу — выбери, кому, или н
 WHOM_WRITE_PROMPT = "Напиши, кому — имя или как зовёте."
 OCCASION_TEXT = "А повод какой?"
 ABOUT_TEXT = (
-    "Ок, без адресата. Тогда о чём песня?\n"
+    "Ок, ни для кого конкретного. Тогда о чём песня?\n"
     "Хоть про коня, хоть про город, хоть про настроение — как есть, своими словами."
 )
 ABOUT_WAIT = "Пиши сюда, о чём она. Двух-трёх фраз хватит."
@@ -278,7 +278,14 @@ def parse_whom(raw: str) -> tuple[str | None, str, str]:
     key = _norm(text)
     if key in FILLER_WORDS:
         return None, "", "gift"
-    if key in {"nobody", "никому", "конкретно никому", "никому конкретно"}:
+    if key in {
+        "nobody",
+        "никому",
+        "конкретно никому",
+        "никому конкретно",
+        "ни для кого",
+        "не для кого",
+    }:
         return "", "", "just"
     if key in WHOM_LABELS:
         return WHOM_LABELS[key], "", "gift"
