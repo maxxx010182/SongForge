@@ -29,6 +29,8 @@ from backend.services.max_funnel import (
     SOUND_TEXT,
     STOP_TEXT,
     STUDIO_CTA,
+    STUDIO_FORMAT,
+    studio_legal_html,
     THEME_TEXT,
     UNSAID_TEXT,
     UNSAID_WAIT,
@@ -153,14 +155,7 @@ def _link_btn(text: str, url: str) -> dict:
 
 def _legal_buttons(*, returning: bool = False) -> list[list[dict]]:
     del returning
-    return [
-        [_callback_btn("  ХОЧУ УСЛЫШАТЬ  ", "accept", intent="positive")],
-        [
-            _callback_btn("Соглашение", "legal:terms:1"),
-            _callback_btn("Политика", "legal:privacy:1"),
-            _callback_btn("Оферта", "legal:offer:1"),
-        ],
-    ]
+    return [[_callback_btn("  ХОЧУ УСЛЫШАТЬ  ", "accept", intent="positive")]]
 
 
 def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
@@ -645,7 +640,7 @@ class MaxBot:
             _legal_buttons(returning=returning),
             image_payload=payload,
             image_url=None if payload else _cover_url(),
-            format=GATE_FORMAT,
+            format=GATE_FORMAT or None,
         )
 
     def _send_whom(self, contact: dict, prefix: str = "") -> None:
@@ -1167,7 +1162,12 @@ class MaxBot:
             if extra:
                 text = extra + "\n\n" + text
             self.messenger.mark_sent_to_site(contact)
-            self._send(contact, text, _studio_buttons(url))
+            self._send(
+                contact,
+                text + "\n\n" + studio_legal_html(),
+                _studio_buttons(url),
+                format=STUDIO_FORMAT,
+            )
             return
         recap = human_recap(
             whom=contact.get("brief_whom") or "",
@@ -1182,7 +1182,12 @@ class MaxBot:
         if extra:
             text = extra + "\n\n" + text
         self.messenger.mark_sent_to_site(contact)
-        self._send(contact, text, _studio_buttons(url))
+        self._send(
+            contact,
+            text + "\n\n" + studio_legal_html(),
+            _studio_buttons(url),
+            format=STUDIO_FORMAT,
+        )
 
     def process_due_nudges(self, *, limit: int = 20) -> int:
         sent = 0

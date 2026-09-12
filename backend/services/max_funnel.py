@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from backend.settings import SITE_URL
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
@@ -17,10 +18,9 @@ from backend.services.messenger_service import (
 
 GATE_TEXT = (
     "Есть то, что вслух не говорится — но в песне будет по-настоящему до мурашек.\n"
-    "Расскажи в двух словах, кому и о чём — и услышишь, как это звучит, уже через несколько мгновений.\n\n"
-    "<i>Нажимая «ХОЧУ УСЛЫШАТЬ», Вы соглашаетесь с правилами сервиса.</i>"
+    "Расскажи в двух словах, кому и о чём — и услышишь, как это звучит, уже через несколько мгновений."
 )
-GATE_FORMAT = "html"
+GATE_FORMAT = ""
 GATE_RETURN_TEXT = GATE_TEXT
 WHOM_TEXT = "Для кого рождается песня?"
 WHOM_RETRY = "Точнее не скажу — выбери, кому, или напиши прямо здесь 🙂"
@@ -53,6 +53,17 @@ STUDIO_CTA = (
     "Следующим шагом откроется твоя персональная студия звукозаписи — там и произойдёт чудо.\n"
     "Твои пожелания уже в описании, останется нажать «Создать песню»."
 )
+STUDIO_FORMAT = "html"
+
+
+def studio_legal_html() -> str:
+    base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
+    return (
+        "<i>Нажимая «Вперёд и с песней!», Вы соглашаетесь с "
+        f'<a href="{base}/legal/terms">соглашением</a>, '
+        f'<a href="{base}/legal/privacy">политикой</a> '
+        f'и <a href="{base}/legal/offer">офертой</a>.</i>'
+    )
 FAQ_TEXT = (
     "Первая проба бесплатна. Сколько нот — увидишь в студии, после того как услышишь.\n"
     "Сначала соберём, кому песня."

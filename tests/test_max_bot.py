@@ -186,18 +186,16 @@ def test_gate_on_bot_started():
         first = api.sent[0]["text"].lower()
         assert "стоп" not in first
         assert "мурашек" in first or "говорится" in first
-        assert "нажимая" in first
-        assert "кнопками ниже" not in first
+        assert "нажимая" not in first
+        assert "оферт" not in first
         labels = [btn.get("text") for row in api.sent[0]["buttons"] for btn in row]
         payloads = [
             btn.get("payload") or ""
             for row in api.sent[0]["buttons"]
             for btn in row
         ]
-        assert "legal:offer:1" in payloads
-        assert "legal:terms:1" in payloads
+        assert "legal:offer:1" not in payloads
         assert "вернитесь" not in first
-        assert "на сайте" not in first
         assert any("услышать" in (t or "").lower() for t in labels)
         assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
         if api.sent[0]["image_url"]:
@@ -242,6 +240,11 @@ def test_accept_whom_mood_sends_studio_link():
             for btn in row
         ]
         assert any("/api/auth/max?m=" in url for url in urls)
+        last_text = last["text"].lower()
+        assert "нажимая" in last_text
+        assert "/legal/terms" in last["text"]
+        assert "/legal/privacy" in last["text"]
+        assert "/legal/offer" in last["text"]
         contact = MessengerService().get_by_max(max_user_id)
         assert "маме" in contact["brief"].lower()
         assert "женский" in contact["brief"].lower()

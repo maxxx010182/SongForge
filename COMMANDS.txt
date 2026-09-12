@@ -1,13 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: код 2.11.66. Нужен деплой.
+Версия: код 2.11.67. Нужен деплой.
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.66 — инструментал из промпта, длина до 6 мин.
+# Деплой 2.11.67 — юрссылки в конце бота, в тексте.
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.66"
+# "version":"2.11.67"
 
 
 === ОБЫЧНОЕ ===
