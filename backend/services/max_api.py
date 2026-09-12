@@ -180,8 +180,11 @@ class MaxApi:
         buttons: list[list[dict]] | None = None,
         image_url: str | None = None,
         image_payload: dict | None = None,
-    ) -> bool:
+        format: str | None = None,
+    ) -> dict | None:
         body: dict = {"text": text}
+        if format:
+            body["format"] = format
         attachments: list[dict] = []
         if image_payload:
             attachments.append({"type": "image", "payload": image_payload})
@@ -193,11 +196,44 @@ class MaxApi:
             )
         if attachments:
             body["attachments"] = attachments
-        data = self._request(
+        return self._request(
             "POST",
             "/messages",
             params={"user_id": int(user_id)},
             json_body=body,
+        )
+
+    def edit_message(
+        self,
+        message_id: str,
+        *,
+        text: str,
+        buttons: list[list[dict]] | None = None,
+        format: str | None = None,
+    ) -> dict | None:
+        if not message_id:
+            return None
+        body: dict = {"text": text}
+        if format:
+            body["format"] = format
+        if buttons is not None:
+            body["attachments"] = [
+                {"type": "inline_keyboard", "payload": {"buttons": buttons}}
+            ]
+        return self._request(
+            "PUT",
+            "/messages",
+            params={"message_id": message_id},
+            json_body=body,
+        )
+
+    def delete_message(self, message_id: str) -> bool:
+        if not message_id:
+            return False
+        data = self._request(
+            "DELETE",
+            "/messages",
+            params={"message_id": message_id},
         )
         return data is not None
 

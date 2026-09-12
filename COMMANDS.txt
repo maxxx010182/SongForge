@@ -1,11 +1,13 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: прод 2.11.64. Деплой не нужен.
+Версия: код 2.11.65. Нужен деплой.
 
 === АКТУАЛЬНОЕ ===
-# Прод 2.11.64 ок. Дальше: бот MAX + одна пробная песня (V6).
+# Деплой 2.11.65 — юртекст не копится, «про любовь» без допроса.
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.64"
+# "version":"2.11.65"
 
 
 === ОБЫЧНОЕ ===

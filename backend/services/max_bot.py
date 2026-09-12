@@ -17,6 +17,7 @@ from backend.services.max_funnel import (
     DETAIL_JUST,
     DETAIL_WAIT,
     FAQ_TEXT,
+    GATE_FORMAT,
     GATE_RETURN_TEXT,
     GATE_TEXT,
     GENRE_TEXT,
@@ -139,8 +140,11 @@ UNPAID_PREVIEW_TEXT = (
 )
 
 
-def _callback_btn(text: str, payload: str) -> dict:
-    return {"type": "callback", "text": text[:64], "payload": payload[:128]}
+def _callback_btn(text: str, payload: str, *, intent: str | None = None) -> dict:
+    btn: dict = {"type": "callback", "text": text[:64], "payload": payload[:128]}
+    if intent:
+        btn["intent"] = intent
+    return btn
 
 
 def _link_btn(text: str, url: str) -> dict:
@@ -150,7 +154,7 @@ def _link_btn(text: str, url: str) -> dict:
 def _legal_buttons(*, returning: bool = False) -> list[list[dict]]:
     del returning
     return [
-        [_callback_btn("Хочу услышать", "accept")],
+        [_callback_btn("  ХОЧУ УСЛЫШАТЬ  ", "accept", intent="positive")],
         [
             _callback_btn("Соглашение", "legal:terms:1"),
             _callback_btn("Политика", "legal:privacy:1"),
@@ -170,7 +174,7 @@ def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
             _callback_btn("Оферта", "legal:offer:1"),
         ]
     )
-    rows.append([_callback_btn("Хочу услышать", "accept")])
+    rows.append([_callback_btn("  ХОЧУ УСЛЫШАТЬ  ", "accept", intent="positive")])
     return rows
 
 
@@ -424,6 +428,23 @@ def _join(prefix: str, text: str) -> str:
     return text
 
 
+def _extract_mid(data) -> str:
+    if not isinstance(data, dict):
+        return ""
+    msg = data.get("message")
+    if isinstance(msg, dict):
+        body = msg.get("body") if isinstance(msg.get("body"), dict) else {}
+        mid = (
+            msg.get("mid")
+            or msg.get("message_id")
+            or body.get("mid")
+            or body.get("message_id")
+        )
+        if mid:
+            return str(mid)
+    return str(data.get("mid") or data.get("message_id") or "")
+
+
 class MaxBot:
     def __init__(
         self,
@@ -435,6 +456,7 @@ class MaxBot:
         self.api = api or MaxApi()
         self.messenger = messenger or MessengerService()
         self.auth = auth or AuthService()
+        self._legal_mid: dict[str, str] = {}
 
     def subscribe_webhook(self) -> None:
         import os
@@ -524,19 +546,35 @@ class MaxBot:
         *,
         image_url: str | None = None,
         image_payload: dict | None = None,
-    ) -> None:
+        format: str | None = None,
+    ) -> str:
         user_id = contact.get("max_user_id")
         if not user_id:
-            return
-        ok = self.api.send_message(
+            return ""
+        extra: dict = {}
+        if format:
+            extra["format"] = format
+        data = self.api.send_message(
             user_id=user_id,
             text=text,
             buttons=buttons,
             image_url=image_url,
             image_payload=image_payload,
+            **extra,
         )
-        if not ok:
+        if not data:
             log.warning("MAX send_message failed for user %s", user_id)
+            return ""
+        return _extract_mid(data)
+
+    def _drop_legal(self, contact: dict) -> None:
+        uid = str(contact.get("max_user_id") or "")
+        mid = self._legal_mid.pop(uid, "")
+        if not mid:
+            return
+        deleter = getattr(self.api, "delete_message", None)
+        if callable(deleter):
+            deleter(mid)
 
     def _cover_payload(self) -> dict | None:
         getter = getattr(self.api, "get_cover_payload", None)
@@ -585,7 +623,17 @@ class MaxBot:
             self._send_gate(contact)
             return
         text, idx, total = legal_page(slug, page)
-        self._send(contact, text, _legal_nav_buttons(slug, idx, total))
+        buttons = _legal_nav_buttons(slug, idx, total)
+        uid = str(contact.get("max_user_id") or "")
+        mid = self._legal_mid.get(uid, "")
+        editor = getattr(self.api, "edit_message", None)
+        if mid and callable(editor):
+            edited = editor(mid, text=text, buttons=buttons)
+            if edited:
+                return
+        new_mid = self._send(contact, text, buttons)
+        if new_mid:
+            self._legal_mid[uid] = new_mid
 
     def _send_gate(self, contact: dict) -> None:
         returning = self.messenger.has_legal(contact)
@@ -597,6 +645,7 @@ class MaxBot:
             _legal_buttons(returning=returning),
             image_payload=payload,
             image_url=None if payload else _cover_url(),
+            format=GATE_FORMAT,
         )
 
     def _send_whom(self, contact: dict, prefix: str = "") -> None:
@@ -902,6 +951,7 @@ class MaxBot:
             log.exception("MAX accept failed")
             self._send(contact, "Не получилось сохранить. Нажмите «Хочу услышать» ещё раз.")
             return
+        self._drop_legal(contact)
         self._send_whom(contact)
 
     def _switch_business(self, contact: dict) -> None:
@@ -949,9 +999,9 @@ class MaxBot:
             self._send(contact, ABOUT_WAIT)
             return
         if raw in {"love", "story", "feeling"}:
-            contact = self.messenger.set_await(contact, "about")
-            hint = THEME_LABELS.get(raw, "")
-            self._send(contact, f"Ок, {hint}. Напиши чуть подробнее — своими словами.")
+            theme = THEME_LABELS.get(raw, raw)
+            contact = self.messenger.set_about(contact, theme)
+            self._send_detail(contact, "Хорошо. Если есть сцена или момент — можно добавить.")
             return
         if raw == "skip" or is_skip(raw):
             contact = self.messenger.set_about(contact, "")

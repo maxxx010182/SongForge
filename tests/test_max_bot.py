@@ -20,6 +20,8 @@ class FakeApi:
     def __init__(self) -> None:
         self.sent: list[dict] = []
         self.callbacks: list[str] = []
+        self.deleted: list[str] = []
+        self.edited: list[dict] = []
 
     def configured(self) -> bool:
         return True
@@ -32,7 +34,9 @@ class FakeApi:
         buttons=None,
         image_url=None,
         image_payload=None,
-    ) -> bool:
+        format=None,
+    ):
+        mid = f"m{len(self.sent) + 1}"
         self.sent.append(
             {
                 "user_id": str(user_id),
@@ -40,8 +44,20 @@ class FakeApi:
                 "buttons": buttons or [],
                 "image_url": image_url,
                 "image_payload": image_payload,
+                "format": format,
+                "mid": mid,
             }
         )
+        return {"message": {"body": {"mid": mid}}}
+
+    def edit_message(self, message_id, *, text, buttons=None, format=None):
+        self.edited.append(
+            {"mid": message_id, "text": text, "buttons": buttons or []}
+        )
+        return {"message": {"body": {"mid": message_id}}}
+
+    def delete_message(self, message_id) -> bool:
+        self.deleted.append(str(message_id))
         return True
 
     def get_cover_payload(self):
@@ -170,6 +186,8 @@ def test_gate_on_bot_started():
         first = api.sent[0]["text"].lower()
         assert "стоп" not in first
         assert "мурашек" in first or "говорится" in first
+        assert "нажимая" in first
+        assert "кнопками ниже" not in first
         labels = [btn.get("text") for row in api.sent[0]["buttons"] for btn in row]
         payloads = [
             btn.get("payload") or ""
@@ -657,6 +675,14 @@ def test_legal_document_stays_in_chat():
         assert "accept" in payloads
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["funnel_stage"] == "gate"
+        first_mid = last.get("mid") or "m1"
+        api.sent.clear()
+        _cb(bot, max_user_id, "legal:privacy:2")
+        assert api.edited
+        assert api.edited[-1]["mid"] == first_mid
+        assert api.sent == []
+        _cb(bot, max_user_id, "accept")
+        assert first_mid in api.deleted
     finally:
         _cleanup(max_user_id)
 
@@ -675,6 +701,13 @@ def test_nobody_goes_to_self_theme_not_birthday():
         assert "occasion:birthday" not in payloads
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["segment"] == "just"
+        api.sent.clear()
+        _cb(bot, max_user_id, "about:love")
+        last = api.sent[-1]["text"].lower()
+        assert "подробнее" not in last
+        assert "сцена" in last or "момент" in last
+        contact = MessengerService().get_by_max(max_user_id)
+        assert "любов" in (contact.get("brief_mood") or "").lower()
     finally:
         _cleanup(max_user_id)
 
