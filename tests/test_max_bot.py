@@ -699,9 +699,17 @@ def test_nobody_goes_to_self_theme_not_birthday():
         assert len(rows) == 3
         assert all(len(row) == 2 for row in rows)
         payloads = [btn.get("payload") or "" for row in rows for btn in row]
-        assert "whom:nobody" in payloads
-        assert "whom:friend" in payloads
-        assert "whom:write" in payloads
+        assert payloads == [
+            "whom:mom",
+            "whom:dad",
+            "whom:partner",
+            "whom:friend",
+            "whom:nobody",
+            "whom:write",
+        ]
+        labels = [btn.get("text") or "" for row in rows for btn in row]
+        assert labels[-1] == "Напишу сам"
+        assert "Без конкретики" in labels
         _cb(bot, max_user_id, "whom:nobody")
         last = api.sent[-1]["text"].lower()
         assert "о чём" in last or "о чем" in last

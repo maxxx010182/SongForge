@@ -180,12 +180,12 @@ def _whom_buttons() -> list[list[dict]]:
             _callback_btn("Моему папе", "whom:dad"),
         ],
         [
-            _callback_btn("Половинке", "whom:partner"),
-            _callback_btn("Другу", "whom:friend"),
+            _callback_btn("Моей половинке", "whom:partner"),
+            _callback_btn("Дружбану / подруге", "whom:friend"),
         ],
         [
+            _callback_btn("Без конкретики", "whom:nobody"),
             _callback_btn("Напишу сам", "whom:write"),
-            _callback_btn("Ни для кого", "whom:nobody"),
         ],
     ]
 
