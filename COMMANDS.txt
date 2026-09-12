@@ -1,10 +1,8 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: код 2.11.63. Нужен деплой.
+Версия: прод 2.11.63. Деплой не нужен.
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.63 — живая воронка MAX.
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Прод 2.11.63 ок. Дальше: стереть чат в MAX → Начать.
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.63"
