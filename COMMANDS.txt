@@ -1,10 +1,8 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: код 2.11.64. Нужен деплой.
+Версия: прод 2.11.64. Деплой не нужен.
 
 === АКТУАЛЬНОЕ ===
-# Деплой 2.11.64 — Suno V6 + юртексты в чат MAX.
-
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Прод 2.11.64 ок. Дальше: бот MAX + одна пробная песня (V6).
 
 curl -s https://sozdaipesnu.ru/api/health
 # "version":"2.11.64"
