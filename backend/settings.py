@@ -22,7 +22,8 @@ APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 
 # apipass | sunoapi | fallback (ApiPass→sunoapi) | fallback_suno (sunoapi→ApiPass)
-MUSIC_PROVIDER = os.getenv("MUSIC_PROVIDER", "apipass").strip().lower()
+# Прод: fallback_suno — sunoapi.org основной, ApiPass резерв.
+MUSIC_PROVIDER = os.getenv("MUSIC_PROVIDER", "fallback_suno").strip().lower()
 SUNOAPI_ORG_API_KEY = os.getenv("SUNOAPI_ORG_API_KEY", "").strip()
 SUNOAPI_ORG_BASE = os.getenv(
     "SUNOAPI_ORG_BASE", "https://api.sunoapi.org/api/v1"
@@ -34,7 +35,7 @@ UPLOADS_DIR = DATA_DIR / "uploads"
 AVATARS_DIR = UPLOADS_DIR / "avatars"
 MAX_AVATAR_BYTES = 2 * 1024 * 1024
 
-DEFAULT_MODEL_VERSION = "V5_5"
+DEFAULT_MODEL_VERSION = "V6"
 DEFAULT_CHANNEL = "auto"
 DEFAULT_STYLE_WEIGHT = 0.85
 DEFAULT_WEIRDNESS = 0.20

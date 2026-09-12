@@ -171,8 +171,15 @@ def test_gate_on_bot_started():
         assert "стоп" not in first
         assert "мурашек" in first or "говорится" in first
         labels = [btn.get("text") for row in api.sent[0]["buttons"] for btn in row]
-        urls = [btn.get("url") or "" for row in api.sent[0]["buttons"] for btn in row]
-        assert any("/legal/offer" in u for u in urls)
+        payloads = [
+            btn.get("payload") or ""
+            for row in api.sent[0]["buttons"]
+            for btn in row
+        ]
+        assert "legal:offer:1" in payloads
+        assert "legal:terms:1" in payloads
+        assert "вернитесь" not in first
+        assert "на сайте" not in first
         assert any("услышать" in (t or "").lower() for t in labels)
         assert api.sent[0]["image_url"] or api.sent[0]["image_payload"]
         if api.sent[0]["image_url"]:
@@ -626,6 +633,30 @@ def test_voice_garbage_reasks():
         assert "голос" in last
         payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
         assert "voice:female" in payloads
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_legal_document_stays_in_chat():
+    bot, api, max_user_id = _bot()
+    try:
+        bot.handle_update(
+            {
+                "update_type": "bot_started",
+                "chat_id": int(max_user_id),
+                "user": {"user_id": int(max_user_id), "name": f"tmax_{max_user_id}"},
+            }
+        )
+        api.sent.clear()
+        _cb(bot, max_user_id, "legal:privacy:1")
+        last = api.sent[-1]
+        assert "политик" in last["text"].lower() or "персональн" in last["text"].lower()
+        urls = [btn.get("url") or "" for row in last["buttons"] for btn in row]
+        assert not any(u.startswith("http") for u in urls)
+        payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
+        assert "accept" in payloads
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["funnel_stage"] == "gate"
     finally:
         _cleanup(max_user_id)
 

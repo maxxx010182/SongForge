@@ -15,5 +15,8 @@ def test_sunoapi_map_sensitive():
 
 
 def test_sunoapi_normalize_model():
+    assert SunoApiOrgClient._normalize_model("V6") == "V6"
+    assert SunoApiOrgClient._normalize_model("v6") == "V6"
     assert SunoApiOrgClient._normalize_model("V5_5") == "V5_5"
     assert SunoApiOrgClient._normalize_model("v5.5") == "V5_5"
+    assert SunoApiOrgClient._normalize_model("unknown") == "V6"

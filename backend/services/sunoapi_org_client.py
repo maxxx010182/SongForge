@@ -1,4 +1,4 @@
-"""Клиент sunoapi.org — запасной/второй канал Suno."""
+"""Клиент sunoapi.org — основной канал Suno (ApiPass — резерв)."""
 
 from __future__ import annotations
 
@@ -48,13 +48,25 @@ class SunoApiOrgClient:
 
     @staticmethod
     def _normalize_model(model_version: str) -> str:
-        version = (model_version or "V5_5").strip().upper().replace(".", "_")
-        allowed = {"V4", "V4_5", "V4_5PLUS", "V4_5ALL", "V5", "V5_5"}
+        version = (model_version or "V6").strip().upper().replace(".", "_")
+        allowed = {
+            "V6",
+            "V6_WILD",
+            "V6_MINI",
+            "V5_5",
+            "V5",
+            "V4_5PLUS",
+            "V4_5ALL",
+            "V4_5",
+            "V4",
+        }
         if version in allowed:
             return version
+        if version.startswith("V6"):
+            return "V6"
         if version.startswith("V5"):
             return "V5_5"
-        return "V5_5"
+        return "V6"
 
     def create_task(
         self,
@@ -71,9 +83,7 @@ class SunoApiOrgClient:
         )
         payload = {
             **fields,
-            # Цель ~4 мин (как ApiPass duration=240). Офиц. OpenAPI generate
-            # duration не описывает — провайдер может учесть или игнорить;
-            # длина всё равно опирается на объём lyrics + V5_5.
+            # Цель ~4 мин. duration в доке V6: 10–360 сек при customMode.
             "duration": 240,
             "model": self._normalize_model(plan.model_version),
             "callBackUrl": self._callback_url(),

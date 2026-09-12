@@ -5,6 +5,7 @@ from __future__ import annotations
 from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
+from backend.services.max_legal import legal_page
 from backend.services.max_funnel import (
     ABOUT_TEXT,
     ABOUT_WAIT,
@@ -148,15 +149,29 @@ def _link_btn(text: str, url: str) -> dict:
 
 def _legal_buttons(*, returning: bool = False) -> list[list[dict]]:
     del returning
-    base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
     return [
         [_callback_btn("Хочу услышать", "accept")],
         [
-            _link_btn("Соглашение", f"{base}/legal/terms"),
-            _link_btn("Политика", f"{base}/legal/privacy"),
-            _link_btn("Оферта", f"{base}/legal/offer"),
+            _callback_btn("Соглашение", "legal:terms:1"),
+            _callback_btn("Политика", "legal:privacy:1"),
+            _callback_btn("Оферта", "legal:offer:1"),
         ],
     ]
+
+
+def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
+    rows: list[list[dict]] = []
+    if page < total:
+        rows.append([_callback_btn("Дальше", f"legal:{slug}:{page + 1}")])
+    rows.append(
+        [
+            _callback_btn("Соглашение", "legal:terms:1"),
+            _callback_btn("Политика", "legal:privacy:1"),
+            _callback_btn("Оферта", "legal:offer:1"),
+        ]
+    )
+    rows.append([_callback_btn("Хочу услышать", "accept")])
+    return rows
 
 
 def _whom_buttons() -> list[list[dict]]:
@@ -557,6 +572,21 @@ class MaxBot:
         contact = self.messenger.reset_song(contact)
         self._send_gate(contact)
 
+    def _send_legal(self, contact: dict, payload: str) -> None:
+        parts = payload.split(":")
+        slug = parts[1] if len(parts) > 1 else ""
+        page = 1
+        if len(parts) > 2:
+            try:
+                page = int(parts[2])
+            except ValueError:
+                page = 1
+        if slug not in {"terms", "privacy", "offer"}:
+            self._send_gate(contact)
+            return
+        text, idx, total = legal_page(slug, page)
+        self._send(contact, text, _legal_nav_buttons(slug, idx, total))
+
     def _send_gate(self, contact: dict) -> None:
         returning = self.messenger.has_legal(contact)
         text = GATE_RETURN_TEXT if returning else GATE_TEXT
@@ -709,6 +739,9 @@ class MaxBot:
         if payload == "stop_nudge":
             self.messenger.stop(contact)
             self._send(contact, STOP_TEXT)
+            return
+        if payload.startswith("legal:"):
+            self._send_legal(contact, payload)
             return
         if not self.messenger.can_message(contact):
             if self.messenger.has_legal(contact):

@@ -208,8 +208,8 @@ def lyrics_screenplay_user_hint(
 
 
 CLASSIC_LYRICS_SYSTEM = (
-    "Ты — сонграйтер и режиссёр вокала для Suno V5.5 custom mode.\n"
-    "Модель всегда V5_5 — пиши screenplay под неё.\n"
+    "Ты — сонграйтер и режиссёр вокала для Suno V6 custom mode.\n"
+    "Модель всегда V6 — пиши screenplay под неё.\n"
     f"{_FULL_SONG_STRUCTURE}\n"
     f"{_SUNO_SCREENPLAY_FORMAT}\n\n"
     f"{_CREATIVE_CRAFT}\n\n"
@@ -218,8 +218,8 @@ CLASSIC_LYRICS_SYSTEM = (
 
 UNIFIED_PACKAGE_SYSTEM = (
     "Ты — сонграйтер и саунд-продюсер для SongForge "
-    "(custom vocal: lyrics + title + style для Suno V5.5).\n"
-    "Модель всегда V5_5.\n"
+    "(custom vocal: lyrics + title + style для Suno V6).\n"
+    "Модель всегда V6.\n"
     f"{_SUNO_SCREENPLAY_FORMAT}\n\n"
     f"{_CREATIVE_CRAFT}\n\n"
     "ФОРМАТ: верни ТОЛЬКО валидный JSON-объект, без markdown до или после.\n"
