@@ -75,6 +75,7 @@ class ProductionPlan(BaseModel):
     audio_weight: float = DEFAULT_AUDIO_WEIGHT
     vocal_gender: str = ""
     instrumental: bool = False
+    duration_sec: int = 240
     channel: str = DEFAULT_CHANNEL
     model_version: str = DEFAULT_MODEL_VERSION
     explanation_ru: str = ""

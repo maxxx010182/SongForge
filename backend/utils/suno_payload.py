@@ -11,6 +11,19 @@ SUNO_STYLE_MAX_LEN = 200
 SUNO_TITLE_MAX_LEN = 80
 SUNO_PROMPT_MAX_LEN = 5000
 SUNO_NEGATIVE_MAX_LEN = 500
+SUNO_DURATION_DEFAULT = 240
+SUNO_DURATION_MIN = 10
+SUNO_DURATION_MAX = 360
+
+
+def clamp_suno_duration(sec: int | None) -> int:
+    try:
+        value = int(sec or 0)
+    except (TypeError, ValueError):
+        value = 0
+    if value <= 0:
+        return SUNO_DURATION_DEFAULT
+    return max(SUNO_DURATION_MIN, min(value, SUNO_DURATION_MAX))
 
 _TITLE_BAD_RE = re.compile(
     r"^\[|crowd noise|stadium ambience|intro\s*[-—]|outro\s*[-—]|verse\s*\d",

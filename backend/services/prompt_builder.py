@@ -15,6 +15,7 @@ from backend.services.style_enforcer import enforce_style
 from backend.services.llm_factory import LlmClient
 from backend.logger import log
 from backend.utils.suno_payload import (
+    clamp_suno_duration,
     compact_suno_style,
     sanitize_negative_tags,
     sanitize_suno_title,
@@ -56,7 +57,6 @@ class PromptBuilder:
         lyrics_engine: str = "classic",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Parse idea → Reference → Analyst → Composer → Suno payload."""
-        use_unified = lyrics_engine == "unified" and not instrumental
         custom_mode = style_mode == "custom" and custom_description.strip()
         parse_text = idea.strip()
         if custom_mode:
@@ -70,6 +70,8 @@ class PromptBuilder:
             mood = ""
 
         parsed = parse_idea(parse_text or idea)
+        instrumental = bool(instrumental or parsed.instrumental)
+        use_unified = lyrics_engine == "unified" and not instrumental
         (
             genre,
             mood,
@@ -149,6 +151,8 @@ class PromptBuilder:
             )
 
         plan = self._analysis_to_plan(analysis, payload, parsed=parsed)
+        plan.instrumental = instrumental
+        plan.duration_sec = clamp_suno_duration(parsed.duration_sec or plan.duration_sec)
         plan = apply_user_to_plan(
             plan,
             genre=genre,
@@ -192,6 +196,17 @@ class PromptBuilder:
                 payload.lyrics = ""
             else:
                 payload.lyrics = self.generate_lyrics(idea, plan)
+        elif plan.instrumental:
+            payload.lyrics = ""
+
+        if plan.instrumental:
+            extra_neg = "vocals, singing, choir, rap vocals, spoken word"
+            payload.negative_tags = sanitize_negative_tags(
+                f"{payload.negative_tags}, {extra_neg}",
+                payload.style,
+                plan.genre,
+            )
+            plan.negative_tags = payload.negative_tags
 
         return plan, payload
 

@@ -152,6 +152,8 @@ class ParsedIdea:
     male_lead_explicit: bool = False
     # True если в тексте явно «жанр реп» / «жанр: rock» — важнее чипа UI
     genre_inline_lock: bool = False
+    instrumental: bool = False
+    duration_sec: int = 0
     locked_fields: list[str] = field(default_factory=list)
 
     @property
@@ -288,6 +290,38 @@ def _detect_vocals(text: str) -> tuple[str, bool, str, bool, bool]:
     return lead_hint, backing, backing_gender, female_lead, male_lead
 
 
+_INSTRUMENTAL_RE = re.compile(
+    r"(?i)(?<![a-zа-яё])("
+    r"instrumentals?"
+    r"|no\s+vocals?"
+    r"|without\s+vocals?"
+    r"|без\s+вокал\w*"
+    r"|без\s+слов"
+    r"|без\s+текст\w*"
+    r"|только\s+инструментал\w*"
+    r"|минусовк\w*"
+    r")(?![a-zа-яё])"
+)
+_DURATION_RE = re.compile(
+    r"(?i)(?:duration\s*[:\-]?\s*)?(\d{1,2})\s*"
+    r"(?:-\s*)?(?:minutes?|mins?|min\.?|минут[аы]?|мин\.?)\b"
+)
+
+
+def _detect_instrumental(text: str) -> bool:
+    return bool(_INSTRUMENTAL_RE.search(text or ""))
+
+
+def _detect_duration_sec(text: str) -> int:
+    match = _DURATION_RE.search(text or "")
+    if not match:
+        return 0
+    minutes = int(match.group(1))
+    if minutes < 1 or minutes > 20:
+        return 0
+    return minutes * 60
+
+
 def parse_idea(idea: str) -> ParsedIdea:
     text = (idea or "").strip()
     if not text:
@@ -342,6 +376,17 @@ def parse_idea(idea: str) -> ParsedIdea:
         result.backing_vocal_gender = backing_gender
     result.female_lead_explicit = female_lead
     result.male_lead_explicit = male_lead
+
+    if _detect_instrumental(text):
+        result.instrumental = True
+        locked.append("instrumental")
+        result.vocal_hint = ""
+        result.backing_vocal = False
+
+    duration_sec = _detect_duration_sec(text)
+    if duration_sec:
+        result.duration_sec = duration_sec
+        locked.append("duration")
 
     result.locked_fields = locked
     return result

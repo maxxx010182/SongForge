@@ -81,10 +81,11 @@ class SunoApiOrgClient:
         fields = build_suno_custom_payload(
             lyrics=lyrics, style=style, title=title, plan=plan
         )
+        from backend.utils.suno_payload import clamp_suno_duration
+
         payload = {
             **fields,
-            # Цель ~4 мин. duration в доке V6: 10–360 сек при customMode.
-            "duration": 240,
+            "duration": clamp_suno_duration(plan.duration_sec),
             "model": self._normalize_model(plan.model_version),
             "callBackUrl": self._callback_url(),
         }

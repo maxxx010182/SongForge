@@ -73,7 +73,7 @@ class AiProducer:
             guest_id=getattr(self, "_current_guest_id", None),
         )
 
-        if not instrumental:
+        if not plan.instrumental:
             log.info(
                 "Production lyrics: id=%s len=%s lazy=%s preview=%r",
                 production_id,
@@ -81,7 +81,13 @@ class AiProducer:
                 lyrics_look_lazy(lyrics, idea),
                 lyrics[:160],
             )
-        log.info("Production ready: %s | %s | instrumental=%s", production_id, title, instrumental)
+        log.info(
+            "Production ready: %s | %s | instrumental=%s duration=%s",
+            production_id,
+            title,
+            plan.instrumental,
+            plan.duration_sec,
+        )
         return ProduceResponse(
             success=True,
             production_id=production_id,

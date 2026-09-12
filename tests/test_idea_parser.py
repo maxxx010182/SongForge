@@ -103,6 +103,30 @@ def test_gift_brief_is_not_rock():
     assert genre != "Rock"
 
 
+def test_instrumental_prompt_skips_vocals_and_caps_duration():
+    idea = (
+        "Turkish lo-fi deep house at 112 BPM for night driving and focus. "
+        "Instrumental, no vocals. Duration: 8 minutes."
+    )
+    parsed = parse_idea(idea)
+    assert parsed.instrumental is True
+    assert parsed.duration_sec == 480
+    assert parsed.vocal_hint == ""
+    assert parsed.backing_vocal is False
+
+
+def test_gift_song_is_not_instrumental():
+    parsed = parse_idea("Песня маме на день рождения. Свет на кухне. Женский голос.")
+    assert parsed.instrumental is False
+    assert parsed.duration_sec == 0
+    assert parsed.vocal_hint == "female"
+
+
+def test_russian_no_vocals():
+    parsed = parse_idea("Фоновая музыка для ролика, без вокала, спокойно")
+    assert parsed.instrumental is True
+
+
 def test_explicit_rock_still_detected():
     parsed = parse_idea("мощный рок про дорогу")
     assert parsed.genre == "Рок"

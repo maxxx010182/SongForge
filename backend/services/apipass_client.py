@@ -40,11 +40,13 @@ class ApiPassClient:
             "model_version": plan.model_version,
         }
 
+        from backend.utils.suno_payload import clamp_suno_duration
+
         payload = {
             "model": "suno/generate",
             "input": input_data,
             "channel": plan.channel,
-            "duration": 240,
+            "duration": clamp_suno_duration(plan.duration_sec),
         }
 
         log.info(

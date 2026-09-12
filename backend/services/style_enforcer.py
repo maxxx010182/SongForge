@@ -318,7 +318,9 @@ def enforce_style(
                 "layered backing vocals, rich vocal harmonies, chorus vocal stacks",
             )
 
-    if not plan.instrumental:
+    if plan.instrumental:
+        base = _append_unique(base, "instrumental, no vocals")
+    else:
         base = ensure_russian_vocal_style(base)
 
     from backend.utils.suno_payload import compact_suno_style

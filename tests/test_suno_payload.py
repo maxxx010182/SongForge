@@ -1,11 +1,33 @@
 """Тесты лимитов и нормализации запроса Suno."""
 
+from backend.models import ProductionPlan
+from backend.services.suno_input import build_suno_custom_payload
 from backend.utils.suno_payload import (
+    SUNO_DURATION_MAX,
     SUNO_STYLE_MAX_LEN,
+    clamp_suno_duration,
     compact_suno_style,
     sanitize_negative_tags,
     sanitize_suno_title,
 )
+
+
+def test_clamp_duration_caps_eight_minutes():
+    assert clamp_suno_duration(480) == SUNO_DURATION_MAX
+    assert clamp_suno_duration(0) == 240
+    assert clamp_suno_duration(120) == 120
+
+
+def test_instrumental_payload_has_no_lyrics():
+    plan = ProductionPlan(instrumental=True, duration_sec=360)
+    payload = build_suno_custom_payload(
+        lyrics="should not go",
+        style="lo-fi house",
+        title="Night drive",
+        plan=plan,
+    )
+    assert payload["instrumental"] is True
+    assert payload["prompt"] == ""
 
 
 def test_compact_style_dedupes_and_limits():
