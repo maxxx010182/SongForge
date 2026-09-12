@@ -829,12 +829,18 @@ class MessengerService:
             return None
         return dict(row)
 
-    def studio_url(self, contact: dict, *, open_to: str = "") -> str:
+    def studio_url(self, contact: dict, *, open_to: str = "", next_path: str = "") -> str:
+        from urllib.parse import quote
+
         token = self.make_login_token(contact["id"])
         base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
         url = f"{base}/api/auth/max?m={token}"
         if open_to in {"listen", "expert"}:
             url += f"&open={open_to}"
+        allowed = {"/legal/terms", "/legal/privacy", "/legal/offer", "/"}
+        path = (next_path or "").strip()
+        if path in allowed:
+            url += f"&next={quote(path)}"
         return url
 
     def silence_studio_nudges(self, contact: dict) -> None:

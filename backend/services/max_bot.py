@@ -1148,6 +1148,11 @@ class MaxBot:
             self._send_gate(contact)
             return
         url = self.messenger.studio_url(contact)
+        legal = studio_legal_html(
+            terms_url=self.messenger.studio_url(contact, next_path="/legal/terms"),
+            privacy_url=self.messenger.studio_url(contact, next_path="/legal/privacy"),
+            offer_url=self.messenger.studio_url(contact, next_path="/legal/offer"),
+        )
         if (contact.get("segment") or "") == "business":
             text = (
                 biz_studio_mirror(
@@ -1163,7 +1168,7 @@ class MaxBot:
             self.messenger.mark_sent_to_site(contact)
             self._send(
                 contact,
-                text + "\n\n" + studio_legal_html(),
+                text + "\n\n" + legal,
                 _studio_buttons(url),
                 format=STUDIO_FORMAT,
             )
@@ -1183,7 +1188,7 @@ class MaxBot:
         self.messenger.mark_sent_to_site(contact)
         self._send(
             contact,
-            text + "\n\n" + studio_legal_html(),
+            text + "\n\n" + legal,
             _studio_buttons(url),
             format=STUDIO_FORMAT,
         )

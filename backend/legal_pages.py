@@ -37,7 +37,7 @@ def render_legal_page(slug: str) -> str:
     if not body_path.is_file():
         raise FileNotFoundError(str(body_path))
     body = body_path.read_text(encoding="utf-8")
-    home = "https://sozdaipesnu.ru/"
+    home = "/"
     return f"""<!DOCTYPE html>
 <html lang="ru">
 <head>

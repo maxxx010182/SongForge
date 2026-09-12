@@ -241,10 +241,12 @@ def test_accept_whom_mood_sends_studio_link():
         ]
         assert any("/api/auth/max?m=" in url for url in urls)
         last_text = last["text"].lower()
-        assert "нажимая" in last_text
-        assert "/legal/terms" in last["text"]
-        assert "/legal/privacy" in last["text"]
-        assert "/legal/offer" in last["text"]
+        assert "открывая студию или документы" in last_text
+        assert "/api/auth/max?m=" in last["text"]
+        assert "next=" in last["text"]
+        assert "legal/terms" in last["text"]
+        assert "legal/privacy" in last["text"]
+        assert "legal/offer" in last["text"]
         contact = MessengerService().get_by_max(max_user_id)
         assert "маме" in contact["brief"].lower()
         assert "женский" in contact["brief"].lower()
@@ -329,6 +331,17 @@ def test_login_token_and_me_brief():
         data = me.json()
         assert data["logged_in"] is True
         assert "маме" in data["messenger_brief"].lower()
+        res2 = client.get(
+            f"/api/auth/max?m={token}&next=/legal/offer",
+            follow_redirects=False,
+        )
+        assert res2.status_code in {302, 307}
+        assert res2.headers.get("location", "").endswith("/legal/offer")
+        res3 = client.get(
+            f"/api/auth/max?m={token}&next=https://evil.example/",
+            follow_redirects=False,
+        )
+        assert "evil" not in (res3.headers.get("location") or "")
     finally:
         _cleanup(bot_user)
 

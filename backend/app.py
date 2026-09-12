@@ -148,7 +148,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.69", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.70", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -662,7 +662,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.69",
+        "version": "2.11.70",
         "max_bot": bool(MAX_BOT_TOKEN),
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
@@ -1519,10 +1519,21 @@ async def vk_auth_callback(
         return redirect
 
 
+def _safe_max_next(next_path: str | None, open_to: str | None) -> str:
+    dest = (open_to or "").strip().lower()
+    if dest in {"listen", "expert"}:
+        return f"/?auth=ok&open={dest}"
+    path = (next_path or "").strip()
+    if path in {"/legal/terms", "/legal/privacy", "/legal/offer"}:
+        return path
+    return "/?auth=ok"
+
+
 @app.get("/api/auth/max")
 async def auth_max(
     m: str | None = None,
     open: str | None = None,
+    next: str | None = None,
     guest_id: str = Depends(get_guest_id),
 ):
     token = (m or "").strip()
@@ -1533,10 +1544,7 @@ async def auth_max(
     if not user:
         return RedirectResponse(f"{SITE_URL}/?auth_error=max")
     session_token = auth_service.create_session(user["id"])
-    dest = (open or "").strip().lower()
-    loc = f"{SITE_URL}/?auth=ok"
-    if dest in {"listen", "expert"}:
-        loc += f"&open={dest}"
+    loc = _safe_max_next(next, open)
     redirect = RedirectResponse(loc)
     redirect.set_cookie(AuthService.COOKIE_NAME, session_token, **_session_cookie_kwargs())
     try:

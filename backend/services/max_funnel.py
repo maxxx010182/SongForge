@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-from backend.settings import SITE_URL
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
@@ -56,13 +55,12 @@ STUDIO_CTA = (
 STUDIO_FORMAT = "html"
 
 
-def studio_legal_html() -> str:
-    base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
+def studio_legal_html(*, terms_url: str, privacy_url: str, offer_url: str) -> str:
     return (
-        "<i>Нажимая «Вперёд и с песней!», Вы соглашаетесь с "
-        f'<a href="{base}/legal/terms">соглашением</a>, '
-        f'<a href="{base}/legal/privacy">политикой</a> '
-        f'и <a href="{base}/legal/offer">офертой</a>.</i>'
+        "<i>Открывая студию или документы, Вы соглашаетесь с "
+        f'<a href="{terms_url}">соглашением</a>, '
+        f'<a href="{privacy_url}">политикой</a> '
+        f'и <a href="{offer_url}">офертой</a>.</i>'
     )
 FAQ_TEXT = (
     "Первая проба бесплатна. Сколько нот — увидишь в студии, после того как услышишь.\n"
