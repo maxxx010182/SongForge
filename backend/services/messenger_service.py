@@ -14,7 +14,7 @@ from backend.database.db import get_connection, init_db, utc_now
 from backend.services.nudge_schedule import evening_after, normalize_tz
 from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 
-LEGAL_DOC_VERSION = "2026-07"
+LEGAL_DOC_VERSION = "2026-09-14"
 LOGIN_TTL_SEC = 7 * 24 * 3600
 STAGE_GATE = "gate"
 STAGE_SEGMENT = "segment"

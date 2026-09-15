@@ -1,11 +1,11 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.73 в GitHub. Дожим MAX: вечер, ветки, раз в неделю.
+Версия: 2.11.74 в GitHub. Юрдаты 14.09.2026, афиша без «беты».
 
 === АКТУАЛЬНОЕ ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.73"
+# "version":"2.11.74"
 
 
 === ОБЫЧНОЕ ===
