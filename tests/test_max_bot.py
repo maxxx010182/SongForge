@@ -838,8 +838,8 @@ def test_whom_and_occasion_new_grids():
         api.sent.clear()
         _cb(bot, max_user_id, "occasion:wedding")
         last = api.sent[-1]["text"].lower()
-        assert "маша" in last
-        assert "танц" in last
+        assert "лена" in last
+        assert "кухн" in last
         assert "зовут" in last
         contact = MessengerService().get_by_max(max_user_id)
         assert "свадьб" in (contact.get("brief_mood") or "").lower()
@@ -867,5 +867,73 @@ def test_detail_lands_in_studio_brief():
         assert "держу" not in last
         assert "сверим" in last
         assert "свет на кухне" in last
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_genre_and_mood_have_nine_choices():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _cb(bot, max_user_id, "detail:skip")
+        last = api.sent[-1]
+        genres = [
+            btn.get("payload") or ""
+            for row in last["buttons"]
+            for btn in row
+            if (btn.get("payload") or "").startswith("genre:")
+            and btn.get("payload") != "genre:write"
+        ]
+        assert len(genres) == 9
+        assert "genre:chanson" in genres
+        assert "genre:jazz" in genres
+        _cb(bot, max_user_id, "genre:chanson")
+        last = api.sent[-1]
+        moods = [
+            btn.get("payload") or ""
+            for row in last["buttons"]
+            for btn in row
+            if (btn.get("payload") or "").startswith("sound:")
+            and btn.get("payload") != "sound:write"
+        ]
+        assert len(moods) == 9
+        assert "sound:joyful" in moods
+        assert "sound:nostalgic" in moods
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["brief_genre"] == "Шансон"
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_edit_whom_keeps_rest_of_brief():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _cb(bot, max_user_id, "detail:skip")
+        _cb(bot, max_user_id, "genre:pop")
+        _cb(bot, max_user_id, "sound:uplifting")
+        _cb(bot, max_user_id, "voice:female")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["funnel_stage"] == "confirm"
+        assert contact["brief_whom"] == "маме"
+        assert "день рождения" in (contact.get("brief_mood") or "").lower()
+        assert contact["brief_genre"] == "Поп"
+        _cb(bot, max_user_id, "confirm:edit")
+        _cb(bot, max_user_id, "edit:whom")
+        api.sent.clear()
+        _cb(bot, max_user_id, "whom:wife")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["brief_whom"] == "жене"
+        assert "день рождения" in (contact.get("brief_mood") or "").lower()
+        assert contact["brief_genre"] == "Поп"
+        assert contact["funnel_stage"] == "confirm"
+        last = api.sent[-1]["text"].lower()
+        assert "сверим" in last
+        assert "жене" in last
+        assert "повод" not in last or "день рождения" in last
     finally:
         _cleanup(max_user_id)

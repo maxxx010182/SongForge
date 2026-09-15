@@ -261,9 +261,14 @@ def _genre_buttons() -> list[list[dict]]:
             _callback_btn("🎤 Реп", "genre:rap"),
         ],
         [
+            _callback_btn("🪗 Шансон", "genre:chanson"),
+            _callback_btn("🎹 Баллада", "genre:ballad"),
+            _callback_btn("💜 Р-н-б", "genre:rnb"),
+        ],
+        [
             _callback_btn("🎧 Электронная", "genre:electronic"),
             _callback_btn("🌙 Ло-фай", "genre:lofi"),
-            _callback_btn("🎹 Баллада", "genre:ballad"),
+            _callback_btn("🎷 Джаз", "genre:jazz"),
         ],
         [_callback_btn("✍️ Своими словами", "genre:write")],
     ]
@@ -283,10 +288,14 @@ def _edit_buttons() -> list[list[dict]]:
             _callback_btn("💬 Повод", "edit:about"),
         ],
         [
+            _callback_btn("🎬 Деталь", "edit:detail"),
             _callback_btn("🎸 Жанр", "edit:genre"),
+        ],
+        [
             _callback_btn("🌊 Настроение", "edit:mood"),
             _callback_btn("🎤 Голос", "edit:voice"),
         ],
+        [_callback_btn("↩️ К сверке", "edit:back")],
     ]
 
 
@@ -317,14 +326,17 @@ def _sound_buttons() -> list[list[dict]]:
         [
             _callback_btn("🔥 Энергично", "sound:uplifting"),
             _callback_btn("🌸 Романтично", "sound:romantic"),
+            _callback_btn("🌿 Спокойно", "sound:peaceful"),
         ],
         [
-            _callback_btn("🌿 Спокойно", "sound:peaceful"),
             _callback_btn("🌧 Меланхолично", "sound:melancholy"),
+            _callback_btn("😄 Радостно", "sound:joyful"),
+            _callback_btn("📼 Ностальгично", "sound:nostalgic"),
         ],
         [
             _callback_btn("🏆 Эпично", "sound:adventurous"),
             _callback_btn("🎉 Вечеринка", "sound:party"),
+            _callback_btn("🌑 Темно", "sound:dark"),
         ],
         [_callback_btn("✍️ Своими словами", "sound:write")],
     ]
@@ -763,6 +775,38 @@ class MaxBot:
     def _send_voice(self, contact: dict, prefix: str = "") -> None:
         self._send(contact, _join(prefix, VOICE_TEXT), _voice_buttons())
 
+    @staticmethod
+    def _is_patching(contact: dict) -> bool:
+        return (contact.get("funnel_await") or "").startswith("patch:")
+
+    def _back_to_confirm(self, contact: dict, prefix: str = "") -> None:
+        contact = self.messenger.set_stage(contact, STAGE_CONFIRM)
+        self._send_confirm(
+            contact,
+            prefix or "Поправил. Остальное как было.",
+        )
+
+    def _send_patch_field(self, contact: dict, kind: str, prefix: str = "") -> None:
+        if kind == "whom":
+            self._send_whom(contact, prefix or "Что поменять в «кому»?")
+            return
+        if kind in {"about", "occasion"}:
+            self._send_occasion(contact, prefix or "Какой повод оставить?")
+            return
+        if kind == "detail":
+            self._send_detail(contact, prefix)
+            return
+        if kind == "genre":
+            self._send_genre(contact, prefix)
+            return
+        if kind == "mood":
+            self._send_sound(contact, prefix)
+            return
+        if kind == "voice":
+            self._send_voice(contact, prefix)
+            return
+        self._send_confirm(contact)
+
     def _stay(self, contact: dict, extra: str = "") -> None:
         self._continue_funnel(contact, prefix=extra or GREET_STAY_TEXT)
 
@@ -806,6 +850,9 @@ class MaxBot:
             self._send_genre(contact, prefix)
             return
         if stage == STAGE_CONFIRM:
+            if awaiting.startswith("patch:"):
+                self._send_patch_field(contact, awaiting.split(":", 1)[1], prefix)
+                return
             self._send_confirm(contact, prefix)
             return
         if stage == STAGE_UNSAID:
@@ -958,31 +1005,30 @@ class MaxBot:
         awaiting = (contact.get("funnel_await") or "").strip()
         stage_now = contact.get("funnel_stage") or ""
         if looks_business(text) and (contact.get("segment") or "") != "business":
-            if awaiting not in {"occasion", "whom", "detail", "about"} and stage_now not in {
-                STAGE_OCCASION,
-                STAGE_DETAIL,
-            }:
+            if (
+                not awaiting.startswith("patch:")
+                and awaiting not in {"occasion", "whom", "detail", "about"}
+                and stage_now not in {STAGE_OCCASION, STAGE_DETAIL, STAGE_CONFIRM}
+            ):
                 self._switch_business(contact)
                 return
-        if awaiting == "whom":
+        await_kind = awaiting.split(":", 1)[-1] if awaiting.startswith("patch:") else awaiting
+        if await_kind == "whom":
             self._apply_whom(contact, text)
             return
-        if awaiting == "occasion":
+        if await_kind in {"occasion", "about"}:
             self._apply_occasion(contact, text)
             return
-        if awaiting == "about":
-            self._apply_about(contact, text)
-            return
-        if awaiting == "detail":
+        if await_kind == "detail":
             self._apply_detail(contact, text)
             return
-        if awaiting == "unsaid":
+        if await_kind == "unsaid":
             self._apply_unsaid(contact, text)
             return
-        if awaiting == "genre":
+        if await_kind == "genre":
             self._apply_genre(contact, text)
             return
-        if awaiting == "mood":
+        if await_kind == "mood":
             self._apply_sound(contact, text)
             return
         if awaiting == "biz_detail":
@@ -1047,8 +1093,9 @@ class MaxBot:
         self._send(contact, BIZ_GOAL_TEXT, _biz_goal_buttons())
 
     def _apply_whom(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw in {"write", "сам"}:
-            contact = self.messenger.set_await(contact, "whom")
+            contact = self.messenger.set_await(contact, "patch:whom" if patching else "whom")
             self._send(contact, WHOM_WRITE_PROMPT)
             return
         whom, leftover, plot = parse_whom(raw)
@@ -1056,12 +1103,18 @@ class MaxBot:
             self._send_whom(contact, WHOM_RETRY)
             return
         contact = self.messenger.set_whom(contact, whom, detail=leftover, plot=plot)
+        if patching:
+            self._back_to_confirm(contact)
+            return
         prefix = f"Ок, {whom}." if whom else "Ок."
         self._send_occasion(contact, prefix)
 
     def _apply_occasion(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw in {"write", "сам"}:
-            contact = self.messenger.set_await(contact, "occasion")
+            contact = self.messenger.set_await(
+                contact, "patch:occasion" if patching else "occasion"
+            )
             self._send(contact, OCCASION_WRITE_PROMPT)
             return
         if raw in OCCASION_LABELS:
@@ -1074,6 +1127,9 @@ class MaxBot:
             self._send_occasion(contact, "Напиши повод своими словами — или ткни вариант.")
             return
         contact = self.messenger.set_occasion(contact, mood, occasion_key=key)
+        if patching:
+            self._back_to_confirm(contact)
+            return
         if key == "unsaid":
             self._send_unsaid(contact, "Понимаю. Тогда пойдём мягче.")
             return
@@ -1104,18 +1160,25 @@ class MaxBot:
         self._send_detail(contact, "Хорошо. Если есть сцена или момент — можно добавить.")
 
     def _apply_detail(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw in {"phrase", "scene"}:
-            contact = self.messenger.set_await(contact, "detail")
+            contact = self.messenger.set_await(contact, "patch:detail" if patching else "detail")
             self._send(contact, DETAIL_WAIT)
             return
         if raw == "skip" or is_skip(raw):
             detail = (contact.get("brief_detail") or "").strip()
             contact = self.messenger.set_detail(contact, detail)
+            if patching:
+                self._back_to_confirm(contact)
+                return
             self._send_genre(contact)
             return
         parsed = parse_detail(raw)
         detail = "" if parsed is None else parsed
         contact = self.messenger.set_detail(contact, detail)
+        if patching:
+            self._back_to_confirm(contact)
+            return
         prefix = "Хорошая деталь." if detail else ""
         self._send_genre(contact, prefix)
 
@@ -1133,8 +1196,9 @@ class MaxBot:
         self._send_genre(contact, "Это никуда не денется — просто зазвучит иначе.")
 
     def _apply_genre(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw == "write":
-            contact = self.messenger.set_await(contact, "genre")
+            contact = self.messenger.set_await(contact, "patch:genre" if patching else "genre")
             self._send(contact, GENRE_WAIT)
             return
         if raw in GENRE_LABELS:
@@ -1145,11 +1209,15 @@ class MaxBot:
             self._send_genre(contact)
             return
         contact = self.messenger.set_genre(contact, genre or "")
+        if patching:
+            self._back_to_confirm(contact)
+            return
         self._send_sound(contact)
 
     def _apply_sound(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw == "write":
-            contact = self.messenger.set_await(contact, "mood")
+            contact = self.messenger.set_await(contact, "patch:mood" if patching else "mood")
             self._send(contact, "Напиши настроение своими словами.")
             return
         if raw in SOUND_LABELS:
@@ -1160,9 +1228,13 @@ class MaxBot:
             self._send_sound(contact, "Ткни настроение — или напиши своими словами.")
             return
         contact = self.messenger.set_sound(contact, sound)
+        if patching:
+            self._back_to_confirm(contact)
+            return
         self._send_voice(contact, "Последний штрих.")
 
     def _apply_voice(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
         if raw in VOICE_LABELS:
             voice = VOICE_LABELS[raw]
         else:
@@ -1171,6 +1243,9 @@ class MaxBot:
             self._send(contact, VOICE_RETRY_TEXT, _voice_buttons())
             return
         contact = self.messenger.set_voice(contact, voice)
+        if patching:
+            self._back_to_confirm(contact)
+            return
         self._send_confirm(contact)
 
     def _apply_confirm(self, contact: dict, raw: str) -> None:
@@ -1185,19 +1260,18 @@ class MaxBot:
 
     def _apply_edit(self, contact: dict, raw: str) -> None:
         key = (raw or "").strip().lower()
-        mapping = {
-            "whom": STAGE_TALK,
-            "about": STAGE_OCCASION,
-            "genre": STAGE_GENRE,
-            "mood": STAGE_SOUND,
-            "voice": STAGE_VOICE,
-        }
-        stage = mapping.get(key)
-        if not stage:
+        if key in {"back", "сверка", "назад"}:
+            contact = self.messenger.set_await(contact, "")
+            self._send_confirm(contact)
+            return
+        allowed = {"whom", "about", "occasion", "detail", "genre", "mood", "voice"}
+        if key not in allowed:
             self._send(contact, "Что поменять?", _edit_buttons())
             return
-        contact = self.messenger.set_stage(contact, stage)
-        self._continue_funnel(contact)
+        if key == "occasion":
+            key = "about"
+        contact = self.messenger.set_await(contact, f"patch:{key}")
+        self._send_patch_field(contact, key)
 
     def _apply_biz_goal(self, contact: dict, raw: str) -> None:
         if raw in {"personal", "личное", "не то"}:
