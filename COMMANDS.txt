@@ -1,11 +1,11 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.79 в GitHub. Новые кадры шагов MAX (славянские, с текстом).
+Версия: 2.11.80 в GitHub. Кнопки жанра/настроения по две в ряд.
 
 === АКТУАЛЬНОЕ ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.79"
+# "version":"2.11.80"
 
 
 === ОБЫЧНОЕ ===

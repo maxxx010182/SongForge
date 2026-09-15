@@ -258,19 +258,23 @@ def _genre_buttons() -> list[list[dict]]:
         [
             _callback_btn("🎵 Поп", "genre:pop"),
             _callback_btn("🎸 Рок", "genre:rock"),
-            _callback_btn("🎤 Реп", "genre:rap"),
         ],
         [
+            _callback_btn("🎤 Реп", "genre:rap"),
             _callback_btn("🪗 Шансон", "genre:chanson"),
+        ],
+        [
             _callback_btn("🎹 Баллада", "genre:ballad"),
             _callback_btn("💜 Р-н-б", "genre:rnb"),
         ],
         [
             _callback_btn("🎧 Электронная", "genre:electronic"),
             _callback_btn("🌙 Ло-фай", "genre:lofi"),
-            _callback_btn("🎷 Джаз", "genre:jazz"),
         ],
-        [_callback_btn("✍️ Своими словами", "genre:write")],
+        [
+            _callback_btn("🎷 Джаз", "genre:jazz"),
+            _callback_btn("✍️ Своими словами", "genre:write"),
+        ],
     ]
 
 
@@ -326,19 +330,23 @@ def _sound_buttons() -> list[list[dict]]:
         [
             _callback_btn("🔥 Энергично", "sound:uplifting"),
             _callback_btn("🌸 Романтично", "sound:romantic"),
-            _callback_btn("🌿 Спокойно", "sound:peaceful"),
         ],
         [
+            _callback_btn("🌿 Спокойно", "sound:peaceful"),
             _callback_btn("🌧 Меланхолично", "sound:melancholy"),
+        ],
+        [
             _callback_btn("😄 Радостно", "sound:joyful"),
             _callback_btn("📼 Ностальгично", "sound:nostalgic"),
         ],
         [
             _callback_btn("🏆 Эпично", "sound:adventurous"),
             _callback_btn("🎉 Вечеринка", "sound:party"),
-            _callback_btn("🌑 Темно", "sound:dark"),
         ],
-        [_callback_btn("✍️ Своими словами", "sound:write")],
+        [
+            _callback_btn("🌑 Темно", "sound:dark"),
+            _callback_btn("✍️ Своими словами", "sound:write"),
+        ],
     ]
 
 

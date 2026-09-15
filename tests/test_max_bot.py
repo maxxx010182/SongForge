@@ -891,6 +891,7 @@ def test_genre_and_mood_have_nine_choices():
             and btn.get("payload") != "genre:write"
         ]
         assert len(genres) == 9
+        assert all(len(row) <= 2 for row in last["buttons"])
         assert "genre:chanson" in genres
         assert "genre:jazz" in genres
         _cb(bot, max_user_id, "genre:chanson")
@@ -903,6 +904,7 @@ def test_genre_and_mood_have_nine_choices():
             and btn.get("payload") != "sound:write"
         ]
         assert len(moods) == 9
+        assert all(len(row) <= 2 for row in last["buttons"])
         assert "sound:joyful" in moods
         assert "sound:nostalgic" in moods
         contact = MessengerService().get_by_max(max_user_id)
