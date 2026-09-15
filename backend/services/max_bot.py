@@ -176,16 +176,16 @@ def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
 def _whom_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Моей маме", "whom:mom"),
-            _callback_btn("Моему папе", "whom:dad"),
+            _callback_btn("👩 Моей маме", "whom:mom"),
+            _callback_btn("👨 Моему папе", "whom:dad"),
         ],
         [
-            _callback_btn("Моей половинке", "whom:partner"),
-            _callback_btn("Дружбану / подружке", "whom:friend"),
+            _callback_btn("❤️ Моей половинке", "whom:partner"),
+            _callback_btn("🤙 Дружбану / подружке", "whom:friend"),
         ],
         [
-            _callback_btn("Без конкретики", "whom:nobody"),
-            _callback_btn("Напишу сам", "whom:write"),
+            _callback_btn("🌌 Без конкретики", "whom:nobody"),
+            _callback_btn("✍️ Напишу сам", "whom:write"),
         ],
     ]
 
@@ -207,16 +207,16 @@ def _occasion_buttons() -> list[list[dict]]:
 def _about_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Про любовь", "about:love"),
-            _callback_btn("Про случай", "about:story"),
+            _callback_btn("❤️ Про любовь", "about:love"),
+            _callback_btn("🎲 Про случай", "about:story"),
         ],
         [
-            _callback_btn("Про настроение", "about:feeling"),
-            _callback_btn("Про дорогу", "about:road"),
+            _callback_btn("🌤 Про настроение", "about:feeling"),
+            _callback_btn("🛣 Про дорогу", "about:road"),
         ],
         [
-            _callback_btn("Про себя", "about:self"),
-            _callback_btn("Напишу сам", "about:write"),
+            _callback_btn("🪞 Про себя", "about:self"),
+            _callback_btn("✍️ Напишу сам", "about:write"),
         ],
     ]
 
@@ -228,14 +228,14 @@ def _theme_buttons() -> list[list[dict]]:
 def _genre_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Поп", "genre:pop"),
-            _callback_btn("Рок", "genre:rock"),
-            _callback_btn("Реп", "genre:rap"),
+            _callback_btn("🎵 Поп", "genre:pop"),
+            _callback_btn("🎸 Рок", "genre:rock"),
+            _callback_btn("🎤 Реп", "genre:rap"),
         ],
         [
-            _callback_btn("Электронная", "genre:electronic"),
-            _callback_btn("Ло-фай", "genre:lofi"),
-            _callback_btn("Баллада", "genre:ballad"),
+            _callback_btn("🎧 Электронная", "genre:electronic"),
+            _callback_btn("🌙 Ло-фай", "genre:lofi"),
+            _callback_btn("🎹 Баллада", "genre:ballad"),
         ],
         [_callback_btn("✍️ Своими словами", "genre:write")],
     ]
@@ -243,21 +243,21 @@ def _genre_buttons() -> list[list[dict]]:
 
 def _confirm_buttons() -> list[list[dict]]:
     return [
-        [_callback_btn("Так, поехали", "confirm:ok")],
-        [_callback_btn("Хочу поправить", "confirm:edit")],
+        [_callback_btn("✅ Так, поехали", "confirm:ok")],
+        [_callback_btn("✏️ Хочу поправить", "confirm:edit")],
     ]
 
 
 def _edit_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Кому", "edit:whom"),
-            _callback_btn("О чём", "edit:about"),
+            _callback_btn("👤 Кому", "edit:whom"),
+            _callback_btn("💬 О чём", "edit:about"),
         ],
         [
-            _callback_btn("Жанр", "edit:genre"),
-            _callback_btn("Настроение", "edit:mood"),
-            _callback_btn("Голос", "edit:voice"),
+            _callback_btn("🎸 Жанр", "edit:genre"),
+            _callback_btn("🌊 Настроение", "edit:mood"),
+            _callback_btn("🎤 Голос", "edit:voice"),
         ],
     ]
 
@@ -287,16 +287,16 @@ def _unsaid_buttons() -> list[list[dict]]:
 def _sound_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Энергично", "sound:uplifting"),
-            _callback_btn("Романтично", "sound:romantic"),
+            _callback_btn("🔥 Энергично", "sound:uplifting"),
+            _callback_btn("🌸 Романтично", "sound:romantic"),
         ],
         [
-            _callback_btn("Спокойно", "sound:peaceful"),
-            _callback_btn("Меланхолично", "sound:melancholy"),
+            _callback_btn("🌿 Спокойно", "sound:peaceful"),
+            _callback_btn("🌧 Меланхолично", "sound:melancholy"),
         ],
         [
-            _callback_btn("Эпично", "sound:adventurous"),
-            _callback_btn("Вечеринка", "sound:party"),
+            _callback_btn("🏆 Эпично", "sound:adventurous"),
+            _callback_btn("🎉 Вечеринка", "sound:party"),
         ],
         [_callback_btn("✍️ Своими словами", "sound:write")],
     ]

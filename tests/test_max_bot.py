@@ -721,8 +721,10 @@ def test_nobody_goes_to_self_theme_not_birthday():
             "whom:write",
         ]
         labels = [btn.get("text") or "" for row in rows for btn in row]
-        assert labels[-1] == "Напишу сам"
-        assert "Без конкретики" in labels
+        assert labels[-1].endswith("Напишу сам")
+        assert any("Без конкретики" in (x or "") for x in labels)
+        assert any(x.startswith("👩") for x in labels)
+        assert any(x.startswith("✍️") or "Напишу сам" in x for x in labels)
         _cb(bot, max_user_id, "whom:nobody")
         last = api.sent[-1]["text"].lower()
         assert "о чём" in last or "о чем" in last
