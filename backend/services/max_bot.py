@@ -382,8 +382,24 @@ def _biz_tone_buttons() -> list[list[dict]]:
 
 
 def _cover_url() -> str:
+    return _step_image_url("cover")
+
+
+def _step_image_url(slug: str) -> str:
     base = (SITE_URL or "https://sozdaipesnu.ru").rstrip("/")
-    return f"{base}/assets/max-cover.jpg"
+    name = {
+        "cover": "max-cover.jpg",
+        "whom": "max-whom.jpg",
+        "occasion": "max-occasion.jpg",
+        "detail": "max-detail.jpg",
+        "genre": "max-genre.jpg",
+        "mood": "max-mood.jpg",
+        "voice": "max-voice.jpg",
+        "confirm": "max-confirm.jpg",
+    }.get(slug or "")
+    if not name:
+        return ""
+    return f"{base}/assets/{name}"
 
 
 def _studio_buttons(url: str, label: str = "Вперёд и с песней!") -> list[list[dict]]:
@@ -660,15 +676,42 @@ class MaxBot:
             deleter(mid)
 
     def _cover_payload(self) -> dict | None:
-        getter = getattr(self.api, "get_cover_payload", None)
-        if not callable(getter):
-            return None
+        return self._step_payload("cover")
+
+    def _step_payload(self, slug: str) -> dict | None:
+        getter = getattr(self.api, "get_step_image_payload", None)
         try:
-            payload = getter()
+            if callable(getter):
+                payload = getter(slug)
+            elif slug == "cover":
+                cover = getattr(self.api, "get_cover_payload", None)
+                payload = cover() if callable(cover) else None
+            else:
+                return None
         except Exception:
-            log.exception("MAX cover upload failed")
+            log.exception("MAX image upload failed for %s", slug)
             return None
         return payload if isinstance(payload, dict) else None
+
+    def _send_step(
+        self,
+        contact: dict,
+        text: str,
+        buttons: list[list[dict]] | None,
+        slug: str,
+        *,
+        format: str | None = None,
+    ) -> str:
+        payload = self._step_payload(slug)
+        url = "" if payload else _step_image_url(slug)
+        return self._send(
+            contact,
+            text,
+            buttons,
+            image_payload=payload,
+            image_url=url or None,
+            format=format,
+        )
 
     def _on_stopped(self, update: dict) -> None:
         user_id, _, _ = _user_from_update(update)
@@ -721,30 +764,30 @@ class MaxBot:
     def _send_gate(self, contact: dict) -> None:
         returning = self.messenger.has_legal(contact)
         text = GATE_RETURN_TEXT if returning else GATE_TEXT
-        payload = self._cover_payload()
-        self._send(
+        self._send_step(
             contact,
             text,
             _legal_buttons(returning=returning),
-            image_payload=payload,
-            image_url=None if payload else _cover_url(),
+            "cover",
             format=GATE_FORMAT or None,
         )
 
     def _send_whom(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, WHOM_TEXT), _whom_buttons())
+        self._send_step(contact, _join(prefix, WHOM_TEXT), _whom_buttons(), "whom")
 
     def _send_occasion(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, OCCASION_TEXT), _occasion_buttons())
+        self._send_step(
+            contact, _join(prefix, OCCASION_TEXT), _occasion_buttons(), "occasion"
+        )
 
     def _send_theme(self, contact: dict, prefix: str = "") -> None:
         self._send_about(contact, prefix)
 
     def _send_about(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, ABOUT_TEXT), _about_buttons())
+        self._send_step(contact, _join(prefix, ABOUT_TEXT), _about_buttons(), "occasion")
 
     def _send_genre(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, GENRE_TEXT), _genre_buttons())
+        self._send_step(contact, _join(prefix, GENRE_TEXT), _genre_buttons(), "genre")
 
     def _send_confirm(self, contact: dict, prefix: str = "") -> None:
         recap = human_recap(
@@ -757,23 +800,30 @@ class MaxBot:
             plot=contact.get("segment") or "gift",
         )
         text = _join(prefix, recap + "\n" + CONFIRM_FOOTER)
-        self._send(contact, text, _confirm_buttons())
+        self._send_step(contact, text, _confirm_buttons(), "confirm")
 
     def _send_detail(self, contact: dict, prefix: str = "") -> None:
         if is_just_plot(contact.get("brief_whom") or "", contact.get("segment") or ""):
-            self._send(contact, _join(prefix, DETAIL_JUST), _detail_gift_buttons())
+            self._send_step(
+                contact, _join(prefix, DETAIL_JUST), _detail_gift_buttons(), "detail"
+            )
             return
         whom = contact.get("brief_whom") or ""
-        self._send(contact, _join(prefix, detail_gift_text(whom)), _detail_gift_buttons())
+        self._send_step(
+            contact,
+            _join(prefix, detail_gift_text(whom)),
+            _detail_gift_buttons(),
+            "detail",
+        )
 
     def _send_unsaid(self, contact: dict, prefix: str = "") -> None:
         self._send(contact, _join(prefix, UNSAID_TEXT), _unsaid_buttons())
 
     def _send_sound(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, SOUND_TEXT), _sound_buttons())
+        self._send_step(contact, _join(prefix, SOUND_TEXT), _sound_buttons(), "mood")
 
     def _send_voice(self, contact: dict, prefix: str = "") -> None:
-        self._send(contact, _join(prefix, VOICE_TEXT), _voice_buttons())
+        self._send_step(contact, _join(prefix, VOICE_TEXT), _voice_buttons(), "voice")
 
     @staticmethod
     def _is_patching(contact: dict) -> bool:

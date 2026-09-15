@@ -816,6 +816,9 @@ def test_whom_and_occasion_new_grids():
         ]
         labels = [btn.get("text") or "" for row in rows for btn in row]
         assert labels[-1].endswith("Напишу сам")
+        assert (whom_msg.get("image_url") or "").endswith("max-whom.jpg") or whom_msg.get(
+            "image_payload"
+        )
         assert any("Маме" in (x or "") for x in labels)
         assert any("Ребёнку" in (x or "") for x in labels)
         assert any(x.startswith("👩") for x in labels)

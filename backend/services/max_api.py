@@ -13,6 +13,16 @@ from backend.settings import MAX_BOT_TOKEN
 
 COVER_PATH = ROOT_DIR / "assets" / "max-cover.jpg"
 _COVER_CACHE = DATA_DIR / "max_cover_upload.json"
+STEP_IMAGE_FILES = {
+    "cover": "max-cover.jpg",
+    "whom": "max-whom.jpg",
+    "occasion": "max-occasion.jpg",
+    "detail": "max-detail.jpg",
+    "genre": "max-genre.jpg",
+    "mood": "max-mood.jpg",
+    "voice": "max-voice.jpg",
+    "confirm": "max-confirm.jpg",
+}
 
 MAX_API_BASE = "https://platform-api2.max.ru"
 _CERTS_DIR = ROOT_DIR / "backend" / "certs"
@@ -147,29 +157,39 @@ class MaxApi:
         return None
 
     def get_cover_payload(self) -> dict | None:
-        if not COVER_PATH.is_file():
+        return self.get_step_image_payload("cover")
+
+    def get_step_image_payload(self, slug: str) -> dict | None:
+        name = STEP_IMAGE_FILES.get(slug or "")
+        if not name:
             return None
-        mtime = int(COVER_PATH.stat().st_mtime)
-        if _COVER_CACHE.is_file():
+        path = ROOT_DIR / "assets" / name
+        if not path.is_file():
+            return None
+        cache = DATA_DIR / f"max_img_{slug}.json"
+        if slug == "cover":
+            cache = _COVER_CACHE
+        mtime = int(path.stat().st_mtime)
+        if cache.is_file():
             try:
-                saved = json.loads(_COVER_CACHE.read_text(encoding="utf-8"))
+                saved = json.loads(cache.read_text(encoding="utf-8"))
                 if int(saved.get("mtime") or 0) == mtime and isinstance(
                     saved.get("payload"), dict
                 ):
                     return saved["payload"]
             except (OSError, ValueError, TypeError):
                 pass
-        payload = self.upload_image(COVER_PATH)
+        payload = self.upload_image(path)
         if not payload:
             return None
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
-            _COVER_CACHE.write_text(
+            cache.write_text(
                 json.dumps({"mtime": mtime, "payload": payload}),
                 encoding="utf-8",
             )
         except OSError:
-            log.warning("MAX cover cache write failed")
+            log.warning("MAX image cache write failed for %s", slug)
         return payload
 
     def send_message(
