@@ -1,155 +1,108 @@
-СоздайСвоюПесню — картинки к шагам бота MAX
-===========================================
-15.09.2026. Третья редакция.
+СоздайСвоюПесню — промты кадров бота MAX (пересъёмка)
+====================================================
+15.09.2026. Внешность: славянская / восточноевропейская, как у нашей ЦА.
+Город: вечерняя Россия (Москва, Питер, любой крупный), не Сеул и не Токио.
+Стиль: подарок-песня сейчас + романтика + живое чувство.
+Не 90-е, не кассеты, не винил в центре, не дождевой ключ.
 
-Что не так в первых сериях
---------------------------
-Генератор понял «универсально» как «старые вещи»: ключ, тетрадь, винил,
-дождевое окно, кухня 90-х, один человек в шапке. Это ностальгия про
-прошлое, не подарок в 2026.
+Куда класть готовые JPG (1080×1350, 4:5 или 3:4):
+  assets/max-whom.jpg
+  assets/max-occasion.jpg
+  assets/max-detail.jpg
+  assets/max-genre.jpg
+  assets/max-mood.jpg
+  assets/max-voice.jpg
+  assets/max-confirm.jpg
 
-Нужно: песня как подарок на любой повод — сегодня.
-Чувство (романтика, тепло, мурашки) + наша жизнь: телефон, беспроводные
-наушники, кнопка play, современные люди вместе.
+Cover (max-cover.jpg) не трогать.
 
-Cover (мама в наушниках) можно оставить. Это оффер. Воронка — шире и
-современнее.
+Лучше генерировать БЕЗ текста на картинке (пустой верх).
+Я наложу заголовки как сейчас. Если модель пишет по-русски криво — тем более без букв.
 
-
-ЧЕТЫРЕ ВАРИАНТА (выбрать один ряд)
-----------------------------------
-
-A. ПОДАРОК СЕЙЧАС  ← брать в работу
-   Жест: надеть наушники / нажать play человеку рядом.
-   Телефон, беспроводные наушники, сегодняшняя одежда, город или новая
-   квартира. Не реквизит «памяти», а момент «я тебе это включил».
-
-B. РОМАНТИКА 2026
-   Пара: вечерний город, такси, кухня с растениями, смех, почти поцелуй.
-   Сильно для «ей / ему / годовщина / признание». Слабее для мамы и
-   корпоратива — поэтому не единственный стиль на все шаги.
-
-C. ЛИЦА И СВЕТ, МАЛО ВЕЩЕЙ
-   Крупно эмоция, наушники, тёплый свет. Чем меньше стола с предметами,
-   тем меньше «старья». Универсально, но может быть скучно, если все
-   кадры — портреты.
-
-D. ПАМЯТЬ В СЕГОДНЯ (гибрид)
-   Одна старая вещь внутри новой жизни: старое фото на экране телефона,
-   а в ушах — новые наушники. Ностальгия как слой, не как декорации.
-   Опасно: модель снова утащит в 90-е. Только если явно писать
-   «iPhone, wireless headphones, 2020s apartment».
-
-Рекомендация: ряд A на все шаги, в 2–3 кадрах чуть романтики из B
-(повод, голос). Cover не трогать.
+В конец КАЖДОГО промта копируйте блок «ЛИЦА И ЗАПРЕТ».
 
 
-ЗАПРЕТ В ПРОМТЕ (копировать всегда)
------------------------------------
-No cassettes, no vinyl records as hero, no CRT TVs, no skeleton keys,
-no fountain pens, no soviet kitchens, no rainy window still-life,
-no pile of old wired headphones, no lonely young man in a beanie,
-no 1990s nostalgia set dressing.
+ЛИЦА И ЗАПРЕТ (всегда)
+----------------------
+People are Slavic / Eastern European, typical Russian everyday faces:
+fair to light-olive skin, natural features, not East Asian, not South Asian,
+not African, not mixed-cast commercial stock. Ordinary attractive, not
+supermodels. Contemporary 2026 clothes. City outside looks like Moscow or
+Saint Petersburg at dusk (European high-rises, traffic, warm windows),
+not neon Korea or Tokyo. No readable letters on the image, empty upper
+third for a title. No logos, no concert stage, no cassettes, no vinyl as
+hero, no soviet kitchen, no skeleton keys.
 
 
-ДОЛЖНО БЫТЬ
------------
-Year 2020s. Wireless over-ear or in-ear headphones. Smartphone with a
-simple play/waveform glow (no readable UI text). Contemporary clothes.
-People together or a clear gift gesture. Alive feeling: tenderness,
-romance, a smile that almost breaks. Warm gold light + city night
-outside is ok, but the room looks like now (plants, LED strip, IKEA,
-new building) not a 90s kitchen.
-
-Формат: 1080×1350. Текст сверху белый + жёлтый, низ пустой.
-
-
-ОБЩИЙ СТИЛЬ
------------
-Cinematic photoreal, 4:5, 2026, not retro. A song given as a gift:
-someone you love hears it through headphones right now. Warm amber
-practical light, shallow depth of field, filmic but current. Bold white
-Russian title upper third, gold line, yellow subtitle. No logos, no
-concert stage, no robots.
+ОБЩИЙ СТИЛЬ (в начало каждого)
+------------------------------
+Cinematic photoreal photograph, 2026, 3:4 vertical. A song given as a
+gift right now: wireless headphones, a phone with a soft golden play
+glow, people together, romance and tenderness. Warm amber indoor light,
+shallow depth of field, film grain. Upper third darker and empty.
 
 
 1) КОМУ  →  max-whom.jpg
-Текст: КОМУ ЭТА ПЕСНЯ / ей, ему, маме — любому своему
-Промт:
-Cinematic photoreal, 4:5, year 2026. A modern apartment at evening,
-plants, warm lamp, city lights in a big window. On a low table: a
-phone face-down with a soft golden play-glow, and one pair of wireless
-headphones. Two mugs. A person of unreadable age/gender from behind,
-about to pick the headphones up as a gift. Alive, now, not nostalgic.
-Overlay: white "КОМУ ЭТА ПЕСНЯ", yellow "ей, ему, маме — любому своему".
-[plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Modern Russian apartment at evening,
+plants, warm lamp, Moscow-like city in the window. On a low table:
+smartphone with a golden play-button glow and one pair of sleek wireless
+over-ear headphones in an open gift box with a ribbon. Two mugs. A young
+Slavic woman seen from behind, short dark hair, black sweater, reaching
+for the headphones as a gift for someone just out of frame. Tender,
+present-day. Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
 2) ПОВОД  →  max-occasion.jpg
-Текст: НА ЛЮБОЙ ПОВОД / и без повода тоже
-Промт:
-Cinematic photoreal, 4:5, 2026. A small celebration that could be
-birthday, date, or "just because": fairy lights, a simple cake with one
-sparkler, a phone showing a music play screen (unreadable), wireless
-headphones as the actual present instead of flowers. A couple or two
-friends, contemporary outfits, genuine laugh, restaurant or new kitchen,
-not a windowsill of old keys. Overlay: white "НА ЛЮБОЙ ПОВОД",
-yellow "и без повода тоже". [plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Small celebration in a new Russian
+kitchen: fairy lights, a simple cake with one sparkler, wireless
+headphones in a clear gift box as the present, phone glowing play on
+the table. A Slavic couple laughing close, contemporary outfits, wine
+glass, plants, city night in the window. Birthday or just because.
+Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
 3) ДЕТАЛЬ  →  max-detail.jpg
-Текст: ОДНА ЖИВАЯ ЧЕРТА / то, что знаете только вы
-Промт:
-Cinematic photoreal, 4:5, 2026. Close on a phone notes app or a voice
-memo waveform (blur any letters) and a person smiling at a private
-detail — a photo of a habit, a kitchen light left on in a modern flat,
-not a notebook and fridge magnets from the 90s. Feeling: "this is ours".
-Overlay: white "ОДНА ЖИВАЯ ЧЕРТА", yellow "то, что знаете только вы".
-[plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Close on a young Slavic woman in a
+modern room, one pair of wireless headphones on, looking at a private
+photo on a phone with a warm genuine smile — a secret detail for a song.
+Plants, lamp, wine glass optional. Only one pair of headphones. Empty
+upper third, no readable screen text. [ЛИЦА И ЗАПРЕТ]
 
 
 4) ЖАНР  →  max-genre.jpg
-Текст: КАК ЭТО ЗВУЧИТ / ваш саундтрек
-Промт:
-Cinematic photoreal, 4:5, 2026. Someone in a car at night or on a sofa
-with wireless headphones and a phone, choosing a mood playlist — pop,
-rap, slow — we don't see labels, we see the body: head slightly moving.
-Modern dashboard or living room, RGB quietly, not vinyl. Overlay: white
-"КАК ЭТО ЗВУЧИТ", yellow "ваш саундтрек". [plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Night in a modern car OR on a sofa (pick
+ONE setting, do not mix). A young Slavic woman in wireless headphones,
+eyes closed, listening, phone in hand with a golden play glow. A Slavic
+man's hand rests on her knee — quiet romance. City lights of a Russian
+metropolis outside. Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
 5) НАСТРОЕНИЕ  →  max-mood.jpg
-Текст: КАКОЕ ЧУВСТВО / тепло, романтика, мурашки
-Промт:
-Cinematic photoreal, 4:5, 2026. A couple on a balcony or by a window of
-a new building, city bokeh. One puts wireless headphones on the other —
-romance and care, present tense. Soft smile, almost shy. Overlay: white
-"КАКОЕ ЧУВСТВО", yellow "тепло, романтика, мурашки". [plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Slavic couple by a floor-to-ceiling
+window, Russian city bokeh behind. He gently places wireless headphones
+on her; she smiles shyly, hands on the cups. Contemporary clothes,
+cream sweater, dark jacket. A small gift box on the sill. Romance and
+care, present tense. Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
 6) ГОЛОС  →  max-voice.jpg
-Текст: ЧЕЙ ГОЛОС / её, его, вместе
-Промт:
-Cinematic photoreal, 4:5, 2026. Two people sharing one pair of wireless
-headphones, foreheads close, contemporary, could be couple or friends.
-Faces partly visible, warm, now. Overlay: white "ЧЕЙ ГОЛОС", yellow
-"её, его, вместе". [plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Slavic couple in a plant-filled modern
+kitchen, sitting on stools at a wooden island, sharing headphones
+(one cup each, cables or wireless), foreheads almost touching, laughing
+quietly. Warm pendant lamp. This is hearing the same song together.
+Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
 7) СВЕРКА  →  max-confirm.jpg
-Текст: ТАК? / можно поправить
-Промт:
-Cinematic photoreal, 4:5, 2026. Over-the-shoulder of a phone with a
-blurred recap of a song idea, finger hovering over send/play. Modern
-cafe or apartment. Person could be anyone. Ready, light, not heavy.
-Overlay: white "ТАК?", yellow "можно поправить". [plus ЗАПРЕТ]
+Cinematic photoreal, 3:4, 2026. Over-the-shoulder in a cozy Russian cafe:
+a Slavic woman holds a phone, thumb on a glowing play button (no
+readable UI), across the table another Slavic woman or a man waits with
+a small smile, two coffees, AirPods case. About to send a song as a
+gift. Warm, light, ready. Empty upper third. [ЛИЦА И ЗАПРЕТ]
 
 
-Если модель плохо пишет по-русски: "no letters, empty upper third".
-
-
-Не делать
----------
-Кассеты, винил в центре, ключи-скелеты, дождевой подоконник,
-тетрадь под лампой, один грустный парень, «как в старом кино».
-Делать: play, беспроводные наушники, люди вместе, 2026.
+После генерации
+---------------
+Положите семь файлов в assets/ под именами выше (замена текущих).
+Напишите «закинул» — наложу текст и задеплоим, если сами без букв.
+Если текст уже на кадре и ровный — тоже напишите, подключу как есть.
