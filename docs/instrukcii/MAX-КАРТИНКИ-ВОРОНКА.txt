@@ -1,165 +1,128 @@
 СоздайСвоюПесню — картинки к шагам бота MAX
 ===========================================
-15.09.2026. Это не код. Генерируете ВЫ, кладёте файлы, я подключу.
+15.09.2026. Вторая редакция: универсальнее, не одна кухня и не один герой.
 
-Эталон стиля: assets/max-cover.jpg
-  Кухня вечером, тёплый свет лампы, живые люди, не сток «нейросеть».
-  Крупный белый текст сверху, жёлтая строка под ним.
-  Без логотипов брендов, без слова «ИИ», без интерфейса приложения.
+Эталон шрифта и цвета: assets/max-cover.jpg
+  Белый жирный заголовок, тонкая золотая линия, жёлтая строка.
+  Привет (cover) можно оставить как есть — это «маме», сильный вход.
+  Шаги воронки — НЕ клонировать ту же кухню и того же парня.
 
-Формат
-------
-  1080 × 1350 px  (4:5, как обложка в чате MAX)
-  JPG, качество высокое, лица резкие.
-  Текст на картинке — КОРОТКИЙ, 2 строки, как на обложке.
-  Шрифт: жирный гротеск, белый + жёлтый акцент.
+Почему первая серия узкая
+-------------------------
+Кухня ночью + молодой мужчина + пустые стулья = фильм про сына.
+Не откликается: она дарит ему; корпоратив; прикол; яркий ДР; «просто так».
+Универсальнее, когда зритель сам подставляет своего человека.
 
-Куда класть
------------
-  Сначала в screens/ (как есть).
-  Финальные имена для бота — в assets/ (латиница):
+Правило кадра
+-------------
+Герой — жест и свет, не конкретная семья.
+Люди: со спины, руки, силуэт, пара без лиц крупно, разные возраста по шагам.
+Не один и тот же парень в шапке на всех экранах.
+Не всегда хрущёвка и дождь. Можно улица, машина, праздничный стол, окно.
+Без «ИИ», сцены, микрофона на концерте, стоковой улыбки.
 
-  assets/max-cover.jpg      — уже есть (привет)
-  assets/max-whom.jpg       — кому
-  assets/max-occasion.jpg   — повод
-  assets/max-detail.jpg     — сцена / деталь
-  assets/max-genre.jpg      — жанр
-  assets/max-mood.jpg       — настроение
-  assets/max-voice.jpg      — чей голос
-  assets/max-confirm.jpg    — сверка / «так?»
+Формат: 1080 × 1350, JPG. Текст сверху, низ пустой под кнопки.
 
-Когда семь файлов лягут в assets/ — напишите, подключу к шагам.
+Файлы (латиница, в assets/):
+  max-cover.jpg      — уже есть
+  max-whom.jpg
+  max-occasion.jpg
+  max-detail.jpg
+  max-genre.jpg
+  max-mood.jpg
+  max-voice.jpg
+  max-confirm.jpg
 
-
-ОБЩИЙ СТИЛЬ (копировать в начало КАЖДОГО промта)
-------------------------------------------------
-Cinematic photoreal still, 4:5 vertical, 1080x1350. Same universe as a
-warm Russian kitchen at night: tungsten lamp, dark wood, shallow depth
-of field, film grain, intimate documentary photography, not stock smile.
-Real people, lived-in clothes, no logos, no smartphones as hero, no
-sci-fi, no neon cyberpunk. Color grade: amber highlights, deep shadows,
-muted teal in the dark. Overlay in the upper third: bold condensed
-sans-serif Russian title in white, a short yellow subtitle under a thin
-gold line. Leave the lower third clean for chat buttons. Photoreal,
-editorial, emotional, quiet.
+ОБЩИЙ СТИЛЬ (в начало каждого промта)
+-------------------------------------
+Cinematic photoreal, 4:5 vertical, 1080x1350. Warm amber light vs deep
+shadow, film grain, quiet editorial photography. Bold condensed white
+Russian title in the upper third, thin gold line, short yellow subtitle.
+Lower third empty. No logos, no UI, no concert stage, no sci-fi.
+The feeling is a personal gift through a song — anyone should be able
+to see themselves in it, not one specific family story.
 
 
 1) КОМУ  →  max-whom.jpg
-Текст на кадре:
-  КОМУ ЭТА ПЕСНЯ
-  выбери человека
+Текст: КОМУ ЭТА ПЕСНЯ / неважно, кто — важно, что своё
 Промт:
-Cinematic photoreal still, 4:5 vertical. A round family table in a small
-Russian apartment at night, one warm pendant lamp. Empty chairs around
-the table, each place slightly lived-in: a mother's knitted cardigan on
-one back, a man's watch on a saucer, a child's drawing under a mug, two
-coffee cups still steaming for a couple. In the doorway a young adult
-pauses with headphones in hand, looking at the table as if choosing who
-to give a song to. Faces only in profile or three-quarter, natural,
-tender, not posing for a catalog. Overlay top: bold white Russian
-"КОМУ ЭТА ПЕСНЯ", thin gold line, yellow "выбери человека". Intimate,
-quiet, gift-not-product mood.
+Cinematic photoreal, 4:5. Several pairs of headphones on a wooden table
+in mixed warm light: one with a dried flower tucked in the cable, one
+next to a child's drawing, one next to a man's watch, one next to a
+lipstick — different lives, one gesture. No faces, or only a blurred
+figure walking past in the background, gender unreadable. Overlay:
+white "КОМУ ЭТА ПЕСНЯ", yellow "неважно, кто — важно, что своё".
 
 
 2) ПОВОД  →  max-occasion.jpg
-Текст:
-  ПОВОД ИЛИ ПРОСТО ТАК
-  день, жест, молчание
+Текст: ЛЮБОЙ ПОВОД / или никакого
 Промт:
-Cinematic photoreal still, 4:5. Close on a kitchen windowsill at dusk:
-a small homemade cake with one unlit candle, a folded handwritten note,
-a gold wedding band on a string, a silly paper crown from a joke party,
-and a plain house key — different reasons to sing, not a shop display.
-Rain on the glass, city lights smeared. A hand reaches in from the side,
-hesitating which object to touch. Overlay: white "ПОВОД ИЛИ ПРОСТО ТАК",
-yellow "день, жест, молчание". Warm tungsten vs cold window blue.
+Cinematic photoreal, 4:5. A windowsill or table in daylight AND lamp
+light mixed: a small cake, a folded note, car keys, a paper party hat,
+a plain envelope. Not a sad night kitchen — more like "life has many
+reasons". A hand from the side, could be anyone, reaching without
+picking yet. Overlay: white "ЛЮБОЙ ПОВОД", yellow "или никакого".
 
 
 3) ДЕТАЛЬ  →  max-detail.jpg
-Текст:
-  ОДНА ЖИВАЯ ДЕТАЛЬ
-  и песня станет их
+Текст: ОДНА ЖИВАЯ ЧЕРТА / и это уже не общая песня
 Промт:
-Cinematic photoreal still, 4:5. Extreme detail of a lived kitchen at
-night: a lamp left on above an empty table, a chipped mug, a note on the
-fridge in messy handwriting, wet footprints, a jacket on a chair. A
-person sits with their back to us, writing in a notebook as if catching
-a memory before it slips. Shallow focus, the lamp is the emotional
-center. Overlay: white "ОДНА ЖИВАЯ ДЕТАЛЬ", yellow "и песня станет их".
-No dancing studio, no wedding form, just a house that remembers.
+Cinematic photoreal, 4:5. Extreme close-up of ordinary traces of a
+person: handwriting on a sticky note, a chipped mug, a photo corner in
+a wallet, light left on in another room — not a full family scene.
+Universal, intimate, no identifiable face. Overlay: white "ОДНА ЖИВАЯ
+ЧЕРТА", yellow "и это уже не общая песня".
 
 
 4) ЖАНР  →  max-genre.jpg
-Текст:
-  КАК ЭТО ЗВУЧИТ
-  шансон, поп, тишина между
+Текст: КАК ЭТО ЗВУЧИТ / выбери язык чувства
 Промт:
-Cinematic photoreal still, 4:5. A modest living room turned into a quiet
-listening night: vinyl leaning on a shelf, an old acoustic guitar on the
-sofa, a small bluetooth speaker glowing amber, headphones on a wooden
-table next to tea. No stage, no concert crowd. A person in a sweater
-stands by the shelf, fingers hovering over records as if choosing a
-language for a feeling. Overlay: white "КАК ЭТО ЗВУЧИТ", yellow
-"шансон, поп, тишина между". Warm, analog, Russian home.
+Cinematic photoreal, 4:5. A shelf or table with mixed music objects in
+warm light: vinyl, an acoustic guitar neck, compact speaker, cassette —
+home, not a club. Hands of unclear age choosing. Overlay: white "КАК
+ЭТО ЗВУЧИТ", yellow "выбери язык чувства".
 
 
 5) НАСТРОЕНИЕ  →  max-mood.jpg
-Текст:
-  КАКОЕ НАСТРОЕНИЕ
-  тепло, драйв или в горле
+Текст: КАКОЕ НАСТРОЕНИЕ / от тепла до мурашек
 Промт:
-Cinematic photoreal still, 4:5. Split-feeling one room: left side a
-window with rain and a person sitting still, right side the same room
-lit by a birthday sparkler someone just lit — one space, two temperatures.
-Faces honest, not theatrical. Steam from a kettle, a coat dripping in
-the hall. Overlay: white "КАКОЕ НАСТРОЕНИЕ", yellow "тепло, драйв или
-в горле". Photoreal, cinematic color contrast, no emoji graphics.
+Cinematic photoreal, 4:5. One wide window: left rain and cool blue,
+right a warm lamp and a sparkler or string lights — same room, two
+moods. Empty of a single hero; maybe two silhouettes far away. Overlay:
+white "КАКОЕ НАСТРОЕНИЕ", yellow "от тепла до мурашек".
 
 
 6) ГОЛОС  →  max-voice.jpg
-Текст:
-  ЧЕЙ ГОЛОС СПОЁТ
-  её, его, или оба
+Текст: ЧЕЙ ГОЛОС / её, его, или вместе
 Промт:
-Cinematic photoreal still, 4:5. Two people in a kitchen, not performing:
-a woman at the table with eyes closed listening, a man behind her
-holding headphones as if about to place them — echo of the existing
-cover, but younger couple OR mother and grown son, different from the
-cover so it does not clone it. Open mouths not required; this is about
-who will carry the song. Overlay: white "ЧЕЙ ГОЛОС СПОЁТ", yellow
-"её, его, или оба". Same lamp, same grain as max-cover.jpg.
+Cinematic photoreal, 4:5. Two pairs of hands holding one pair of
+headphones between them — could be couple, friends, parent and grown
+child, faces out of frame or softly blurred. Equal, not "son gifts mom".
+Overlay: white "ЧЕЙ ГОЛОС", yellow "её, его, или вместе".
 
 
 7) СВЕРКА  →  max-confirm.jpg
-Текст:
-  ТАК?
-  можно поправить
+Текст: ТАК? / можно поправить
 Промт:
-Cinematic photoreal still, 4:5. Over-the-shoulder of a notebook or phone
-screen as a short handwritten recap of a song idea: a name, a date, one
-line of memory — blur the handwriting so it is not readable letters,
-just the gesture of checking. A mug, the same kitchen lamp, a person
-nodding slightly, ready to go or to change a word. Overlay: white
-"ТАК?", yellow "можно поправить". Quiet confidence, not a checklist UI.
+Cinematic photoreal, 4:5. Over-the-shoulder of a notebook or phone with
+blurred handwriting, a mug, warm lamp. The person could be anyone —
+back of head, short or long hair, no clear gender. A small nod, ready
+to go or change a word. Overlay: white "ТАК?", yellow "можно поправить".
 
 
-ПРИВЕТ (уже есть, не обязательно переснимать)
----------------------------------------------
-assets/max-cover.jpg
-Текст на кадре: «ТО, ЧТО СЛОЖНО СКАЗАТЬ / можно спеть»
-Если переснимать — тот же промт вселенной, мама в наушниках, сын сзади.
+Cover не трогать, если нравится. Он может быть «маме» — это оффер.
+Воронка должна быть шире, чем оффер.
 
 
-Как генерировать
-----------------
-1) Вставить «ОБЩИЙ СТИЛЬ» + промт шага.
-2) Если генератор едет лицом — одна и та же «кухня вечером», меняется жест.
-3) Текст на картинке лучше дописать у себя поверх, если модель криво пишет
-   по-русски: тогда в промте скажите "no letters, empty upper third for type".
-4) Прислать 7 файлов или положить в assets/ под именами выше.
+Если генератор криво пишет по-русски
+------------------------------------
+В промт: "no letters on the image, empty upper third for typography".
+Текст набьёте сами поверх.
 
 
 Не делать
 ---------
-Нейросети, роботы, эквалайзеры, микрофоны на сцене, стоковые улыбки,
-английские слоганы, логотип чужого сервиса, коллаж из иконок.
+Один и тот же молодой мужчина на всех кадрах.
+Только ночная кухня.
+Только слёзы / только праздник.
+Сцена, роботы, эквалайзер, английские слоганы.
