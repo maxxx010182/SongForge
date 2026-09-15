@@ -1,11 +1,11 @@
-СоздайСвоюПесню — промты кадров бота MAX (пересъёмка)
-====================================================
-15.09.2026. Внешность: славянская / восточноевропейская, как у нашей ЦА.
-Город: вечерняя Россия (Москва, Питер, любой крупный), не Сеул и не Токио.
-Стиль: подарок-песня сейчас + романтика + живое чувство.
-Не 90-е, не кассеты, не винил в центре, не дождевой ключ.
+СоздайСвоюПесню — готовые промты (один = один кадр)
+==================================================
+Копируете ЦЕЛИКОМ один блок — вставляете в генератор. Ничего не дописывать.
 
-Куда класть готовые JPG (1080×1350, 4:5 или 3:4):
+Формат: вертикаль 3:4, лучше 1080×1350. Без текста на картинке — я наложу сам.
+Cover не трогать.
+
+Куда класть JPG:
   assets/max-whom.jpg
   assets/max-occasion.jpg
   assets/max-detail.jpg
@@ -14,95 +14,40 @@
   assets/max-voice.jpg
   assets/max-confirm.jpg
 
-Cover (max-cover.jpg) не трогать.
 
-Лучше генерировать БЕЗ текста на картинке (пустой верх).
-Я наложу заголовки как сейчас. Если модель пишет по-русски криво — тем более без букв.
+----- 1. КОМУ  →  max-whom.jpg -----
 
-В конец КАЖДОГО промта копируйте блок «ЛИЦА И ЗАПРЕТ».
+Cinematic photoreal photograph, vertical 3:4, year 2026. A song given as a gift right now. Modern Russian apartment at evening: plants, warm amber lamp, large window with Moscow or Saint Petersburg dusk outside — European high-rises, traffic lights, warm windows, not neon Seoul or Tokyo. On a low wooden table: a smartphone with a soft golden play-button glow and one pair of sleek wireless over-ear headphones in an open black gift box with a white ribbon. Two ceramic mugs. A young Slavic Eastern European woman seen from behind, fair to light-olive skin, short dark hair, black sweater and beige trousers, reaching for the headphones as a gift for someone just out of frame. Ordinary attractive everyday Russian face type, not a supermodel, not East Asian, not South Asian, not African, not mixed-cast commercial stock. Contemporary clothes. Tender, romantic, present-day. Upper third of the frame darker and completely empty for a later title — no letters, no numbers, no logos, no UI. No concert stage, no cassettes, no vinyl records, no soviet kitchen, no skeleton keys, no rainy still-life of old objects. Shallow depth of field, film grain, photoreal.
 
 
-ЛИЦА И ЗАПРЕТ (всегда)
-----------------------
-People are Slavic / Eastern European, typical Russian everyday faces:
-fair to light-olive skin, natural features, not East Asian, not South Asian,
-not African, not mixed-cast commercial stock. Ordinary attractive, not
-supermodels. Contemporary 2026 clothes. City outside looks like Moscow or
-Saint Petersburg at dusk (European high-rises, traffic, warm windows),
-not neon Korea or Tokyo. No readable letters on the image, empty upper
-third for a title. No logos, no concert stage, no cassettes, no vinyl as
-hero, no soviet kitchen, no skeleton keys.
+----- 2. ПОВОД  →  max-occasion.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. A song given as a gift at a small celebration that could be a birthday, a date, or just because. New Russian kitchen at night: fairy lights, plants, a simple cake with one sparkler, wireless over-ear headphones in a clear gift box as the present instead of flowers, a smartphone on the table glowing with a golden play light. A Slavic Eastern European couple laughing close, almost touching: fair to light-olive skin, natural everyday Russian faces, contemporary outfits, a wine glass, city night of Moscow or Saint Petersburg in the window — European buildings, not neon Korea or Tokyo. Ordinary attractive, not supermodels, not East Asian, not South Asian, not African, not mixed-cast stock. Warm amber indoor light. Upper third darker and empty for a title — no letters, no numbers, no logos, no readable screen text. No cassettes, no vinyl as hero, no soviet kitchen, no skeleton keys, no old handwritten letters, no paper crowns as the main subject. Shallow depth of field, film grain, photoreal, alive and romantic.
 
 
-ОБЩИЙ СТИЛЬ (в начало каждого)
-------------------------------
-Cinematic photoreal photograph, 2026, 3:4 vertical. A song given as a
-gift right now: wireless headphones, a phone with a soft golden play
-glow, people together, romance and tenderness. Warm amber indoor light,
-shallow depth of field, film grain. Upper third darker and empty.
+----- 3. ДЕТАЛЬ  →  max-detail.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. Intimate close-up of a young Slavic Eastern European woman in a modern Russian room, fair to light-olive skin, natural everyday face, curly or wavy hair, one pair of wireless headphones on (only one pair, not two). She looks at a private photo on a smartphone with a warm genuine smile — a secret personal detail that will go into a song gift. Plants, warm lamp, optional wine glass. Contemporary 2026 clothes. Ordinary attractive, not a supermodel, not East Asian, not South Asian, not African, not mixed-cast stock. Feeling: this memory is ours. Upper third darker and empty — no letters, no numbers, no logos, no readable screen text or UI. No notebook, no fridge magnets, no 1990s kitchen, no cassettes, no vinyl. Shallow focus, amber light, film grain, photoreal.
 
 
-1) КОМУ  →  max-whom.jpg
-Cinematic photoreal, 3:4, 2026. Modern Russian apartment at evening,
-plants, warm lamp, Moscow-like city in the window. On a low table:
-smartphone with a golden play-button glow and one pair of sleek wireless
-over-ear headphones in an open gift box with a ribbon. Two mugs. A young
-Slavic woman seen from behind, short dark hair, black sweater, reaching
-for the headphones as a gift for someone just out of frame. Tender,
-present-day. Empty upper third. [ЛИЦА И ЗАПРЕТ]
+----- 4. ЖАНР  →  max-genre.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. ONE setting only: night inside a modern car, do not mix with a living room. A young Slavic Eastern European woman in wireless over-ear headphones, fair to light-olive skin, natural Russian everyday face, eyes closed, listening, smartphone in her hand with a soft golden play glow. A Slavic man's hand rests on her knee — quiet romance. Contemporary clothes. City lights of Moscow or Saint Petersburg outside the windows, European metropolis, not neon Seoul or Tokyo. Ordinary attractive, not supermodels, not East Asian, not South Asian, not African, not mixed-cast stock. Upper third darker and empty — no letters, no numbers, no logos, no readable maps or UI. No cassettes, no vinyl, no retro stereo. Shallow depth of field, film grain, photoreal.
 
 
-2) ПОВОД  →  max-occasion.jpg
-Cinematic photoreal, 3:4, 2026. Small celebration in a new Russian
-kitchen: fairy lights, a simple cake with one sparkler, wireless
-headphones in a clear gift box as the present, phone glowing play on
-the table. A Slavic couple laughing close, contemporary outfits, wine
-glass, plants, city night in the window. Birthday or just because.
-Empty upper third. [ЛИЦА И ЗАПРЕТ]
+----- 5. НАСТРОЕНИЕ  →  max-mood.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. A Slavic Eastern European couple by a floor-to-ceiling window, Russian city bokeh behind (Moscow or Saint Petersburg, not Korea or Japan). He gently places sleek wireless headphones on her; she smiles shyly, hands near her chest. Fair to light-olive skin, natural everyday Russian faces, contemporary clothes: cream sweater, dark jacket. A small gift box on the windowsill. Romance and care, a song as a gift in the present tense. Ordinary attractive, not supermodels, not East Asian, not South Asian, not African, not mixed-cast stock. Warm practical light mixed with cool city night. Upper third darker and empty — no letters, no numbers, no logos. No concert stage, no cassettes, no vinyl, no soviet kitchen. Shallow depth of field, film grain, photoreal.
 
 
-3) ДЕТАЛЬ  →  max-detail.jpg
-Cinematic photoreal, 3:4, 2026. Close on a young Slavic woman in a
-modern room, one pair of wireless headphones on, looking at a private
-photo on a phone with a warm genuine smile — a secret detail for a song.
-Plants, lamp, wine glass optional. Only one pair of headphones. Empty
-upper third, no readable screen text. [ЛИЦА И ЗАПРЕТ]
+----- 6. ГОЛОС  →  max-voice.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. A Slavic Eastern European couple in a plant-filled modern kitchen, sitting on wooden stools at an island, sharing wireless headphones, foreheads almost touching, laughing quietly. Fair to light-olive skin, natural everyday Russian faces, contemporary clothes. Warm pendant lamp. They are hearing the same gifted song together. Ordinary attractive, not supermodels, not East Asian, not South Asian, not African, not mixed-cast stock. City if visible is Moscow or Saint Petersburg, not neon Asia. Upper third darker and empty — no letters, no numbers, no logos. No cassettes, no vinyl as hero, no soviet kitchen, no 1990s set dressing. Shallow depth of field, film grain, photoreal, tender and romantic.
 
 
-4) ЖАНР  →  max-genre.jpg
-Cinematic photoreal, 3:4, 2026. Night in a modern car OR on a sofa (pick
-ONE setting, do not mix). A young Slavic woman in wireless headphones,
-eyes closed, listening, phone in hand with a golden play glow. A Slavic
-man's hand rests on her knee — quiet romance. City lights of a Russian
-metropolis outside. Empty upper third. [ЛИЦА И ЗАПРЕТ]
+----- 7. СВЕРКА  →  max-confirm.jpg -----
+
+Cinematic photoreal photograph, vertical 3:4, year 2026. Over-the-shoulder in a cozy Russian cafe: a Slavic Eastern European woman holds a smartphone, thumb hovering on a glowing play button, no readable UI. Across the table another Slavic person waits with a small smile. Two coffees, a small wireless earbuds case. About to send a song as a gift. Fair to light-olive skin, natural everyday Russian faces, contemporary clothes. Ordinary attractive, not supermodels, not East Asian, not South Asian, not African, not mixed-cast stock. Warm amber light, hanging plants, fairy lights optional. Upper third darker and empty — no letters, no numbers, no logos, no readable app screens. No notebooks, no cassettes, no vinyl. Photoreal, light, ready, romantic.
 
 
-5) НАСТРОЕНИЕ  →  max-mood.jpg
-Cinematic photoreal, 3:4, 2026. Slavic couple by a floor-to-ceiling
-window, Russian city bokeh behind. He gently places wireless headphones
-on her; she smiles shyly, hands on the cups. Contemporary clothes,
-cream sweater, dark jacket. A small gift box on the sill. Romance and
-care, present tense. Empty upper third. [ЛИЦА И ЗАПРЕТ]
-
-
-6) ГОЛОС  →  max-voice.jpg
-Cinematic photoreal, 3:4, 2026. Slavic couple in a plant-filled modern
-kitchen, sitting on stools at a wooden island, sharing headphones
-(one cup each, cables or wireless), foreheads almost touching, laughing
-quietly. Warm pendant lamp. This is hearing the same song together.
-Empty upper third. [ЛИЦА И ЗАПРЕТ]
-
-
-7) СВЕРКА  →  max-confirm.jpg
-Cinematic photoreal, 3:4, 2026. Over-the-shoulder in a cozy Russian cafe:
-a Slavic woman holds a phone, thumb on a glowing play button (no
-readable UI), across the table another Slavic woman or a man waits with
-a small smile, two coffees, AirPods case. About to send a song as a
-gift. Warm, light, ready. Empty upper third. [ЛИЦА И ЗАПРЕТ]
-
-
-После генерации
----------------
-Положите семь файлов в assets/ под именами выше (замена текущих).
-Напишите «закинул» — наложу текст и задеплоим, если сами без букв.
-Если текст уже на кадре и ровный — тоже напишите, подключу как есть.
+Когда семь файлов в assets/ — напишите «закинул», наложу текст и подключу.
