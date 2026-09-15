@@ -816,8 +816,9 @@ def test_whom_and_occasion_new_grids():
         ]
         labels = [btn.get("text") or "" for row in rows for btn in row]
         assert labels[-1].endswith("Напишу сам")
-        assert "Маме" in labels
-        assert "Ребёнку" in labels
+        assert any("Маме" in (x or "") for x in labels)
+        assert any("Ребёнку" in (x or "") for x in labels)
+        assert any(x.startswith("👩") for x in labels)
         _cb(bot, max_user_id, "whom:wife")
         last = api.sent[-1]
         assert "поводу" in last["text"].lower() or "о чём" in last["text"].lower()

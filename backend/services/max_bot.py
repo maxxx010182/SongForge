@@ -200,48 +200,48 @@ def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
 def _whom_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("Мужу", "whom:husband"),
-            _callback_btn("Жене", "whom:wife"),
+            _callback_btn("🤵 Мужу", "whom:husband"),
+            _callback_btn("👰 Жене", "whom:wife"),
         ],
         [
-            _callback_btn("Парню", "whom:boyfriend"),
-            _callback_btn("Девушке", "whom:girlfriend"),
+            _callback_btn("💙 Парню", "whom:boyfriend"),
+            _callback_btn("💗 Девушке", "whom:girlfriend"),
         ],
         [
-            _callback_btn("Дружбану", "whom:buddy"),
-            _callback_btn("Подружке", "whom:pal"),
+            _callback_btn("🤙 Дружбану", "whom:buddy"),
+            _callback_btn("💛 Подружке", "whom:pal"),
         ],
         [
-            _callback_btn("Маме", "whom:mom"),
-            _callback_btn("Папе", "whom:dad"),
+            _callback_btn("👩 Маме", "whom:mom"),
+            _callback_btn("👨 Папе", "whom:dad"),
         ],
         [
-            _callback_btn("Родственнику", "whom:relative"),
-            _callback_btn("Ребёнку", "whom:child"),
+            _callback_btn("🏡 Родственнику", "whom:relative"),
+            _callback_btn("🧒 Ребёнку", "whom:child"),
         ],
-        [_callback_btn("Напишу сам", "whom:write")],
+        [_callback_btn("✍️ Напишу сам", "whom:write")],
     ]
 
 
 def _occasion_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("День рождения", "occasion:birthday"),
-            _callback_btn("Поддержка", "occasion:support"),
+            _callback_btn("🎂 День рождения", "occasion:birthday"),
+            _callback_btn("🤝 Поддержка", "occasion:support"),
         ],
         [
-            _callback_btn("Свадьба", "occasion:wedding"),
-            _callback_btn("Прикол", "occasion:joke"),
+            _callback_btn("💒 Свадьба", "occasion:wedding"),
+            _callback_btn("😄 Прикол", "occasion:joke"),
         ],
         [
-            _callback_btn("Годовщина", "occasion:anniversary"),
-            _callback_btn("Признание", "occasion:confession"),
+            _callback_btn("💍 Годовщина", "occasion:anniversary"),
+            _callback_btn("💌 Признание", "occasion:confession"),
         ],
         [
-            _callback_btn("Корпоратив", "occasion:corporate"),
-            _callback_btn("Без повода", "occasion:just"),
+            _callback_btn("🏢 Корпоратив", "occasion:corporate"),
+            _callback_btn("🌿 Без повода", "occasion:just"),
         ],
-        [_callback_btn("Напишу сам", "occasion:write")],
+        [_callback_btn("✍️ Напишу сам", "occasion:write")],
     ]
 
 
