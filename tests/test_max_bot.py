@@ -794,49 +794,55 @@ def test_legal_document_stays_in_chat():
         _cleanup(max_user_id)
 
 
-def test_nobody_goes_to_self_theme_not_birthday():
+def test_whom_and_occasion_new_grids():
     bot, api, max_user_id = _bot()
     try:
         _cb(bot, max_user_id, "accept")
         whom_msg = [m for m in api.sent if "кого" in m["text"].lower()][-1]
         rows = whom_msg["buttons"]
-        assert len(rows) == 3
-        assert all(len(row) == 2 for row in rows)
         payloads = [btn.get("payload") or "" for row in rows for btn in row]
         assert payloads == [
+            "whom:husband",
+            "whom:wife",
+            "whom:boyfriend",
+            "whom:girlfriend",
+            "whom:buddy",
+            "whom:pal",
             "whom:mom",
             "whom:dad",
-            "whom:partner",
-            "whom:friend",
-            "whom:nobody",
+            "whom:relative",
+            "whom:child",
             "whom:write",
         ]
         labels = [btn.get("text") or "" for row in rows for btn in row]
         assert labels[-1].endswith("Напишу сам")
-        assert any("Без конкретики" in (x or "") for x in labels)
-        assert any(x.startswith("👩") for x in labels)
-        assert any(x.startswith("✍️") or "Напишу сам" in x for x in labels)
-        _cb(bot, max_user_id, "whom:nobody")
-        last = api.sent[-1]["text"].lower()
-        assert "о чём" in last or "о чем" in last
-        assert "про тебя" not in last
-        assert "день рождения" not in last
-        about_rows = api.sent[-1]["buttons"]
-        assert len(about_rows) == 3
-        assert all(len(row) == 2 for row in about_rows)
-        payloads = [btn.get("payload") or "" for row in about_rows for btn in row]
-        assert payloads[-1] == "about:write"
-        assert "about:skip" not in payloads
-        assert "occasion:birthday" not in payloads
+        assert "Маме" in labels
+        assert "Ребёнку" in labels
+        _cb(bot, max_user_id, "whom:wife")
+        last = api.sent[-1]
+        assert "поводу" in last["text"].lower() or "о чём" in last["text"].lower()
+        occ = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
+        assert occ == [
+            "occasion:birthday",
+            "occasion:support",
+            "occasion:wedding",
+            "occasion:joke",
+            "occasion:anniversary",
+            "occasion:confession",
+            "occasion:corporate",
+            "occasion:just",
+            "occasion:write",
+        ]
         contact = MessengerService().get_by_max(max_user_id)
-        assert contact["segment"] == "just"
+        assert contact["brief_whom"] == "жене"
         api.sent.clear()
-        _cb(bot, max_user_id, "about:love")
+        _cb(bot, max_user_id, "occasion:wedding")
         last = api.sent[-1]["text"].lower()
-        assert "подробнее" not in last
-        assert "сцена" in last or "момент" in last
+        assert "маша" in last
+        assert "танц" in last
+        assert "зовут" in last
         contact = MessengerService().get_by_max(max_user_id)
-        assert "любов" in (contact.get("brief_mood") or "").lower()
+        assert "свадьб" in (contact.get("brief_mood") or "").lower()
     finally:
         _cleanup(max_user_id)
 

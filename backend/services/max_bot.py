@@ -25,6 +25,7 @@ from backend.services.max_funnel import (
     GREET_STAY_TEXT,
     LATER_TEXT,
     OCCASION_TEXT,
+    OCCASION_WRITE_PROMPT,
     RESUME_TEXT,
     SOUND_TEXT,
     STOP_TEXT,
@@ -199,49 +200,53 @@ def _legal_nav_buttons(slug: str, page: int, total: int) -> list[list[dict]]:
 def _whom_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("👩 Моей маме", "whom:mom"),
-            _callback_btn("👨 Моему папе", "whom:dad"),
+            _callback_btn("Мужу", "whom:husband"),
+            _callback_btn("Жене", "whom:wife"),
         ],
         [
-            _callback_btn("❤️ Моей половинке", "whom:partner"),
-            _callback_btn("🤙 Дружбану / подружке", "whom:friend"),
+            _callback_btn("Парню", "whom:boyfriend"),
+            _callback_btn("Девушке", "whom:girlfriend"),
         ],
         [
-            _callback_btn("🌌 Без конкретики", "whom:nobody"),
-            _callback_btn("✍️ Напишу сам", "whom:write"),
+            _callback_btn("Дружбану", "whom:buddy"),
+            _callback_btn("Подружке", "whom:pal"),
         ],
+        [
+            _callback_btn("Маме", "whom:mom"),
+            _callback_btn("Папе", "whom:dad"),
+        ],
+        [
+            _callback_btn("Родственнику", "whom:relative"),
+            _callback_btn("Ребёнку", "whom:child"),
+        ],
+        [_callback_btn("Напишу сам", "whom:write")],
     ]
 
 
 def _occasion_buttons() -> list[list[dict]]:
     return [
         [
-            _callback_btn("🎂 День рождения", "occasion:birthday"),
-            _callback_btn("💍 Годовщина", "occasion:anniversary"),
+            _callback_btn("День рождения", "occasion:birthday"),
+            _callback_btn("Поддержка", "occasion:support"),
         ],
         [
-            _callback_btn("🎉 Скоро праздник", "occasion:holiday"),
-            _callback_btn("🌿 Просто так, без повода", "occasion:just"),
+            _callback_btn("Свадьба", "occasion:wedding"),
+            _callback_btn("Прикол", "occasion:joke"),
         ],
-        [_callback_btn("🤐 Не могу сказать вслух", "occasion:unsaid")],
+        [
+            _callback_btn("Годовщина", "occasion:anniversary"),
+            _callback_btn("Признание", "occasion:confession"),
+        ],
+        [
+            _callback_btn("Корпоратив", "occasion:corporate"),
+            _callback_btn("Без повода", "occasion:just"),
+        ],
+        [_callback_btn("Напишу сам", "occasion:write")],
     ]
 
 
 def _about_buttons() -> list[list[dict]]:
-    return [
-        [
-            _callback_btn("❤️ Про любовь", "about:love"),
-            _callback_btn("🎲 Про случай", "about:story"),
-        ],
-        [
-            _callback_btn("🌤 Про настроение", "about:feeling"),
-            _callback_btn("🛣 Про дорогу", "about:road"),
-        ],
-        [
-            _callback_btn("🪞 Про себя", "about:self"),
-            _callback_btn("✍️ Напишу сам", "about:write"),
-        ],
-    ]
+    return _occasion_buttons()
 
 
 def _theme_buttons() -> list[list[dict]]:
@@ -275,7 +280,7 @@ def _edit_buttons() -> list[list[dict]]:
     return [
         [
             _callback_btn("👤 Кому", "edit:whom"),
-            _callback_btn("💬 О чём", "edit:about"),
+            _callback_btn("💬 Повод", "edit:about"),
         ],
         [
             _callback_btn("🎸 Жанр", "edit:genre"),
@@ -744,7 +749,7 @@ class MaxBot:
 
     def _send_detail(self, contact: dict, prefix: str = "") -> None:
         if is_just_plot(contact.get("brief_whom") or "", contact.get("segment") or ""):
-            self._send(contact, _join(prefix, DETAIL_JUST), _detail_just_buttons())
+            self._send(contact, _join(prefix, DETAIL_JUST), _detail_gift_buttons())
             return
         whom = contact.get("brief_whom") or ""
         self._send(contact, _join(prefix, detail_gift_text(whom)), _detail_gift_buttons())
@@ -950,12 +955,20 @@ class MaxBot:
         if is_price_question(text):
             self._stay(contact, FAQ_TEXT)
             return
-        if looks_business(text) and (contact.get("segment") or "") != "business":
-            self._switch_business(contact)
-            return
         awaiting = (contact.get("funnel_await") or "").strip()
+        stage_now = contact.get("funnel_stage") or ""
+        if looks_business(text) and (contact.get("segment") or "") != "business":
+            if awaiting not in {"occasion", "whom", "detail", "about"} and stage_now not in {
+                STAGE_OCCASION,
+                STAGE_DETAIL,
+            }:
+                self._switch_business(contact)
+                return
         if awaiting == "whom":
             self._apply_whom(contact, text)
+            return
+        if awaiting == "occasion":
+            self._apply_occasion(contact, text)
             return
         if awaiting == "about":
             self._apply_about(contact, text)
@@ -1043,12 +1056,14 @@ class MaxBot:
             self._send_whom(contact, WHOM_RETRY)
             return
         contact = self.messenger.set_whom(contact, whom, detail=leftover, plot=plot)
-        if plot == "just":
-            self._send_about(contact)
-            return
-        self._send_occasion(contact, f"Ок, {whom}.")
+        prefix = f"Ок, {whom}." if whom else "Ок."
+        self._send_occasion(contact, prefix)
 
     def _apply_occasion(self, contact: dict, raw: str) -> None:
+        if raw in {"write", "сам"}:
+            contact = self.messenger.set_await(contact, "occasion")
+            self._send(contact, OCCASION_WRITE_PROMPT)
+            return
         if raw in OCCASION_LABELS:
             mood = OCCASION_LABELS[raw]
             key = raw
@@ -1062,7 +1077,7 @@ class MaxBot:
         if key == "unsaid":
             self._send_unsaid(contact, "Понимаю. Тогда пойдём мягче.")
             return
-        self._send_detail(contact, "Ещё один штрих — живая деталь, и картина соберётся.")
+        self._send_detail(contact)
 
     def _apply_theme(self, contact: dict, raw: str) -> None:
         self._apply_about(contact, raw)
@@ -1172,7 +1187,7 @@ class MaxBot:
         key = (raw or "").strip().lower()
         mapping = {
             "whom": STAGE_TALK,
-            "about": STAGE_ABOUT,
+            "about": STAGE_OCCASION,
             "genre": STAGE_GENRE,
             "mood": STAGE_SOUND,
             "voice": STAGE_VOICE,
@@ -1181,10 +1196,6 @@ class MaxBot:
         if not stage:
             self._send(contact, "Что поменять?", _edit_buttons())
             return
-        if key == "about" and not is_just_plot(
-            contact.get("brief_whom") or "", contact.get("segment") or ""
-        ):
-            stage = STAGE_OCCASION
         contact = self.messenger.set_stage(contact, stage)
         self._continue_funnel(contact)
 

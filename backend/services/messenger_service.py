@@ -36,19 +36,30 @@ STAGE_SENT = "sent_to_site"
 STAGE_STOPPED = "stopped"
 
 WHOM_LABELS = {
+    "husband": "мужу",
+    "wife": "жене",
+    "boyfriend": "парню",
+    "girlfriend": "девушке",
+    "buddy": "дружбану",
+    "pal": "подружке",
     "mom": "маме",
     "dad": "папе",
+    "relative": "родственнику",
+    "child": "ребёнку",
     "partner": "половинке",
-    "buddy": "другу",
-    "pal": "подруге",
     "her": "половинке",
     "him": "половинке",
-    "friend": "другу",
+    "friend": "дружбану",
 }
 OCCASION_LABELS = {
     "birthday": "день рождения",
+    "support": "поддержка",
+    "wedding": "свадьба",
+    "joke": "прикол",
     "anniversary": "годовщина",
-    "just": "просто так, без повода",
+    "confession": "признание",
+    "corporate": "корпоратив",
+    "just": "без повода",
     "holiday": "скоро праздник",
     "unsaid": "не могу сказать вслух",
 }
@@ -607,7 +618,7 @@ class MessengerService:
     def set_whom(self, contact: dict, whom: str, *, detail: str = "", plot: str = "gift") -> dict:
         extra = (detail or "").strip() or (contact.get("brief_detail") or "")
         plot = "just" if plot == "just" else "gift"
-        stage = STAGE_ABOUT if plot == "just" else STAGE_OCCASION
+        stage = STAGE_OCCASION
         brief = self._gift_brief(
             contact, brief_whom=whom, brief_detail=extra, segment=plot
         )
