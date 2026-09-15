@@ -148,7 +148,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.72", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.73", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -662,7 +662,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.72",
+        "version": "2.11.73",
         "max_bot": bool(MAX_BOT_TOKEN),
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),
@@ -1077,13 +1077,15 @@ async def admin_clear_seed_engagement(
 
 @app.get("/api/me", response_model=MeResponse)
 async def get_me(
+    request: Request,
     guest_id: str = Depends(get_guest_id),
     user: dict | None = Depends(get_optional_user),
 ):
     if user:
         remaining = generation_quota.user_trial_remaining(user["id"])
+        tz = (request.query_params.get("tz") or "").strip()
         try:
-            messenger_service.touch_site(user["id"])
+            messenger_service.touch_site(user["id"], tz_name=tz)
         except Exception:
             pass
     else:

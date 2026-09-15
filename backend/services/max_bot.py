@@ -72,6 +72,7 @@ from backend.services.messenger_service import (
     STAGE_MOOD,
     STAGE_OCCASION,
     STAGE_SEGMENT,
+    STAGE_SENT,
     STAGE_SOUND,
     STAGE_TALK,
     STAGE_THEME,
@@ -125,21 +126,43 @@ ACCEPT_WORDS = {
     "ок",
     "хорошо",
 }
-NUDGE_TEXTS = (
-    "Твоя песня всё ещё здесь. Превью — минута, и услышишь оба варианта.",
-    "Если готов — студия открыта. Бриф на месте.",
-    "Если пока не время — не страшно. Бриф остаётся здесь, вернёшься, когда захочется.",
+NUDGE_LATER_TEXT = "Сейчас некогда? Ок, давай в другой раз — напомню позднее."
+NUDGE_SNOOZE_OK = "Ок, напомню позднее."
+NUDGE_A0 = (
+    "Зашёл и вышел — бывает. Если в описании что-то не то, "
+    "его можно переписать прямо в том же окне. Черновик на месте."
 )
-NUDGE_BUTTONS = ("Создать сейчас", "Дослушать", "Вернуться к своей песне")
+NUDGE_A1_TRIAL = (
+    "Первая проба ничего не стоит. Два варианта — и сразу понятно, "
+    "твоё это или крутим иначе."
+)
+NUDGE_A_KEEP = "Черновик на месте. Можно открыть студию, когда будет минута."
+NUDGE_B0 = (
+    "Черновик уже в студии. Осталось открыть — и услышать первый вариант."
+)
+NUDGE_B1 = "Не вышло зайти? Напиши — гляну. Идея на месте, ссылка живая."
 READY_LISTEN_TEXT = (
     "Уже готово — два варианта ждут.\n\n"
     "Открой и послушай, как звучит то, что хотели сказать."
 )
-UNPAID_PREVIEW_TEXT = (
-    "Превью послушал, а песню так и не забрал.\n\n"
-    "Не то попало? В расширенном режиме можно собрать звучание иначе — "
-    "часто именно там получается вещь, которую оставляют себе."
+UNPAID_EXPERT_TEXT = (
+    "Если звук или текст не сели — это часто чинится в расширенном режиме: "
+    "сам ставишь жанр, голос и настроение, текст можно поправить до музыки. "
+    "Там обычно и выходит то, что оставляют."
 )
+UNPAID_TIP_TEXT = (
+    "Короткий приём: в расширенном сначала сгенерируй текст и поправь пару строк "
+    "— и только потом музыку. Так проба попадает точнее."
+)
+HOW_RECEIVED_TEXT = (
+    "Песня на месте. Если уже включили — как встретили? "
+    "Если ещё нет — она в студии."
+)
+NEXT_PERSON_TEXT = (
+    "Если всплывёт ещё кто-то, кому спеть — черновик собирается так же, "
+    "за пару вопросов."
+)
+UNPAID_PREVIEW_TEXT = UNPAID_EXPERT_TEXT
 
 
 def _callback_btn(text: str, payload: str, *, intent: str | None = None) -> dict:
@@ -348,6 +371,50 @@ def _cover_url() -> str:
 
 def _studio_buttons(url: str, label: str = "Вперёд и с песней!") -> list[list[dict]]:
     return [[_link_btn(label, url)]]
+
+
+def _short_detail(text: str, limit: int = 80) -> str:
+    t = " ".join((text or "").split())
+    if len(t) > limit:
+        t = t[: limit - 1].rstrip() + "…"
+    return t
+
+
+def _nudge_payload(messenger: MessengerService, contact: dict, step: int) -> tuple[str, list]:
+    opened = bool((contact.get("last_site_at") or "").strip())
+    detail = _short_detail(contact.get("brief_detail") or "")
+    skip_detail = not detail or is_skip(detail)
+    url = messenger.studio_url(contact)
+    later = [[_callback_btn("Напомнить позднее", "nudge:later")]]
+    if opened:
+        a1 = (
+            f"Помню про «{detail}». Это уже в черновике — можно поправить слова и сразу жать пробу."
+            if not skip_detail
+            else NUDGE_A1_TRIAL
+        )
+        pool = (NUDGE_A0, a1, NUDGE_A_KEEP)
+        if step <= 0:
+            text, label = NUDGE_A0, "Открыть студию"
+        elif step == 1:
+            text, label = a1, "Открыть студию"
+        elif step == 2:
+            text, label = NUDGE_LATER_TEXT, "Открыть студию"
+        else:
+            text, label = pool[(step - 3) % len(pool)], "Открыть студию"
+    else:
+        pool = (NUDGE_B0, NUDGE_B1, NUDGE_A_KEEP)
+        if step <= 0:
+            text, label = NUDGE_B0, "Открыть студию"
+        elif step == 1:
+            text, label = NUDGE_B1, "Открыть студию"
+        elif step == 2:
+            text, label = NUDGE_LATER_TEXT, "Открыть студию"
+        else:
+            text, label = pool[(step - 3) % len(pool)], "Открыть студию"
+    buttons = _studio_buttons(url, label)
+    if step >= 2:
+        buttons = buttons + later
+    return text, buttons
 
 
 def _as_int(value) -> int | None:
@@ -788,6 +855,14 @@ class MaxBot:
             self.messenger.stop(contact)
             self._send(contact, STOP_TEXT)
             return
+        if payload == "nudge:later":
+            self.messenger.snooze_nudge(contact, days=3)
+            self._send(contact, NUDGE_SNOOZE_OK)
+            return
+        if payload == "nudge:new":
+            contact = self.messenger.reset_song(contact)
+            self._send_whom(contact)
+            return
         if payload.startswith("legal:"):
             self._send_legal(contact, payload)
             return
@@ -1206,27 +1281,13 @@ class MaxBot:
                 continue
             if not contact.get("user_id") or not contact.get("max_user_id"):
                 continue
-            step = int(contact.get("nudge_step") or 0)
-            if step < 0 or step > 2:
+            if self.messenger.has_success_generation(contact.get("user_id") or ""):
+                self.messenger.silence_studio_nudges(contact)
                 continue
-            text = NUDGE_TEXTS[step]
-            whom = (contact.get("brief_whom") or "").strip()
-            detail = (contact.get("brief_detail") or "").strip()
-            if step == 0 and whom:
-                text = (
-                    f"Твоя песня {whom} всё ещё здесь. "
-                    "Превью — минута, и услышишь оба варианта."
-                )
-            elif step == 1 and detail:
-                text = (
-                    f"Та деталь про «{detail}» — она реально делает песню другой. "
-                    "Если готов — студия открыта."
-                )
-            url = self.messenger.studio_url(contact)
-            label = NUDGE_BUTTONS[step]
-            buttons = _studio_buttons(url, label)
-            if step == 2:
-                buttons = buttons + [[_callback_btn("Стоп", "stop_nudge")]]
+            step = int(contact.get("nudge_step") or 0)
+            if step < 0 or step >= 9:
+                continue
+            text, buttons = _nudge_payload(self.messenger, contact, step)
             ok = self.api.send_message(
                 user_id=contact["max_user_id"],
                 text=text,
@@ -1251,46 +1312,33 @@ class MaxBot:
             if not contact or not self.messenger.can_message(contact):
                 self.messenger.cancel_followup(job["id"])
                 continue
-            gen = self.messenger.generation_followup_state(job.get("generation_id") or "")
-            if not gen or (gen.get("status") or "") != "success":
-                self.messenger.cancel_followup(job["id"])
-                continue
-            if int(gen.get("purchased") or 0):
-                self.messenger.cancel_followup(job["id"])
-                continue
             kind = job.get("kind") or ""
-            if kind == "ready_listen":
-                if gen.get("previewed_at"):
+            gen_id = job.get("generation_id") or ""
+            if kind in {"how_received", "next_person"}:
+                if (contact.get("funnel_stage") or "") != STAGE_SENT:
+                    self.messenger.cancel_followup(job["id"])
+                    continue
+                text, buttons = self._customer_followup(contact, kind)
+            else:
+                gen = self.messenger.generation_followup_state(gen_id)
+                if not gen or (gen.get("status") or "") != "success":
+                    self.messenger.cancel_followup(job["id"])
+                    continue
+                if int(gen.get("purchased") or 0):
+                    self.messenger.cancel_followup(job["id"])
+                    continue
+                if kind in {"ready_listen", "ready_weekly"} and gen.get("previewed_at"):
                     self.messenger.cancel_followup(job["id"])
                     continue
                 if self.messenger.site_is_recent(contact, minutes=3):
-                    self.messenger.delay_followup(job["id"], minutes=5)
+                    wait = 5 if kind == "ready_listen" else 30
+                    self.messenger.delay_followup(job["id"], minutes=wait)
                     continue
-                text = READY_LISTEN_TEXT
-                buttons = [[
-                    _link_btn(
-                        "Слушать",
-                        self.messenger.studio_url(contact, open_to="listen"),
-                    )
-                ]]
-            elif kind == "unpaid_preview":
-                if self.messenger.site_is_recent(contact, minutes=3):
-                    self.messenger.delay_followup(job["id"], minutes=30)
+                built = self._generation_followup(contact, kind)
+                if built is None:
+                    self.messenger.cancel_followup(job["id"])
                     continue
-                text = UNPAID_PREVIEW_TEXT
-                buttons = [
-                    [_link_btn(
-                        "Забрать песню",
-                        self.messenger.studio_url(contact, open_to="listen"),
-                    )],
-                    [_link_btn(
-                        "Расширенный режим",
-                        self.messenger.studio_url(contact, open_to="expert"),
-                    )],
-                ]
-            else:
-                self.messenger.cancel_followup(job["id"])
-                continue
+                text, buttons = built
             ok = self.api.send_message(
                 user_id=contact["max_user_id"],
                 text=text,
@@ -1298,7 +1346,64 @@ class MaxBot:
             )
             if ok:
                 self.messenger.mark_followup_sent(job["id"])
+                self.messenger.schedule_next_after_followup(
+                    contact, kind=kind, generation_id=gen_id
+                )
                 sent += 1
             else:
                 self.messenger.delay_followup(job["id"], minutes=15)
         return sent
+
+    def _customer_followup(self, contact: dict, kind: str) -> tuple[str, list]:
+        if kind == "how_received":
+            return HOW_RECEIVED_TEXT, [[
+                _link_btn(
+                    "Открыть песню",
+                    self.messenger.studio_url(contact, open_to="listen"),
+                )
+            ]]
+        whom = (contact.get("brief_whom") or "").strip()
+        text = (
+            f"Песня {whom} уже есть. Если всплывёт ещё кто-то — папа, она, друг — "
+            "черновик собирается так же."
+            if whom
+            else NEXT_PERSON_TEXT
+        )
+        return text, [[_callback_btn("Собрать новую", "nudge:new")]]
+
+    def _generation_followup(self, contact: dict, kind: str):
+        if kind in {"ready_listen", "ready_weekly"}:
+            buttons = [[
+                _link_btn(
+                    "Слушать",
+                    self.messenger.studio_url(contact, open_to="listen"),
+                )
+            ]]
+            if kind == "ready_weekly":
+                buttons = buttons + [[_callback_btn("Напомнить позднее", "nudge:later")]]
+            return READY_LISTEN_TEXT, buttons
+        if kind in {"unpaid_preview", "unpaid_expert", "unpaid_tip", "unpaid_weekly"}:
+            if kind == "unpaid_tip":
+                buttons = [[
+                    _link_btn(
+                        "Попробовать так",
+                        self.messenger.studio_url(contact, open_to="expert"),
+                    )
+                ]]
+                text = UNPAID_TIP_TEXT
+            else:
+                buttons = [
+                    [_link_btn(
+                        "Расширенный режим",
+                        self.messenger.studio_url(contact, open_to="expert"),
+                    )],
+                    [_link_btn(
+                        "Слушать ещё раз",
+                        self.messenger.studio_url(contact, open_to="listen"),
+                    )],
+                ]
+                text = UNPAID_EXPERT_TEXT
+            if kind in {"unpaid_weekly", "unpaid_tip"}:
+                buttons = buttons + [[_callback_btn("Напомнить позднее", "nudge:later")]]
+            return text, buttons
+        return None
