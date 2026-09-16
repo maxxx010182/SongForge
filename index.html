@@ -1850,6 +1850,9 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
         } else {
           showToast('Оплата принята. Если ноты не появились за 1–2 мин — напишите в поддержку.');
         }
+      } else if (payParam === 'failed') {
+        showToast('Оплата не прошла. Попробуйте ещё раз или другой способ.');
+        switchToView('payment');
       }
     }
     restorePendingStudioState();
