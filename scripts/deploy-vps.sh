@@ -1,12 +1,12 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 15
+# deploy-script-version: 16
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.83"
+EXPECTED_VERSION="2.11.84"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -119,6 +119,19 @@ ensure_env_key() {
   fi
 }
 
+publish_landing() {
+  local dest="/var/www/podarok"
+  [ -d "$dest" ] || return 0
+  [ -f "$DIR/landing/index.html" ] || return 0
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete --exclude 'README.txt' "$DIR/landing/" "$dest/" || true
+  else
+    cp -a "$DIR/landing/." "$dest/" || true
+    rm -f "$dest/README.txt"
+  fi
+  echo "  ленд обновлён: $dest"
+}
+
 echo "[2/7] Зависимости..."
 ensure_venv
 ./venv/bin/pip install -q -r requirements.txt 2>/dev/null || ./venv/bin/pip install -r requirements.txt
@@ -218,6 +231,8 @@ if ! echo "$HEALTH" | grep -q "\"version\":\"$EXPECTED_VERSION\""; then
   pm2 logs songforge --lines 30 --nostream
   exit 1
 fi
+
+publish_landing
 
 echo ""
 echo "=== Готово! v$EXPECTED_VERSION — http://195.19.20.245:8000/ ==="

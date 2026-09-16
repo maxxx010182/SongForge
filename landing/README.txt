@@ -52,9 +52,8 @@ Timeweb/Beget «под сайт-визитку» — всё на русском,
   utm_campaign=gift_song
   utm_content=nav|hero|povody|final
 
-После своего домена ленда — в <head> заменить og:url / og:image
-на https://ВАШ-ДОМЕН/ и https://ВАШ-ДОМЕН/assets/og-cover.jpg
-(файл assets/og-cover.jpg уже лежит в папке).
+og:url / og:image уже на https://podarok.sozdaipesnu.ru/
+Выкладка: scripts/install-podarok.sh (после update-now).
 
 Позже: регистрация «с ленда» — отдельная задача.
 
