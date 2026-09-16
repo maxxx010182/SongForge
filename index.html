@@ -620,7 +620,7 @@
         <p id="paymentProviderHint" class="text-center text-zinc-500 text-xs mt-4">Карты РФ • СБП • Треки остаются навсегда</p>
     </div>
 
-<!-- Ожидание оплаты (универсальная страница до подключения Продамус) -->
+<!-- Заглушка, если касса не вернула ссылку на оплату -->
 <div id="paymentCheckoutModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[10001] p-4">
     <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-6 border border-yellow-400/20 text-center">
         <div class="text-3xl mb-3">💳</div>
@@ -1080,7 +1080,7 @@ var authEmailStep='request';
 var AUTH_RESEND_COOLDOWN_SEC=60;
 var authResendTimer=null;
 var authResendLeft=0;
-var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:149,songs:1},currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
+var currentGeneratedLyrics="",currentIdea="",selectedGenre="Поп",selectedVocal="auto",selectedMood="uplifting",backingVocal=false,instrumentalMode=false,studioMode="producer",expertStyleMode="presets",activePacket={price:149,songs:1},pendingPacketNotes=null,currentAudio=null,currentPlayingId=null,playerDefaultTrack=null,playerIsDemo=false,playerSeeking=false,commentsModalTrackId=null,genTimer=null,pollTimer=null,currentProduction=null,currentTaskId="",currentGenerationMode="",lastResult={urls:[],tracks:[],title:"",lyrics:"",cover:"",selected:null,savedVariants:[false,false],savedTrackIds:[]},modalPreviewAudio=null,modalPreviewIdx=null,modalPreviewPlaying=false;
 var IDEA_PLACEHOLDER_PRODUCER="Например: лиричная поп-песня о встрече после долгой разлуки...";
 var IDEA_PLACEHOLDER_EXPERT="Например: грустная поп-песня о расставании, спокойный женский голос";
 var IDEA_PLACEHOLDER_INSTR="Опишите атмосферу, инструменты и характер композиции — без текста песни.";
@@ -1340,7 +1340,7 @@ function updateModalCreditsBalance(){var el=document.getElementById('modalCredit
 function updatePaymentReturnBtn(){var btn=document.getElementById('returnToVariantsBtn');if(btn)btn.classList.toggle('hidden',!hasPendingResult());}
 function returnToResultModal(){document.getElementById('resultModal').classList.remove('hidden');updateModalCreditsBalance();updateVariantDownloadButtons();}
 function goToStudioFromResult(){stopModalPreview();document.getElementById('resultModal').classList.add('hidden');stopStudioHeartbeat();switchToView('create');}
-function goToPaymentFromResult(){closeCreditPurchaseModal();document.getElementById('resultModal').classList.add('hidden');stopStudioHeartbeat();switchToView('payment');}
+function goToPaymentFromResult(notes){closeCreditPurchaseModal();document.getElementById('resultModal').classList.add('hidden');stopStudioHeartbeat();pendingPacketNotes=notes||null;switchToView('payment');if(notes)startPaymentCheckout('notes_'+notes);}
 function resetListenButtons(){['variantAListen','variantBListen'].forEach(function(id){var btn=document.getElementById(id);if(btn)btn.innerHTML=listenButtonIdleLabel();});}
 function stopModalPreview(){if(modalPreviewAudio){modalPreviewAudio.pause();modalPreviewAudio.onended=null;modalPreviewAudio.ontimeupdate=null;modalPreviewAudio=null;}modalPreviewPlaying=false;modalPreviewIdx=null;resetListenButtons();['variantAWave','variantBWave'].forEach(function(id){var w=document.getElementById(id);if(w)w.classList.remove('playing');});}
 function formatAudioTime(sec){sec=Math.max(0,Math.floor(sec));return Math.floor(sec/60)+':'+(sec%60).toString().padStart(2,'0');}
@@ -1471,16 +1471,23 @@ async function renderPackets() {
             '<div class="text-xs text-zinc-600">= ' + drafts + ' ' + songWord(drafts) + '</div></div>' +
             '<div class="text-2xl font-semibold">' + p.price + '₽</div></div>';
     }).join('');
+    function selectPacketEl(el) {
+        document.querySelectorAll('.packet-item').forEach(function(p) { p.classList.remove('border-yellow-400/40'); });
+        el.classList.add('border-yellow-400/40');
+        activePacket.price = parseInt(el.dataset.price, 10);
+        activePacket.songs = parseInt(el.dataset.songs, 10);
+    }
     document.querySelectorAll('.packet-item').forEach(function(el) {
-        el.addEventListener('click', function() {
-            document.querySelectorAll('.packet-item').forEach(function(p) { p.classList.remove('border-yellow-400/40'); });
-            el.classList.add('border-yellow-400/40');
-            activePacket.price = parseInt(el.dataset.price);
-            activePacket.songs = parseInt(el.dataset.songs);
-        });
+        el.addEventListener('click', function() { selectPacketEl(el); });
     });
-    var first = document.querySelector('.packet-item');
-    if (first) {first.classList.add('border-yellow-400/40');activePacket.price=parseInt(first.dataset.price);activePacket.songs=parseInt(first.dataset.songs);}
+    var want = pendingPacketNotes;
+    pendingPacketNotes = null;
+    var pick = null;
+    document.querySelectorAll('.packet-item').forEach(function(el) {
+        if (want && parseInt(el.dataset.songs, 10) === want) pick = el;
+    });
+    if (!pick) pick = document.querySelector('.packet-item');
+    if (pick) selectPacketEl(pick);
 }
 
 function formatPlayerTime(sec){sec=Math.max(0,Math.floor(sec||0));var m=Math.floor(sec/60);var s=sec%60;return m+':'+(s<10?'0':'')+s;}
@@ -1660,12 +1667,12 @@ function resetPaymentButton(){
   btn.textContent=btn.dataset.label||'💳 Перейти к оплате';
 }
 window.addEventListener('pageshow',resetPaymentButton);
-async function startPaymentCheckout(){if(!session.loggedIn){openAuthModal();return;}
+async function startPaymentCheckout(packageId){if(!session.loggedIn){openAuthModal();return;}
   var btn=document.getElementById('paymentConfirmBtn');
   if(btn&&btn.disabled)return;
   if(btn){btn.disabled=true;btn.dataset.label=btn.textContent;btn.textContent='Открываем оплату…';}
   savePendingStudioState();
-  var pkgId='notes_'+activePacket.songs;
+  var pkgId=packageId||('notes_'+activePacket.songs);
   try{
     var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});
     var data=await res.json().catch(function(){return{}});
@@ -1694,12 +1701,12 @@ var faqs = [
     { cat:"how", q:"Чем отличается AI-продюсер от Расширенного режима?", a:"AI-продюсер — быстрый старт: AI сам подбирает стиль и текст, результат «на пробу». Расширенный режим — для эфирного качества: вы задаёте жанр, BPM, инструменты, вокал и референсы. Чем подробнее бриф — тем точнее трек." },
     { cat:"how", q:"Что такое фонотека?", a:"Фонотека — ваши купленные полные версии песен. После оплаты 1 ноты оба варианта (A и B) сохраняются навсегда: слушать и скачивать MP3. Превью без покупки — во вкладке «История»." },
     { cat:"how", q:"Что такое «нота»?", a:"1 нота = 1 генерация = 2 варианта песни по 30 секунд. Превью бесплатно. За 1 ноту вы скачиваете полные версии обоих вариантов в фонотеку. Генерация текста — всегда бесплатна." },
-    { cat:"how", q:"Сколько времени занимает создание трека?", a:"Генерация текста — 5–15 секунд. Создание песни — 30–90 секунд." },
+    { cat:"how", q:"Сколько времени занимает создание трека?", a:"Генерация текста — 5–15 секунд. Создание песни — около 3 минут. Вкладку лучше не закрывать." },
     { cat:"how", q:"Можно ли редактировать текст перед созданием музыки?", a:"Да! После генерации текста есть кнопка «Редактировать»." },
     { cat:"how", q:"Сколько стоит превью?", a:"1 пробная генерация бесплатно: 2 варианта, превью по 30 секунд каждый. Полные версии (до 4 минут) — за 1 ноту." },
     { cat:"how", q:"Чем демо-версия отличается от полной?", a:"Демо — 30 секунд. Полная — до 4 минут, высокое качество, навсегда в фонотеке." },
     { cat:"price", q:"Сколько стоит создать песню?", a:"1 нота = 149₽ (2 варианта, полные версии). Пакеты: 3=375₽, 5=599₽, 10=899₽." },
-    { cat:"price", q:"Как оплатить?", a:"В разделе «Пакеты» выберите пакет нот и нажмите «Перейти к оплате». Подключаем Продамус и другие способы для РФ." },
+    { cat:"price", q:"Как оплатить?", a:"В разделе «Пакеты» выберите пакет нот и нажмите «Перейти к оплате». Карты РФ и СБП." },
     { cat:"price", q:"Можно ли вернуть деньги?", a:"Возврат не предусмотрен. При техническом сбое восстановим генерацию бесплатно." },
     { cat:"price", q:"Баланс сгорит, если не использую?", a:"Нет, ноты хранятся без ограничения по времени." },
     { cat:"quality", q:"Почему результат может не совпасть с ожиданиями?", a:"Генерация ИИ — вероятностный процесс. Мы создаём 2 варианта." },
@@ -1786,8 +1793,8 @@ function pluralRu(n,forms){var a=Math.abs(n)%100;var b=a%10;if(a>10&&a<20)return
 function escHtml(s){return String(s).replace(/[&<>"']/g,function(m){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 
 document.getElementById('creditModalClose').addEventListener('click',closeCreditPurchaseModal);
-document.getElementById('buy1CreditBtn').addEventListener('click',goToPaymentFromResult);
-document.getElementById('buy5CreditsBtn').addEventListener('click',goToPaymentFromResult);
+document.getElementById('buy1CreditBtn').addEventListener('click',function(){goToPaymentFromResult(1);});
+document.getElementById('buy5CreditsBtn').addEventListener('click',function(){goToPaymentFromResult(5);});
 document.getElementById('returnToVariantsBtn').addEventListener('click',returnToResultModal);
 document.getElementById('libTabLibrary').addEventListener('click',function(){switchLibraryTab('library');});
 document.getElementById('libTabHistory').addEventListener('click',function(){switchLibraryTab('history');});
