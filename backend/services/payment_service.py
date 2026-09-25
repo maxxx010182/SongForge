@@ -68,9 +68,12 @@ class PaymentService:
         user_email: str = "",
         user_display_name: str = "",
     ) -> dict:
-        package = PACKAGES.get(package_id)
+        pkg_str = str(package_id or "").strip()
+        if pkg_str.isdigit():
+            pkg_str = f"notes_{pkg_str}"
+        package = PACKAGES.get(pkg_str)
         if not package:
-            raise ValueError("Неизвестный пакет")
+            raise ValueError(f"Неизвестный пакет: {package_id}")
 
         order_id = str(uuid.uuid4())
         now = utc_now()

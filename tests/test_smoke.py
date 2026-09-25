@@ -137,3 +137,19 @@ def test_explore_comments_requires_login():
 def test_explore_comments_list_not_found():
     response = client.get("/api/explore/nonexistent-id/comments")
     assert response.status_code == 400
+
+
+def test_create_payment_order_requires_login():
+    response = client.post(
+        "/api/payment/create-order",
+        json={"package_id": "notes_1"},
+    )
+    assert response.status_code == 401
+
+
+def test_create_payment_order_validation_error():
+    response = client.post(
+        "/api/payment/create-order",
+        json={"package_id": {}},
+    )
+    assert response.status_code == 422

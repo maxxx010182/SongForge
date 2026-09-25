@@ -1,12 +1,12 @@
 SongForge — КОМАНДЫ ДЛЯ СЕРВЕРА (копируй ТОЛЬКО одну строку за раз)
-Версия: 2.11.84 в GitHub. Нижний бар + ленд podarok.
+Версия: 2.11.85 в GitHub. Фикс открытия оплаты [object Object].
 
 === АКТУАЛЬНОЕ ===
-# 1) код студии (бар 2.11.83) + файлы ленда
+# 1) обновление кода на VPS
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# "version":"2.11.84"
+# "version":"2.11.85"
 
 # 2) первый раз ленд на поддомен (nginx + замочек). Повторно — тоже безопасно.
 bash /root/SongForge/scripts/install-podarok.sh

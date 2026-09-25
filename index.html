@@ -1209,7 +1209,7 @@ var authModalStudioCopy={title:'Сейчас начнётся магия',subtit
 function setAuthModalCopy(copy){var t=document.getElementById('authModalTitle');var s=document.getElementById('authModalSubtitle');if(t)t.textContent=copy.title;if(s)s.textContent=copy.subtitle;}
 function openAuthModal(context){setAuthModalCopy(context==='studio'?authModalStudioCopy:authModalDefaultCopy);authEmailStep='request';document.getElementById('authCodeBlock').classList.add('hidden');document.getElementById('authEmailSubmitBtn').textContent='Получить код';var hint=document.getElementById('authDevCodeHint');if(hint){hint.textContent='';hint.classList.add('hidden');}document.getElementById('authCodeInput').value='';clearAuthResendTimer();updateAuthResendBtn();var consent=document.getElementById('authConsentCheckbox');if(consent)consent.checked=false;applyAuthProvidersUI();updateAuthButtonsState();document.getElementById('authModal').classList.remove('hidden');}
 function closeAuthModal(){document.getElementById('authModal').classList.add('hidden');clearAuthResendTimer();setAuthModalCopy(authModalDefaultCopy);}
-function apiErrorDetail(data,fallback){if(!data)return fallback;var d=data.detail;if(typeof d==='string')return d;if(Array.isArray(d)&&d[0]&&d[0].msg)return d[0].msg;return fallback;}
+function apiErrorDetail(data,fallback){if(!data)return fallback||'Произошла ошибка';var d=data.detail!=null?data.detail:data.message;if(typeof d==='string'&&d.trim())return d.trim();if(Array.isArray(d)&&d.length){var msgs=d.map(function(item){if(!item)return'';if(typeof item==='string')return item;return item.msg||item.message||'';}).filter(Boolean);if(msgs.length)return msgs.join(', ');}if(typeof d==='object'&&d!==null){return d.msg||d.message||fallback||'Произошла ошибка';}return fallback||'Произошла ошибка';}
 async function requestAuthEmailCode(opts){opts=opts||{};var email=document.getElementById('authEmailInput').value.trim();if(!email){showToast('Введите email');return false;}if(!isAuthConsentGiven()){showToast('Отметьте согласие с документами');return false;}var resendBtn=document.getElementById('authResendCodeBtn');var mainBtn=document.getElementById('authEmailSubmitBtn');var prevMain=mainBtn?mainBtn.textContent:'';if(opts.resend){if(authResendLeft>0)return false;if(resendBtn){resendBtn.disabled=true;resendBtn.textContent='Отправляем...';}}else if(mainBtn){mainBtn.disabled=true;mainBtn.textContent='Отправляем...';}try{var res=await fetch('/api/auth/email/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){showToast(apiErrorDetail(data,'Не удалось отправить код'));return false;}authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');if(mainBtn)mainBtn.textContent='Войти';var hint=document.getElementById('authDevCodeHint');if(data.dev_code&&hint){hint.textContent='Ваш код: '+data.dev_code+' (на почту пока не приходит)';hint.classList.remove('hidden');}else if(hint&&!data.dev_code){hint.textContent='';hint.classList.add('hidden');}startAuthResendCooldown();showToast(data.message||(opts.resend?'Новый код отправлен':'Код отправлен на email'));return true;}catch(e){showToast('Ошибка сети — попробуйте снова');return false;}finally{if(mainBtn){mainBtn.disabled=false;if(authEmailStep==='request')mainBtn.textContent=prevMain||'Получить код';else mainBtn.textContent='Войти';updateAuthButtonsState();}if(opts.resend&&authResendLeft<=0)updateAuthResendBtn();}}
 async function resendAuthEmailCode(){if(authEmailStep!=='verify')return;if(authResendLeft>0)return;await requestAuthEmailCode({resend:true});}
 async function submitAuthEmail(){if(!isAuthConsentGiven()){showToast('Отметьте согласие с документами');return;}var email=document.getElementById('authEmailInput').value.trim();if(!email){showToast('Введите email');return;}if(authEmailStep==='request'){await requestAuthEmailCode();return;}var code=document.getElementById('authCodeInput').value.trim();if(!code){showToast('Введите код из письма');return;}var vres=await fetch('/api/auth/email/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,code:code}),...fetchOpts});var vdata=await vres.json().catch(function(){return{};});if(!vres.ok){showToast(apiErrorDetail(vdata,'Неверный код'));return;}closeAuthModal();await loadData();renderHomeExplore();showToast('Вы вошли в аккаунт');}
@@ -1488,6 +1488,7 @@ async function renderPackets() {
             '<div class="text-2xl font-semibold">' + p.price + '₽</div></div>';
     }).join('');
     function selectPacketEl(el) {
+        if (!el) return;
         document.querySelectorAll('.packet-item').forEach(function(p) { p.classList.remove('border-yellow-400/40'); });
         el.classList.add('border-yellow-400/40');
         activePacket.price = parseInt(el.dataset.price, 10);
@@ -1502,6 +1503,11 @@ async function renderPackets() {
     document.querySelectorAll('.packet-item').forEach(function(el) {
         if (want && parseInt(el.dataset.songs, 10) === want) pick = el;
     });
+    if (!pick && activePacket && activePacket.songs) {
+        document.querySelectorAll('.packet-item').forEach(function(el) {
+            if (parseInt(el.dataset.songs, 10) === activePacket.songs) pick = el;
+        });
+    }
     if (!pick) pick = document.querySelector('.packet-item');
     if (pick) selectPacketEl(pick);
 }
@@ -1683,16 +1689,19 @@ function resetPaymentButton(){
   btn.textContent=btn.dataset.label||'💳 Перейти к оплате';
 }
 window.addEventListener('pageshow',resetPaymentButton);
-async function startPaymentCheckout(packageId){if(!session.loggedIn){openAuthModal();return;}
+async function startPaymentCheckout(packageId){
+  if(typeof packageId !== 'string') packageId = null;
+  if(!session.loggedIn){openAuthModal();return;}
   var btn=document.getElementById('paymentConfirmBtn');
   if(btn&&btn.disabled)return;
   if(btn){btn.disabled=true;btn.dataset.label=btn.textContent;btn.textContent='Открываем оплату…';}
   savePendingStudioState();
-  var pkgId=packageId||('notes_'+activePacket.songs);
+  var songs=(activePacket&&activePacket.songs)?activePacket.songs:1;
+  var pkgId=(typeof packageId==='string'&&packageId)?packageId:('notes_'+songs);
   try{
     var res=await fetch('/api/payment/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_id:pkgId}),...fetchOpts});
-    var data=await res.json().catch(function(){return{}});
-    if(!res.ok){alert(data.detail||'Не удалось открыть оплату. Попробуйте ещё раз.');return;}
+    var data=await res.json().catch(function(){return{};});
+    if(!res.ok){alert(apiErrorDetail(data,'Не удалось открыть оплату. Попробуйте ещё раз.'));return;}
     if(data.payment_url){if(btn)btn.dataset.keepDisabled='1';window.location.href=data.payment_url;return;}
     alert(data.message||'Не удалось открыть оплату. Подождите минуту и нажмите ещё раз.');
   }catch(e){
@@ -1702,7 +1711,7 @@ async function startPaymentCheckout(packageId){if(!session.loggedIn){openAuthMod
     if(!btn||btn.dataset.keepDisabled!=='1')resetPaymentButton();
   }
 }
-document.getElementById('paymentConfirmBtn').addEventListener('click',startPaymentCheckout);
+document.getElementById('paymentConfirmBtn').addEventListener('click',function(){startPaymentCheckout();});
 document.getElementById('profileTopupBtn').addEventListener('click',function(){switchToView('payment');});
 document.getElementById('profileNameSaveBtn').addEventListener('click',saveProfileName);
 document.getElementById('profileNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')saveProfileName();});
