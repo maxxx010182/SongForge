@@ -81,7 +81,7 @@ def studio_legal_html(*, terms_url: str, privacy_url: str, offer_url: str) -> st
         f'и <a href="{offer_url}">офертой</a>.</i>'
     )
 FAQ_TEXT = (
-    "Первая проба бесплатна. Сколько нот — увидишь в студии, после того как услышишь.\n"
+    "Сначала собираем черновик и слушаем первые варианты в студии, а потом решаем по заказу.\n"
     "Сначала соберём, кому песня."
 )
 GREET_STAY_TEXT = "Тут. Можно ткнуть кнопку или написать своими словами."
@@ -529,4 +529,4 @@ def _voice_for_mirror(voice: str) -> str:
 def biz_studio_mirror(goal: str, detail: str, tone: str) -> str:
     parts = [p for p in (goal, detail, tone) if p]
     hold = ", ".join(parts) if parts else "идею"
-    return f"Собрал: {hold}. Первая проба бесплатна — послушаешь и решишь."
+    return f"Собрал: {hold}. В студии можно оценить звучание и решить."

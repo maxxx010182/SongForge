@@ -411,6 +411,7 @@ class MessengerService:
         name: str = "",
     ) -> dict:
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
@@ -421,10 +422,11 @@ class MessengerService:
                     END,
                     messages_ok = 1,
                     stopped_at = NULL, blocked_at = NULL,
+                    nudge_step = 0, next_nudge_at = ?,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (user_id, STAGE_TALK, now, contact["id"]),
+                (user_id, STAGE_TALK, next_at, now, contact["id"]),
             )
             self._add_consent(
                 conn,
@@ -541,15 +543,17 @@ class MessengerService:
             goal, contact.get("brief_mood") or "", contact.get("brief_detail") or ""
         )
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_whom = ?, brief = ?, funnel_stage = ?, funnel_await = '',
-                    segment = 'business', last_channel = 'max', updated_at = ?
+                    segment = 'business', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (goal, brief, STAGE_BIZ_DETAIL, now, contact["id"]),
+                (goal, brief, STAGE_BIZ_DETAIL, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -557,15 +561,17 @@ class MessengerService:
         goal = contact.get("brief_whom") or ""
         brief = compose_brief_business(goal, contact.get("brief_mood") or "", detail)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_detail = ?, brief = ?, funnel_stage = ?, funnel_await = '',
+                    nudge_step = 0, next_nudge_at = ?,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (detail, brief, STAGE_BIZ_TONE, now, contact["id"]),
+                (detail, brief, STAGE_BIZ_TONE, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -573,15 +579,17 @@ class MessengerService:
         goal = contact.get("brief_whom") or ""
         brief = compose_brief_business(goal, tone, contact.get("brief_detail") or "")
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_mood = ?, brief = ?, funnel_stage = ?, funnel_await = '',
+                    nudge_step = 0, next_nudge_at = ?,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (tone, brief, STAGE_VOICE, now, contact["id"]),
+                (tone, brief, STAGE_VOICE, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -629,15 +637,17 @@ class MessengerService:
             contact, brief_whom=whom, brief_detail=extra, segment=plot
         )
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_whom = ?, brief_detail = ?, brief = ?, funnel_stage = ?,
-                    segment = ?, funnel_await = '', last_channel = 'max', updated_at = ?
+                    segment = ?, funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (whom, extra, brief, stage, plot, now, contact["id"]),
+                (whom, extra, brief, stage, plot, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -645,30 +655,34 @@ class MessengerService:
         next_stage = STAGE_UNSAID if occasion_key == "unsaid" else STAGE_DETAIL
         brief = self._gift_brief(contact, brief_mood=mood)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_mood = ?, occasion_key = ?, brief = ?, funnel_stage = ?,
-                    funnel_await = '', last_channel = 'max', updated_at = ?
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (mood, occasion_key, brief, next_stage, now, contact["id"]),
+                (mood, occasion_key, brief, next_stage, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_theme(self, contact: dict, theme: str, *, theme_key: str = "") -> dict:
         brief = self._gift_brief(contact, brief_mood=theme, segment="just")
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_mood = ?, occasion_key = ?, brief = ?, funnel_stage = ?,
-                    segment = 'just', funnel_await = '', last_channel = 'max', updated_at = ?
+                    segment = 'just', funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (theme, theme_key, brief, STAGE_DETAIL, now, contact["id"]),
+                (theme, theme_key, brief, STAGE_DETAIL, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -678,15 +692,17 @@ class MessengerService:
     def set_genre(self, contact: dict, genre: str) -> dict:
         brief = self._gift_brief(contact, brief_genre=genre)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_genre = ?, brief = ?, funnel_stage = ?,
-                    funnel_await = '', last_channel = 'max', updated_at = ?
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (genre, brief, STAGE_SOUND, now, contact["id"]),
+                (genre, brief, STAGE_SOUND, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -696,51 +712,57 @@ class MessengerService:
     def set_detail(self, contact: dict, detail: str) -> dict:
         brief = self._gift_brief(contact, brief_detail=detail)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_detail = ?, brief = ?, funnel_stage = ?,
-                    funnel_await = '', last_channel = 'max', updated_at = ?
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (detail, brief, STAGE_GENRE, now, contact["id"]),
+                (detail, brief, STAGE_GENRE, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_sound(self, contact: dict, sound: str) -> dict:
         brief = self._gift_brief(contact, brief_sound=sound)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_sound = ?, brief = ?, funnel_stage = ?,
-                    funnel_await = '', last_channel = 'max', updated_at = ?
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (sound, brief, STAGE_VOICE, now, contact["id"]),
+                (sound, brief, STAGE_VOICE, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def set_voice(self, contact: dict, voice: str) -> dict:
         brief = self._gift_brief(contact, brief_voice=voice)
         now = utc_now()
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET brief_voice = ?, brief = ?, funnel_stage = ?,
-                    funnel_await = '', last_channel = 'max', updated_at = ?
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
-                (voice, brief, STAGE_CONFIRM, now, contact["id"]),
+                (voice, brief, STAGE_CONFIRM, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def mark_sent_to_site(self, contact: dict) -> dict:
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=1)
+        next_at = evening_after(contact.get("tz_name") or "", days=0)
         with get_connection() as conn:
             conn.execute(
                 """
@@ -784,12 +806,12 @@ class MessengerService:
                   AND next_nudge_at <= ?
                   AND messages_ok = 1
                   AND blocked_at IS NULL
-                  AND funnel_stage = ?
+                  AND funnel_stage NOT IN (?, ?)
                   AND COALESCE(nudge_step, 0) < 9
                 ORDER BY next_nudge_at ASC
                 LIMIT {limit}
                 """,
-                (now, STAGE_SENT),
+                (now, STAGE_GATE, STAGE_STOPPED),
             ).fetchall()
         return [dict(row) for row in rows]
 
@@ -1048,6 +1070,20 @@ class MessengerService:
                 generation_id=generation_id,
                 due_at=evening_after(tz, days=7),
             )
+        elif kind == "how_received":
+            self.schedule_followup(
+                contact=contact,
+                kind="next_person",
+                generation_id=generation_id,
+                due_at=evening_after(tz, days=7),
+            )
+        elif kind in {"next_person", "next_person_periodic"}:
+            self.schedule_followup(
+                contact=contact,
+                kind="next_person_periodic",
+                generation_id=generation_id,
+                due_at=evening_after(tz, days=8),
+            )
 
     def on_generation_ready(self, *, user_id: str, generation_id: str) -> None:
         contact = self.get_max_contact_for_user(user_id)
@@ -1121,12 +1157,6 @@ class MessengerService:
             kind="how_received",
             generation_id=generation_id,
             due_at=evening_after(tz, days=3),
-        )
-        self.schedule_followup(
-            contact=contact,
-            kind="next_person",
-            generation_id=generation_id,
-            due_at=evening_after(tz, days=45),
         )
 
     def list_due_followups(self, *, limit: int = 20) -> list[dict]:
