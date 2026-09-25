@@ -74,7 +74,7 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
         <select id="genFilter"><option value="">Все</option><option value="generating">generating</option><option value="success">success</option><option value="error">error</option></select>
         <button class="btn" type="button" id="genReload">Обновить</button>
       </div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Название</th><th>Статус</th><th>User</th><th>task_id</th></tr></thead><tbody id="genBody"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Название</th><th>Статус</th><th>User</th><th>Аудио</th><th>task_id</th></tr></thead><tbody id="genBody"></tbody></table></div>
     </div>
     <div id="panelUsers" class="panel sec">
       <h2>Пользователи</h2>
@@ -154,8 +154,12 @@ async function loadProviderBal(){
 }
 async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);loadProviderBal();}
 async function loadGen(){var st=document.getElementById('genFilter').value;var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';var rows=await api('/api/admin/generations'+q);document.getElementById('genBody').innerHTML=rows.map(function(g){
-  return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
-}).join('')||'<tr><td colspan="5" class="muted">Пусто</td></tr>';}
+  var audioHtml='—';var links=[];
+  if(g.music_url_a)links.push('<a href="'+esc(g.music_url_a)+'" target="_blank" rel="noopener" class="btn primary" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 1</a>');
+  if(g.music_url_b)links.push('<a href="'+esc(g.music_url_b)+'" target="_blank" rel="noopener" class="btn" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 2</a>');
+  if(links.length)audioHtml=links.join(' ');
+  return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td style="white-space:nowrap">'+audioHtml+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
+}).join('')||'<tr><td colspan="6" class="muted">Пусто</td></tr>';}
 async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
   document.getElementById('userBody').innerHTML=rows.map(function(u){
     return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-id="'+esc(u.id)+'" data-bal="'+u.balance+'" type="button">± ноты</button></td></tr>';

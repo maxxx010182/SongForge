@@ -201,6 +201,7 @@ class AdminService:
         query = """
             SELECT g.id, g.title, g.status, g.task_id, g.created_at, g.user_id,
                    g.purchased, g.note_charged, g.fail_msg,
+                   g.music_url_a, g.music_url_b,
                    u.email, u.display_name
             FROM generations g
             LEFT JOIN users u ON u.id = g.user_id

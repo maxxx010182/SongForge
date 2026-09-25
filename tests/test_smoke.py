@@ -153,3 +153,12 @@ def test_create_payment_order_validation_error():
         json={"package_id": {}},
     )
     assert response.status_code == 422
+
+
+def test_admin_list_generations_includes_audio_urls():
+    from backend.services.admin_service import AdminService
+    rows = AdminService().list_generations(limit=5)
+    assert isinstance(rows, list)
+    for r in rows:
+        assert "music_url_a" in r
+        assert "music_url_b" in r
