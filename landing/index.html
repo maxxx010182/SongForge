@@ -1028,31 +1028,357 @@ footer{
 /* mobile fallback grid hidden on desktop by default */
 #povody .povody-grid{ display:none; }
 
-/* ---------- RESPONSIVE ---------- */
+/* ---------- RESPONSIVE (MOBILE & TABLET) ---------- */
 @media (max-width: 860px){
-  .wrap{ padding:0 22px; }
-  .hero-content{ padding:0 22px 8vh; }
-  .hero-outer{ height:320vh; }
-  .occ-outer{ height:220vh; }
-  section{ padding:88px 0; }
-  .h-theater{ display:none; }
-  .how-intro{ grid-template-columns:1fr; gap:32px; }
-  #povody .povody-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:48px; }
-  .pv-1{ grid-column:span 2; grid-row:span 1; min-height:auto; }
-  .pv-2,.pv-3{ grid-column:span 2; }
-  .pv-4,.pv-5,.pv-6{ grid-column:span 1; }
-  .cards-moment .try-visual{ flex-direction:column; align-items:center; }
-  .cards-moment .player-card{ width:82vw; max-width:320px; }
-  .footer-top{ flex-direction:column; }
-  .theater{ height:340vh; }
-  #howTheater{ height:380vh; }
-  .ghost{ font-size:22vw; --ghost-scale-y:1.2; -webkit-text-stroke-width:1px; }
-  .stat-index{ right:22px; }
-  .idx-ticks span{ width:12px; }
-  .idx-ticks span.on{ width:20px; }
-  .stats-row{ gap:34px; }
-  .odo-line{ font-size:clamp(62px, 19vw, 108px); }
-  .m-title{ font-size:clamp(1.7rem, 7vw, 2.6rem); }
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  body {
+    padding-bottom: 74px;
+  }
+  .wrap{
+    padding:0 18px;
+    max-width: 100%;
+  }
+
+  /* Navigation */
+  nav {
+    padding: 12px 0;
+  }
+  nav.scrolled {
+    padding: 10px 0;
+  }
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .nav-cta {
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* Hero Section */
+  .hero-outer {
+    height: 190vh;
+  }
+  .hero-sticky {
+    height: 100vh;
+    height: 100dvh;
+    align-items: flex-end;
+  }
+  .hero-content {
+    padding: 0 18px 24px;
+    max-width: 100%;
+  }
+  .eyebrow {
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    gap: 7px;
+  }
+  .eyebrow::before {
+    width: 5px;
+    height: 5px;
+  }
+  h1.hero-title {
+    font-size: clamp(1.65rem, 7.5vw, 2.3rem) !important;
+    line-height: 1.18 !important;
+    letter-spacing: -0.01em;
+    max-width: 100% !important;
+    margin-bottom: 12px;
+  }
+  .hero-sub {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 22px;
+    max-width: 100%;
+  }
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 15px 20px;
+    font-size: 14.5px;
+  }
+  .scroll-cue {
+    display: none;
+  }
+
+  section {
+    padding: 64px 0;
+  }
+  .section-title {
+    font-size: clamp(1.65rem, 6.8vw, 2.2rem) !important;
+    line-height: 1.2 !important;
+  }
+  .section-sub {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+  .kicker {
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  /* Povody (Occasions) */
+  .h-theater {
+    display: none;
+  }
+  #povody .povody-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 32px;
+  }
+  .pv-card {
+    width: 100% !important;
+    min-height: 145px !important;
+    padding: 24px 20px !important;
+    border-radius: 18px !important;
+  }
+  .pv-card h3 {
+    font-size: 1.3rem !important;
+    margin-bottom: 6px !important;
+  }
+  .pv-card p {
+    font-size: 0.92rem !important;
+    line-height: 1.45 !important;
+  }
+  .povody-cta {
+    margin-top: 32px;
+  }
+
+  /* How It Works (Bento steps, no scroll trap) */
+  .how-intro {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .how-intro-steps {
+    display: none;
+  }
+  #howTheater {
+    height: auto !important;
+    margin-top: 24px !important;
+  }
+  #howTheater .theater-sticky {
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+  #howTheater .ghost,
+  #howTheater .stat-index {
+    display: none !important;
+  }
+  #howTheater .moment {
+    position: static !important;
+    inset: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    filter: none !important;
+    pointer-events: auto !important;
+    padding: 22px 20px !important;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    text-align: left !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  #howTheater .m-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+  #howTheater .m-title {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  #howTheater .m-desc {
+    font-size: 0.92rem !important;
+    line-height: 1.5 !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  #howTheater .stats-moment {
+    background: linear-gradient(135deg, rgba(123,47,247,0.14), rgba(224,38,196,0.14)) !important;
+    border-color: rgba(224,38,196,0.3) !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 24px 16px !important;
+    margin-top: 6px;
+  }
+  .stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .stat-item {
+    gap: 6px !important;
+  }
+  .odo-line {
+    font-size: clamp(34px, 9vw, 44px) !important;
+    justify-content: center !important;
+  }
+  .stat-sub {
+    font-size: 10px !important;
+    letter-spacing: 0.4px !important;
+    text-align: center !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Try Section (Clean demo player) */
+  #tryTheater {
+    height: auto !important;
+    margin-top: 10px !important;
+  }
+  #tryTheater .theater-sticky {
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  #tryTheater .ghost,
+  #tryTheater .stat-index,
+  #tryTheater .moment:not(.cards-moment) {
+    display: none !important;
+  }
+  #tryTheater .cards-moment {
+    position: static !important;
+    inset: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    filter: none !important;
+    pointer-events: auto !important;
+    padding: 0 !important;
+    text-align: center !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  #tryTheater .cards-moment .m-label {
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+  #tryTheater .cards-moment .try-visual {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100% !important;
+    margin: 16px 0 !important;
+  }
+  #tryTheater .cards-moment .player-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    background: var(--bg-card);
+  }
+  #tryTheater .m-desc {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+    padding: 0 10px;
+    max-width: 100% !important;
+  }
+
+  /* Occasions Montage */
+  .occ-outer {
+    height: auto !important;
+    min-height: 220px;
+    padding: 60px 0 !important;
+  }
+  .occ-sticky {
+    position: static !important;
+    height: auto !important;
+  }
+  .occ-content {
+    padding: 0 18px !important;
+  }
+  .occ-content .section-title {
+    font-size: clamp(1.65rem, 6.8vw, 2.2rem) !important;
+  }
+
+  /* Final CTA */
+  .final-cta {
+    padding: 60px 0 50px !important;
+  }
+  .final-cta h2 {
+    font-size: clamp(1.6rem, 7vw, 2.2rem) !important;
+    line-height: 1.2 !important;
+    margin-bottom: 14px !important;
+  }
+  .final-cta p {
+    font-size: 0.95rem !important;
+    margin-bottom: 24px !important;
+    line-height: 1.5 !important;
+  }
+  .final-cta .btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Footer */
+  footer {
+    padding: 36px 0 28px !important;
+  }
+  .footer-top {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+  .footer-links {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .footer-bottom {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* Mobile Bottom Sticky Bar */
+  #mobileBottomBar {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 16px max(12px, env(safe-area-inset-bottom, 12px));
+    background: rgba(10, 10, 15, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    z-index: 150;
+    transform: translateY(110%);
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  #mobileBottomBar.show {
+    transform: translateY(0);
+  }
+  .mobile-bar-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px !important;
+    font-size: 14.5px !important;
+    border-radius: 100px !important;
+    box-shadow: 0 4px 24px rgba(224, 38, 196, 0.45) !important;
+  }
+}
+@media (min-width: 861px) {
+  #mobileBottomBar {
+    display: none !important;
+  }
 }
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
@@ -1075,7 +1401,7 @@ footer{
 <nav id="nav">
   <div class="wrap">
     <div class="logo">создай<b>•</b>свою<b>•</b>песню</div>
-    <a href="https://sozdaipesnu.ru/?utm_source=landing&amp;utm_medium=web&amp;utm_campaign=gift_song&amp;utm_content=nav" class="nav-cta">Попробовать бесплатно</a>
+    <a href="https://sozdaipesnu.ru/?utm_source=landing&amp;utm_medium=web&amp;utm_campaign=gift_song&amp;utm_content=nav" class="nav-cta">Создать песню</a>
   </div>
 </nav>
 
@@ -1336,19 +1662,28 @@ footer{
 <!-- FINAL CTA -->
 <section class="final-cta">
   <div class="wrap">
-    <h2 class="kinetic">Попробуйте бесплатно — <em>2 демо-варианта по 30 сек</em></h2>
+    <h2 class="kinetic">Попробуйте прямо сейчас — <em>2 демо-варианта по 30 сек</em></h2>
     <p class="reveal">Для новых пользователей: сначала послушаете превью, потом решите — брать полные версии или нет.</p>
     <div class="reveal cta-pulse-wrap">
       <span class="cta-ring"></span>
       <span class="cta-ring cta-ring-2"></span>
       <a href="https://sozdaipesnu.ru/?utm_source=landing&amp;utm_medium=web&amp;utm_campaign=gift_song&amp;utm_content=final" class="btn-primary">
         <span class="shine"></span>
-        Попробовать бесплатно
+        Создать свою песню
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
   </div>
 </section>
+
+<!-- MOBILE STICKY BOTTOM BAR -->
+<div id="mobileBottomBar">
+  <a href="https://sozdaipesnu.ru/?utm_source=landing&amp;utm_medium=web&amp;utm_campaign=gift_song&amp;utm_content=mobile_bar" class="btn-primary mobile-bar-btn">
+    <span class="shine"></span>
+    Создать свою песню
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </a>
+</div>
 
 <footer>
   <div class="wrap">
@@ -1377,10 +1712,26 @@ footer{
 <script>
 /* ---------- SMOOTH SCROLL (Lenis) ---------- */
 var reducedMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth <= 860;
 var lenis = null;
-if(!reducedMotionGlobal && window.Lenis){
+if(!reducedMotionGlobal && !isTouchDevice && window.Lenis){
   lenis = new Lenis({ duration: 1.15, smoothWheel: true });
 }
+
+/* ---------- MOBILE BOTTOM BAR WATCHER ---------- */
+(function(){
+  var bar = document.getElementById('mobileBottomBar');
+  if(!bar) return;
+  function updateBar(){
+    if(window.scrollY > 300){
+      bar.classList.add('show');
+    } else {
+      bar.classList.remove('show');
+    }
+  }
+  window.addEventListener('scroll', updateBar, {passive:true});
+  updateBar();
+})();
 
 /* ---------- PROGRESS BAR ---------- */
 var progressBarEl = document.getElementById('progressBar');
@@ -1674,17 +2025,9 @@ function updateProgressBar(){
 /* ---------- THEATER ENGINE (pinned multi-moment scene) ---------- */
 (function(){
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var section = document.getElementById('howTheater');
   if(!section){ window.howTheaterUpdate = function(){}; return; }
-
-  if(reducedMotion){
-    // show all moments statically, skip animation engine
-    section.querySelectorAll('.moment').forEach(function(m){
-      m.style.visibility='visible'; m.style.opacity=1; m.style.position='relative'; m.style.marginBottom='60px';
-    });
-    window.howTheaterUpdate = function(){};
-    return;
-  }
 
   var moments = Array.prototype.slice.call(section.querySelectorAll('.moment'));
   var ghost = section.querySelector('.ghost');
@@ -1736,6 +2079,12 @@ function updateProgressBar(){
   }
 
   Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(buildOdo);
+
+  if(reducedMotion || isMobile){
+    Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(function(o){ setOdo(o, 1); });
+    window.howTheaterUpdate = function(){};
+    return;
+  }
 
   var T_FIN = 0.14, T_FOUT = 0.12, T_ROLL_START = 0.03, T_ROLL_LEN = 0.90;
   var curIdx = -1;
@@ -1840,14 +2189,10 @@ function updateProgressBar(){
 
 /* ---------- TRY THEATER ENGINE (reuses generic vertical theater pattern) ---------- */
 (function(){
+  var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var section = document.getElementById('tryTheater');
-  if(!section){ window.tryTheaterUpdate = function(){}; return; }
-
-  if(reducedMotion){
-    section.querySelectorAll('.moment').forEach(function(m){
-      m.style.visibility='visible'; m.style.opacity=1; m.style.position='relative'; m.style.marginBottom='60px';
-    });
+  if(!section || reducedMotion || isMobile){
     window.tryTheaterUpdate = function(){};
     return;
   }
