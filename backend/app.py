@@ -662,7 +662,7 @@ async def health():
     return {
         "ok": True,
         "service": "SongForge",
-        "version": "2.11.85",
+        "version": app.version,
         "max_bot": bool(MAX_BOT_TOKEN),
         "redis": job_queue.ping(),
         "s3": StorageService().enabled(),

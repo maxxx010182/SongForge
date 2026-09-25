@@ -1,6 +1,6 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 17
+# deploy-script-version: 18
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
@@ -175,7 +175,7 @@ free_port_8000() {
   pm2 stop songforge 2>/dev/null || true
   for _ in 1 2 3 4 5; do
     if command -v fuser >/dev/null 2>&1; then
-      fuser -k 8000/tcp 2>/dev/null || true
+      fuser -k -9 8000/tcp 2>/dev/null || true
     fi
     if command -v lsof >/dev/null 2>&1; then
       for pid in $(lsof -t -i:8000 2>/dev/null); do
@@ -195,6 +195,7 @@ free_port_8000() {
 
 start_songforge() {
   cd "$DIR"
+  pm2 delete songforge 2>/dev/null || true
   pm2 start app.py --name songforge --interpreter ./venv/bin/python --cwd "$DIR"
   pm2 delete songforge-worker 2>/dev/null || true
   pm2 start worker.py --name songforge-worker --interpreter ./venv/bin/python --cwd "$DIR"
