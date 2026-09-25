@@ -1,11 +1,11 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.89 in GitHub. Cinematic mobile scroll animations, canvas video scrub, and automated VPS disk maintenance.
+Version: 2.11.90 in GitHub. Mobile sticky scroll fix (overflow clip, canvas scrub, horizontal cards carousel).
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.89"
+# expected: "version":"2.11.90"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

@@ -40,11 +40,13 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+html, body{
+  overflow-x:clip;
+}
 body{
   background:var(--bg);
   color:var(--text);
   font-family:'Space Grotesk', sans-serif;
-  overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
 }
 ::selection{background:var(--magenta);color:#fff;}
@@ -1031,9 +1033,8 @@ footer{
 /* ---------- RESPONSIVE (MOBILE & TABLET) ---------- */
 @media (max-width: 860px){
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
-    -webkit-overflow-scrolling: touch;
   }
   body {
     padding-bottom: 74px;
@@ -1062,10 +1063,12 @@ footer{
 
   /* Hero Section */
   .hero-outer {
-    height: 300vh;
+    height: 320vh;
     position: relative;
+    touch-action: pan-y;
   }
   .hero-sticky {
+    position: -webkit-sticky;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -1141,15 +1144,21 @@ footer{
   }
 
   /* Povody (Cinematic Horizontal Pinned Gallery on Mobile) */
+  #povody {
+    padding-top: 40px !important;
+    padding-bottom: 24px !important;
+  }
   #povody .povody-grid {
     display: none !important;
   }
   .h-theater {
     display: block !important;
     position: relative !important;
-    height: 260vh !important;
+    height: 270vh !important;
+    touch-action: pan-y;
   }
   .h-theater-sticky {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     height: 100vh !important;
@@ -1178,7 +1187,7 @@ footer{
   #povodyTheater .stat-index {
     display: flex !important;
     position: absolute !important;
-    top: max(20px, env(safe-area-inset-top, 20px)) !important;
+    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
     left: 20px !important;
     right: 20px !important;
     justify-content: space-between !important;
@@ -1237,8 +1246,10 @@ footer{
     position: relative !important;
     height: 300vh !important;
     margin-top: 0 !important;
+    touch-action: pan-y;
   }
   #howTheater .theater-sticky {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     height: 100vh !important;
@@ -1268,7 +1279,7 @@ footer{
   #howTheater .stat-index {
     display: flex !important;
     position: absolute !important;
-    top: max(20px, env(safe-area-inset-top, 20px)) !important;
+    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
     left: 20px !important;
     right: 20px !important;
     justify-content: space-between !important;
@@ -1344,8 +1355,10 @@ footer{
     position: relative !important;
     height: 280vh !important;
     margin-top: 0 !important;
+    touch-action: pan-y;
   }
   #tryTheater .theater-sticky {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     height: 100vh !important;
@@ -1375,7 +1388,7 @@ footer{
   #tryTheater .stat-index {
     display: flex !important;
     position: absolute !important;
-    top: max(20px, env(safe-area-inset-top, 20px)) !important;
+    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
     left: 20px !important;
     right: 20px !important;
     justify-content: space-between !important;
@@ -1429,8 +1442,10 @@ footer{
     position: relative !important;
     padding: 0 !important;
     display: block !important;
+    touch-action: pan-y;
   }
   .occ-sticky {
+    position: -webkit-sticky !important;
     position: sticky !important;
     top: 0 !important;
     height: 100vh !important;
@@ -1449,6 +1464,7 @@ footer{
     height: 100% !important;
     object-fit: cover !important;
     z-index: 0 !important;
+    opacity: 1 !important;
   }
   .occ-scrim {
     position: absolute !important;
@@ -1915,8 +1931,11 @@ function updateProgressBar(){
 
   function resize(){
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
+    var w = canvas.clientWidth || window.innerWidth;
+    var h = canvas.clientHeight || window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    drawFrame(currentFrame);
   }
   window.addEventListener('resize', resize);
   resize();
@@ -1925,6 +1944,9 @@ function updateProgressBar(){
   function drawFrame(idx){
     var img = images[idx];
     if(!img || !img.complete || img.naturalWidth === 0) return;
+    if(canvas.width === 0 || canvas.height === 0){
+      resize();
+    }
     var cw = canvas.width, ch = canvas.height;
     var iw = img.naturalWidth, ih = img.naturalHeight;
     var scale = Math.max(cw/iw, ch/ih);
@@ -1976,11 +1998,16 @@ function updateProgressBar(){
 
     // On mobile: text dissolves gracefully as user starts scrolling so the video is fully visible!
     if(isMobile && heroContent){
-      if(progress < 0.28){
-        var q = progress / 0.20;
+      if(progress < 0.12){
+        heroContent.style.opacity = '1';
+        heroContent.style.transform = 'translateY(0)';
+        heroContent.style.pointerEvents = 'auto';
+        if(heroScrim) heroScrim.style.opacity = '1';
+      } else if(progress < 0.38){
+        var q = (progress - 0.12) / 0.26;
         var textOp = Math.max(0, 1 - q);
         heroContent.style.opacity = textOp.toFixed(3);
-        heroContent.style.transform = 'translateY(' + (-q * 36).toFixed(1) + 'px)';
+        heroContent.style.transform = 'translateY(' + (-q * 28).toFixed(1) + 'px)';
         heroContent.style.pointerEvents = textOp < 0.1 ? 'none' : 'auto';
         if(heroScrim) heroScrim.style.opacity = Math.max(0.25, 1 - q * 0.75).toFixed(3);
       } else {
@@ -2015,8 +2042,11 @@ function updateProgressBar(){
 
   function resize(){
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
+    var w = canvas.clientWidth || window.innerWidth;
+    var h = canvas.clientHeight || window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    drawFrame(currentFrame);
   }
   window.addEventListener('resize', resize);
   resize();
@@ -2025,6 +2055,9 @@ function updateProgressBar(){
   function drawFrame(idx){
     var img = images[idx];
     if(!img || !img.complete || img.naturalWidth === 0) return;
+    if(canvas.width === 0 || canvas.height === 0){
+      resize();
+    }
     var cw = canvas.width, ch = canvas.height;
     var iw = img.naturalWidth, ih = img.naturalHeight;
     var scale = Math.max(cw/iw, ch/ih);
@@ -2040,7 +2073,10 @@ function updateProgressBar(){
         var img = new Image();
         img.onload = function(){
           loaded++;
-          if(idx===1){ drawFrame(0); canvas.classList.add('ready'); }
+          if(idx===1){
+            drawFrame(0);
+            canvas.classList.add('ready');
+          }
         };
         img.onerror = function(){ loaded++; };
         img.src = folder + 'frame_' + pad(idx) + '.jpg';
@@ -2049,7 +2085,7 @@ function updateProgressBar(){
     }
   }
 
-  // lazy-start: only begin loading frames once the section is getting close to view
+  // Preload frames ahead of time with a generous margin so they are ready before user reaches the section:
   var io = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
       if(e.isIntersecting && !started){
@@ -2058,8 +2094,16 @@ function updateProgressBar(){
         io.disconnect();
       }
     });
-  }, {rootMargin: '800px 0px 800px 0px'});
+  }, {rootMargin: '1500px 0px 1500px 0px'});
   io.observe(section);
+
+  // Safety fallback: preload after 2.5s in background
+  setTimeout(function(){
+    if(!started){
+      started = true;
+      preload();
+    }
+  }, 2500);
 
   var occContent = section.querySelector('.occ-content');
   function onScroll(){
@@ -2074,8 +2118,11 @@ function updateProgressBar(){
     if(!reducedMotion) drawFrame(idx);
 
     if(isMobile && occContent){
-      if(progress < 0.25){
-        var q = progress / 0.20;
+      if(progress < 0.12){
+        occContent.style.opacity = '1';
+        occContent.style.transform = 'scale(1)';
+      } else if(progress < 0.35){
+        var q = (progress - 0.12) / 0.23;
         occContent.style.opacity = Math.max(0, 1 - q).toFixed(3);
         occContent.style.transform = 'scale(' + (1 - q * 0.08).toFixed(3) + ')';
       } else {
@@ -2261,6 +2308,7 @@ function updateProgressBar(){
 
   function setOdo(el, qv){
     var stag = 0.06;
+    if(!el || !el._cells) return;
     el._cells.forEach(function(c){
       var raw = clamp((qv - c.idx*stag) / (1 - (c.n-1)*stag), 0, 1);
       var pos = easeInOutCubic(raw) * c.travel;
@@ -2300,9 +2348,9 @@ function updateProgressBar(){
     }
     if(idx !== curIdx){
       curIdx = idx;
-      idxCurrent.textContent = '0' + (idx + 1);
+      if(idxCurrent) idxCurrent.textContent = '0' + (idx + 1);
       ticks.forEach(function(t, i){ t.classList.toggle('on', i === idx); });
-      ghost.textContent = ghostWords[idx] || '';
+      if(ghost) ghost.textContent = ghostWords[idx] || '';
     }
 
     moments.forEach(function(m, i){
@@ -2322,16 +2370,17 @@ function updateProgressBar(){
       m.style.visibility = 'visible';
       m.style.opacity = op.toFixed(3);
       m.style.transform = 'scale(' + scale.toFixed(4) + ')';
-      var maxBlur = isMobile ? 5 : 12;
-      m.style.filter = 'blur(' + ((1-op)*maxBlur).toFixed(1) + 'px)';
+      var isMob = window.innerWidth <= 860;
+      var maxBlur = isMob ? 0 : 12;
+      m.style.filter = maxBlur > 0 ? ('blur(' + ((1-op)*maxBlur).toFixed(1) + 'px)') : 'none';
 
       var qv = clamp((q - T_ROLL_START) / T_ROLL_LEN, 0, 1);
       Array.prototype.slice.call(m.querySelectorAll('.odo')).forEach(function(o){ setOdo(o, qv); });
 
-      if(i === idx){
-        var ghostOp = isMobile ? (op * 0.18).toFixed(3) : (op * 0.85).toFixed(3);
+      if(i === idx && ghost){
+        var ghostOp = isMob ? (op * 0.18).toFixed(3) : (op * 0.85).toFixed(3);
         ghost.style.opacity = ghostOp;
-        ghost.style.transform = 'translate(-50%,-50%) scaleY(var(--ghost-scale-y)) translateX(' + ((0.5-q)*(isMobile ? 12 : 7)).toFixed(2) + 'vw)';
+        ghost.style.transform = 'translate(-50%,-50%) scaleY(var(--ghost-scale-y)) translateX(' + ((0.5-q)*(isMob ? 12 : 7)).toFixed(2) + 'vw)';
       }
     });
   };
@@ -2364,17 +2413,20 @@ function updateProgressBar(){
     section.classList.toggle('is-active', visible && progress > 0.002 && progress < 0.998);
     if(!visible) return;
 
-    var maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth + (isMobile ? 24 : 0));
+    var isMob = window.innerWidth <= 860;
+    var maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth + (isMob ? 28 : 0));
     track.style.transform = 'translateX(-' + (progress * maxTranslate).toFixed(1) + 'px)';
 
     var N = cards.length;
     var idx = clamp(Math.floor(progress * N), 0, N-1);
     if(idx !== curIdx){
       curIdx = idx;
-      idxCurrent.textContent = '0' + (idx + 1);
+      if(idxCurrent) idxCurrent.textContent = '0' + (idx + 1);
       ticks.forEach(function(t, i){ t.classList.toggle('on', i === idx); });
-      ghost.textContent = ghostWords[idx] || '';
-      ghost.style.opacity = '0.5';
+      if(ghost){
+        ghost.textContent = ghostWords[idx] || '';
+        ghost.style.opacity = '0.5';
+      }
     }
   };
 })();
@@ -2414,9 +2466,9 @@ function updateProgressBar(){
     var idx = clamp(Math.floor(progress / w), 0, N-1);
     if(idx !== curIdx){
       curIdx = idx;
-      idxCurrent.textContent = '0' + (idx + 1);
+      if(idxCurrent) idxCurrent.textContent = '0' + (idx + 1);
       ticks.forEach(function(t, i){ t.classList.toggle('on', i === idx); });
-      ghost.textContent = ghostWords[idx] || '';
+      if(ghost) ghost.textContent = ghostWords[idx] || '';
     }
 
     moments.forEach(function(m, i){
@@ -2435,13 +2487,14 @@ function updateProgressBar(){
       m.style.visibility = 'visible';
       m.style.opacity = op.toFixed(3);
       m.style.transform = 'scale(' + scale.toFixed(4) + ')';
-      var maxBlur = isMobile ? 5 : 10;
-      m.style.filter = 'blur(' + ((1-op)*maxBlur).toFixed(1) + 'px)';
+      var isMob = window.innerWidth <= 860;
+      var maxBlur = isMob ? 0 : 10;
+      m.style.filter = maxBlur > 0 ? ('blur(' + ((1-op)*maxBlur).toFixed(1) + 'px)') : 'none';
 
-      if(i === idx){
-        var ghostOp = isMobile ? (op * 0.18).toFixed(3) : (op * 0.85).toFixed(3);
+      if(i === idx && ghost){
+        var ghostOp = isMob ? (op * 0.18).toFixed(3) : (op * 0.85).toFixed(3);
         ghost.style.opacity = ghostOp;
-        ghost.style.transform = 'translate(-50%,-50%) scaleY(var(--ghost-scale-y)) translateX(' + ((0.5-q)*(isMobile ? 12 : 7)).toFixed(2) + 'vw)';
+        ghost.style.transform = 'translate(-50%,-50%) scaleY(var(--ghost-scale-y)) translateX(' + ((0.5-q)*(isMob ? 12 : 7)).toFixed(2) + 'vw)';
       }
     });
   };
@@ -2521,17 +2574,24 @@ function updateProgressBar(){
   requestAnimationFrame(tick);
 })();
 
-/* ---------- MASTER RAF LOOP: drives Lenis + progress bar ---------- */
+/* ---------- MASTER RAF LOOP + SCROLL LISTENER ---------- */
 (function(){
+  function updateAllTheaters(){
+    try { updateProgressBar(); } catch(e){}
+    try { if(window.howTheaterUpdate) window.howTheaterUpdate(); } catch(e){}
+    try { if(window.povodyTheaterUpdate) window.povodyTheaterUpdate(); } catch(e){}
+    try { if(window.tryTheaterUpdate) window.tryTheaterUpdate(); } catch(e){}
+  }
+
   function masterTick(time){
-    if(lenis) lenis.raf(time);
-    updateProgressBar();
-    if(window.howTheaterUpdate) window.howTheaterUpdate();
-    if(window.povodyTheaterUpdate) window.povodyTheaterUpdate();
-    if(window.tryTheaterUpdate) window.tryTheaterUpdate();
+    try { if(lenis) lenis.raf(time); } catch(e){}
+    updateAllTheaters();
     requestAnimationFrame(masterTick);
   }
   requestAnimationFrame(masterTick);
+
+  // Directly bind on touch scroll for instantaneous reaction on mobile:
+  window.addEventListener('scroll', updateAllTheaters, {passive: true});
 })();
 </script>
 
