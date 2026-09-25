@@ -1,12 +1,12 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 20
+# deploy-script-version: 21
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.88"
+EXPECTED_VERSION="2.11.89"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -136,8 +136,17 @@ echo "[2/7] Зависимости..."
 ensure_venv
 ./venv/bin/pip install -q -r requirements.txt 2>/dev/null || ./venv/bin/pip install -r requirements.txt
 
-echo "[3/7] Очищаем Python cache..."
+echo "[3/7] Очищаем Python cache и системный диск..."
 find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+journalctl --vacuum-size=100M 2>/dev/null || true
+apt clean 2>/dev/null || true
+apt autoremove --purge -y 2>/dev/null || true
+if command -v pm2 >/dev/null 2>&1; then
+  pm2 install pm2-logrotate 2>/dev/null || true
+  pm2 set pm2-logrotate:max_size 10M 2>/dev/null || true
+  pm2 set pm2-logrotate:retain 5 2>/dev/null || true
+  pm2 set pm2-logrotate:compress true 2>/dev/null || true
+fi
 
 echo "[4/7] Проверяем файлы и Python..."
 if ! grep -qF "$EXPECTED_VERSION" backend/app.py; then
