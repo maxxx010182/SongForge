@@ -14,6 +14,11 @@ venv/
 
 # Private files
 private/
+*Яндекс*.txt
+*Yandex*.txt
+
+# Raw assets (not for commit; bot uses .jpg)
+assets/*.jpeg
 
 # Backup
 reserve/

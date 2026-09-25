@@ -28,7 +28,7 @@ def test_atomic_balance_deduction():
             INSERT INTO users (id, email, display_name, balance, created_at)
             VALUES (?, ?, ?, ?, datetime('now'))
             """,
-            (user_id, "atomic@test.local", "atomic_user", 1),
+            (user_id, f"atomic_{user_id[:8]}@test.local", f"atomic_user_{user_id[:8]}", 1),
         )
 
     quota = GenerationQuotaService()
