@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.93 in GitHub. Mobile landing: swipe cards, stacked steps, titles no longer clipped.
+Version: 2.11.93 is live (health checked). Mobile landing: swipe cards, stacked steps, titles no longer clipped.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
