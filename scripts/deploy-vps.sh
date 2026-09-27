@@ -1,12 +1,12 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 22
+# deploy-script-version: 23
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.90"
+EXPECTED_VERSION="2.11.91"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -61,7 +61,7 @@ ensure_venv() {
   fi
 }
 
-echo "=== SongForge deploy (deploy-script-version: 12) ==="
+echo "=== SongForge deploy (deploy-script-version: 23) ==="
 mkdir -p "$DIR"
 cd "$DIR" || { echo "Папка $DIR не найдена!"; exit 1; }
 
