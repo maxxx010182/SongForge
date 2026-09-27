@@ -271,7 +271,7 @@ class HistoryItem(BaseModel):
 
 class HistoryPreviewResponse(BaseModel):
     preview_url: str
-    preview_limit_sec: int = 30
+    preview_limit_sec: int = 60
     title: str = ""
     image_url: str | None = None
 
@@ -435,3 +435,11 @@ class AdminUpdateAuthorNameRequest(BaseModel):
 class AdminBoostTrackRequest(BaseModel):
     likes: int = 12
     comments: int = 3
+
+
+class AdminPublishUnclaimedRequest(BaseModel):
+    generation_id: str
+    variant: str = "A"
+    author_name: str = ""
+    persona_id: str = ""
+    title: str = ""

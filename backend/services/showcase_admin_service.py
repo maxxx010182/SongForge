@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import random
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
+from backend.services.audio_access_service import AudioAccessService
 from backend.services.cabinet_service import CabinetService
 
 # Готовые «живые» ники — как на реальной площадке, не «Марина» / «Алексей».
@@ -658,4 +660,182 @@ class ShowcaseAdminService:
             "likes": like_result["likes"],
             "comments_added": len(added_comments),
             "comments": added_comments,
+        }
+
+    def list_unclaimed_generations(
+        self,
+        *,
+        hours: int = 48,
+        limit: int = 50,
+    ) -> list[dict]:
+        """Невыкупленные генерации старше N часов для демонстрации на МузПлощадке."""
+        limit = max(1, min(limit, 100))
+        hours = max(1, int(hours))
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    g.id,
+                    g.title,
+                    g.idea,
+                    g.style,
+                    g.plan_json,
+                    g.created_at,
+                    g.music_url_a,
+                    g.music_url_b,
+                    g.image_url_a,
+                    g.image_url_b,
+                    g.duration_a,
+                    g.duration_b,
+                    g.user_id,
+                    g.guest_id,
+                    u.display_name AS user_name,
+                    EXISTS(
+                        SELECT 1 FROM user_library ul
+                        WHERE ul.generation_id = g.id AND ul.published_at IS NOT NULL
+                    ) AS already_published
+                FROM generations g
+                LEFT JOIN users u ON u.id = g.user_id
+                WHERE g.status = 'success'
+                  AND COALESCE(g.purchased, 0) = 0
+                  AND (g.music_url_a IS NOT NULL OR g.music_url_b IS NOT NULL)
+                  AND g.created_at <= ?
+                ORDER BY g.created_at DESC
+                LIMIT ?
+                """,
+                (cutoff, limit),
+            ).fetchall()
+
+        out = []
+        for r in rows:
+            plan = json.loads(r["plan_json"] or "{}")
+            genre = plan.get("genre") or r["style"] or ""
+            out.append({
+                "id": r["id"],
+                "title": r["title"] or "Без названия",
+                "idea": r["idea"] or "",
+                "style": r["style"] or "",
+                "genre": genre,
+                "created_at": r["created_at"],
+                "has_a": bool(r["music_url_a"]),
+                "has_b": bool(r["music_url_b"]),
+                "preview_url_a": AudioAccessService.preview_path(r["id"], 0) if r["music_url_a"] else "",
+                "preview_url_b": AudioAccessService.preview_path(r["id"], 1) if r["music_url_b"] else "",
+                "image_url": r["image_url_a"] or r["image_url_b"] or "",
+                "duration_a": r["duration_a"] or 0,
+                "duration_b": r["duration_b"] or 0,
+                "user_id": r["user_id"],
+                "user_name": r["user_name"] or ("Гость" if r["guest_id"] else "Аноним"),
+                "already_published": bool(r["already_published"]),
+            })
+        return out
+
+    def publish_unclaimed_generation(
+        self,
+        *,
+        admin_user_id: str,
+        admin_role: str,
+        generation_id: str,
+        variant: str = "A",
+        author_name: str | None = None,
+        persona_id: str | None = None,
+        title: str | None = None,
+    ) -> dict:
+        """Опубликовать невыкупленную генерацию на МузПлощадку от имени персоны или студии."""
+        variant_key = variant.strip().upper()
+        if variant_key not in {"A", "B"}:
+            raise ValueError("Вариант должен быть A или B")
+
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            if not gen:
+                raise ValueError("Генерация не найдена")
+            if gen["status"] != "success":
+                raise ValueError("Генерация не завершена успешно")
+
+            url = gen["music_url_b"] if variant_key == "B" else gen["music_url_a"]
+            if not url:
+                raise ValueError(f"Аудио для варианта {variant_key} отсутствует")
+
+            image = (
+                (gen["image_url_b"] if variant_key == "B" else gen["image_url_a"])
+                or gen["image_url_a"]
+                or gen["image_url_b"]
+                or ""
+            )
+            duration = (
+                gen["duration_b"] if variant_key == "B" else gen["duration_a"]
+            ) or 180
+
+            plan = json.loads(gen["plan_json"] or "{}")
+            genre = plan.get("genre") or gen["style"] or ""
+
+            # Проверяем, не опубликован ли уже этот вариант
+            existing = conn.execute(
+                """
+                SELECT id FROM user_library
+                WHERE generation_id = ? AND variant = ? AND published_at IS NOT NULL
+                """,
+                (generation_id, variant_key),
+            ).fetchone()
+            if existing:
+                raise ValueError("Этот вариант уже опубликован на МузПлощадке")
+
+            pub_user_id = admin_user_id
+            pub_author = (author_name or "").strip()
+
+            if persona_id:
+                persona = conn.execute(
+                    "SELECT id, display_name FROM users WHERE id = ? AND COALESCE(is_persona, 0) = 1",
+                    (persona_id,),
+                ).fetchone()
+                if persona:
+                    pub_user_id = persona["id"]
+                    if not pub_author:
+                        pub_author = (persona["display_name"] or "").strip()
+
+            if not pub_author:
+                pub_author = "Студия SongForge"
+
+            track_title = (title or "").strip() or gen["title"] or "Без названия"
+            now = utc_now()
+            lib_id = str(uuid.uuid4())
+
+            conn.execute(
+                """
+                INSERT INTO user_library (
+                    id, user_id, generation_id, title, variant, audio_url,
+                    image_url, duration, lyrics, genre, purchased_at,
+                    published_at, published_author_name, likes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                """,
+                (
+                    lib_id,
+                    pub_user_id,
+                    generation_id,
+                    track_title,
+                    variant_key,
+                    url,
+                    image,
+                    duration,
+                    gen["lyrics"] or "",
+                    genre,
+                    now,
+                    now,
+                    pub_author,
+                ),
+            )
+
+        return {
+            "success": True,
+            "library_id": lib_id,
+            "title": track_title,
+            "variant": variant_key,
+            "author_name": pub_author,
+            "published_at": now,
         }

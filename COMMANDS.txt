@@ -1,11 +1,11 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.91 in GitHub. Mobile landing animation, touch swipe & zero-gap crossfade fix.
+Version: 2.11.92 in GitHub. 60-second audio preview, legal & showcase policy for unclaimed tracks.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.91"
+# expected: "version":"2.11.92"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

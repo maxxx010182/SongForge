@@ -51,6 +51,7 @@ from backend.models import (
     AdminUpdateTrackTitleRequest,
     AdminUpdateAuthorNameRequest,
     AdminBoostTrackRequest,
+    AdminPublishUnclaimedRequest,
     AdminMeResponse,
     AuthProvidersResponse,
     TelegramAuthRequest,
@@ -148,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.91", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.92", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1070,6 +1071,60 @@ async def admin_clear_seed_engagement(
         details={
             "likes_removed": result["likes_removed"],
             "comments_removed": result["comments_removed"],
+        },
+    )
+    return result
+
+
+@app.get("/api/admin/showcase/unclaimed")
+async def admin_list_unclaimed_generations(
+    hours: int = 48,
+    limit: int = 50,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        items = showcase_admin.list_unclaimed_generations(
+            hours=hours,
+            limit=limit,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return {"items": items}
+
+
+@app.post("/api/admin/showcase/publish-unclaimed")
+async def admin_publish_unclaimed_generation(
+    req: AdminPublishUnclaimedRequest,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        result = showcase_admin.publish_unclaimed_generation(
+            admin_user_id=admin_user["id"],
+            admin_role=admin_user["admin_role"],
+            generation_id=req.generation_id,
+            variant=req.variant,
+            author_name=req.author_name or None,
+            persona_id=req.persona_id or None,
+            title=req.title or None,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.publish_unclaimed",
+        target_id=result["library_id"],
+        details={
+            "generation_id": req.generation_id,
+            "variant": result["variant"],
+            "title": result["title"],
+            "author_name": result["author_name"],
         },
     )
     return result

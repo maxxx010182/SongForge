@@ -101,7 +101,7 @@ class CabinetService:
             "preview_url": AudioAccessService.preview_path(
                 generation_id, variant_index
             ),
-            "preview_limit_sec": 30,
+            "preview_limit_sec": 60,
             "title": row["title"] or "Без названия",
             "image_url": image_url,
         }

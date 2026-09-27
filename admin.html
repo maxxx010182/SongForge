@@ -107,6 +107,12 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
         <button class="btn" type="button" id="showcaseReload">Обновить треки</button>
       </div>
       <div style="overflow-x:auto"><table><thead><tr><th>Трек</th><th>Автор</th><th>Лайки</th><th>Комменты</th><th>Действия</th></tr></thead><tbody id="showcaseBody"></tbody></table></div>
+      <h3 style="margin-top:28px;margin-bottom:8px">Забытые песни (48ч+ без покупки)</h3>
+      <p class="muted" style="font-size:.8rem;margin-bottom:14px">Пробные треки, которые пользователи не выкупили за 48+ часов. По п. 7.4 Соглашения их можно выставить на МузПлощадку от лица студии или выбранной персоны для демонстрации возможностей сервиса.</p>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" type="button" id="unclaimedReload">Обновить забытые треки</button>
+      </div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Создан</th><th>Трек / Жанр</th><th>Создатель</th><th>Превью</th><th>Действия</th></tr></thead><tbody id="unclaimedBody"></tbody></table></div>
     </div>
   </div>
 </div>
@@ -194,6 +200,82 @@ async function loadShowcase(){await loadPersonas();var d=await api('/api/admin/s
     return'<tr><td>'+esc(t.title)+'</td><td>'+esc(t.author_name)+'</td><td>'+likes+'</td><td>'+comments+'</td><td style="white-space:nowrap">'+showcaseActionButtons(t)+'</td></tr>';
   }).join('')||'<tr><td colspan="5" class="muted">Нет опубликованных треков. Опубликуйте песню на МузПлощадке.</td></tr>';
   document.querySelectorAll('#showcaseBody button').forEach(function(btn){btn.onclick=function(){handleShowcaseAction(btn);};});
+  loadUnclaimed();
+}
+
+var adminAudioPlayer=null;
+function playAdminPreview(url){
+  if(adminAudioPlayer){adminAudioPlayer.pause();adminAudioPlayer=null;}
+  if(!url)return;
+  adminAudioPlayer=new Audio(url);
+  adminAudioPlayer.play().catch(function(e){alert('Не удалось воспроизвести: '+e.message);});
+}
+
+async function loadUnclaimed(){
+  try{
+    var d=await api('/api/admin/showcase/unclaimed?hours=48&limit=50');
+    var items=d.items||[];
+    var tbody=document.getElementById('unclaimedBody');
+    if(!tbody)return;
+    if(!items.length){
+      tbody.innerHTML='<tr><td colspan="5" class="muted">Нет забытых песен старше 48 часов</td></tr>';
+      return;
+    }
+    tbody.innerHTML=items.map(function(t){
+      var date=(t.created_at||'').slice(0,16).replace('T',' ');
+      var playA=t.has_a?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_a)+'\')">▶ A (60с)</button>'):'';
+      var playB=t.has_b?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_b)+'\')">▶ B (60с)</button>'):'';
+      var pubBadge=t.already_published?'<span style="color:#4ade80;font-size:.75rem">✓ На МузПлощадке</span> ':'';
+      var pubBtnA=t.has_a?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="A" data-title="'+esc(t.title)+'">Опубликовать A</button> '):'';
+      var pubBtnB=t.has_b?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="B" data-title="'+esc(t.title)+'">Опубликовать B</button>'):'';
+      return'<tr><td class="muted" style="white-space:nowrap">'+esc(date)+'</td><td><strong>'+esc(t.title)+'</strong><br><span class="muted" style="font-size:.75rem">'+esc(t.genre)+'</span></td><td>'+esc(t.user_name)+'</td><td style="white-space:nowrap">'+playA+' '+playB+'</td><td style="white-space:nowrap">'+pubBadge+pubBtnA+pubBtnB+'</td></tr>';
+    }).join('');
+    tbody.querySelectorAll('button[data-genid]').forEach(function(btn){
+      btn.onclick=function(){publishUnclaimedTrack(btn);};
+    });
+  }catch(e){console.error(e);}
+}
+
+async function publishUnclaimedTrack(btn){
+  var genId=btn.dataset.genid;
+  var variant=btn.dataset.var||'A';
+  var title=prompt('Название трека на МузПлощадке:',btn.dataset.title||'Песня');
+  if(!title)return;
+  var authorOptions='1. Студия SongForge (по умолчанию)\n';
+  if(showcasePersonas.length){
+    authorOptions+=showcasePersonas.slice(0,10).map(function(p,i){return (i+2)+'. '+p.display_name;}).join('\n');
+  }
+  var authorPick=prompt('От чьего имени опубликовать?\n'+authorOptions+'\nЛибо введите любое авторское имя:','Студия SongForge');
+  if(authorPick===null)return;
+  var personaId='';
+  var authorName=authorPick.trim();
+  var num=parseInt(authorPick,10);
+  if(!isNaN(num)){
+    if(num===1)authorName='Студия SongForge';
+    else if(num>=2&&num<=showcasePersonas.length+1){
+      var p=showcasePersonas[num-2];
+      personaId=p.id;
+      authorName=p.display_name;
+    }
+  }
+  try{
+    var res=await api('/api/admin/showcase/publish-unclaimed',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        generation_id:genId,
+        variant:variant,
+        title:title,
+        author_name:authorName,
+        persona_id:personaId
+      })
+    });
+    alert('Успешно опубликовано на МузПлощадку: «'+res.title+'» ('+res.variant+') от «'+res.author_name+'»');
+    loadShowcase();
+    loadUnclaimed();
+  }catch(e){
+    alert(e.message||'Ошибка публикации');
+  }
 }
 async function handleShowcaseAction(btn){
   var id=btn.dataset.id;var act=btn.dataset.act;
@@ -283,6 +365,7 @@ async function init(){
       api('/api/admin/showcase/personas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count:20})}).then(function(r){alert('Создано персон: '+(r.created?r.created.length:0)+'. Всего: '+r.total);loadShowcase();}).catch(function(e){alert(e.message);});
     };
     document.getElementById('showcaseReload').onclick=loadShowcase;
+    document.getElementById('unclaimedReload').onclick=loadUnclaimed;
   }else{
     document.getElementById('panelShowcase').innerHTML='<p class="muted">Раздел только для admin / super_admin</p>';
   }
