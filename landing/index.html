@@ -40,9 +40,6 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-html, body{
-  overflow-x:clip;
-}
 body{
   background:var(--bg);
   color:var(--text);
@@ -60,11 +57,12 @@ body{
   pointer-events:none;
   z-index:0;
 }
-.blob-1{ width:600px;height:600px; background:var(--violet); top:-340px; left:-320px; animation:drift1 26s ease-in-out infinite; }
-.blob-2{ width:500px;height:500px; background:var(--magenta); bottom:-260px; right:-320px; animation:drift2 32s ease-in-out infinite; }
-.blob-3{ width:400px;height:400px; background:var(--cyan); top:55%; left:40%; opacity:0.06; animation:drift1 40s ease-in-out infinite reverse; }
-@keyframes drift1{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(60px,80px);} }
-@keyframes drift2{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(-70px,-50px);} }
+.blob-1{ width:600px;height:600px; background:var(--violet); top:0; left:0; animation:drift1 26s ease-in-out infinite; }
+.blob-2{ width:500px;height:500px; background:var(--magenta); bottom:0; right:0; animation:drift2 32s ease-in-out infinite; }
+.blob-3{ width:400px;height:400px; background:var(--cyan); top:55%; left:40%; opacity:0.06; animation:drift3 40s ease-in-out infinite; }
+@keyframes drift1{ 0%,100%{transform:translate(-320px,-340px);} 50%{transform:translate(-260px,-260px);} }
+@keyframes drift2{ 0%,100%{transform:translate(320px,260px);} 50%{transform:translate(250px,210px);} }
+@keyframes drift3{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(-60px,-80px);} }
 
 .wrap{
   max-width:1180px;
@@ -1120,12 +1118,33 @@ footer{
 
 /* ---------- RESPONSIVE (MOBILE & TABLET) ---------- */
 @media (max-width: 860px){
-  html, body {
-    overflow-x: clip;
-    width: 100%;
-  }
+  html { scroll-behavior: auto; }
   body {
+    width: 100%;
     padding-bottom: 74px;
+  }
+  /* Word-by-word titles: no clipping mask. iOS drops background-clip on a moving word, so half the line vanishes. */
+  .kw { overflow: visible !important; }
+  .kwi {
+    transform: translateY(0.55em) !important;
+    opacity: 0;
+  }
+  .kinetic.in .kwi {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+  }
+  .occ-content .section-title .kwi {
+    color: #EFE9DA !important;
+    -webkit-text-fill-color: #EFE9DA !important;
+    background: none !important;
+    filter: none !important;
+  }
+  .occ-content .section-title em .kwi {
+    color: #F7F7F2 !important;
+    -webkit-text-fill-color: #F7F7F2 !important;
+    text-shadow:
+      0 0 6px rgba(247,247,242,0.85),
+      0 0 18px rgba(190,214,106,0.6) !important;
   }
   .wrap{
     padding:0 18px;
@@ -1255,7 +1274,7 @@ footer{
     margin-bottom: 8px;
   }
 
-  /* Povody (Cinematic Horizontal Pinned Gallery on Mobile) */
+  /* Povody: native swipe carousel. A pinned 260vh gallery stays blank on phones. */
   #povody {
     padding-top: 40px !important;
     padding-bottom: 24px !important;
@@ -1266,58 +1285,61 @@ footer{
   .h-theater {
     display: block !important;
     position: relative !important;
-    height: 260vh !important;
-    touch-action: pan-y;
+    height: auto !important;
+    overflow: visible !important;
   }
   .h-theater-sticky {
-    position: -webkit-sticky !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
     width: 100% !important;
-    overflow: hidden !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-  }
-  #povodyGhost {
+    overflow: visible !important;
     display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    font-family: 'Unbounded', sans-serif !important;
-    font-size: clamp(2.8rem, 16vw, 4.8rem) !important;
-    font-weight: 900 !important;
-    color: rgba(245, 243, 255, 0.08) !important;
-    text-transform: uppercase !important;
-    pointer-events: none !important;
-    z-index: 1 !important;
-    white-space: nowrap !important;
-    transform: translate(-50%, -50%) !important;
   }
+  #povodyGhost { display: none !important; }
   #povodyTheater .stat-index {
     display: flex !important;
-    position: absolute !important;
-    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
-    left: 20px !important;
-    right: 20px !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    margin: 0 20px 12px !important;
+    flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     z-index: 5 !important;
   }
+  #povodyTheater .idx-ticks {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
   .h-track {
     display: flex !important;
-    gap: 16px !important;
-    padding: 0 20px !important;
+    gap: 12px !important;
+    padding: 0 20px 8px !important;
+    margin: 0 !important;
     z-index: 2 !important;
-    will-change: transform;
-    touch-action: pan-x pan-y;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    will-change: auto !important;
+    transform: none !important;
+    touch-action: auto;
   }
+  .h-track::-webkit-scrollbar { display: none; }
   .h-card {
-    flex: 0 0 76vw !important;
-    max-width: 310px !important;
-    height: 50vh !important;
+    flex: 0 0 78vw !important;
+    width: 78vw !important;
+    max-width: 320px !important;
+    min-height: 280px !important;
+    height: 46vh !important;
     max-height: 380px !important;
     border-radius: 20px !important;
     padding: 20px 18px !important;
@@ -1329,7 +1351,8 @@ footer{
     background-position: center !important;
     border: 1px solid rgba(245,243,255,0.12) !important;
     box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    touch-action: pan-x pan-y;
+    scroll-snap-align: center;
+    touch-action: auto;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -1348,7 +1371,7 @@ footer{
     margin-top: 32px;
   }
 
-  /* How It Works (Cinematic Pinned Theater on Mobile) */
+  /* How it works: stacked cards. Pinned cross-fade leaves a tall empty scroll on phones. */
   .how-intro {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1360,54 +1383,31 @@ footer{
   #howTheater {
     display: block !important;
     position: relative !important;
-    height: 250vh !important;
+    height: auto !important;
     margin-top: 0 !important;
-    touch-action: pan-y;
   }
   #howTheater .theater-sticky {
-    position: -webkit-sticky !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
     width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    padding: 0 16px 8px !important;
   }
-  #howTheater .ghost {
-    display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    font-family: 'Unbounded', sans-serif !important;
-    font-size: clamp(3.2rem, 18vw, 5.8rem) !important;
-    font-weight: 900 !important;
-    color: rgba(245, 243, 255, 0.08) !important;
-    text-transform: uppercase !important;
-    pointer-events: none !important;
-    z-index: 1 !important;
-    white-space: nowrap !important;
-    transform: translate(-50%, -50%) !important;
-    letter-spacing: 4px !important;
-  }
-  #howTheater .stat-index {
-    display: flex !important;
-    position: absolute !important;
-    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
-    left: 20px !important;
-    right: 20px !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    z-index: 5 !important;
-  }
+  #howTheater .ghost { display: none !important; }
+  #howTheater .stat-index { display: none !important; }
   #howTheater .moment {
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    width: calc(100% - 32px) !important;
-    max-width: 400px !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 24px 20px !important;
     background: rgba(18, 16, 28, 0.92) !important;
@@ -1420,7 +1420,16 @@ footer{
     gap: 8px !important;
     z-index: 3 !important;
     box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    will-change: transform, opacity;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    opacity: 0;
+    transform: translateY(28px) !important;
+    filter: none !important;
+    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1) !important;
+  }
+  #howTheater .moment.in {
+    opacity: 1 !important;
+    transform: none !important;
   }
   #howTheater .m-label {
     font-size: 11px;
@@ -1466,58 +1475,35 @@ footer{
     line-height: 1.3 !important;
   }
 
-  /* Try Section (Cinematic Demo Player Theater on Mobile) */
+  /* Try: same stacked cards, every line readable without a pinned scene. */
   #tryTheater {
     display: block !important;
     position: relative !important;
-    height: 240vh !important;
+    height: auto !important;
     margin-top: 0 !important;
-    touch-action: pan-y;
   }
   #tryTheater .theater-sticky {
-    position: -webkit-sticky !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
     width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    padding: 12px 16px 8px !important;
   }
-  #tryTheater .ghost {
-    display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    font-family: 'Unbounded', sans-serif !important;
-    font-size: clamp(3rem, 16vw, 5.2rem) !important;
-    font-weight: 900 !important;
-    color: rgba(245, 243, 255, 0.08) !important;
-    text-transform: uppercase !important;
-    pointer-events: none !important;
-    z-index: 1 !important;
-    white-space: nowrap !important;
-    transform: translate(-50%, -50%) !important;
-    letter-spacing: 4px !important;
-  }
-  #tryTheater .stat-index {
-    display: flex !important;
-    position: absolute !important;
-    top: max(56px, calc(env(safe-area-inset-top, 20px) + 36px)) !important;
-    left: 20px !important;
-    right: 20px !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    z-index: 5 !important;
-  }
+  #tryTheater .ghost { display: none !important; }
+  #tryTheater .stat-index { display: none !important; }
   #tryTheater .moment {
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    width: calc(100% - 32px) !important;
-    max-width: 400px !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 24px 20px !important;
     background: rgba(18, 16, 28, 0.92) !important;
@@ -1529,7 +1515,16 @@ footer{
     align-items: center !important;
     z-index: 3 !important;
     box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    will-change: transform, opacity;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    opacity: 0;
+    transform: translateY(28px) !important;
+    filter: none !important;
+    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1) !important;
+  }
+  #tryTheater .moment.in {
+    opacity: 1 !important;
+    transform: none !important;
   }
   #tryTheater .cards-moment .try-visual {
     display: flex !important;
@@ -1554,20 +1549,19 @@ footer{
     max-width: 100% !important;
   }
 
-  /* Occasions Montage (Cinematic Video Scrub 2 on Mobile) */
+  /* Second film: one screen, frames play while it is on screen. No extra empty scroll. */
   .occ-outer {
-    height: 190vh !important;
+    height: auto !important;
+    min-height: 100dvh !important;
     position: relative !important;
     padding: 0 !important;
     display: block !important;
-    touch-action: pan-y;
   }
   .occ-sticky {
-    position: -webkit-sticky !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
+    position: relative !important;
+    top: auto !important;
     height: 100dvh !important;
+    min-height: 520px !important;
     width: 100% !important;
     overflow: hidden !important;
     display: flex !important;
@@ -1595,8 +1589,9 @@ footer{
     z-index: 2 !important;
     padding: 0 20px !important;
     text-align: center !important;
-    will-change: transform, opacity !important;
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out !important;
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto !important;
   }
   .occ-content .section-title {
     font-size: clamp(1.65rem, 6.8vw, 2.2rem) !important;
@@ -2111,8 +2106,10 @@ function updateProgressBar(){
   preload();
 
   var heroOuter = document.querySelector('.hero-outer');
+  var heroSticky = document.querySelector('.hero-sticky');
   var heroContent = document.querySelector('.hero-content');
   var heroScrim = document.querySelector('.hero-scrim');
+  var heroStickyBroken = false;
   function onScroll(){
     var rect = heroOuter.getBoundingClientRect();
     var vh = window.innerHeight;
@@ -2120,6 +2117,18 @@ function updateProgressBar(){
     if(total_scrollable <= 0) return;
     var progress = (-rect.top) / total_scrollable;
     progress = Math.max(0, Math.min(1, progress));
+    if(isMobile && !heroStickyBroken && heroSticky && progress > 0.12 && progress < 0.85){
+      if(heroSticky.getBoundingClientRect().top < -80){
+        heroStickyBroken = true;
+        heroOuter.style.height = '100dvh';
+        if(heroContent){
+          heroContent.style.opacity = '1';
+          heroContent.style.transform = 'none';
+          heroContent.style.pointerEvents = 'auto';
+        }
+        return;
+      }
+    }
     var idx = Math.min(total-1, Math.floor(progress * (total-1)));
     currentFrame = idx;
     if(!reducedMotion) drawFrame(idx);
@@ -2245,7 +2254,32 @@ function updateProgressBar(){
   }, 2500);
 
   var occContent = section.querySelector('.occ-content');
+  if(isMobile && !reducedMotion){
+    var playing = false;
+    var acc = 0;
+    var lastT = 0;
+    var playObs = new IntersectionObserver(function(entries){
+      playing = entries.some(function(e){ return e.isIntersecting; });
+    }, {threshold: 0.25});
+    playObs.observe(section);
+    function occTick(t){
+      if(!lastT) lastT = t;
+      var dt = t - lastT;
+      lastT = t;
+      if(playing && started && window.innerWidth <= 860){
+        acc += dt;
+        if(acc > 80){
+          acc = 0;
+          currentFrame = (currentFrame + 1) % total;
+          drawFrame(currentFrame);
+        }
+      }
+      requestAnimationFrame(occTick);
+    }
+    requestAnimationFrame(occTick);
+  }
   function onScroll(){
+    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var total_scrollable = section.offsetHeight - vh;
@@ -2309,6 +2343,31 @@ function updateProgressBar(){
     el.style.transitionDelay = (i * 0.35) + 's';
     obsRight.observe(el);
   });
+
+  var mobileMoments = document.querySelectorAll('#howTheater .moment, #tryTheater .moment');
+  var momentObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        momentObs.unobserve(e.target);
+      }
+    });
+  }, {threshold: 0.12, rootMargin: '0px 0px -6% 0px'});
+  mobileMoments.forEach(function(el){ momentObs.observe(el); });
+
+  var revealAll = Array.prototype.slice.call(items).concat(Array.prototype.slice.call(rightItems), Array.prototype.slice.call(mobileMoments));
+  function kickReveals(){
+    var vh = window.innerHeight || 800;
+    revealAll.forEach(function(el){
+      if(el.classList.contains('in')) return;
+      var r = el.getBoundingClientRect();
+      if(r.width === 0 && r.height === 0) return;
+      if(r.top < vh * 0.96) el.classList.add('in');
+    });
+  }
+  window.addEventListener('scroll', kickReveals, {passive:true});
+  window.addEventListener('resize', kickReveals);
+  kickReveals();
 })();
 
 /* ---------- WAVEFORM BARS ---------- */
@@ -2393,8 +2452,19 @@ function updateProgressBar(){
         obs.unobserve(e.target);
       }
     });
-  }, {threshold:0.2});
+  }, {threshold:0.05, rootMargin:'0px 0px -4% 0px'});
   kinetics.forEach(function(el){ obs.observe(el); });
+  function kickKinetic(){
+    var vh = window.innerHeight || 800;
+    kinetics.forEach(function(el){
+      if(el.classList.contains('in')) return;
+      var r = el.getBoundingClientRect();
+      if(r.top < vh * 0.96) el.classList.add('in');
+    });
+  }
+  window.addEventListener('scroll', kickKinetic, {passive:true});
+  window.addEventListener('resize', kickKinetic);
+  kickKinetic();
 })();
 
 /* ---------- THEATER ENGINE (pinned multi-moment scene) ---------- */
@@ -2456,8 +2526,11 @@ function updateProgressBar(){
 
   Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(buildOdo);
 
-  if(reducedMotion){
+  if(isMobile || reducedMotion){
     Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(function(o){ setOdo(o, 1); });
+  }
+
+  if(reducedMotion){
     window.howTheaterUpdate = function(){};
     return;
   }
@@ -2467,6 +2540,7 @@ function updateProgressBar(){
   var W_HALF = 0.055;
 
   window.howTheaterUpdate = function(){
+    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var track = section.offsetHeight - vh;
@@ -2563,7 +2637,7 @@ function updateProgressBar(){
   var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var section = document.getElementById('povodyTheater');
-  if(!section || reducedMotion){ window.povodyTheaterUpdate = function(){}; return; }
+  if(!section){ window.povodyTheaterUpdate = function(){}; return; }
 
   var track = document.getElementById('povodyTrack');
   var cards = Array.prototype.slice.call(track.querySelectorAll('.h-card'));
@@ -2574,10 +2648,6 @@ function updateProgressBar(){
 
   function clamp(v,a,b){ return Math.min(b, Math.max(a,v)); }
   var curIdx = -1;
-  var isHorizontalSwiping = false;
-  var touchStartX = 0;
-  var touchStartY = 0;
-  var touchStartTranslate = 0;
   var currentTranslate = 0;
 
   function updateActiveCard(idx){
@@ -2593,39 +2663,20 @@ function updateProgressBar(){
     }
   }
 
-  // Direct Touch-Swipe for mobile smartphones
-  if(track){
-    track.addEventListener('touchstart', function(e){
-      if(e.touches.length === 1){
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchStartTranslate = currentTranslate;
-        isHorizontalSwiping = false;
-      }
-    }, {passive: true});
-
-    track.addEventListener('touchmove', function(e){
-      if(e.touches.length !== 1) return;
-      var dx = touchStartX - e.touches[0].clientX;
-      var dy = touchStartY - e.touches[0].clientY;
-      if(Math.abs(dx) > Math.abs(dy) + 6){
-        isHorizontalSwiping = true;
-        var isMob = window.innerWidth <= 860;
-        var maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth + (isMob ? 24 : 0));
-        currentTranslate = clamp(touchStartTranslate + dx, 0, maxTranslate);
-        track.style.transform = 'translateX(-' + currentTranslate.toFixed(1) + 'px)';
-        var idx = Math.round((currentTranslate / (maxTranslate || 1)) * (cards.length - 1));
-        updateActiveCard(idx);
-      }
-    }, {passive: true});
-
-    track.addEventListener('touchend', function(){
-      isHorizontalSwiping = false;
-    }, {passive: true});
+  if(isMobile){
+    if(track){
+      track.addEventListener('scroll', function(){
+        var max = track.scrollWidth - track.clientWidth;
+        var p = max > 0 ? track.scrollLeft / max : 0;
+        updateActiveCard(Math.round(p * (cards.length - 1)));
+      }, {passive:true});
+    }
+    window.povodyTheaterUpdate = function(){};
+    return;
   }
+  if(reducedMotion){ window.povodyTheaterUpdate = function(){}; return; }
 
   window.povodyTheaterUpdate = function(){
-    if(isHorizontalSwiping) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var trackH = section.offsetHeight - vh;
@@ -2668,6 +2719,7 @@ function updateProgressBar(){
   var W_HALF = 0.06;
 
   window.tryTheaterUpdate = function(){
+    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var track = section.offsetHeight - vh;
