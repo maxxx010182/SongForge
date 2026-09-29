@@ -22,8 +22,8 @@ sqlite3 /root/SongForge/data/songforge.db "SELECT * FROM messenger_followups ORD
 === 4) TEXTS FROM 28 SEP, 19:00-21:00 (idea, lyrics, style) ===
 sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19), status, substr(COALESCE(title,''),1,42), CASE WHEN user_id IS NULL OR user_id='' THEN '-' ELSE substr(user_id,1,8) END, substr(COALESCE(task_id,''),1,12), substr(replace(replace(COALESCE(idea,''),char(10),' '),char(13),''),1,180), substr(replace(replace(COALESCE(lyrics,''),char(10),' / '),char(13),''),1,240), substr(replace(replace(COALESCE(style,''),char(10),' '),char(13),''),1,140) FROM generations WHERE created_at >= '2026-09-28T19:00' AND created_at < '2026-09-28T21:00' ORDER BY created_at;"
 
-=== 5) WHICH TEXT STEP FAILED (28 Sep, our log, not Kie) ===
-grep -E "template fallback|Lyrics generated|Lyrics attempt|Unified package|Unified engine failed" /root/.pm2/logs/songforge-out.log
+=== 5) WHICH TEXT STEP FAILED (current log was empty; search archives too) ===
+ls -lh /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* ; echo '----' ; zgrep -h -E "template fallback|Lyrics generated|Lyrics attempt|Unified package|Unified engine failed" /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* | tail -n 80
 
 === OTHER ===
 ssh root@195.19.20.245
