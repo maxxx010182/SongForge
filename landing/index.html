@@ -40,6 +40,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+html, body{ overflow-x:clip; }
 body{
   background:var(--bg);
   color:var(--text);
@@ -825,7 +826,7 @@ footer{
   background:var(--bg);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:26px;
-  transition:opacity .7s ease, visibility .7s ease;
+  transition:opacity .28s ease, visibility .28s ease;
 }
 #preloader.hide{ opacity:0; visibility:hidden; pointer-events:none; }
 .pl-word{
@@ -1194,16 +1195,14 @@ footer{
 
   /* Hero Section */
   .hero-outer {
-    height: 200vh;
+    height: 100dvh;
     position: relative;
     touch-action: pan-y;
   }
   .hero-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100dvh;
+    position: relative;
+    top: auto;
+    height: 100%;
     width: 100%;
     overflow: hidden;
     display: flex;
@@ -1282,7 +1281,7 @@ footer{
     margin-bottom: 8px;
   }
 
-  /* Povody: same pinned gallery as desktop, shorter track. Finger scrolls the page. */
+  /* Povody: cards slide sideways while the block crosses the screen. No pin. */
   #povody {
     padding-top: 40px !important;
     padding-bottom: 24px !important;
@@ -1293,25 +1292,23 @@ footer{
   .h-theater {
     display: block !important;
     position: relative !important;
-    height: 200vh !important;
-    overflow: visible !important;
+    height: auto !important;
+    overflow: hidden !important;
   }
   .h-theater-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100dvh;
+    position: relative;
+    top: auto;
+    height: 68vh;
     width: 100%;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
+    display: block;
   }
   #povodyGhost { display: none !important; }
   #povodyTheater .stat-index {
     display: flex !important;
+    opacity: 1 !important;
     position: absolute !important;
-    top: 64px !important;
+    top: 10px !important;
     left: 16px !important;
     right: 16px !important;
     transform: none !important;
@@ -1329,8 +1326,12 @@ footer{
   .h-track {
     display: flex !important;
     gap: 14px !important;
-    padding: 88px 0 0 18px !important;
+    padding: 42px 0 0 16px !important;
     margin: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 100% !important;
     z-index: 2 !important;
     width: max-content !important;
     overflow: visible !important;
@@ -1341,9 +1342,9 @@ footer{
     flex: 0 0 78vw !important;
     width: 78vw !important;
     max-width: 340px !important;
-    min-height: 260px !important;
-    height: 52vh !important;
-    max-height: 420px !important;
+    min-height: 0 !important;
+    height: calc(100% - 52px) !important;
+    max-height: none !important;
     border-radius: 20px !important;
     padding: 20px 18px !important;
     box-sizing: border-box !important;
@@ -1373,7 +1374,7 @@ footer{
     margin-top: 32px;
   }
 
-  /* How it works: pinned cross-fade, short track. */
+  /* How and try: steps crossfade while the block crosses the screen. No pin. */
   .how-intro {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1386,15 +1387,14 @@ footer{
   #tryTheater {
     display: block !important;
     position: relative !important;
-    height: 200vh !important;
+    height: auto !important;
     margin-top: 0 !important;
   }
   #howTheater .theater-sticky,
   #tryTheater .theater-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100dvh;
+    position: relative;
+    top: auto;
+    height: 70vh;
     width: 100%;
     overflow: hidden;
     display: flex;
@@ -1407,7 +1407,7 @@ footer{
   #tryTheater .stat-index {
     display: flex !important;
     position: absolute !important;
-    top: 64px !important;
+    top: 10px !important;
     left: 16px !important;
     right: 16px !important;
     transform: none !important;
@@ -1420,6 +1420,11 @@ footer{
   #tryTheater .idx-ticks {
     flex-direction: row !important;
     align-items: center !important;
+  }
+  #howTheater .moment:first-child,
+  #tryTheater .moment:first-child {
+    opacity: 1;
+    visibility: visible;
   }
   #howTheater .moment,
   #tryTheater .moment {
@@ -1510,19 +1515,18 @@ footer{
     border-radius: 16px !important;
   }
 
-  /* Second film: frames advance with the finger, short track. */
+  /* Second film: frames advance as the block scrolls away. No pin. */
   .occ-outer {
-    height: 200vh !important;
+    height: 100dvh !important;
     min-height: 0 !important;
     position: relative !important;
     padding: 0 !important;
     display: block !important;
   }
   .occ-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100dvh !important;
+    position: relative !important;
+    top: auto !important;
+    height: 100% !important;
     min-height: 0 !important;
     width: 100% !important;
     overflow: hidden !important;
@@ -1552,20 +1556,6 @@ footer{
     padding: 0 20px !important;
     text-align: center !important;
     will-change: transform, opacity;
-  }
-  html.st-ready .hero-outer,
-  html.st-ready .h-theater,
-  html.st-ready #howTheater,
-  html.st-ready #tryTheater,
-  html.st-ready .occ-outer {
-    height: auto !important;
-  }
-  html.st-ready .hero-sticky,
-  html.st-ready .h-theater-sticky,
-  html.st-ready .theater-sticky,
-  html.st-ready .occ-sticky {
-    position: relative;
-    top: auto;
   }
   .odo-strip span,
   .odo-cell.dot {
@@ -2011,9 +2001,7 @@ footer{
   </div>
 </footer>
 
-<!-- GSAP 3.12.7 local. Pins the phone scenes. Lenis stays mouse-only. -->
-<script src="vendor/gsap.min.js"></script>
-<script src="vendor/ScrollTrigger.min.js"></script>
+<!-- Lenis is the mouse wheel only. The phone follows the finger, no ScrollTrigger. -->
 <script src="vendor/lenis.min.js"></script>
 <script>
 /* ---------- SMOOTH SCROLL (Lenis) ---------- */
@@ -2023,6 +2011,29 @@ var lenis = null;
 if(!reducedMotionGlobal && !isTouchDevice && window.Lenis){
   lenis = new Lenis({ duration: 1.15, smoothWheel: true });
 }
+
+/* Desktop tall scenes keep -top / (height - viewport).
+   A phone block about one screen tall is not a pin: progress follows
+   the block across the viewport, so frames, text and cards still move. */
+window.sfProgress = function(section, mode){
+  var rect = section.getBoundingClientRect();
+  var vh = window.innerHeight || 1;
+  var track = section.offsetHeight - vh;
+  var visible = rect.top < vh && rect.bottom > 0;
+  var p;
+  if(track > vh * 0.45){
+    p = -rect.top / track;
+  } else if(mode === 'leave'){
+    p = -rect.top / Math.max(rect.height, 1);
+  } else {
+    var start = vh * 0.92;
+    var end = vh * 0.06;
+    p = (start - rect.top) / (start - end);
+  }
+  if(p < 0) p = 0;
+  if(p > 1) p = 1;
+  return { p: p, visible: visible };
+};
 
 /* ---------- MOBILE BOTTOM BAR WATCHER ---------- */
 (function(){
@@ -2100,6 +2111,14 @@ function updateProgressBar(){
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  var studioOpen = false;
+  function openStudio(){
+    if(studioOpen) return;
+    studioOpen = true;
+    if(preloader) preloader.classList.add('hide');
+  }
+  setTimeout(openStudio, 450);
+
   function preload(){
     for(var i=1;i<=total;i++){
       (function(idx){
@@ -2108,15 +2127,16 @@ function updateProgressBar(){
           loaded++;
           var pct = Math.round((loaded/total)*100);
           if(plFill) plFill.style.width = pct + '%';
-          if(idx===1) drawFrame(0);
-          if(loaded === total){
-            setTimeout(function(){
-              preloader.classList.add('hide');
-              drawFrame(currentFrame);
-            }, 200);
+          if(idx===1){
+            drawFrame(0);
+            openStudio();
           }
+          if(loaded === total) drawFrame(currentFrame);
         };
-        img.onerror = function(){ loaded++; };
+        img.onerror = function(){
+          loaded++;
+          if(loaded === total) openStudio();
+        };
         img.src = folder + 'frame_' + pad(idx) + '.jpg';
         images[idx-1] = img;
       })(i);
@@ -2128,12 +2148,8 @@ function updateProgressBar(){
   var heroContent = document.querySelector('.hero-content');
   var heroScrim = document.querySelector('.hero-scrim');
   function onScroll(){
-    var rect = heroOuter.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var total_scrollable = heroOuter.offsetHeight - vh;
-    if(total_scrollable <= 0) return;
-    var progress = (-rect.top) / total_scrollable;
-    progress = Math.max(0, Math.min(1, progress));
+    if(!heroOuter) return;
+    var progress = window.sfProgress(heroOuter, 'leave').p;
     var idx = Math.min(total-1, Math.floor(progress * (total-1)));
     currentFrame = idx;
     if(!reducedMotion) drawFrame(idx);
@@ -2162,9 +2178,6 @@ function updateProgressBar(){
   window.heroScrubUpdate = onScroll;
   window.addEventListener('scroll', onScroll, {passive:true});
   onScroll();
-
-  // fallback: hide preloader after 6s max even if some frames fail
-  setTimeout(function(){ preloader.classList.add('hide'); }, 6000);
 })();
 
 /* ---------- OCCASIONS MONTAGE SCRUB (second scroll-scrub scene, lazy no-blocking) ---------- */
@@ -2260,12 +2273,7 @@ function updateProgressBar(){
 
   var occContent = section.querySelector('.occ-content');
   function onScroll(){
-    var rect = section.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var total_scrollable = section.offsetHeight - vh;
-    if(total_scrollable <= 0) return;
-    var progress = (-rect.top) / total_scrollable;
-    progress = Math.max(0, Math.min(1, progress));
+    var progress = window.sfProgress(section, 'leave').p;
     var idx = Math.min(total-1, Math.floor(progress * (total-1)));
     currentFrame = idx;
     if(!reducedMotion) drawFrame(idx);
@@ -2508,14 +2516,10 @@ function updateProgressBar(){
   var W_HALF = 0.055;
 
   window.howTheaterUpdate = function(){
-    var rect = section.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var track = section.offsetHeight - vh;
-    if(track <= 0) return;
-    var progress = clamp(-rect.top / track, 0, 1);
-    var visible = rect.top < vh && rect.bottom > 0;
+    var state = window.sfProgress(section, 'cross');
+    var progress = state.p;
+    var visible = state.visible;
     section.classList.toggle('is-active', visible && progress > 0.002 && progress < 0.998);
-    if(!visible) return;
 
     var isMob = window.innerWidth <= 860;
     var N = moments.length; // 4
@@ -2627,14 +2631,10 @@ function updateProgressBar(){
   if(reducedMotion){ window.povodyTheaterUpdate = function(){}; return; }
 
   window.povodyTheaterUpdate = function(){
-    var rect = section.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var trackH = section.offsetHeight - vh;
-    if(trackH <= 0) return;
-    var progress = clamp(-rect.top / trackH, 0, 1);
-    var visible = rect.top < vh && rect.bottom > 0;
+    var state = window.sfProgress(section, 'cross');
+    var progress = state.p;
+    var visible = state.visible;
     section.classList.toggle('is-active', visible && progress > 0.002 && progress < 0.998);
-    if(!visible) return;
 
     var isMob = window.innerWidth <= 860;
     var maxTranslate = Math.max(0, track.scrollWidth - window.innerWidth + (isMob ? 24 : 0));
@@ -2668,14 +2668,10 @@ function updateProgressBar(){
   var W_HALF = 0.06;
 
   window.tryTheaterUpdate = function(){
-    var rect = section.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var track = section.offsetHeight - vh;
-    if(track <= 0) return;
-    var progress = clamp(-rect.top / track, 0, 1);
-    var visible = rect.top < vh && rect.bottom > 0;
+    var state = window.sfProgress(section, 'cross');
+    var progress = state.p;
+    var visible = state.visible;
     section.classList.toggle('is-active', visible && progress > 0.002 && progress < 0.998);
-    if(!visible) return;
 
     var isMob = window.innerWidth <= 860;
     var idx = 0;
@@ -2830,49 +2826,6 @@ function updateProgressBar(){
 
   // Directly bind on touch scroll for instantaneous reaction on mobile:
   window.addEventListener('scroll', updateAllTheaters, {passive: true});
-})();
-
-/* Phone: pin the same scenes. Native finger scroll. Address bar must not jump the pin. */
-(function(){
-  if(!window.gsap || !window.ScrollTrigger) return;
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduce) return;
-  gsap.registerPlugin(ScrollTrigger);
-  ScrollTrigger.config({ ignoreMobileResize: true });
-  var narrow = window.matchMedia('(max-width: 860px)');
-  var pins = [];
-  function pin(stage){
-    if(!stage) return;
-    pins.push(ScrollTrigger.create({
-      trigger: stage,
-      start: 'top top',
-      end: function(){ return '+=' + Math.round(window.innerHeight * 1.05); },
-      pin: true,
-      anticipatePin: 1,
-      invalidateOnRefresh: true
-    }));
-  }
-  function setup(){
-    pins.forEach(function(t){ t.kill(); });
-    pins = [];
-    var on = narrow.matches;
-    document.documentElement.classList.toggle('st-ready', on);
-    if(ScrollTrigger.isTouch) ScrollTrigger.normalizeScroll(on);
-    if(!on){
-      ScrollTrigger.refresh();
-      return;
-    }
-    pin(document.querySelector('.hero-sticky'));
-    pin(document.querySelector('#povodyTheater .h-theater-sticky'));
-    pin(document.querySelector('#howTheater .theater-sticky'));
-    pin(document.querySelector('#tryTheater .theater-sticky'));
-    pin(document.querySelector('.occ-sticky'));
-    ScrollTrigger.refresh();
-    window.dispatchEvent(new Event('resize'));
-  }
-  if(narrow.addEventListener) narrow.addEventListener('change', setup);
-  else if(narrow.addListener) narrow.addListener(setup);
-  setup();
 })();
 </script>
 
