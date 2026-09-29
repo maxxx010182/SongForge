@@ -21,7 +21,7 @@
 
 После правок кода — push в GitHub, на сервере: `update-now.sh` (см. COMMANDS.txt).
 
-**Версия в коде (истина):** **2.11.93**
+**Версия в коде (истина):** **2.11.94**
 - `backend/app.py`, `scripts/deploy-vps.sh`, `deploy-local.sh`, `README.md`
 
 Деплой: `COMMANDS.txt`. Инструкции: `docs/instrukcii/INDEX.txt`.
@@ -35,7 +35,7 @@
 **В чате:** один шаг за раз; backlog — в контекст/NOTES; команды — в `COMMANDS.txt`.
 
 ## Сейчас
-- Код **2.11.93** в GitHub и на сервере (health проверен). Ленд podarok тоже.
+- Код **2.11.94** в GitHub. На сервере ещё 2.11.93, пока владелец не выполнит update-now.
 - Праздники не слать.
 - Правило: **commit+push сразу сам**. Handoff: `SONGFORGE-КОНТЕКСТ.txt` **СЕЙЧАС**. Простой русский.
 

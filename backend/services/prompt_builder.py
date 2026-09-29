@@ -2,6 +2,7 @@ from backend.models import MusicAnalysis, ProductionPlan, SunoPromptPayload
 from backend.services.ai_music_analyst import AiMusicAnalyst
 from backend.services.ai_prompt_composer import AiPromptComposer
 from backend.services.idea_parser import merge_parsed_with_request, parse_idea
+from backend.services.llm_chain import LlmUnavailable, USER_LYRICS_FAIL_MESSAGE
 from backend.services.lyrics_craft_prompt import (
     CLASSIC_LYRICS_RETRY_HINT,
     CLASSIC_LYRICS_SYSTEM,
@@ -277,7 +278,10 @@ class PromptBuilder:
         return plan
 
     def generate_lyrics(self, idea: str, plan: ProductionPlan) -> str:
-        lyrics, source = self._generate_lyrics_with_source(idea, plan)
+        try:
+            lyrics, source = self._generate_lyrics_with_source(idea, plan)
+        except LlmUnavailable as exc:
+            raise ValueError(USER_LYRICS_FAIL_MESSAGE) from exc
         log.info(
             "Lyrics generated via %s (len=%s, lazy=%s)",
             source,
@@ -328,11 +332,13 @@ class PromptBuilder:
                     wrong_lang,
                     len(lyrics) if lyrics else 0,
                 )
+            except LlmUnavailable:
+                raise
             except Exception:
                 log.exception("Lyrics attempt %s failed", source)
 
-        log.warning("All lyrics attempts failed — using template fallback")
-        return self._fallback_lyrics(idea), "template-fallback"
+        log.warning("All lyrics attempts failed — song will not be sent")
+        raise ValueError(USER_LYRICS_FAIL_MESSAGE)
 
     @staticmethod
     def _lyrics_user_prompt(idea: str, plan: ProductionPlan) -> str:

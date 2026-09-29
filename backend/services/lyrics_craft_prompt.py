@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 # Резервная цепочка: Pro (креатив) → Pro (строже) → Lite (запасная модель).
-# При сбое всех попыток — template-fallback в prompt_builder / classic pipeline.
+# При сбое всех попыток песню не отправляем: чужой текст в Suno не уходит.
 LYRICS_MODEL_ATTEMPTS: tuple[tuple[str, float, str], ...] = (
     ("yandexgpt", 0.78, ""),
     ("yandexgpt", 0.62, "retry"),

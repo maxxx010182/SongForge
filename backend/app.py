@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.93", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.94", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -353,6 +353,9 @@ def _begin_generation(
 
 
 def _generation_error_message(exc: Exception) -> str:
+    text = str(exc)
+    if "написать текст песни" in text:
+        return text
     if isinstance(exc, requests.exceptions.Timeout):
         return (
             "Студия не дождалась ответа от сервиса создания музыки. "
@@ -2332,9 +2335,14 @@ async def generate_lyrics_endpoint(
             lambda: prompt_builder.generate_lyrics(req.prompt, plan)
         )
         return {"success": True, "lyrics": lyrics}
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("legacy lyrics failed")
-        return {"success": False, "lyrics": prompt_builder._fallback_lyrics(req.prompt)}
+        raise HTTPException(
+            status_code=503,
+            detail="Не получилось написать текст. Нажмите ещё раз.",
+        ) from exc
 
 
 @app.post("/api/generate-style")

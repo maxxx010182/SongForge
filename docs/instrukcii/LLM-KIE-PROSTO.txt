@@ -65,6 +65,19 @@ API (для проверки):
   gemini-2.5-pro и gemini-2.5-flash с 29.09 не отвечают
   gemini-3-flash — «канал не поддерживается»
 
+Запасные ключи (пусто = выключено, Kie работает как раньше):
+  GEMINI_API_KEY
+  GEMINI_MODELS=gemini-3.8-flash,gemini-3.1-pro-preview
+  XAI_API_KEY
+  XAI_MODELS=grok-4.7,grok-4.6
+  CLOUDFLARE_API_TOKEN
+  CLOUDFLARE_ACCOUNT_ID
+  CLOUDFLARE_MODELS=@cf/moonshotai/kimi-k2.6
+  ADMIN_MAX_USER_ID — ваш id в MAX, одно сообщение при сбое текста
+
+Имена моделей меняются в этих строках. Закрытый канал код пропускает сам.
+После правки .env: pm2 restart songforge --update-env
+
 Не ставьте Opus / gpt-5.5 на поток — дорого.
 Claude и часть GPT на Kie — другой формат API; наш клиент заточен
 под Gemini openai chat/completions.

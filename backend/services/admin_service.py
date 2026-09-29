@@ -169,8 +169,21 @@ class AdminService:
                 "rub": int(orders_paid["rub"] or 0),
             },
             "tracks_published": int(published),
-            "alerts": self._build_alerts(int(gen_stuck), int(gen_error)),
+            "alerts": self._alerts(int(gen_stuck), int(gen_error)),
         }
+
+    @staticmethod
+    def _alerts(stuck: int, errors_24h: int) -> list[dict[str, str]]:
+        alerts = AdminService._build_alerts(stuck, errors_24h)
+        try:
+            from backend.services.llm_signal import current_alert
+
+            llm_alert = current_alert()
+        except Exception:
+            llm_alert = None
+        if llm_alert:
+            alerts.insert(0, llm_alert)
+        return alerts
 
     @staticmethod
     def _build_alerts(stuck: int, errors_24h: int) -> list[dict[str, str]]:

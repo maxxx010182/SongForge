@@ -18,6 +18,36 @@ KIE_BASE = os.getenv("KIE_BASE", "https://api.kie.ai").strip().rstrip("/")
 LLM_MODEL_PRO = os.getenv("LLM_MODEL_PRO", "gemini-3.1-pro").strip()
 LLM_MODEL_LITE = os.getenv("LLM_MODEL_LITE", "gemini-3-pro").strip()
 
+
+def _csv_env(name: str, default: str) -> list[str]:
+    raw = os.getenv(name, default)
+    seen: list[str] = []
+    for part in raw.split(","):
+        item = part.strip()
+        if item and item not in seen:
+            seen.append(item)
+    return seen
+
+
+# Пустой KIE_MODELS = текущие PRO и LITE. Имена меняются в .env, без правки кода.
+_kie_default = ",".join(
+    item for item in (LLM_MODEL_PRO, LLM_MODEL_LITE) if item
+)
+KIE_MODELS = _csv_env("KIE_MODELS", _kie_default)
+
+# Запасные ключи. Пустой ключ = провайдер выключен, сайт остаётся на Kie.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODELS = _csv_env("GEMINI_MODELS", "gemini-3.8-flash,gemini-3.1-pro-preview")
+XAI_API_KEY = os.getenv("XAI_API_KEY", "").strip()
+XAI_MODELS = _csv_env("XAI_MODELS", "grok-4.7,grok-4.6")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+CLOUDFLARE_GATEWAY_ID = os.getenv("CLOUDFLARE_GATEWAY_ID", "default").strip() or "default"
+CLOUDFLARE_MODELS = _csv_env("CLOUDFLARE_MODELS", "@cf/moonshotai/kimi-k2.6")
+
+# Куда слать одно сообщение, если текстовая модель сломалась. Пусто = только админка.
+ADMIN_MAX_USER_ID = os.getenv("ADMIN_MAX_USER_ID", "").strip()
+
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
 

@@ -36,10 +36,10 @@ def get_llm_client() -> LlmClient:
 
     provider = (LLM_PROVIDER or "yandex").strip().lower()
     if provider in {"kie", "kieai", "kie_ai"}:
-        from backend.services.kie_client import KieClient
+        from backend.services.llm_chain import build_llm_chain
 
-        _client = KieClient()
-        log.info("LLM provider: kie (Kie.ai chat)")
+        _client = build_llm_chain()
+        log.info("LLM provider: kie chain (Kie, then spare keys if set)")
     else:
         from backend.services.yandex_client import YandexClient
 

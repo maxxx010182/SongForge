@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from backend.logger import log
 from backend.models import MusicAnalysis
+from backend.services.llm_chain import LlmUnavailable
 from backend.services.reference_translator import ReferenceTranslation
 from backend.services.lyrics_craft_prompt import (
     UNIFIED_MODEL_ATTEMPTS,
@@ -115,6 +116,9 @@ class SunoPackageComposer:
                     continue
                 result.source = label
                 return result
+            except LlmUnavailable:
+                log.warning("Unified package stopped: no text provider answered")
+                return None
             except Exception:
                 log.exception("Unified package attempt %s failed", label)
         return None

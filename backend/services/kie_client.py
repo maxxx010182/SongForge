@@ -83,6 +83,7 @@ class KieClient:
         max_tokens: int = 400,
         temperature: float = 0.7,
         model: str = MODEL_LITE,
+        timeout: int = 120,
     ) -> str:
         if not KIE_API_KEY:
             raise RuntimeError("KIE_API_KEY is not configured")
@@ -109,7 +110,7 @@ class KieClient:
         if "pro" in slug:
             body["reasoning_effort"] = "low"
 
-        response = requests.post(url, headers=headers, json=body, timeout=120)
+        response = requests.post(url, headers=headers, json=body, timeout=timeout)
         if response.status_code >= 400:
             # Если string content не принят — retry с multimodal text blocks
             try:
@@ -132,7 +133,7 @@ class KieClient:
                     "content": [{"type": "text", "text": user_text}],
                 },
             ]
-            response = requests.post(url, headers=headers, json=body, timeout=120)
+            response = requests.post(url, headers=headers, json=body, timeout=timeout)
 
         if response.status_code >= 400:
             raise RuntimeError(
