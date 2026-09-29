@@ -4,8 +4,9 @@
   POST https://api.kie.ai/{model-slug}/v1/chat/completions
 
 По умолчанию:
-  LITE → gemini-2.5-flash  (бот, план, быстрые задачи)
-  PRO  → gemini-2.5-pro    (тексты песен)
+  LITE → gemini-3-pro       (бот, план, быстрые задачи, запас)
+  PRO  → gemini-3.1-pro     (тексты песен)
+  gemini-2.5-* с 29.09.2026 не отвечает.
 
 Баланс кредитов: GET /api/v1/chat/credit
 """
@@ -21,19 +22,19 @@ from backend.logger import log
 from backend.settings import KIE_API_KEY, KIE_BASE, LLM_MODEL_LITE, LLM_MODEL_PRO
 
 # slug модели → path prefix (без ведущего /)
-# Можно переопределить через LLM_MODEL_* (просто slug: gemini-2.5-flash)
+# Можно переопределить через LLM_MODEL_* (просто slug: gemini-3.1-pro)
 _DEFAULT_SLUGS = {
-    "lite": "gemini-2.5-flash",
-    "pro": "gemini-2.5-pro",
+    "lite": "gemini-3-pro",
+    "pro": "gemini-3.1-pro",
 }
 
 
 def _slugify(model_id: str) -> str:
-    """Нормализует id к slug path: gemini-2.5-flash."""
+    """Нормализует id к slug path: gemini-3.1-pro."""
     s = (model_id or "").strip().lower()
     if not s:
         return _DEFAULT_SLUGS["lite"]
-    # google/gemini-2.5-flash → gemini-2.5-flash
+    # google/gemini-3.1-pro → gemini-3.1-pro
     if "/" in s:
         s = s.split("/")[-1]
     s = s.replace("_", "-")

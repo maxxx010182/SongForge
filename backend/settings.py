@@ -15,8 +15,8 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "yandex").strip().lower()
 KIE_API_KEY = os.getenv("KIE_API_KEY", "").strip()
 KIE_BASE = os.getenv("KIE_BASE", "https://api.kie.ai").strip().rstrip("/")
 # Роли Kie (slug = path prefix): PRO = тексты, LITE = бот/анализ
-LLM_MODEL_PRO = os.getenv("LLM_MODEL_PRO", "gemini-2.5-pro").strip()
-LLM_MODEL_LITE = os.getenv("LLM_MODEL_LITE", "gemini-2.5-flash").strip()
+LLM_MODEL_PRO = os.getenv("LLM_MODEL_PRO", "gemini-3.1-pro").strip()
+LLM_MODEL_LITE = os.getenv("LLM_MODEL_LITE", "gemini-3-pro").strip()
 
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")

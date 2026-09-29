@@ -21,11 +21,11 @@ LLM_PROVIDER=kie
 KIE_API_KEY=ваш_ключ_с_kie.ai
 # KIE_BASE=https://api.kie.ai
 
-# Тексты песен (сильнее)
-LLM_MODEL_PRO=gemini-2.5-pro
+# Тексты песен (сильнее). 2.5-pro с 29.09 молчит.
+LLM_MODEL_PRO=gemini-3.1-pro
 
-# Помощник / простые задачи (дешевле)
-LLM_MODEL_LITE=gemini-2.5-flash
+# Запас и короткие задачи. 2.5-flash и gemini-3-flash: «канал не поддерживается».
+LLM_MODEL_LITE=gemini-3-pro
 
 Потом:
   pm2 restart songforge --update-env
@@ -60,10 +60,10 @@ API (для проверки):
 ═══════════════════════════════════════
 
 Можно сменить slug в .env (path на Kie):
-  gemini-2.5-flash
-  gemini-2.5-pro
   gemini-3.1-pro
-  gemini-3-flash
+  gemini-3-pro
+  gemini-2.5-pro и gemini-2.5-flash с 29.09 не отвечают
+  gemini-3-flash — «канал не поддерживается»
 
 Не ставьте Opus / gpt-5.5 на поток — дорого.
 Claude и часть GPT на Kie — другой формат API; наш клиент заточен
