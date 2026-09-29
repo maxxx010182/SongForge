@@ -25,6 +25,9 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 === 5) WHICH TEXT STEP FAILED (current log was empty; search archives too) ===
 ls -lh /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* ; echo '----' ; zgrep -h -E "template fallback|Lyrics generated|Lyrics attempt|Unified package|Unified engine failed" /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* | tail -n 80
 
+=== 8) SWITCH KIE MODELS (2.5 is dead; 3.1-pro and 3-pro answered) ===
+cd /root/SongForge && sed -i 's/^LLM_MODEL_PRO=.*/LLM_MODEL_PRO=gemini-3.1-pro/' .env && sed -i 's/^LLM_MODEL_LITE=.*/LLM_MODEL_LITE=gemini-3-pro/' .env && grep -E '^LLM_PROVIDER=|^LLM_MODEL_' .env && pm2 restart songforge --update-env && pm2 restart songforge-worker --update-env
+
 === 7) WHICH KIE MODEL STILL ANSWERS (key stays on the server) ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/kie-probe.sh?$(date +%s)" | bash
 
