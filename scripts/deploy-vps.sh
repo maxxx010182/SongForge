@@ -1,12 +1,12 @@
 #!/bin/bash
 # SongForge — обновление на VPS (без git)
-# deploy-script-version: 24
+# deploy-script-version: 25
 # Запуск: bash scripts/deploy-vps.sh
 
 set -e
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.96"
+EXPECTED_VERSION="2.11.97"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {
@@ -130,6 +130,41 @@ publish_landing() {
     rm -f "$dest/README.txt"
   fi
   echo "  ленд обновлён: $dest"
+  relax_html_cache
+}
+
+relax_html_cache() {
+  local conf bak rc=0
+  conf=$(grep -l "podarok.sozdaipesnu.ru" /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf 2>/dev/null | head -1 || true)
+  [ -n "$conf" ] || return 0
+  if grep -q "podarok-html-nocache" "$conf"; then
+    return 0
+  fi
+  bak="$conf.sf-bak"
+  cp "$conf" "$bak"
+  python3 - "$conf" <<'PY' || rc=$?
+import sys
+path = sys.argv[1]
+text = open(path, encoding="utf-8").read()
+needle = "try_files $uri $uri/ =404;"
+insert = needle + "\n        add_header Cache-Control \"no-store\" always; # podarok-html-nocache"
+if needle not in text:
+    sys.exit(2)
+open(path, "w", encoding="utf-8").write(text.replace(needle, insert))
+PY
+  if [ "$rc" -ne 0 ]; then
+    mv "$bak" "$conf"
+    echo "  nginx: кэш страницы не менял"
+    return 0
+  fi
+  if nginx -t >/dev/null 2>&1; then
+    systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
+    rm -f "$bak"
+    echo "  nginx: страница без кэша"
+  else
+    mv "$bak" "$conf"
+    echo "  nginx: проверка не прошла, вернул как было"
+  fi
 }
 
 echo "[2/7] Зависимости..."
