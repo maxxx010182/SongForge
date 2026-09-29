@@ -25,6 +25,9 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 === 5) WHICH TEXT STEP FAILED (current log was empty; search archives too) ===
 ls -lh /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* ; echo '----' ; zgrep -h -E "template fallback|Lyrics generated|Lyrics attempt|Unified package|Unified engine failed" /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* | tail -n 80
 
+=== 7) WHICH KIE MODEL STILL ANSWERS (key stays on the server) ===
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/kie-probe.sh?$(date +%s)" | bash
+
 === 6) KIE ERROR TEXT (why the 6 attempts threw) ===
 zgrep -h -E "ReadTimeout|ConnectTimeout|RuntimeError|Kie gemini|ConnectionError|SSLError|error 4" /root/.pm2/logs/songforge-out__2026-09-29_00-00-00.log /root/.pm2/logs/songforge-out__2026-09-28_00-00-00.log | sort | uniq -c | sort -nr
 
