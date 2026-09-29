@@ -19,6 +19,9 @@ sqlite3 /root/SongForge/data/songforge.db "SELECT id, user_id, max_user_id, funn
 
 sqlite3 /root/SongForge/data/songforge.db "SELECT * FROM messenger_followups ORDER BY created_at DESC LIMIT 5;"
 
+=== 4) TEXTS FROM 28 SEP, 19:00-21:00 (idea, lyrics, style) ===
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19), status, substr(COALESCE(title,''),1,42), CASE WHEN user_id IS NULL OR user_id='' THEN '-' ELSE substr(user_id,1,8) END, substr(COALESCE(task_id,''),1,12), substr(replace(replace(COALESCE(idea,''),char(10),' '),char(13),''),1,180), substr(replace(replace(COALESCE(lyrics,''),char(10),' / '),char(13),''),1,240), substr(replace(replace(COALESCE(style,''),char(10),' '),char(13),''),1,140) FROM generations WHERE created_at >= '2026-09-28T19:00' AND created_at < '2026-09-28T21:00' ORDER BY created_at;"
+
 === OTHER ===
 ssh root@195.19.20.245
 pm2 restart songforge --update-env
