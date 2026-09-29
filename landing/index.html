@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>СоздайСвоюПесню — песня, которой больше нет ни у кого</title>
-<!-- landing-build: 2.11.97 -->
+<!-- landing-build: 2.11.98 -->
 <meta name="description" content="Персональная песня с именем и историей за несколько минут. 1 бесплатная демо-генерация для новых пользователей: 2 варианта по 60 секунд. Полные треки — на sozdaipesnu.ru">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://podarok.sozdaipesnu.ru/">
@@ -40,7 +40,9 @@
   --grad-full: linear-gradient(120deg, var(--violet), var(--magenta), var(--cyan));
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth; overflow-x:clip;}
+/* Safari still clips both axes when overflow-x is clip or hidden.
+   That kills position:sticky. Apple forum 745729, WebKit bug 291895, still open in 2026. */
+html{scroll-behavior:smooth;}
 body{
   background:var(--bg);
   color:var(--text);
@@ -1134,12 +1136,12 @@ footer{
   /* Word-by-word titles: no clipping mask. iOS drops background-clip on a moving word, so half the line vanishes. */
   .kw { overflow: visible !important; }
   .kwi {
-    transform: translateY(0.55em) !important;
+    transform: translateY(0.55em);
     opacity: 0;
   }
   .kinetic.in .kwi {
-    transform: translateY(0) !important;
-    opacity: 1 !important;
+    transform: translateY(0);
+    opacity: 1;
   }
   .occ-content .section-title .kwi {
     color: #EFE9DA !important;
@@ -1694,8 +1696,90 @@ footer{
     flex: none !important;
   }
 }
+/* Safari 26 paints these while the finger moves. JavaScript does not. */
+@supports (animation-timeline: view()) {
+  @media (max-width: 860px) {
+    .hero-outer { view-timeline: --hero block; }
+    .occ-outer { view-timeline: --occ block; }
+    #povodyTheater { view-timeline: --cards block; }
+    #howTheater { view-timeline: --how block; }
+    #tryTheater { view-timeline: --try block; }
+    .film-stack { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+    .film-stack img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      animation-name: frameHold;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: none;
+    }
+    .hero-outer .film-stack img { animation-timeline: --hero; }
+    .occ-outer .film-stack img { animation-timeline: --occ; }
+    #povodyTrack {
+      animation: cardsSlide linear both;
+      animation-duration: auto;
+      animation-timeline: --cards;
+      animation-range: cover 31% cover 69%;
+    }
+    .kwi {
+      animation: wordUp linear both;
+      animation-duration: auto;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    .hero-content {
+      animation: fadeAway linear both;
+      animation-duration: auto;
+      animation-timeline: --hero;
+      animation-range: cover 50% cover 68%;
+    }
+    .occ-content {
+      animation: fadeAway linear both;
+      animation-duration: auto;
+      animation-timeline: --occ;
+      animation-range: cover 58% cover 74%;
+    }
+    #howTheater .moment, #tryTheater .moment {
+      animation-name: stepOn;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: none;
+    }
+    #howTheater .moment { animation-timeline: --how; }
+    #tryTheater .moment { animation-timeline: --try; }
+    #howTheater .moment:nth-child(3) { animation-range: 30% 44%; }
+    #howTheater .moment:nth-child(4) { animation-range: 40% 56%; }
+    #howTheater .moment:nth-child(5) { animation-range: 52% 66%; }
+    #howTheater .moment:nth-child(6) { animation-range: 62% 76%; }
+    #tryTheater .moment:nth-child(3) { animation-range: 30% 48%; }
+    #tryTheater .moment:nth-child(4) { animation-range: 44% 62%; }
+    #tryTheater .moment:nth-child(5) { animation-range: 58% 76%; }
+  }
+}
+@keyframes frameHold { from { opacity: 1; } to { opacity: 1; } }
+@keyframes cardsSlide {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% + 86vw)); }
+}
+@keyframes wordUp {
+  from { transform: translateY(0.6em); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes fadeAway {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes stepOn {
+  0% { opacity: 0; visibility: visible; }
+  22% { opacity: 1; visibility: visible; }
+  78% { opacity: 1; visibility: visible; }
+  100% { opacity: 0; visibility: visible; }
+}
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+  .film-stack { display: none !important; }
 }
 </style>
 </head>
@@ -2062,6 +2146,28 @@ window.sfProgress = function(section, mode){
   if(p > 1) p = 1;
   return { p: p, visible: visible };
 };
+window.sfCssScroll = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()'));
+window.sfFilm = function(canvas, folder, total, steps){
+  var sticky = canvas.parentNode;
+  var stack = document.createElement('div');
+  stack.className = 'film-stack';
+  var pad = function(n){ return String(n).padStart(3,'0'); };
+  var lo = 31;
+  var hi = 69;
+  for(var s = 0; s < steps; s++){
+    var n = 1 + Math.round(s * (total - 1) / (steps - 1));
+    var img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    var a = lo + (s / steps) * (hi - lo);
+    var b = lo + ((s + 1) / steps) * (hi - lo);
+    img.style.animationRange = a.toFixed(2) + '% ' + b.toFixed(2) + '%';
+    img.src = folder + 'frame_' + pad(n) + '.jpg';
+    stack.appendChild(img);
+  }
+  if(canvas.nextSibling) sticky.insertBefore(stack, canvas.nextSibling);
+  else sticky.appendChild(stack);
+};
 
 /* ---------- MOBILE BOTTOM BAR WATCHER ---------- */
 (function(){
@@ -2140,6 +2246,7 @@ function updateProgressBar(){
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if(preloader) preloader.classList.add('hide');
+  var useFilm = isMobile && window.sfCssScroll && !reducedMotion;
 
   function loadFrame(idx, done){
     var img = new Image();
@@ -2173,6 +2280,7 @@ function updateProgressBar(){
       kick();
     });
   }
+  if(useFilm) window.sfFilm(canvas, folder, total, 16);
   preload();
 
   var heroOuter = document.querySelector('.hero-outer');
@@ -2187,7 +2295,6 @@ function updateProgressBar(){
       if(!reducedMotion) drawFrame(idx);
     }
 
-    // On mobile: text remains clearly readable through first half, dissolves gracefully towards end of scrub
     if(isMobile && heroContent){
       if(progress < 0.45){
         heroContent.style.opacity = '1';
@@ -2303,6 +2410,9 @@ function updateProgressBar(){
       kick();
     });
   }
+
+  var useFilm = isMobile && window.sfCssScroll && !reducedMotion;
+  if(useFilm) window.sfFilm(canvas, folder, total, 16);
 
   // Preload frames ahead of time with a generous margin so they are ready before user reaches the section:
   var io = new IntersectionObserver(function(entries){
