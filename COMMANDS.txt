@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.97 is on GitHub. Server stays 2.11.96 until block 1. Phone scenes stay on screen while the finger scrolls. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.97 is live (health checked). Phone scenes stay on screen while the finger scrolls. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
