@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.95 is in GitHub. Run block 1, then health should say 2.11.95. Phone landing scenes scroll again.
+Version: 2.11.95 is live (health checked). Phone landing scenes scroll again. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
