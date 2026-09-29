@@ -1194,7 +1194,7 @@ footer{
 
   /* Hero Section */
   .hero-outer {
-    height: 180vh;
+    height: 200vh;
     position: relative;
     touch-action: pan-y;
   }
@@ -1239,6 +1239,14 @@ footer{
     letter-spacing: -0.01em;
     max-width: 100% !important;
     margin-bottom: 12px;
+    background: none !important;
+    color: #EFE9DA !important;
+    -webkit-text-fill-color: #EFE9DA !important;
+    filter: none !important;
+  }
+  h1.hero-title em {
+    color: #F7F7F2 !important;
+    -webkit-text-fill-color: #F7F7F2 !important;
   }
   .hero-sub {
     font-size: 0.95rem;
@@ -1274,7 +1282,7 @@ footer{
     margin-bottom: 8px;
   }
 
-  /* Povody: native swipe carousel. A pinned 260vh gallery stays blank on phones. */
+  /* Povody: same pinned gallery as desktop, shorter track. Finger scrolls the page. */
   #povody {
     padding-top: 40px !important;
     padding-bottom: 24px !important;
@@ -1285,27 +1293,30 @@ footer{
   .h-theater {
     display: block !important;
     position: relative !important;
-    height: auto !important;
+    height: 200vh !important;
     overflow: visible !important;
   }
   .h-theater-sticky {
-    position: relative !important;
-    top: auto !important;
-    height: auto !important;
-    width: 100% !important;
-    overflow: visible !important;
-    display: block !important;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
   }
   #povodyGhost { display: none !important; }
   #povodyTheater .stat-index {
     display: flex !important;
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
+    position: absolute !important;
+    top: 64px !important;
+    left: 16px !important;
+    right: 16px !important;
     transform: none !important;
     opacity: 1 !important;
-    margin: 0 20px 12px !important;
+    margin: 0 !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
@@ -1317,30 +1328,22 @@ footer{
   }
   .h-track {
     display: flex !important;
-    gap: 12px !important;
-    padding: 0 20px 8px !important;
+    gap: 14px !important;
+    padding: 88px 0 0 18px !important;
     margin: 0 !important;
     z-index: 2 !important;
-    width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 20px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    will-change: auto !important;
-    transform: none !important;
-    touch-action: auto;
+    width: max-content !important;
+    overflow: visible !important;
+    will-change: transform;
+    touch-action: pan-y;
   }
-  .h-track::-webkit-scrollbar { display: none; }
   .h-card {
     flex: 0 0 78vw !important;
     width: 78vw !important;
-    max-width: 320px !important;
-    min-height: 280px !important;
-    height: 46vh !important;
-    max-height: 380px !important;
+    max-width: 340px !important;
+    min-height: 260px !important;
+    height: 52vh !important;
+    max-height: 420px !important;
     border-radius: 20px !important;
     padding: 20px 18px !important;
     box-sizing: border-box !important;
@@ -1351,8 +1354,7 @@ footer{
     background-position: center !important;
     border: 1px solid rgba(245,243,255,0.12) !important;
     box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    scroll-snap-align: center;
-    touch-action: auto;
+    touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
   }
@@ -1371,7 +1373,7 @@ footer{
     margin-top: 32px;
   }
 
-  /* How it works: stacked cards. Pinned cross-fade leaves a tall empty scroll on phones. */
+  /* How it works: pinned cross-fade, short track. */
   .how-intro {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1380,56 +1382,64 @@ footer{
   .how-intro-steps {
     display: none;
   }
-  #howTheater {
+  #howTheater,
+  #tryTheater {
     display: block !important;
     position: relative !important;
-    height: auto !important;
+    height: 200vh !important;
     margin-top: 0 !important;
   }
-  #howTheater .theater-sticky {
-    position: relative !important;
-    top: auto !important;
-    height: auto !important;
-    width: 100% !important;
-    overflow: visible !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 14px !important;
-    padding: 0 16px 8px !important;
+  #howTheater .theater-sticky,
+  #tryTheater .theater-sticky {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  #howTheater .ghost { display: none !important; }
-  #howTheater .stat-index { display: none !important; }
-  #howTheater .moment {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    inset: auto !important;
+  #howTheater .ghost,
+  #tryTheater .ghost { display: none !important; }
+  #howTheater .stat-index,
+  #tryTheater .stat-index {
+    display: flex !important;
+    position: absolute !important;
+    top: 64px !important;
+    left: 16px !important;
+    right: 16px !important;
+    transform: none !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    z-index: 5 !important;
+  }
+  #howTheater .idx-ticks,
+  #tryTheater .idx-ticks {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  #howTheater .moment,
+  #tryTheater .moment {
+    position: absolute !important;
+    inset: 0 !important;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 24px 20px !important;
-    background: rgba(18, 16, 28, 0.92) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 22px !important;
-    text-align: left !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
-    z-index: 3 !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    opacity: 0;
-    transform: translateY(28px) !important;
+    padding: 96px 20px 80px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    text-align: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
     filter: none !important;
-    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1) !important;
-  }
-  #howTheater .moment.in {
-    opacity: 1 !important;
-    transform: none !important;
   }
   #howTheater .m-label {
     font-size: 11px;
@@ -1439,20 +1449,21 @@ footer{
     font-size: 1.35rem !important;
     line-height: 1.25 !important;
     max-width: 100% !important;
-    text-align: left !important;
+    text-align: center !important;
   }
-  #howTheater .m-desc {
+  #howTheater .m-desc,
+  #tryTheater .m-desc {
     font-size: 0.92rem !important;
     line-height: 1.5 !important;
-    max-width: 100% !important;
-    text-align: left !important;
+    max-width: 34ch !important;
+    text-align: center !important;
+    padding: 0 !important;
   }
   #howTheater .stats-moment {
     background: linear-gradient(135deg, rgba(123,47,247,0.22), rgba(224,38,196,0.22)), rgba(18, 16, 28, 0.92) !important;
-    border-color: rgba(224,38,196,0.4) !important;
     align-items: center !important;
     text-align: center !important;
-    padding: 24px 16px !important;
+    padding: 96px 16px 80px !important;
   }
   .stats-row {
     display: grid !important;
@@ -1475,93 +1486,44 @@ footer{
     line-height: 1.3 !important;
   }
 
-  /* Try: same stacked cards, every line readable without a pinned scene. */
-  #tryTheater {
-    display: block !important;
-    position: relative !important;
-    height: auto !important;
-    margin-top: 0 !important;
-  }
-  #tryTheater .theater-sticky {
-    position: relative !important;
-    top: auto !important;
-    height: auto !important;
-    width: 100% !important;
-    overflow: visible !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 14px !important;
-    padding: 12px 16px 8px !important;
-  }
-  #tryTheater .ghost { display: none !important; }
-  #tryTheater .stat-index { display: none !important; }
-  #tryTheater .moment {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    inset: auto !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 24px 20px !important;
-    background: rgba(18, 16, 28, 0.92) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 22px !important;
+  #tryTheater .m-title {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+    max-width: 16ch !important;
     text-align: center !important;
-    align-items: center !important;
-    z-index: 3 !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.5) !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    opacity: 0;
-    transform: translateY(28px) !important;
-    filter: none !important;
-    transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1) !important;
-  }
-  #tryTheater .moment.in {
-    opacity: 1 !important;
-    transform: none !important;
   }
   #tryTheater .cards-moment .try-visual {
     display: flex !important;
     flex-direction: column !important;
-    gap: 12px !important;
+    gap: 10px !important;
     width: 100% !important;
-    margin: 14px 0 !important;
+    max-width: 300px !important;
+    margin: 8px 0 !important;
   }
   #tryTheater .cards-moment .player-card {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 16px 14px !important;
+    padding: 12px 14px !important;
     box-sizing: border-box !important;
     background: rgba(255,255,255,0.04) !important;
     border: 1px solid var(--line) !important;
     border-radius: 16px !important;
   }
-  #tryTheater .m-desc {
-    font-size: 0.95rem !important;
-    line-height: 1.5 !important;
-    padding: 0 10px;
-    max-width: 100% !important;
-  }
 
-  /* Second film: one screen, frames play while it is on screen. No extra empty scroll. */
+  /* Second film: frames advance with the finger, short track. */
   .occ-outer {
-    height: auto !important;
-    min-height: 100dvh !important;
+    height: 200vh !important;
+    min-height: 0 !important;
     position: relative !important;
     padding: 0 !important;
     display: block !important;
   }
   .occ-sticky {
-    position: relative !important;
-    top: auto !important;
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
     height: 100dvh !important;
-    min-height: 520px !important;
+    min-height: 0 !important;
     width: 100% !important;
     overflow: hidden !important;
     display: flex !important;
@@ -1589,9 +1551,27 @@ footer{
     z-index: 2 !important;
     padding: 0 20px !important;
     text-align: center !important;
-    opacity: 1 !important;
-    transform: none !important;
-    will-change: auto !important;
+    will-change: transform, opacity;
+  }
+  html.st-ready .hero-outer,
+  html.st-ready .h-theater,
+  html.st-ready #howTheater,
+  html.st-ready #tryTheater,
+  html.st-ready .occ-outer {
+    height: auto !important;
+  }
+  html.st-ready .hero-sticky,
+  html.st-ready .h-theater-sticky,
+  html.st-ready .theater-sticky,
+  html.st-ready .occ-sticky {
+    position: relative;
+    top: auto;
+  }
+  .odo-strip span,
+  .odo-cell.dot {
+    background: none !important;
+    color: #F7F7F2 !important;
+    -webkit-text-fill-color: #F7F7F2 !important;
   }
   .occ-content .section-title {
     font-size: clamp(1.65rem, 6.8vw, 2.2rem) !important;
@@ -1665,6 +1645,42 @@ footer{
 @media (min-width: 861px) {
   #mobileBottomBar {
     display: none !important;
+  }
+}
+@media (max-width: 860px) and (prefers-reduced-motion: reduce){
+  .hero-outer,
+  .occ-outer,
+  #howTheater,
+  #tryTheater,
+  .h-theater { height: auto !important; }
+  .hero-sticky,
+  .occ-sticky,
+  .theater-sticky,
+  .h-theater-sticky {
+    position: relative !important;
+    height: auto !important;
+    min-height: 70vh;
+    overflow: visible !important;
+  }
+  #howTheater .moment,
+  #tryTheater .moment {
+    position: relative !important;
+    inset: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    margin: 0 0 12px !important;
+  }
+  .h-track {
+    flex-direction: column !important;
+    width: 100% !important;
+    padding: 0 16px !important;
+    transform: none !important;
+  }
+  .h-card {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
   }
 }
 @media (prefers-reduced-motion: reduce){
@@ -1995,6 +2011,9 @@ footer{
   </div>
 </footer>
 
+<!-- GSAP 3.12.7 local. Pins the phone scenes. Lenis stays mouse-only. -->
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
 <script>
 /* ---------- SMOOTH SCROLL (Lenis) ---------- */
@@ -2106,10 +2125,8 @@ function updateProgressBar(){
   preload();
 
   var heroOuter = document.querySelector('.hero-outer');
-  var heroSticky = document.querySelector('.hero-sticky');
   var heroContent = document.querySelector('.hero-content');
   var heroScrim = document.querySelector('.hero-scrim');
-  var heroStickyBroken = false;
   function onScroll(){
     var rect = heroOuter.getBoundingClientRect();
     var vh = window.innerHeight;
@@ -2117,18 +2134,6 @@ function updateProgressBar(){
     if(total_scrollable <= 0) return;
     var progress = (-rect.top) / total_scrollable;
     progress = Math.max(0, Math.min(1, progress));
-    if(isMobile && !heroStickyBroken && heroSticky && progress > 0.12 && progress < 0.85){
-      if(heroSticky.getBoundingClientRect().top < -80){
-        heroStickyBroken = true;
-        heroOuter.style.height = '100dvh';
-        if(heroContent){
-          heroContent.style.opacity = '1';
-          heroContent.style.transform = 'none';
-          heroContent.style.pointerEvents = 'auto';
-        }
-        return;
-      }
-    }
     var idx = Math.min(total-1, Math.floor(progress * (total-1)));
     currentFrame = idx;
     if(!reducedMotion) drawFrame(idx);
@@ -2254,32 +2259,7 @@ function updateProgressBar(){
   }, 2500);
 
   var occContent = section.querySelector('.occ-content');
-  if(isMobile && !reducedMotion){
-    var playing = false;
-    var acc = 0;
-    var lastT = 0;
-    var playObs = new IntersectionObserver(function(entries){
-      playing = entries.some(function(e){ return e.isIntersecting; });
-    }, {threshold: 0.25});
-    playObs.observe(section);
-    function occTick(t){
-      if(!lastT) lastT = t;
-      var dt = t - lastT;
-      lastT = t;
-      if(playing && started && window.innerWidth <= 860){
-        acc += dt;
-        if(acc > 80){
-          acc = 0;
-          currentFrame = (currentFrame + 1) % total;
-          drawFrame(currentFrame);
-        }
-      }
-      requestAnimationFrame(occTick);
-    }
-    requestAnimationFrame(occTick);
-  }
   function onScroll(){
-    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var total_scrollable = section.offsetHeight - vh;
@@ -2344,18 +2324,7 @@ function updateProgressBar(){
     obsRight.observe(el);
   });
 
-  var mobileMoments = document.querySelectorAll('#howTheater .moment, #tryTheater .moment');
-  var momentObs = new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting){
-        e.target.classList.add('in');
-        momentObs.unobserve(e.target);
-      }
-    });
-  }, {threshold: 0.12, rootMargin: '0px 0px -6% 0px'});
-  mobileMoments.forEach(function(el){ momentObs.observe(el); });
-
-  var revealAll = Array.prototype.slice.call(items).concat(Array.prototype.slice.call(rightItems), Array.prototype.slice.call(mobileMoments));
+  var revealAll = Array.prototype.slice.call(items).concat(Array.prototype.slice.call(rightItems));
   function kickReveals(){
     var vh = window.innerHeight || 800;
     revealAll.forEach(function(el){
@@ -2470,7 +2439,6 @@ function updateProgressBar(){
 /* ---------- THEATER ENGINE (pinned multi-moment scene) ---------- */
 (function(){
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var section = document.getElementById('howTheater');
   if(!section){ window.howTheaterUpdate = function(){}; return; }
 
@@ -2526,7 +2494,7 @@ function updateProgressBar(){
 
   Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(buildOdo);
 
-  if(isMobile || reducedMotion){
+  if(reducedMotion){
     Array.prototype.slice.call(section.querySelectorAll('.odo')).forEach(function(o){ setOdo(o, 1); });
   }
 
@@ -2540,7 +2508,6 @@ function updateProgressBar(){
   var W_HALF = 0.055;
 
   window.howTheaterUpdate = function(){
-    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var track = section.offsetHeight - vh;
@@ -2610,13 +2577,8 @@ function updateProgressBar(){
       var scale = 0.96 + 0.04 * op;
       m.style.visibility = 'visible';
       m.style.opacity = op.toFixed(3);
-      if(isMob){
-        m.style.transform = 'translate(-50%, -50%) scale(' + scale.toFixed(4) + ')';
-        m.style.filter = 'none';
-      } else {
-        m.style.transform = 'scale(' + scale.toFixed(4) + ')';
-        m.style.filter = op < 0.95 ? ('blur(' + ((1-op)*10).toFixed(1) + 'px)') : 'none';
-      }
+      m.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      m.style.filter = isMob ? 'none' : (op < 0.95 ? ('blur(' + ((1-op)*10).toFixed(1) + 'px)') : 'none');
 
       if(i === 3){
         var qv = clamp((progress - T_CROSS[2]) / (1.0 - T_CROSS[2] - 0.05), 0, 1);
@@ -2634,7 +2596,6 @@ function updateProgressBar(){
 
 /* ---------- HORIZONTAL THEATER ENGINE (povody pinned gallery + touch swipe) ---------- */
 (function(){
-  var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var section = document.getElementById('povodyTheater');
   if(!section){ window.povodyTheaterUpdate = function(){}; return; }
@@ -2663,17 +2624,6 @@ function updateProgressBar(){
     }
   }
 
-  if(isMobile){
-    if(track){
-      track.addEventListener('scroll', function(){
-        var max = track.scrollWidth - track.clientWidth;
-        var p = max > 0 ? track.scrollLeft / max : 0;
-        updateActiveCard(Math.round(p * (cards.length - 1)));
-      }, {passive:true});
-    }
-    window.povodyTheaterUpdate = function(){};
-    return;
-  }
   if(reducedMotion){ window.povodyTheaterUpdate = function(){}; return; }
 
   window.povodyTheaterUpdate = function(){
@@ -2699,7 +2649,6 @@ function updateProgressBar(){
 
 /* ---------- TRY THEATER ENGINE (seamless cross-fade) ---------- */
 (function(){
-  var isMobile = window.matchMedia('(max-width: 860px)').matches;
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var section = document.getElementById('tryTheater');
   if(!section || reducedMotion){
@@ -2719,7 +2668,6 @@ function updateProgressBar(){
   var W_HALF = 0.06;
 
   window.tryTheaterUpdate = function(){
-    if(window.innerWidth <= 860) return;
     var rect = section.getBoundingClientRect();
     var vh = window.innerHeight;
     var track = section.offsetHeight - vh;
@@ -2776,13 +2724,8 @@ function updateProgressBar(){
       var scale = 0.96 + 0.04 * op;
       m.style.visibility = 'visible';
       m.style.opacity = op.toFixed(3);
-      if(isMob){
-        m.style.transform = 'translate(-50%, -50%) scale(' + scale.toFixed(4) + ')';
-        m.style.filter = 'none';
-      } else {
-        m.style.transform = 'scale(' + scale.toFixed(4) + ')';
-        m.style.filter = op < 0.95 ? ('blur(' + ((1-op)*8).toFixed(1) + 'px)') : 'none';
-      }
+      m.style.transform = 'scale(' + scale.toFixed(4) + ')';
+      m.style.filter = isMob ? 'none' : (op < 0.95 ? ('blur(' + ((1-op)*8).toFixed(1) + 'px)') : 'none');
 
       if(i === idx && ghost){
         var ghostOp = isMob ? (op * 0.18).toFixed(3) : (op * 0.85).toFixed(3);
@@ -2887,6 +2830,49 @@ function updateProgressBar(){
 
   // Directly bind on touch scroll for instantaneous reaction on mobile:
   window.addEventListener('scroll', updateAllTheaters, {passive: true});
+})();
+
+/* Phone: pin the same scenes. Native finger scroll. Address bar must not jump the pin. */
+(function(){
+  if(!window.gsap || !window.ScrollTrigger) return;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce) return;
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  var narrow = window.matchMedia('(max-width: 860px)');
+  var pins = [];
+  function pin(stage){
+    if(!stage) return;
+    pins.push(ScrollTrigger.create({
+      trigger: stage,
+      start: 'top top',
+      end: function(){ return '+=' + Math.round(window.innerHeight * 1.05); },
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true
+    }));
+  }
+  function setup(){
+    pins.forEach(function(t){ t.kill(); });
+    pins = [];
+    var on = narrow.matches;
+    document.documentElement.classList.toggle('st-ready', on);
+    if(ScrollTrigger.isTouch) ScrollTrigger.normalizeScroll(on);
+    if(!on){
+      ScrollTrigger.refresh();
+      return;
+    }
+    pin(document.querySelector('.hero-sticky'));
+    pin(document.querySelector('#povodyTheater .h-theater-sticky'));
+    pin(document.querySelector('#howTheater .theater-sticky'));
+    pin(document.querySelector('#tryTheater .theater-sticky'));
+    pin(document.querySelector('.occ-sticky'));
+    ScrollTrigger.refresh();
+    window.dispatchEvent(new Event('resize'));
+  }
+  if(narrow.addEventListener) narrow.addEventListener('change', setup);
+  else if(narrow.addListener) narrow.addListener(setup);
+  setup();
 })();
 </script>
 
