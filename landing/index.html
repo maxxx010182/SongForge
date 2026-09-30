@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>СоздайСвоюПесню — песня, которой больше нет ни у кого</title>
-<!-- landing-build: 2.11.98 -->
+<!-- landing-build: 2.11.99 -->
 <meta name="description" content="Персональная песня с именем и историей за несколько минут. 1 бесплатная демо-генерация для новых пользователей: 2 варианта по 60 секунд. Полные треки — на sozdaipesnu.ru">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://podarok.sozdaipesnu.ru/">
@@ -1135,13 +1135,10 @@ footer{
   }
   /* Word-by-word titles: no clipping mask. iOS drops background-clip on a moving word, so half the line vanishes. */
   .kw { overflow: visible !important; }
-  .kwi {
-    transform: translateY(0.55em);
-    opacity: 0;
-  }
+  .kwi,
   .kinetic.in .kwi {
-    transform: translateY(0);
-    opacity: 1;
+    transform: none !important;
+    opacity: 1 !important;
   }
   .occ-content .section-title .kwi {
     color: #EFE9DA !important;
@@ -1202,17 +1199,14 @@ footer{
     font-weight: 700;
   }
 
-  /* Hero: the picture stays while the finger scrolls about one extra screen. */
+  /* Hero: one screen. The picture sits behind the text, then the page moves on. */
   .hero-outer {
-    height: 220vh;
-    height: 220svh;
+    height: auto;
     position: relative;
-    touch-action: pan-y;
   }
   .hero-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     height: 100vh;
     height: 100svh;
     width: 100%;
@@ -1220,6 +1214,7 @@ footer{
     display: flex;
     align-items: flex-end;
   }
+  .film-stack { display: none !important; }
   .hero-scrim {
     position: absolute;
     inset: 0;
@@ -1293,7 +1288,7 @@ footer{
     margin-bottom: 8px;
   }
 
-  /* Povody: stage stays, cards slide in from the side. */
+  /* Povody: a row the finger swipes. No sticky stage. */
   #povody {
     padding-top: 40px !important;
     padding-bottom: 24px !important;
@@ -1304,36 +1299,19 @@ footer{
   .h-theater {
     display: block !important;
     position: relative !important;
-    height: 210vh !important;
-    height: 210svh !important;
+    height: auto !important;
     overflow: visible !important;
   }
   .h-theater-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
     width: 100%;
-    overflow: hidden;
+    overflow: visible !important;
     display: block;
   }
   #povodyGhost { display: none !important; }
-  #povodyTheater .stat-index {
-    display: flex !important;
-    opacity: 1 !important;
-    position: absolute !important;
-    top: 10px !important;
-    left: 16px !important;
-    right: 16px !important;
-    transform: none !important;
-    opacity: 1 !important;
-    margin: 0 !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    z-index: 5 !important;
-  }
+  #povodyTheater .stat-index { display: none !important; }
   #povodyTheater .idx-ticks {
     flex-direction: row !important;
     align-items: center !important;
@@ -1341,24 +1319,28 @@ footer{
   .h-track {
     display: flex !important;
     gap: 14px !important;
-    padding: 42px 0 0 16px !important;
+    padding: 8px 16px 16px !important;
     margin: 0 !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    height: 100% !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    height: auto !important;
     z-index: 2 !important;
-    width: max-content !important;
-    overflow: visible !important;
-    will-change: transform;
-    touch-action: pan-y;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    transform: none !important;
   }
   .h-card {
-    flex: 0 0 78vw !important;
-    width: 78vw !important;
+    flex: 0 0 82vw !important;
+    width: 82vw !important;
     max-width: 340px !important;
     min-height: 0 !important;
-    height: calc(100% - 52px) !important;
+    height: 62svh !important;
+    scroll-snap-align: start;
     max-height: none !important;
     border-radius: 20px !important;
     padding: 20px 18px !important;
@@ -1389,7 +1371,7 @@ footer{
     margin-top: 32px;
   }
 
-  /* How and try: the stage stays, the steps crossfade. */
+  /* How and try: every step is on the page, one under another. */
   .how-intro {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1402,39 +1384,26 @@ footer{
   #tryTheater {
     display: block !important;
     position: relative !important;
-    height: 220vh !important;
-    height: 220svh !important;
+    height: auto !important;
     margin-top: 0 !important;
     overflow: visible !important;
   }
   #howTheater .theater-sticky,
   #tryTheater .theater-sticky {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
     width: 100%;
-    overflow: hidden;
+    overflow: visible !important;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
   }
   #howTheater .ghost,
   #tryTheater .ghost { display: none !important; }
   #howTheater .stat-index,
-  #tryTheater .stat-index {
-    display: flex !important;
-    position: absolute !important;
-    top: 10px !important;
-    left: 16px !important;
-    right: 16px !important;
-    transform: none !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    z-index: 5 !important;
-  }
+  #tryTheater .stat-index { display: none !important; }
   #howTheater .idx-ticks,
   #tryTheater .idx-ticks {
     flex-direction: row !important;
@@ -1447,17 +1416,19 @@ footer{
   }
   #howTheater .moment,
   #tryTheater .moment {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
     max-width: none !important;
-    margin: 0 !important;
-    padding: 96px 20px 80px !important;
-    background: transparent !important;
+    margin: 0 16px 12px !important;
+    padding: 28px 18px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(245,243,255,0.12) !important;
+    border-radius: 20px !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    border: none !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
     text-align: center !important;
     align-items: center !important;
@@ -1487,7 +1458,7 @@ footer{
     background: linear-gradient(135deg, rgba(123,47,247,0.22), rgba(224,38,196,0.22)), rgba(18, 16, 28, 0.92) !important;
     align-items: center !important;
     text-align: center !important;
-    padding: 96px 16px 80px !important;
+    padding: 28px 16px !important;
   }
   .stats-row {
     display: grid !important;
@@ -1534,10 +1505,9 @@ footer{
     border-radius: 16px !important;
   }
 
-  /* Second film: the picture stays, frames advance with the finger. */
+  /* Second picture: one screen, then the page moves on. */
   .occ-outer {
-    height: 200vh !important;
-    height: 200svh !important;
+    height: auto !important;
     min-height: 0 !important;
     position: relative !important;
     padding: 0 !important;
@@ -1545,9 +1515,8 @@ footer{
     overflow: visible !important;
   }
   .occ-sticky {
-    position: -webkit-sticky !important;
-    position: sticky !important;
-    top: 0 !important;
+    position: relative !important;
+    top: auto !important;
     height: 100vh !important;
     height: 100svh !important;
     min-height: 0 !important;
@@ -1573,12 +1542,16 @@ footer{
     background: radial-gradient(circle at center, rgba(10,10,15,0.35) 0%, rgba(10,10,15,0.82) 100%) !important;
     z-index: 1 !important;
   }
+  .occ-content,
+  .hero-content {
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .occ-content {
     position: relative !important;
     z-index: 2 !important;
     padding: 0 20px !important;
     text-align: center !important;
-    will-change: transform, opacity;
   }
   .odo-strip span,
   .odo-cell.dot {
@@ -1695,87 +1668,6 @@ footer{
     max-width: none !important;
     flex: none !important;
   }
-}
-/* Safari 26 paints these while the finger moves. JavaScript does not. */
-@supports (animation-timeline: view()) {
-  @media (max-width: 860px) {
-    .hero-outer { view-timeline: --hero block; }
-    .occ-outer { view-timeline: --occ block; }
-    #povodyTheater { view-timeline: --cards block; }
-    #howTheater { view-timeline: --how block; }
-    #tryTheater { view-timeline: --try block; }
-    .film-stack { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-    .film-stack img {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0;
-      animation-name: frameHold;
-      animation-duration: auto;
-      animation-timing-function: linear;
-      animation-fill-mode: none;
-    }
-    .hero-outer .film-stack img { animation-timeline: --hero; }
-    .occ-outer .film-stack img { animation-timeline: --occ; }
-    #povodyTrack {
-      animation: cardsSlide linear both;
-      animation-duration: auto;
-      animation-timeline: --cards;
-      animation-range: cover 31% cover 69%;
-    }
-    .kwi {
-      animation: wordUp linear both;
-      animation-duration: auto;
-      animation-timeline: view();
-      animation-range: entry 0% entry 55%;
-    }
-    .hero-content {
-      animation: fadeAway linear both;
-      animation-duration: auto;
-      animation-timeline: --hero;
-      animation-range: cover 50% cover 68%;
-    }
-    .occ-content {
-      animation: fadeAway linear both;
-      animation-duration: auto;
-      animation-timeline: --occ;
-      animation-range: cover 58% cover 74%;
-    }
-    #howTheater .moment, #tryTheater .moment {
-      animation-name: stepOn;
-      animation-duration: auto;
-      animation-timing-function: linear;
-      animation-fill-mode: none;
-    }
-    #howTheater .moment { animation-timeline: --how; }
-    #tryTheater .moment { animation-timeline: --try; }
-    #howTheater .moment:nth-child(3) { animation-range: 30% 44%; }
-    #howTheater .moment:nth-child(4) { animation-range: 40% 56%; }
-    #howTheater .moment:nth-child(5) { animation-range: 52% 66%; }
-    #howTheater .moment:nth-child(6) { animation-range: 62% 76%; }
-    #tryTheater .moment:nth-child(3) { animation-range: 30% 48%; }
-    #tryTheater .moment:nth-child(4) { animation-range: 44% 62%; }
-    #tryTheater .moment:nth-child(5) { animation-range: 58% 76%; }
-  }
-}
-@keyframes frameHold { from { opacity: 1; } to { opacity: 1; } }
-@keyframes cardsSlide {
-  from { transform: translateX(0); }
-  to { transform: translateX(calc(-100% + 86vw)); }
-}
-@keyframes wordUp {
-  from { transform: translateY(0.6em); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-@keyframes fadeAway {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-@keyframes stepOn {
-  0% { opacity: 0; visibility: visible; }
-  22% { opacity: 1; visibility: visible; }
-  78% { opacity: 1; visibility: visible; }
-  100% { opacity: 0; visibility: visible; }
 }
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
@@ -2246,7 +2138,7 @@ function updateProgressBar(){
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if(preloader) preloader.classList.add('hide');
-  var useFilm = isMobile && window.sfCssScroll && !reducedMotion;
+  var useFilm = false;
 
   function loadFrame(idx, done){
     var img = new Image();
@@ -2411,7 +2303,7 @@ function updateProgressBar(){
     });
   }
 
-  var useFilm = isMobile && window.sfCssScroll && !reducedMotion;
+  var useFilm = false;
   if(useFilm) window.sfFilm(canvas, folder, total, 16);
 
   // Preload frames ahead of time with a generous margin so they are ready before user reaches the section:
