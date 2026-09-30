@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.101 is on GitHub. The server stays on the previous release until block 1. After update, health version is 2.11.101. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.101 is live (health 30 Sep 2026). Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
