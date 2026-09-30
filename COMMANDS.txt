@@ -1,11 +1,11 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.99 is on GitHub. The server stays 2.11.98 until block 1. After update, health version is 2.11.99. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.100 is on GitHub. The server stays 2.11.99 until block 1. After update, health version is 2.11.100. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.99"
+# expected: "version":"2.11.100"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"
