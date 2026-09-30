@@ -867,6 +867,21 @@ class MessengerService:
                 )
         return self.get_by_max(contact["max_user_id"]) or contact
 
+    def messages_consent_at(self, contact_id: str) -> str:
+        if not contact_id:
+            return ""
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT created_at FROM messenger_consents
+                WHERE contact_id = ? AND kind = 'messages'
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (contact_id,),
+            ).fetchone()
+        return (row["created_at"] if row else "") or ""
+
     def has_success_generation(self, user_id: str) -> bool:
         if not user_id:
             return False
@@ -878,6 +893,21 @@ class MessengerService:
                 LIMIT 1
                 """,
                 (user_id,),
+            ).fetchone()
+        return bool(row)
+
+    def has_success_generation_since(self, user_id: str, since: str) -> bool:
+        """Готовая песня после текущего согласия, не старый трек на том же аккаунте."""
+        if not user_id or not (since or "").strip():
+            return False
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT 1 FROM generations
+                WHERE user_id = ? AND status = 'success' AND created_at >= ?
+                LIMIT 1
+                """,
+                (user_id, since),
             ).fetchone()
         return bool(row)
 

@@ -23,7 +23,10 @@ GATE_FORMAT = ""
 GATE_RETURN_TEXT = GATE_TEXT
 WHOM_TEXT = "Для кого рождается песня?"
 WHOM_RETRY = "Точнее не скажу — выбери, кому, или напиши прямо здесь 🙂"
-WHOM_WRITE_PROMPT = "Напиши, кому — имя или как зовёте."
+WHOM_WRITE_PROMPT = (
+    "Напиши, кому — имя или как зовёте. "
+    "Если песня ни для кого конкретного, так и напиши."
+)
 OCCASION_TEXT = "О чём или по какому поводу?"
 OCCASION_WRITE_PROMPT = "Напиши, о чём или какой повод — своими словами."
 ABOUT_TEXT = OCCASION_TEXT
@@ -268,6 +271,38 @@ _WHOM_FIND = re.compile(
     r"дружбану|подругане|родственнику|ребёнку|ребенку)\b",
     re.IGNORECASE,
 )
+_NO_ADDRESSEE_EXACT = {
+    "nobody",
+    "никому",
+    "конкретно никому",
+    "никому конкретно",
+    "ни для кого",
+    "ни для кого конкретного",
+    "не для кого",
+    "без конкретики",
+    "без адресата",
+    "без привязки",
+    "просто так",
+    "просто",
+    "для себя",
+    "себе",
+    "мне",
+    "некому",
+}
+_NO_ADDRESSEE_PARTS = (
+    "ни для кого",
+    "не для кого",
+    "без адресата",
+    "без привязки",
+    "конкретно никому",
+    "просто так",
+    "для себя",
+    "для фокуса",
+    "для работы",
+    "для учёбы",
+    "для учебы",
+    "для пробежк",
+)
 
 
 def _norm(text: str) -> str:
@@ -314,6 +349,12 @@ def detail_gift_text(whom: str) -> str:
     return DETAIL_GIFT.format(whom=addr)
 
 
+def _is_no_addressee(key: str) -> bool:
+    if key in _NO_ADDRESSEE_EXACT:
+        return True
+    return any(part in key for part in _NO_ADDRESSEE_PARTS)
+
+
 def parse_whom(raw: str) -> tuple[str | None, str, str]:
     """(whom, leftover, plot). plot=just|gift. None whom + gift = invalid."""
     text = (raw or "").strip()
@@ -322,17 +363,9 @@ def parse_whom(raw: str) -> tuple[str | None, str, str]:
     key = _norm(text)
     if key in FILLER_WORDS:
         return None, "", "gift"
-    if key in {
-        "nobody",
-        "никому",
-        "конкретно никому",
-        "никому конкретно",
-        "ни для кого",
-        "не для кого",
-        "без конкретики",
-        "без адресата",
-    }:
-        return "", "", "just"
+    if _is_no_addressee(key) and not _WHOM_FIND.search(text):
+        extra = text[:DETAIL_MAX] if len(text) > WHOM_MAX else ""
+        return "", extra, "just"
     if key in WHOM_LABELS:
         return WHOM_LABELS[key], "", "gift"
     if key in WHOM_ALIASES:
@@ -345,7 +378,7 @@ def parse_whom(raw: str) -> tuple[str | None, str, str]:
             found, leftover, plot = parse_whom(match.group(1))
             extra = (text[: match.start()] + text[match.end() :]).strip(" ,.;")
             return found, extra[:DETAIL_MAX], plot
-        return None, "", "gift"
+        return "", text[:DETAIL_MAX], "just"
     if len(text) < 2:
         return None, "", "gift"
     return text[:WHOM_MAX], "", "gift"

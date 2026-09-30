@@ -231,6 +231,7 @@ def _whom_buttons() -> list[list[dict]]:
             _callback_btn("🏡 Родственнику", "whom:relative"),
             _callback_btn("🧒 Ребёнку", "whom:child"),
         ],
+        [_callback_btn("🌿 Ни для кого", "whom:nobody")],
         [_callback_btn("✍️ Напишу сам", "whom:write")],
     ]
 
@@ -460,9 +461,11 @@ def _nudge_payload(messenger: MessengerService, contact: dict, step: int) -> tup
     # Ветка 3: Зашёл на сайт, но не нажал «Создать»
     if opened:
         whom = (contact.get("brief_whom") or "").strip()
-        target = f"для {whom}" if whom else "для близкого человека"
+        just = is_just_plot(whom, contact.get("segment") or "")
+        target = f"для {whom}" if whom and not just else ""
+        idea = f"Твоя идея {target} уже на месте" if target else "Твоя идея уже на месте"
         a0 = (
-            f"Ты заглянул в студию, но не запустил трек. Твоя идея {target} уже на месте, "
+            f"Ты заглянул в студию, но не запустил трек. {idea}, "
             "если хочешь — можешь внести правки или дополнения. "
             "Нажми «Создать песню», и через пару минут можно будет оценить звучание первых вариантов."
         )
@@ -1211,7 +1214,12 @@ class MaxBot:
         if patching:
             self._back_to_confirm(contact)
             return
-        prefix = f"Ок, {whom}." if whom else "Ок."
+        if plot == "just":
+            prefix = "Ок, без адресата."
+        elif whom:
+            prefix = f"Ок, {whom}."
+        else:
+            prefix = "Ок."
         self._send_occasion(contact, prefix)
 
     def _apply_occasion(self, contact: dict, raw: str) -> None:
@@ -1466,34 +1474,50 @@ class MaxBot:
     def process_due_nudges(self, *, limit: int = 20) -> int:
         sent = 0
         for contact in self.messenger.list_due_nudges(limit=limit):
-            if not self.messenger.can_message(contact):
-                self.messenger.delay_nudge(contact, minutes=60)
-                continue
-            if not contact.get("user_id") or not contact.get("max_user_id"):
-                continue
-            if self.messenger.has_success_generation(contact.get("user_id") or ""):
-                self.messenger.silence_studio_nudges(contact)
-                continue
-            step = int(contact.get("nudge_step") or 0)
-            if step < 0 or step >= 9:
-                continue
-            text, buttons = _nudge_payload(self.messenger, contact, step)
-            ok = self.api.send_message(
-                user_id=contact["max_user_id"],
-                text=text,
-                buttons=buttons,
-            )
-            if ok:
-                self.messenger.advance_nudge(contact)
-                sent += 1
-            else:
-                self.messenger.delay_nudge(contact, minutes=15)
-                log.warning(
-                    "MAX nudge send failed for user %s step %s",
+            try:
+                sent += self._send_one_nudge(contact)
+            except Exception:
+                log.exception(
+                    "MAX nudge pass failed for user %s",
                     contact.get("max_user_id"),
-                    step,
                 )
+                try:
+                    self.messenger.delay_nudge(contact, minutes=15)
+                except Exception:
+                    log.exception("MAX nudge delay failed")
         return sent
+
+    def _send_one_nudge(self, contact: dict) -> int:
+        if not self.messenger.can_message(contact):
+            self.messenger.delay_nudge(contact, minutes=60)
+            return 0
+        if not contact.get("user_id") or not contact.get("max_user_id"):
+            return 0
+        since = self.messenger.messages_consent_at(contact["id"])
+        if since and self.messenger.has_success_generation_since(
+            contact.get("user_id") or "", since
+        ):
+            self.messenger.silence_studio_nudges(contact)
+            return 0
+        step = int(contact.get("nudge_step") or 0)
+        if step < 0 or step >= 9:
+            return 0
+        text, buttons = _nudge_payload(self.messenger, contact, step)
+        ok = self.api.send_message(
+            user_id=contact["max_user_id"],
+            text=text,
+            buttons=buttons,
+        )
+        if ok:
+            self.messenger.advance_nudge(contact)
+            return 1
+        self.messenger.delay_nudge(contact, minutes=15)
+        log.warning(
+            "MAX nudge send failed for user %s step %s",
+            contact.get("max_user_id"),
+            step,
+        )
+        return 0
 
     def process_due_followups(self, *, limit: int = 20) -> int:
         sent = 0

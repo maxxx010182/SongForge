@@ -13,6 +13,7 @@ from backend.database.db import get_connection, init_db
 from backend.services.auth_service import AuthService
 from backend.services.consultant import ConsultantService
 from backend.services.max_bot import MaxBot
+from backend.services.max_funnel import parse_whom
 from backend.services.messenger_service import MessengerService, compose_brief, webhook_secret
 from backend.services.nudge_schedule import evening_after
 from backend.services.rate_limit import limiter
@@ -818,9 +819,11 @@ def test_whom_and_occasion_new_grids():
             "whom:dad",
             "whom:relative",
             "whom:child",
+            "whom:nobody",
             "whom:write",
         ]
         labels = [btn.get("text") or "" for row in rows for btn in row]
+        assert any("Ни для кого" in (x or "") for x in labels)
         assert labels[-1].endswith("Напишу сам")
         assert (whom_msg.get("image_url") or "").endswith("max-whom.jpg") or whom_msg.get(
             "image_payload"
@@ -915,6 +918,95 @@ def test_genre_and_mood_have_nine_choices():
         assert "sound:nostalgic" in moods
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["brief_genre"] == "Шансон"
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_whom_nobody_button_and_situation_text():
+    assert parse_whom("nobody") == ("", "", "just")
+    assert parse_whom("ни для кого конкретного") == ("", "", "just")
+    whom, leftover, plot = parse_whom(
+        "просто так для фокуса на работу, пробежку, учёбу"
+    )
+    assert whom == ""
+    assert plot == "just"
+    assert "фокуса" in leftover
+    assert parse_whom("Лене") == ("Лене", "", "gift")
+
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        api.sent.clear()
+        _cb(bot, max_user_id, "whom:nobody")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["segment"] == "just"
+        assert (contact.get("brief_whom") or "") == ""
+        assert contact["funnel_stage"] == "occasion"
+        assert "без адресата" in api.sent[-1]["text"].lower()
+        assert "поводу" in api.sent[-1]["text"].lower() or "о чём" in api.sent[-1]["text"].lower()
+
+        _cb(bot, max_user_id, "nudge:start_over")
+        _cb(bot, max_user_id, "whom:write")
+        api.sent.clear()
+        _text(bot, max_user_id, "просто так для фокуса на работу, пробежку, учёбу")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["segment"] == "just"
+        assert contact["funnel_stage"] == "occasion"
+        assert "фокуса" in (contact.get("brief_detail") or "")
+        assert "точнее не скажу" not in api.sent[-1]["text"].lower()
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_old_song_does_not_cancel_nudge():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        svc = MessengerService()
+        contact = svc.get_by_max(max_user_id)
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO generations (
+                    id, created_at, status, user_id, purchased, title
+                ) VALUES (?, '2000-01-01T00:00:00+00:00', 'success', ?, 1, 'Старая')
+                """,
+                (str(uuid.uuid4()), contact["user_id"]),
+            )
+        _force_nudge_due(contact["id"])
+        api.sent.clear()
+        assert bot.process_due_nudges() == 1
+        assert "черновик" in api.sent[-1]["text"].lower()
+        contact = svc.get_by_max(max_user_id)
+        assert contact["next_nudge_at"]
+        assert int(contact["nudge_step"] or 0) == 1
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_song_after_accept_cancels_studio_nudge():
+    bot, api, max_user_id = _bot()
+    try:
+        _finish_gift(bot, max_user_id)
+        svc = MessengerService()
+        contact = svc.get_by_max(max_user_id)
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO generations (
+                    id, created_at, status, user_id, purchased, title
+                ) VALUES (?, '2099-01-01T00:00:00+00:00', 'success', ?, 0, 'Новая')
+                """,
+                (str(uuid.uuid4()), contact["user_id"]),
+            )
+        _force_nudge_due(contact["id"])
+        api.sent.clear()
+        assert bot.process_due_nudges() == 0
+        assert api.sent == []
+        contact = svc.get_by_max(max_user_id)
+        assert not contact["next_nudge_at"]
+        assert int(contact["nudge_step"] or 0) == 9
     finally:
         _cleanup(max_user_id)
 
