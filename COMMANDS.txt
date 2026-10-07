@@ -1,6 +1,16 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.101 is live (health 30 Sep 2026). Text chain: Kie first, spare keys only if set. No canned lyrics.
 
+=== 10) OCT 6: PAYMENTS, BALANCE, SONGS ===
+# On the server. First line opens SSH. Then paste the three sqlite lines, one at a time.
+ssh root@195.19.20.245
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS created, substr(COALESCE(paid_at,''),1,19) AS paid, status, package_id, notes_amount, price_rub, substr(user_id,1,8) AS user FROM payment_orders WHERE created_at >= '2026-10-01' ORDER BY created_at;"
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(id,1,8) AS user, substr(COALESCE(email,''),1,40) AS email, balance, trial_generations_used AS trial_used, substr(COALESCE(display_name,''),1,24) AS name FROM users WHERE id IN (SELECT user_id FROM payment_orders WHERE created_at >= '2026-10-01' AND user_id != '' UNION SELECT user_id FROM generations WHERE created_at >= '2026-10-06' AND created_at < '2026-10-07' AND user_id IS NOT NULL AND user_id != '');"
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS created, status, substr(COALESCE(title,''),1,36) AS title, CASE WHEN user_id IS NULL OR user_id='' THEN '-' ELSE substr(user_id,1,8) END AS user, CASE WHEN task_id IS NULL OR task_id='' THEN '-' ELSE substr(task_id,1,12) END AS task, purchased, note_charged, substr(COALESCE(fail_msg,''),1,40) AS fail, CASE WHEN lyrics LIKE '%Держи меня в этом свете%' THEN 'CANNED' ELSE '' END AS lyrics FROM generations WHERE created_at >= '2026-10-06' AND created_at < '2026-10-07' ORDER BY created_at;"
+
 === 1) UPDATE CODE ON VPS ===
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
