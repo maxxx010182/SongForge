@@ -22,6 +22,12 @@ def test_index_html():
     assert "text/html" in response.headers.get("content-type", "")
 
 
+def test_yandex_webmaster_file():
+    response = client.get("/yandex_1c8e66e473ae4245.html")
+    assert response.status_code == 200
+    assert "Verification: 1c8e66e473ae4245" in response.text
+
+
 def test_download_library_requires_login():
     response = client.get("/api/audio/download/library/test-library-id")
     assert response.status_code == 401

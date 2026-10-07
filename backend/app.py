@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.103", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.104", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -432,6 +432,14 @@ async def google_site_verification():
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Not found")
     return PlainTextResponse(path.read_text(encoding="utf-8"))
+
+
+@app.get("/yandex_1c8e66e473ae4245.html")
+async def yandex_site_verification():
+    path = ROOT_DIR / "yandex_1c8e66e473ae4245.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path, media_type="text/html; charset=utf-8")
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
