@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.102 is on GitHub. Server stays 2.11.101 until block 1. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.102 is on GitHub. Repo is public. Server stays 2.11.101 until block 1. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 12) STRIP INSTRUMENTAL NOTE FROM OLD OGNI BOSFORA ONLY ===
 # On the server. First line edits one saved idea. Second line checks it. Audio is not touched.
@@ -28,23 +28,8 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS created, status, substr(COALESCE(title,''),1,36) AS title, CASE WHEN user_id IS NULL OR user_id='' THEN '-' ELSE substr(user_id,1,8) END AS user, CASE WHEN task_id IS NULL OR task_id='' THEN '-' ELSE substr(task_id,1,12) END AS task, purchased, note_charged, substr(COALESCE(fail_msg,''),1,40) AS fail, CASE WHEN lyrics LIKE '%Держи меня в этом свете%' THEN 'CANNED' ELSE '' END AS lyrics FROM generations WHERE created_at >= '2026-10-06' AND created_at < '2026-10-07' ORDER BY created_at;"
 
 === 1) UPDATE CODE ON VPS ===
-# GitHub is private: raw and codeload return 404. Do not use update-now.sh from the link.
-# Archive is already on the Windows desktop: C:\Users\makc0\Desktop\songforge-update.tar.gz
-# Line A is PowerShell on Windows, not the server. Lines B-E are on the server, one at a time.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
-# A) Windows PowerShell
-scp C:\Users\makc0\Desktop\songforge-update.tar.gz root@195.19.20.245:/tmp/songforge-update.tar.gz
-
-# B) server
-cd ~/SongForge
-
-# C) server
-tar -xzf /tmp/songforge-update.tar.gz scripts/deploy-local.sh
-
-# D) server. Wait until: === Готово! v2.11.102 ===
-bash scripts/deploy-local.sh
-
-# E) server
 curl -s https://sozdaipesnu.ru/api/health
 # expected: "version":"2.11.102"
 
