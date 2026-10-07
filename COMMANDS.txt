@@ -1,6 +1,14 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.101 is live (health 30 Sep 2026). Text chain: Kie first, spare keys only if set. No canned lyrics.
 
+=== 11) WHAT WENT TO SUNO, AND OGNI BOSFORA TEXT ===
+# On the server, after ssh. Two lines, one at a time. Read only.
+ssh root@195.19.20.245
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS created, substr(COALESCE(title,''),1,40) AS title, json_extract(plan_json, '$.instrumental') AS instrumental, length(COALESCE(lyrics,'')) AS lyrics_len, substr(replace(replace(COALESCE(idea,''),char(10),' / '),char(13),''),1,700) AS idea, substr(replace(replace(COALESCE(style,''),char(10),' '),char(13),''),1,500) AS style FROM generations WHERE task_id LIKE 'dc0ca7b7b3d3%';"
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT ul.id AS library_id, substr(COALESCE(ul.title,''),1,40) AS track, substr(g.id,1,13) AS gen, json_extract(g.plan_json, '$.instrumental') AS instrumental, length(COALESCE(g.lyrics,'')) AS lyrics_len, substr(replace(replace(COALESCE(g.idea,''),char(10),' / '),char(13),''),1,700) AS idea, substr(replace(replace(COALESCE(g.style,''),char(10),' '),char(13),''),1,500) AS style FROM user_library ul LEFT JOIN generations g ON g.id = ul.generation_id WHERE ul.title LIKE '%Босфор%';"
+
 === 10) OCT 6: PAYMENTS, BALANCE, SONGS ===
 # On the server. First line opens SSH. Then paste the three sqlite lines, one at a time.
 ssh root@195.19.20.245
