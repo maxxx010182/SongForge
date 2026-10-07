@@ -1,6 +1,14 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.101 is live (health 30 Sep 2026). Text chain: Kie first, spare keys only if set. No canned lyrics.
 
+=== 12) STRIP INSTRUMENTAL NOTE FROM OLD OGNI BOSFORA ONLY ===
+# On the server. First line edits one saved idea. Second line checks it. Audio is not touched.
+ssh root@195.19.20.245
+
+sqlite3 /root/SongForge/data/songforge.db "UPDATE generations SET idea = replace(idea, ' Instrumental, no vocals. Duration: 8 minutes.', ''), optimized_idea = replace(COALESCE(optimized_idea, ''), ' Instrumental, no vocals. Duration: 8 minutes.', '') WHERE id LIKE 'bfacb265-ddc0%' AND (idea LIKE '%Instrumental, no vocals%' OR IFNULL(optimized_idea, '') LIKE '%Instrumental, no vocals%');"
+
+sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(id,1,13) AS gen, CASE WHEN idea LIKE '%Instrumental, no vocals%' OR IFNULL(optimized_idea,'') LIKE '%no vocals%' THEN 'STILL' ELSE 'clean' END AS idea_note, length(COALESCE(lyrics,'')) AS lyrics_len, substr(replace(replace(COALESCE(idea,''),char(10),' / '),char(13),''),1,240) AS idea FROM generations WHERE id LIKE 'bfacb265-ddc0%' OR id LIKE 'a121bc14-541c%';"
+
 === 11) WHAT WENT TO SUNO, AND OGNI BOSFORA TEXT ===
 # On the server, after ssh. Two lines, one at a time. Read only.
 ssh root@195.19.20.245
