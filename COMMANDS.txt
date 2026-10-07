@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.105 is on GitHub. Server stays 2.11.104 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.105 is live (health 7 Oct 2026). Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 13) WHY MAX REMINDERS ARE QUIET ===
 # On the server. Two lines, one at a time. Read only.
