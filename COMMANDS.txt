@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.101 is live (health 30 Sep 2026). Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.102 is on GitHub. Server stays 2.11.101 until block 1. Text chain: Kie first, spare keys only if set. No canned lyrics.
 
 === 12) STRIP INSTRUMENTAL NOTE FROM OLD OGNI BOSFORA ONLY ===
 # On the server. First line edits one saved idea. Second line checks it. Audio is not touched.
@@ -31,7 +31,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.101"
+# expected: "version":"2.11.102"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

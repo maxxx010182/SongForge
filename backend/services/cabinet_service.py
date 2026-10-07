@@ -1,8 +1,82 @@
 import json
+import re
 import uuid
 
 from backend.database.db import get_connection, init_db, utc_now
 from backend.services.audio_access_service import AudioAccessService
+
+_STYLE_PREFIX = "Стиль и звучание:"
+_DIRECTIVE_PART_RE = re.compile(
+    r"(?i)^(?:"
+    r"instrumentals?"
+    r"|no\s+vocals?"
+    r"|without\s+vocals?"
+    r"|duration\s*:\s*\d+\s*minutes?"
+    r"|\d+\s*minutes?"
+    r"|без\s+вокал\w*"
+    r"|без\s+слов"
+    r"|только\s+инструментал\w*"
+    r")\.?$"
+)
+
+
+def _tidy_style(text: str) -> str:
+    text = re.sub(r"\s+", " ", (text or "").replace("\n", " ")).strip()
+    text = re.sub(r"(,\s*){2,}", ", ", text)
+    return text.strip(" ,.;")
+
+
+def _is_style_tag(part: str) -> bool:
+    latin = re.findall(r"[A-Za-z]{3,}", part)
+    cyrillic = re.findall(r"[А-Яа-яЁё]{2,}", part)
+    return len(latin) >= 1 and len(latin) >= len(cyrillic)
+
+
+def _is_personal_part(part: str, blobs: list[str]) -> bool:
+    token = part.strip(" .")
+    if not token or _DIRECTIVE_PART_RE.match(token):
+        return True
+    if _is_style_tag(token):
+        return False
+    low = token.lower()
+    if any(low in blob.lower() for blob in blobs if len(blob) >= 8):
+        return True
+    words = re.findall(r"[А-Яа-яЁё]{2,}", token)
+    return len(words) >= 4 or token.endswith("...") or "!" in token
+
+
+def _cut_personal_prefix(style: str, blob: str) -> str:
+    """Убрать из стиля начало личной истории, в том числе обрезанное через «...»."""
+    blob = " ".join((blob or "").split())
+    if len(blob) < 12 or not style:
+        return style
+    found = re.search(re.escape(blob), style, flags=re.IGNORECASE)
+    if found:
+        style = style[: found.start()] + style[found.end() :]
+    head = blob[:40].lower()
+    if style.lower().startswith(head[:24]):
+        ellipsis = style.find("...")
+        if 0 <= ellipsis <= 200:
+            style = style[ellipsis + 3 :]
+    return style
+
+
+def public_style_for_similar(
+    style: str,
+    *,
+    idea: str = "",
+    optimized_idea: str = "",
+) -> str:
+    """Стиль для кнопки «Похожее»: звучание, без истории автора и без режима «без слов»."""
+    text = _tidy_style(style)
+    if text.lower().startswith(_STYLE_PREFIX.lower()):
+        text = text[len(_STYLE_PREFIX) :].strip()
+    blobs = [idea or "", optimized_idea or ""]
+    for blob in blobs:
+        text = _cut_personal_prefix(text, blob)
+    parts = [part.strip() for part in text.split(",") if part.strip()]
+    kept = [part for part in parts if not _is_personal_part(part, blobs)]
+    return _tidy_style(", ".join(kept))
 
 
 def compose_similar_idea(
@@ -12,21 +86,15 @@ def compose_similar_idea(
     style: str = "",
     genre: str = "",
 ) -> str:
-    """Текст в поле идеи по кнопке «Похожее»: промпт хита, не «в стиле названия»."""
-    idea = (idea or "").strip()
-    optimized_idea = (optimized_idea or "").strip()
-    style = (style or "").strip()
+    """Текст по кнопке «Похожее»: только стиль. Личная история и текст песни не копируются."""
+    public = public_style_for_similar(
+        style,
+        idea=idea,
+        optimized_idea=optimized_idea,
+    )
+    if public:
+        return f"{_STYLE_PREFIX} {public}"
     genre = (genre or "").strip()
-    theme = idea or optimized_idea
-    parts: list[str] = []
-    if theme:
-        parts.append(theme)
-    if style:
-        blob = "\n".join(parts).lower()
-        if style.lower() not in blob:
-            parts.append("Стиль и звучание: " + style)
-    if parts:
-        return "\n\n".join(parts)
     if genre:
         return f"Трек в жанре {genre}, атмосферный и запоминающийся."
     return ""
