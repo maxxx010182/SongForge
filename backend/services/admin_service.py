@@ -35,6 +35,65 @@ PERMISSIONS: dict[str, frozenset[str]] = {
 }
 
 
+_PAY_STATUS_LABELS = {
+    "paid": "оплачено",
+    "pending": "не закончена",
+    "canceled": "отменена",
+    "cancelled": "отменена",
+    "failed": "не прошла",
+}
+
+
+def _who(row: dict) -> str:
+    name = str(row.get("display_name") or "").strip()
+    email = str(row.get("email") or "").strip()
+    user_id = str(row.get("user_id") or "").strip()
+    if name and email:
+        return f"{name} · {email}"
+    if name:
+        return name
+    if email:
+        return email
+    if user_id:
+        return user_id[:8]
+    return ""
+
+
+def generation_kind(status: str | None, task_id: str | None) -> str:
+    """Подпись строки в админке. Черновик — текст есть, музыка не запускалась."""
+    code = (status or "").strip().lower()
+    task = (task_id or "").strip()
+    if code == "success":
+        return "Готово"
+    if code == "error":
+        return "Ошибка"
+    if code in {"generating", "processing"}:
+        return "В работе"
+    if code == "planned" or not task:
+        return "Черновик"
+    return code or "—"
+
+
+def present_generation(row: dict) -> dict:
+    item = dict(row)
+    charged = int(item.get("note_charged") or 0)
+    purchased = int(item.get("purchased") or 0)
+    item["kind"] = generation_kind(item.get("status"), item.get("task_id"))
+    item["note_label"] = "списана" if charged else "нет"
+    item["song_label"] = "выкуплена" if purchased else "нет"
+    item["who"] = _who(item)
+    item["fail_msg"] = str(item.get("fail_msg") or "").strip()
+    return item
+
+
+def present_payment(row: dict) -> dict:
+    item = dict(row)
+    code = str(item.get("status") or "").strip().lower()
+    item["pay_label"] = _PAY_STATUS_LABELS.get(code, item.get("status") or "—")
+    item["who"] = _who(item)
+    return item
+
+
 class AdminService:
     def __init__(self) -> None:
         init_db()
@@ -228,7 +287,24 @@ class AdminService:
 
         with get_connection() as conn:
             rows = conn.execute(query, params).fetchall()
-        return [dict(r) for r in rows]
+        return [present_generation(dict(r)) for r in rows]
+
+    def list_payments(self, *, limit: int = 40) -> list[dict]:
+        limit = max(1, min(limit, 200))
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT p.id, p.created_at, p.paid_at, p.status, p.package_id,
+                       p.notes_amount, p.price_rub, p.user_id,
+                       u.email, u.display_name
+                FROM payment_orders p
+                LEFT JOIN users u ON u.id = p.user_id
+                ORDER BY p.created_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [present_payment(dict(r)) for r in rows]
 
     def search_users(self, *, q: str, limit: int = 30) -> list[dict]:
         limit = max(1, min(limit, 100))

@@ -70,11 +70,15 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
     <div id="panelDash" class="panel active sec"><p class="muted">Обновление каждые 60 сек. Зависшие — статус generating дольше 10 минут.</p></div>
     <div id="panelGen" class="panel sec">
       <h2>Генерации</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:12px">Черновик — текст сохранён, музыка не запускалась. «Списана» — за эту песню взяли ноту. «Выкуплена» — песня открыта целиком.</p>
       <div class="row">
-        <select id="genFilter"><option value="">Все</option><option value="generating">generating</option><option value="success">success</option><option value="error">error</option></select>
+        <select id="genFilter"><option value="">Все</option><option value="planned">Черновик</option><option value="generating">В работе</option><option value="success">Готово</option><option value="error">Ошибка</option></select>
         <button class="btn" type="button" id="genReload">Обновить</button>
       </div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Название</th><th>Статус</th><th>User</th><th>Аудио</th><th>task_id</th></tr></thead><tbody id="genBody"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Название</th><th>Что это</th><th>Кто</th><th>Нота</th><th>Песня</th><th>Ошибка</th><th>Аудио</th></tr></thead><tbody id="genBody"></tbody></table></div>
+      <h2 style="margin-top:28px">Оплаты нот</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:12px">Покупка пакета. «Не закончена» — человек открыл оплату и не заплатил.</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Кто</th><th>Пакет</th><th>Нот</th><th>₽</th><th>Статус</th></tr></thead><tbody id="payBody"></tbody></table></div>
     </div>
     <div id="panelUsers" class="panel sec">
       <h2>Пользователи</h2>
@@ -159,13 +163,47 @@ async function loadProviderBal(){
   }
 }
 async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);loadProviderBal();}
-async function loadGen(){var st=document.getElementById('genFilter').value;var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';var rows=await api('/api/admin/generations'+q);document.getElementById('genBody').innerHTML=rows.map(function(g){
-  var audioHtml='—';var links=[];
-  if(g.music_url_a)links.push('<a href="'+esc(g.music_url_a)+'" target="_blank" rel="noopener" class="btn primary" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 1</a>');
-  if(g.music_url_b)links.push('<a href="'+esc(g.music_url_b)+'" target="_blank" rel="noopener" class="btn" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 2</a>');
-  if(links.length)audioHtml=links.join(' ');
-  return'<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+esc(g.title)+'</td><td>'+esc(g.status)+'</td><td class="muted">'+esc(g.email||g.user_id||'—')+'</td><td style="white-space:nowrap">'+audioHtml+'</td><td class="muted">'+esc((g.task_id||'').slice(0,12))+'</td></tr>';
-}).join('')||'<tr><td colspan="6" class="muted">Пусто</td></tr>';}
+function genKindCell(kind){
+  if(kind==='Ошибка')return '<td style="color:#fca5a5">'+esc(kind)+'</td>';
+  if(kind==='Черновик')return '<td class="muted">'+esc(kind)+'</td>';
+  if(kind==='Готово')return '<td style="color:#86efac">'+esc(kind)+'</td>';
+  return '<td>'+esc(kind||'—')+'</td>';
+}
+async function loadPays(){
+  var body=document.getElementById('payBody');
+  if(!body)return;
+  if(!has('payments:read')){body.innerHTML='<tr><td colspan="6" class="muted">Нет доступа к оплатам</td></tr>';return;}
+  try{
+    var rows=await api('/api/admin/payments?limit=40');
+    body.innerHTML=rows.map(function(p){
+      var when=(p.paid_at||p.created_at||'').slice(0,16);
+      var who=p.who?esc(p.who):'<span class="muted">нет пользователя</span>';
+      var st=p.pay_label||p.status||'—';
+      var stCell=st==='не закончена'?'<td style="color:#fde047">'+esc(st)+'</td>':'<td>'+esc(st)+'</td>';
+      return '<tr><td class="muted">'+esc(when)+'</td><td>'+who+'</td><td>'+esc(p.package_id||'—')+'</td><td>'+esc(p.notes_amount)+'</td><td>'+esc(p.price_rub)+'</td>'+stCell+'</tr>';
+    }).join('')||'<tr><td colspan="6" class="muted">Пусто</td></tr>';
+  }catch(e){
+    body.innerHTML='<tr><td colspan="6" class="muted">'+esc(e.message||'ошибка')+'</td></tr>';
+  }
+}
+async function loadGen(){
+  var st=document.getElementById('genFilter').value;
+  var q=st?'?status='+encodeURIComponent(st)+'&limit=80':'?limit=80';
+  var rows=await api('/api/admin/generations'+q);
+  document.getElementById('genBody').innerHTML=rows.map(function(g){
+    var audioHtml='<span class="muted">нет музыки</span>';
+    var links=[];
+    if(g.music_url_a)links.push('<a href="'+esc(g.music_url_a)+'" target="_blank" rel="noopener" class="btn primary" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 1</a>');
+    if(g.music_url_b)links.push('<a href="'+esc(g.music_url_b)+'" target="_blank" rel="noopener" class="btn" style="padding:2px 8px;font-size:.72rem;text-decoration:none">▶ Вариант 2</a>');
+    if(links.length)audioHtml=links.join(' ');
+    var who=g.who?esc(g.who):'<span class="muted">нет пользователя</span>';
+    var fail=g.fail_msg?esc(g.fail_msg):'<span class="muted">—</span>';
+    var task=(g.task_id||'').slice(0,12);
+    var title=esc(g.title||'—')+(task?'<div class="muted" style="font-size:.7rem">'+esc(task)+'</div>':'');
+    return '<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+title+'</td>'+genKindCell(g.kind)+'<td>'+who+'</td><td>'+esc(g.note_label||'нет')+'</td><td>'+esc(g.song_label||'нет')+'</td><td>'+fail+'</td><td style="white-space:nowrap">'+audioHtml+'</td></tr>';
+  }).join('')||'<tr><td colspan="8" class="muted">Пусто</td></tr>';
+  loadPays();
+}
 async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
   document.getElementById('userBody').innerHTML=rows.map(function(u){
     return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-id="'+esc(u.id)+'" data-bal="'+u.balance+'" type="button">± ноты</button></td></tr>';

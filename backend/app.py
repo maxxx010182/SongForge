@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.102", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.103", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -745,6 +745,18 @@ async def admin_list_generations(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return admin_service.list_generations(status=status, limit=limit)
+
+
+@app.get("/api/admin/payments")
+async def admin_list_payments(
+    limit: int = 40,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "payments:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return admin_service.list_payments(limit=limit)
 
 
 @app.get("/api/admin/users/search")
