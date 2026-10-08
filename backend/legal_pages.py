@@ -11,18 +11,21 @@ _PAGES = {
     "terms": {
         "title": "Пользовательское соглашение",
         "subtitle": "Сервис «СоздайСвоюПесню» (sozdaipesnu.ru)",
+        "description": "Пользовательское соглашение сервиса СоздайСвоюПесню (sozdaipesnu.ru): правила использования студии.",
         "updated": "14 сентября 2026 г.",
         "file": "agreement.html",
     },
     "privacy": {
         "title": "Политика конфиденциальности",
         "subtitle": "В соответствии с Федеральным законом №152-ФЗ «О персональных данных»",
+        "description": "Политика конфиденциальности сервиса СоздайСвоюПесню: какие данные обрабатывает ИП Мошкин М.А. и зачем.",
         "updated": "14 сентября 2026 г.",
         "file": "privacy.html",
     },
     "offer": {
         "title": "Публичная оферта",
         "subtitle": "на оказание услуг посредством сервиса «СоздайСвоюПесню»",
+        "description": "Публичная оферта сервиса СоздайСвоюПесню: условия оплаты нот и оказания услуг.",
         "updated": "14 сентября 2026 г. · г. Тюмень",
         "file": "offer.html",
     },
@@ -38,12 +41,18 @@ def render_legal_page(slug: str) -> str:
         raise FileNotFoundError(str(body_path))
     body = body_path.read_text(encoding="utf-8")
     home = "/"
+    canonical = f"https://sozdaipesnu.ru/legal/{slug}"
+    description = meta["description"]
+    title = meta["title"]
     return f"""<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{meta["title"]} — СоздайСвоюПесню</title>
+  <title>{title} — СоздайСвоюПесню</title>
+  <meta name="description" content="{description}">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="{canonical}">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>

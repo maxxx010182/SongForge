@@ -1,5 +1,8 @@
 """Smoke-тесты API — без ключей внешних сервисов."""
 
+import json
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from backend.app import app
@@ -20,6 +23,72 @@ def test_index_html():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
+
+
+def test_www_host_redirects_home():
+    response = client.get(
+        "/?utm_source=landing",
+        headers={"host": "www.sozdaipesnu.ru"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 301
+    assert response.headers["location"] == "https://sozdaipesnu.ru/?utm_source=landing"
+
+
+def test_www_forwarded_host_redirects_post():
+    response = client.post(
+        "/api/produce",
+        headers={"host": "127.0.0.1:8000", "x-forwarded-host": "www.sozdaipesnu.ru"},
+        json={"idea": "тест"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 308
+    assert response.headers["location"] == "https://sozdaipesnu.ru/api/produce"
+
+
+def test_apex_host_stays():
+    response = client.get("/", headers={"host": "sozdaipesnu.ru"})
+    assert response.status_code == 200
+
+
+def test_homepage_seo_marks():
+    html = client.get("/").text
+    assert html.count("<h1") == 1
+    start = html.index('<div id="faqList">')
+    end = html.index('<div id="section-support"')
+    block = html[start:end]
+    assert block.count('class="faq-item"') == 18
+    assert "Как работает сервис?" in block
+    assert "149₽" in block
+    assert "ТВОЯ ПЕСНЯ" in html
+    payload = html.split('<script type="application/ld+json">', 1)[1].split("</script>", 1)[0]
+    data = json.loads(payload)
+    types = [node["@type"] for node in data["@graph"]]
+    assert types == ["Organization", "WebSite", "Service"]
+    assert data["@graph"][2]["offers"]["price"] == "149"
+
+
+def test_legal_pages_have_canonical():
+    expected = {
+        "/legal/terms": "Пользовательское соглашение сервиса СоздайСвоюПесню",
+        "/legal/privacy": "Политика конфиденциальности сервиса СоздайСвоюПесню",
+        "/legal/offer": "Публичная оферта сервиса СоздайСвоюПесню",
+    }
+    for path, description in expected.items():
+        response = client.get(path)
+        assert response.status_code == 200
+        assert f'<link rel="canonical" href="https://sozdaipesnu.ru{path}">' in response.text
+        assert description in response.text
+        assert response.text.count("<h1") == 1
+
+
+def test_landing_seo_marks():
+    html = (Path(__file__).resolve().parents[1] / "landing" / "index.html").read_text(encoding="utf-8")
+    assert html.count("<h1") == 1
+    payload = html.split('<script type="application/ld+json">', 1)[1].split("</script>", 1)[0]
+    data = json.loads(payload)
+    assert data["@graph"][0]["name"] == "СоздайСвоюПесню"
+    assert data["@graph"][1]["url"] == "https://podarok.sozdaipesnu.ru/"
 
 
 def test_yandex_webmaster_file():

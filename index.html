@@ -8,6 +8,44 @@
     <meta name="description" content="СоздайСвоюПесню (sozdaipesnu.ru) — создай свою песню с ИИ за минуту: текст, музыка, два варианта трека, музплощадка и фонотека.">
     <meta name="robots" content="index,follow">
     <link rel="canonical" href="https://sozdaipesnu.ru/">
+    <!-- Цена 149 ₽ — пакет notes_1. Менять вместе с пакетами. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "СоздайСвоюПесню",
+          "legalName": "ИП Мошкин Максим Алексеевич",
+          "url": "https://sozdaipesnu.ru/",
+          "email": "support@sozdaipesnu.ru",
+          "logo": "https://sozdaipesnu.ru/SongForgeLogo.png",
+          "taxID": "720401732483"
+        },
+        {
+          "@type": "WebSite",
+          "name": "СоздайСвоюПесню",
+          "url": "https://sozdaipesnu.ru/"
+        },
+        {
+          "@type": "Service",
+          "name": "Персональная песня",
+          "url": "https://sozdaipesnu.ru/",
+          "provider": {
+            "@type": "Organization",
+            "name": "СоздайСвоюПесню",
+            "url": "https://sozdaipesnu.ru/"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "149",
+            "priceCurrency": "RUB",
+            "description": "1 нота: два полных варианта песни"
+          }
+        }
+      ]
+    }
+    </script>
     <meta property="og:type" content="website">
     <meta property="og:locale" content="ru_RU">
     <meta property="og:site_name" content="СоздайСвоюПесню">
@@ -664,7 +702,7 @@
 
 <div id="section-docs" class="doc-section active">
     <div class="glass-panel p-8">
-        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Юридические документы</h1>
+        <h2 class="font-title text-3xl font-bold text-yellow-400 mb-2">Юридические документы</h2>
         <p class="text-zinc-400 mb-8">Актуальные тексты — на отдельных страницах (для оплаты и регистрации).</p>
         <div class="grid gap-4 md:grid-cols-3 mb-6">
             <a href="/legal/terms" target="_blank" rel="noopener" class="block p-5 rounded-2xl border border-white/10 bg-white/3 hover:border-yellow-400/30 hover:bg-yellow-400/5 transition">
@@ -691,7 +729,7 @@
 <!-- ================================================ -->
 <div id="section-faq" class="doc-section">
     <div class="glass-panel p-8">
-        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Частые вопросы</h1>
+        <h2 class="font-title text-3xl font-bold text-yellow-400 mb-2">Частые вопросы</h2>
         <p class="text-zinc-400 mb-8">Ответы на самые популярные вопросы о сервисе</p>
 
         <!-- Категории FAQ -->
@@ -703,7 +741,26 @@
             <button class="faq-cat-btn px-4 py-2 rounded-full text-sm border border-white/10 text-zinc-400 hover:border-yellow-400/30 hover:text-yellow-400 transition" data-cat="rights">Права</button>
         </div>
 
-        <div id="faqList"></div>
+        <div id="faqList">
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Как работает сервис?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Всё просто — три шага: выбери стиль (жанр, вокал, настроение) → опиши идею своей песни → нажми «Создать песни». Студия напишет текст и создаст 2 варианта трека по 60 секунд. Выбери лучший и купи полную версию.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Чем отличается AI-продюсер от Расширенного режима?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">AI-продюсер — быстрый старт: AI сам подбирает стиль и текст, результат «на пробу». Расширенный режим — для эфирного качества: вы задаёте жанр, BPM, инструменты, вокал и референсы. Чем подробнее бриф — тем точнее трек.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Что такое фонотека?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Фонотека — ваши купленные полные версии песен. После оплаты 1 ноты оба варианта (A и B) сохраняются навсегда: слушать и скачивать MP3. Превью без покупки — во вкладке «История».</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Что такое «нота»?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">1 нота = 1 генерация = 2 варианта песни по 60 секунд. Превью бесплатно. За 1 ноту вы скачиваете полные версии обоих вариантов в фонотеку. Генерация текста — всегда бесплатна.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Сколько времени занимает создание трека?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Генерация текста — 5–15 секунд. Создание песни — около 3 минут. Вкладку лучше не закрывать.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Можно ли редактировать текст перед созданием музыки?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Да! После генерации текста есть кнопка «Редактировать».</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Сколько стоит превью?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">1 пробная генерация бесплатно: 2 варианта, превью по 60 секунд каждый. Полные версии (до 4 минут) — за 1 ноту.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Чем демо-версия отличается от полной?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Демо — 60 секунд. Полная — до 4 минут, высокое качество, навсегда в фонотеке.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Сколько стоит создать песню?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">1 нота = 149₽ (2 варианта, полные версии). Пакеты: 3=375₽, 5=599₽, 10=899₽.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Как оплатить?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">В разделе «Пакеты» выберите пакет нот и нажмите «Перейти к оплате». Карты РФ и СБП.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Можно ли вернуть деньги?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Возврат не предусмотрен. При техническом сбое восстановим генерацию бесплатно.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Баланс сгорит, если не использую?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Нет, ноты хранятся без ограничения по времени.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Почему результат может не совпасть с ожиданиями?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Генерация ИИ — вероятностный процесс. Мы создаём 2 варианта.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Текст получился не очень. Что делать?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Текст можно перегенерировать бесплатно — кнопка «Ещё раз».</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Поддерживается ли русский язык?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Да, полностью.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Кому принадлежит созданная песня?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">После оплаты полной версии — все права переходят к вам.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Могу ли я выложить трек на Spotify?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Да, после оплаты вы получаете все права.</div></div>
+            <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span>Могут ли два пользователя получить одинаковую песню?</span><i class="fa-solid fa-chevron-down faq-icon"></i></div><div class="faq-answer">Теоретически возможно, поэтому не рекомендуем использовать без отдельного соглашения.</div></div>
+        </div>
     </div>
 </div>
 
@@ -712,7 +769,7 @@
 <!-- ================================================ -->
 <div id="section-support" class="doc-section">
     <div class="glass-panel p-8">
-        <h1 class="font-title text-3xl font-bold text-yellow-400 mb-2">Служба поддержки</h1>
+        <h2 class="font-title text-3xl font-bold text-yellow-400 mb-2">Служба поддержки</h2>
         <p class="text-zinc-400 mb-8">Мы поможем разобраться с любым вопросом</p>
 
         <!-- Контакт поддержки -->

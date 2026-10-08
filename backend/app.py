@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.105", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.106", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -158,6 +158,34 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+
+def _public_hostname(request: Request) -> str:
+    raw = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "")
+    host = raw.split(",")[0].strip().lower()
+    return host.split(":")[0]
+
+
+def _www_redirect(request: Request) -> RedirectResponse | None:
+    """https://www.sozdaipesnu.ru → https://sozdaipesnu.ru. Другие имена не трогаем."""
+    if _public_hostname(request) != "www.sozdaipesnu.ru":
+        return None
+    path = request.url.path or "/"
+    if not path.startswith("/"):
+        path = "/" + path
+    target = "https://sozdaipesnu.ru" + path
+    if request.url.query:
+        target += "?" + request.url.query
+    code = 301 if request.method in {"GET", "HEAD"} else 308
+    return RedirectResponse(url=target, status_code=code)
+
+
+@app.middleware("http")
+async def redirect_www_host(request: Request, call_next):
+    redirected = _www_redirect(request)
+    if redirected is not None:
+        return redirected
+    return await call_next(request)
 
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 ASSETS_DIR = ROOT_DIR / "assets"
