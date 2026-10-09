@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.111", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.112", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1980,6 +1980,26 @@ async def download_full_audio(
     return audio_access.stream_download(source, title=lib_title)
 
 
+def _alert_owner_break(kind: str, exc: BaseException) -> None:
+    """Телефон, если человек остался без песни. Сбой текста уже шлёт llm_signal."""
+    try:
+        from backend.services.llm_chain import LlmUnavailable, USER_LYRICS_FAIL_MESSAGE
+
+        if isinstance(exc, LlmUnavailable) or USER_LYRICS_FAIL_MESSAGE in str(exc):
+            return
+        from backend.services.owner_alert import ping
+
+        text = {
+            "produce": "Текст песни не собрался. Человеку показали ошибку.",
+            "song": "Песня не собралась. Человеку показали ошибку, попытку вернули.",
+            "music": "Музыка не запустилась. Человеку показали ошибку, попытку вернули.",
+        }.get(kind)
+        if text:
+            ping(text, fingerprint=kind)
+    except Exception:
+        log.warning("owner alert failed")
+
+
 @app.post("/api/produce", response_model=ProduceResponse)
 async def produce_song(
     req: ProduceRequest,
@@ -2015,6 +2035,7 @@ async def produce_song(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("produce failed")
+        _alert_owner_break("produce", exc)
         raise HTTPException(status_code=500, detail="AI-продюсер временно недоступен") from exc
     finally:
         producer.clear_actor()
@@ -2088,6 +2109,7 @@ async def create_song(
             mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
         )
         log.exception("create-song failed")
+        _alert_owner_break("song", exc)
         raise HTTPException(
             status_code=500,
             detail=_generation_error_message(exc),
@@ -2177,6 +2199,7 @@ async def start_music(
             mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
         )
         log.exception("music start failed")
+        _alert_owner_break("music", exc)
         raise HTTPException(
             status_code=500,
             detail=_generation_error_message(exc),

@@ -1,5 +1,20 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.111. Owner confirmed a song on 9 Oct 2026. Do not re-run blocks 25, 24, 23, 22, 21, or 19. Phone alert is not started. Repo is public.
+Version: 2.11.112. Next is block 26, after docs/instrukcii/ТЕХБОТ.txt. Do not re-run blocks 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 26) TECH BOT: TEXT, MUSIC, STUCK SONG ===
+# First finish docs/instrukcii/ТЕХБОТ.txt: new bot, token in .env, press Start.
+# Then these lines, one at a time. Skip lines that start with #.
+# Paste the health line and the three script lines: CHAT, TEST sent, DONE.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.112"
+
+python3 /root/SongForge/scripts/bind-alert-bot.py
+
+pm2 restart songforge --update-env
+
+pm2 restart songforge-worker --update-env
 
 === 25) GEMINI FIRST, GPT ONLY ON ERROR, NO SONNET ===
 # On the server. Seven lines, one at a time. Skip lines that start with #.
@@ -135,7 +150,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.111"
+# expected: "version":"2.11.112"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

@@ -1,7 +1,8 @@
 """Один сигнал, что текстовая модель сломалась.
 
-Админка читает файл. В MAX уходит одно сообщение на сбой и одно, когда снова
-заработало. Повтор той же поломки не шлётся чаще чем раз в три часа.
+Админка читает файл. В техбот и, если задан id, в MAX уходит одно сообщение
+на сбой и одно, когда снова заработало. Повтор той же поломки не шлётся
+чаще чем раз в три часа.
 """
 
 from __future__ import annotations
@@ -58,6 +59,20 @@ def _save(data: dict[str, Any]) -> None:
 
 
 def _notify(text: str) -> None:
+    _notify_telegram(text)
+    _notify_max(text)
+
+
+def _notify_telegram(text: str) -> None:
+    try:
+        from backend.services.telegram_alert import send_alert
+
+        send_alert(text)
+    except Exception:
+        log.warning("LLM signal: Telegram notify failed")
+
+
+def _notify_max(text: str) -> None:
     if not ADMIN_MAX_USER_ID or not MAX_BOT_TOKEN:
         return
     try:

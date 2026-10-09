@@ -39,6 +39,12 @@ def run_forever() -> None:
                     log.info("MAX nudges sent: %s followups: %s", sent, extra)
             except Exception:
                 log.exception("MAX nudge pass failed")
+            try:
+                from backend.services.owner_alert import watch_stuck
+
+                watch_stuck()
+            except Exception:
+                log.exception("owner alert pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)
 
 

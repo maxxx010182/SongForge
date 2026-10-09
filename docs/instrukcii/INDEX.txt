@@ -34,6 +34,7 @@ SongForge — оглавление инструкций
   ВХОД-ПОЧТА-ПО-ШАГАМ.txt
   VK-ENV-SEYCHAS.txt
   ВХОД-EMAIL-TG-VK.txt
+  ТЕХБОТ.txt
 
 ОПЛАТА
 ------

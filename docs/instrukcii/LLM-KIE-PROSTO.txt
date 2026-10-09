@@ -77,6 +77,8 @@ API (для проверки):
   KIE_CLAUDE_MODELS=
   KIE_MODELS=gemini-3-pro,gemini-3.1-pro,gpt-5-2
   ADMIN_MAX_USER_ID — ваш id в MAX, одно сообщение при сбое текста
+  TELEGRAM_ALERT_BOT_TOKEN — отдельный техбот, не бот входа
+  TELEGRAM_ALERT_CHAT_ID — записывает скрипт привязки, руками не считать
 
 Песню пишет Gemini 3 Pro. Если пришла ошибка — Gemini 3.1 Pro.
 Если снова ошибка — GPT 5.2. Сонет не вызываем: на каждую песню он дорогой.
