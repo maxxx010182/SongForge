@@ -1,6 +1,10 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.107 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
 
+=== 16) DID TODAY'S KIE ANSWERS BECOME SONGS ===
+# On the server. One line. Paste the output. No keys.
+echo '--- db ---'; sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT status, COUNT(*) AS n FROM generations WHERE created_at >= datetime('now','-1 day') GROUP BY status; SELECT substr(created_at,1,19) AS at, substr(status,1,12) AS status, substr(COALESCE(title,''),1,24) AS title, substr(COALESCE(fail_msg,''),1,50) AS fail FROM generations WHERE created_at >= datetime('now','-1 day') ORDER BY created_at DESC LIMIT 20;"; echo '--- log ---'; grep -E "response received|Unified package|produce failed|Unexpected Kie|lazy lyrics|incomplete" /root/.pm2/logs/songforge-out.log | tail -n 40
+
 === 15) WHY THE LAST TEXT FAILED ===
 # On the server. One line. Paste the output into chat. No keys in it.
 grep -E "produce failed|Traceback|Kie |Gemini |Cloudflare |LlmUnavailable|lyrics" /root/.pm2/logs/songforge-out.log /root/.pm2/logs/songforge-error.log | tail -n 60
