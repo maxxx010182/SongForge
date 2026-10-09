@@ -80,7 +80,32 @@ def test_song_asks_sonnet_before_gpt(monkeypatch, tmp_path):
     text = chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
     assert text == "Куплет маме"
     assert claude.calls == ["claude-sonnet-5-5"]
-    assert claude.timeouts == [llm_chain._PRO_FIRST_TIMEOUT]
+    assert claude.timeouts == [llm_chain._SONG_TIMEOUT]
+    assert kie.calls == []
+    assert spare.calls == []
+
+
+def test_slow_song_does_not_start_the_next_model(monkeypatch, tmp_path):
+    import requests
+
+    kie = _Kie(fail=False)
+    spare = _Spare()
+    claude = _Claude()
+
+    def slow(system_prompt, user_text, *, model, max_tokens, temperature, timeout):
+        claude.calls.append(model)
+        claude.timeouts.append(timeout)
+        raise requests.Timeout("timed out")
+
+    claude.complete = slow
+    chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
+    try:
+        chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
+        raise AssertionError("must fail")
+    except LlmUnavailable:
+        pass
+    assert claude.calls == ["claude-sonnet-5-5"]
+    assert claude.timeouts == [llm_chain._SONG_TIMEOUT]
     assert kie.calls == []
     assert spare.calls == []
 

@@ -1,5 +1,18 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.109. Next is block 23: deploy, set the text queue, restart, then one real song. Do not run blocks 22, 21, or 19. Repo is public.
+Version: 2.11.110. Next is block 24: deploy, then let the page wait 3 minutes, then one song. Do not click the button twice. Do not run blocks 23, 22, 21, or 19. Repo is public.
+
+=== 24) WAIT FOR THE SONG, DO NOT START THE NEXT MODEL ===
+# On the server. Four lines, one at a time. Skip lines that start with #.
+# Then one song on the site. The button can spin for about two minutes.
+# Paste the health line and say if the text appeared.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.110"
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/extend-nginx-wait.py?$(date +%s)" -o /tmp/extend-nginx-wait.py
+
+python3 /tmp/extend-nginx-wait.py
 
 === 23) SONNET, THEN GPT, GEMINI, CLOUDFLARE ===
 # On the server. Five lines, one at a time. Skip lines that start with #.
@@ -7,7 +20,7 @@ Version: 2.11.109. Next is block 23: deploy, set the text queue, restart, then o
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.109"
+# expected: "version":"2.11.110"
 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-fallback.py?$(date +%s)" -o /tmp/set-text-fallback.py
 
@@ -103,7 +116,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.109"
+# expected: "version":"2.11.110"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

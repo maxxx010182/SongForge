@@ -126,6 +126,9 @@ class PromptBuilder:
                 custom_description=custom_description,
             )
 
+        if use_unified and package is None:
+            raise ValueError(USER_LYRICS_FAIL_MESSAGE)
+
         if package:
             payload = self._payload_from_unified_package(
                 package,

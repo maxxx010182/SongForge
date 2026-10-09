@@ -114,10 +114,10 @@ class SunoPackageComposer:
                         label,
                         len(result.lyrics),
                     )
-                    if kept is None or len(result.lyrics) > len(kept.lyrics):
-                        result.source = f"{label}-kept"
-                        kept = result
-                    continue
+                    result.source = f"{label}-kept"
+                    # Второй полный запрос — ещё одна песня и ещё списание.
+                    # Уже оплаченный текст показываем, даже если он короче нормы.
+                    return result
                 result.source = label
                 return result
             except LlmUnavailable:

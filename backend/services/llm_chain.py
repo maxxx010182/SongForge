@@ -1,17 +1,16 @@
 """Очередь текстовых моделей.
 
-Песня (модель Pro): Claude Sonnet на Kie, затем GPT 5.2, затем Gemini 3.1 Pro,
-затем Grok и Cloudflare, если их ключи заданы. Короткий шаг (разбор, название)
-Сонет не трогает: его пишет GPT, чтобы страница успела дождаться песни.
-Прямой Gemini с этого сервера не вызываем. Удачная модель возвращается сразу.
-Закрытый канал не спрашиваем снова несколько часов. Если не ответил никто,
-песню не из чего писать.
+Песня (модель Pro): Claude Sonnet. Ждём её до конца: полная песня у Сонета
+занимала около полутора минут. Следующую модель зовём только если Сонет
+ответил ошибкой, а не если он ещё пишет. Обрыв по времени новую модель не
+запускает: Kie иначе дописывает текст, списывает кредиты, а сайт ответ уже
+выбросил. Короткий шаг — один вызов GPT, без второй модели.
+Прямой Gemini с этого сервера не вызываем.
 """
 
 from __future__ import annotations
 
 import threading
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -35,22 +34,20 @@ from backend.settings import (
     XAI_MODELS,
 )
 
-# Страница ждёт около минуты. Песня: Сонет, и если он завис — ещё GPT.
-# Короткий шаг не забирает это время.
-_PRO_BUDGET = 50
-_LITE_BUDGET = 12
-_PRO_FIRST_TIMEOUT = 32
-_STEP_TIMEOUT = 16
-_MIN_TIMEOUT = 8
+# Полная песня Сонета в кабинете Kie шла 86 секунд. Режем позже, чем она пишет.
+# Запасную модель не стартуем по таймеру: оборванный запрос Kie всё равно дописывает и берёт деньги.
+_SONG_TIMEOUT = 120
+_RESERVE_TIMEOUT = 90
+_SHORT_TIMEOUT = 20
 
 USER_LYRICS_FAIL_MESSAGE = (
     "Не получилось написать текст песни. Попытка не списана. Нажмите ещё раз."
 )
 
+# Таймаут не закрывает модель: она могла дописать ответ уже после нашего обрыва.
 _DEAD_FOR = {
     "gone": timedelta(hours=6),
     "maintenance": timedelta(minutes=15),
-    "timeout": timedelta(minutes=10),
 }
 _LOCK = threading.Lock()
 _DEAD: dict[tuple[str, str], datetime] = {}
@@ -98,15 +95,13 @@ class LlmChain:
             raise LlmUnavailable(USER_LYRICS_FAIL_MESSAGE)
         errors: list[tuple[_Step, str]] = []
         pro = self._is_pro(model)
-        budget = _PRO_BUDGET if pro else _LITE_BUDGET
-        started = time.monotonic()
         for index, step in enumerate(live):
-            remaining = budget - (time.monotonic() - started)
-            if remaining < _MIN_TIMEOUT:
-                log.warning("LLM queue stopped: page budget")
-                break
-            timeout = _PRO_FIRST_TIMEOUT if pro and index == 0 else _STEP_TIMEOUT
-            timeout = max(_MIN_TIMEOUT, min(timeout, int(remaining)))
+            if pro and index == 0:
+                timeout = _SONG_TIMEOUT
+            elif pro:
+                timeout = _RESERVE_TIMEOUT
+            else:
+                timeout = _SHORT_TIMEOUT
             try:
                 text = self._call(
                     step,
@@ -118,7 +113,8 @@ class LlmChain:
                 )
             except Exception as exc:
                 kind = _classify(exc)
-                _mark_dead(step.provider, step.model, kind)
+                if kind != "timeout":
+                    _mark_dead(step.provider, step.model, kind)
                 errors.append((step, kind))
                 log.warning(
                     "LLM %s/%s failed (%s): %s",
@@ -127,6 +123,14 @@ class LlmChain:
                     kind,
                     exc,
                 )
+                if kind == "timeout":
+                    log.warning(
+                        "LLM %s/%s still writing after %ss; next model is not called",
+                        step.provider,
+                        step.model,
+                        timeout,
+                    )
+                    break
                 continue
             self._after_success(step, errors, steps)
             return text
@@ -148,15 +152,19 @@ class LlmChain:
 
     def _ordered_steps(self, requested_model: str) -> list[_Step]:
         steps: list[_Step] = []
+        pro = self._is_pro(requested_model)
         if KIE_API_KEY:
             seen: list[str] = []
-            names = list(KIE_CLAUDE_MODELS) if self._is_pro(requested_model) else []
-            names.extend(KIE_MODELS)
+            if pro:
+                names = [*KIE_CLAUDE_MODELS, *KIE_MODELS]
+            else:
+                # Разбор идеи — один короткий ответ. Вторая модель здесь только сжигает секунды.
+                names = KIE_MODELS[:1]
             for name in names:
                 if not name or name in seen:
                     continue
                 seen.append(name)
-                if name in KIE_CLAUDE_MODELS and self._is_pro(requested_model):
+                if name in KIE_CLAUDE_MODELS and pro:
                     steps.append(
                         _Step(provider="Kie", model=name, kind="claude", client=self._claude)
                     )
@@ -170,7 +178,8 @@ class LlmChain:
                         kie_model=name,
                     )
                 )
-        steps.extend(self._steps_backup)
+        if pro:
+            steps.extend(self._steps_backup)
         return steps
 
     @staticmethod
