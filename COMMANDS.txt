@@ -1,5 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.112. Next is block 26, after docs/instrukcii/ТЕХБОТ.txt. Do not re-run blocks 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.112. Next is block 27, one line. Do not repeat the python line. Do not paste the bot token into chat. Repo is public.
+
+=== 27) CAN THE SERVER SEE TELEGRAM ===
+# One line. Paste what it prints. No token in this line.
+curl -4 -sS -m 20 -o /dev/null -w "code:%{http_code}\n" https://api.telegram.org ; echo exit:$?
 
 === 26) TECH BOT: TEXT, MUSIC, STUCK SONG ===
 # First finish docs/instrukcii/ТЕХБОТ.txt: new bot, token in .env, press Start.
