@@ -64,16 +64,13 @@ python3 -c "from pathlib import Path; p=Path('/root/SongForge/.env'); env={};
 [env.__setitem__(k.strip(), v.strip().strip(chr(34)).strip(chr(39))) for line in p.read_text().splitlines() if line.strip() and not line.strip().startswith('#') and '=' in line for k,v in [line.split('=',1)]];
 [print(n, 'set' if env.get(n) else 'empty') for n in ('LLM_MODEL_PRO','LLM_MODEL_LITE','GEMINI_API_KEY','XAI_API_KEY','CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','ADMIN_MAX_USER_ID')]"
 
-=== 14) QUALITY RESERVE, DIRECT GEMINI 3.1 PRO ===
-# On the server. Do not paste the key into chat.
-# 1) Open .env and add one line at the end. Key is from https://aistudio.google.com/apikey
-#    GEMINI_API_KEY=paste-the-key-here
-nano /root/SongForge/.env
+=== 14) QUALITY RESERVE: GEMINI PRO, THEN CLOUDFLARE ===
+# On the server. Three lines, one at a time. Do not paste keys into chat.
+# The second command asks for the keys. Paste is invisible. Then Enter.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-reserve.py?$(date +%s)" -o /tmp/set-text-reserve.py
 
-# 2) Reserve model is the pro preview. Flash stays out.
-grep -q '^GEMINI_MODELS=' /root/SongForge/.env && sed -i 's/^GEMINI_MODELS=.*/GEMINI_MODELS=gemini-3.1-pro-preview/' /root/SongForge/.env || echo 'GEMINI_MODELS=gemini-3.1-pro-preview' >> /root/SongForge/.env
+python3 /tmp/set-text-reserve.py
 
-# 3) Read the new lines. Then block 9 should show GEMINI_API_KEY set.
 pm2 restart songforge --update-env
 
 === 8) SWITCH KIE MODELS (2.5 is dead; 3.1-pro and 3-pro answered) ===
