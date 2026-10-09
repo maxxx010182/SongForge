@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.107 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
+Version: 2.11.108 is in git. Production stays 2.11.105 until block 1. Paid Kie text is kept if the next call dies. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
 
 === 16) DID TODAY'S KIE ANSWERS BECOME SONGS ===
 # On the server. One line. Paste the output. No keys.
@@ -56,7 +56,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.107"
+# expected: "version":"2.11.108"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

@@ -297,6 +297,8 @@ class PromptBuilder:
             return "", "instrumental"
 
         user_text = self._lyrics_user_prompt(idea, plan)
+        kept = ""
+        kept_source = ""
         for model_name, temperature, suffix in LYRICS_MODEL_ATTEMPTS:
             model = (
                 self._yandex.MODEL_PRO
@@ -324,6 +326,10 @@ class PromptBuilder:
                 )
                 if lyrics and not lazy and not incomplete and not wrong_lang:
                     return lyrics, source
+                if lyrics and not lazy and not wrong_lang and len(lyrics) >= 80:
+                    if len(lyrics) > len(kept):
+                        kept = lyrics
+                        kept_source = source
                 log.info(
                     "Lyrics attempt %s rejected (lazy=%s incomplete=%s wrong_lang=%s len=%s)",
                     source,
@@ -333,10 +339,23 @@ class PromptBuilder:
                     len(lyrics) if lyrics else 0,
                 )
             except LlmUnavailable:
+                if kept:
+                    log.warning(
+                        "Lyrics kept after provider stopped (len=%s source=%s)",
+                        len(kept),
+                        kept_source,
+                    )
+                    return kept, f"{kept_source}-kept"
                 raise
             except Exception:
                 log.exception("Lyrics attempt %s failed", source)
 
+        if kept:
+            log.warning(
+                "Lyrics kept after retries rejected the strict form (len=%s)",
+                len(kept),
+            )
+            return kept, f"{kept_source}-kept"
         log.warning("All lyrics attempts failed — song will not be sent")
         raise ValueError(USER_LYRICS_FAIL_MESSAGE)
 

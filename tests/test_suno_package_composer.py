@@ -3,6 +3,7 @@
 import json
 
 from backend.models import MusicAnalysis
+from backend.services.llm_chain import LlmUnavailable
 from backend.services.suno_package_composer import SunoPackageComposer
 from backend.utils.suno_payload import SUNO_STYLE_MAX_LEN
 
@@ -128,3 +129,42 @@ def test_reject_stage_direction_title():
     assert result is not None
     assert result.title == "Тюмень"
     assert "[" not in result.title
+
+
+def test_keeps_paid_short_lyrics_when_next_call_dies():
+    class Flaky:
+        MODEL_PRO = "yandexgpt"
+        MODEL_LITE = "yandexgpt-lite"
+
+        def __init__(self):
+            self.calls = 0
+
+        def complete(self, *_args, **_kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return json.dumps(
+                    {
+                        "title": "Снег",
+                        "lyrics": (
+                            "[Verse 1]\n"
+                            "Город спит под тихим снегом\n"
+                            "Фонари рисуют путь домой\n"
+                            "[Chorus]\n"
+                            "Мы поём, пока не стихнет ночь\n"
+                            "И снег хранит наш разговор\n"
+                        ),
+                        "style_prompt": (
+                            "Russian pop ballad, soft female vocals, "
+                            "sung in Russian, native Russian vocals"
+                        ),
+                    },
+                    ensure_ascii=False,
+                )
+            raise LlmUnavailable("провайдер замолчал")
+
+    flaky = Flaky()
+    result = SunoPackageComposer(flaky).compose("песня про снег", _sample_analysis())
+    assert result is not None
+    assert "Город спит" in result.lyrics
+    assert result.source.endswith("-kept")
+    assert flaky.calls == 2

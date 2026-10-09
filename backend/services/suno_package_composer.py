@@ -71,6 +71,7 @@ class SunoPackageComposer:
         )
         lang_code, _, _ = resolve_lyrics_language(idea)
         retry_hint = _lyrics_retry_hint(idea)
+        kept: SunoPackageResult | None = None
         for model_name, temperature, suffix in UNIFIED_MODEL_ATTEMPTS:
             model = (
                 self._yandex.MODEL_PRO
@@ -104,23 +105,38 @@ class SunoPackageComposer:
                         len(result.lyrics),
                     )
                     continue
+                if lang_code == "ru" and lyrics_look_english(result.lyrics):
+                    log.warning("Unified package %s: expected Russian lyrics — retry", label)
+                    continue
                 if lyrics_look_incomplete(result.lyrics, idea):
                     log.warning(
                         "Unified package %s: incomplete structure/len (len=%s)",
                         label,
                         len(result.lyrics),
                     )
-                    continue
-                if lang_code == "ru" and lyrics_look_english(result.lyrics):
-                    log.warning("Unified package %s: expected Russian lyrics — retry", label)
+                    if kept is None or len(result.lyrics) > len(kept.lyrics):
+                        result.source = f"{label}-kept"
+                        kept = result
                     continue
                 result.source = label
                 return result
             except LlmUnavailable:
+                if kept is not None:
+                    log.warning(
+                        "Unified package kept paid text after provider stopped (len=%s)",
+                        len(kept.lyrics),
+                    )
+                    return kept
                 log.warning("Unified package stopped: no text provider answered")
                 return None
             except Exception:
                 log.exception("Unified package attempt %s failed", label)
+        if kept is not None:
+            log.warning(
+                "Unified package kept shorter paid text (len=%s)",
+                len(kept.lyrics),
+            )
+            return kept
         return None
 
     @staticmethod
