@@ -37,7 +37,8 @@ KIE_MODELS = _csv_env("KIE_MODELS", _kie_default)
 
 # Запасные ключи. Пустой ключ = провайдер выключен, сайт остаётся на Kie.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODELS = _csv_env("GEMINI_MODELS", "gemini-3.8-flash,gemini-3.1-pro-preview")
+# Прямой Gemini — запас того же класса, что Kie Pro. Flash сюда не ставим.
+GEMINI_MODELS = _csv_env("GEMINI_MODELS", "gemini-3.1-pro-preview")
 XAI_API_KEY = os.getenv("XAI_API_KEY", "").strip()
 XAI_MODELS = _csv_env("XAI_MODELS", "grok-4.7,grok-4.6")
 CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()

@@ -66,8 +66,9 @@ API (для проверки):
   gemini-3-flash — «канал не поддерживается»
 
 Запасные ключи (пусто = выключено, Kie работает как раньше):
-  GEMINI_API_KEY
-  GEMINI_MODELS=gemini-3.8-flash,gemini-3.1-pro-preview
+  GEMINI_API_KEY — прямой Gemini, другая дверь того же класса
+  GEMINI_MODELS=gemini-3.1-pro-preview
+  Flash в этот список не ставить: для стихов нужна сильная модель.
   XAI_API_KEY
   XAI_MODELS=grok-4.7,grok-4.6
   CLOUDFLARE_API_TOKEN

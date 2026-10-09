@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.106 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics.
+Version: 2.11.107 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
 
 === 13) WHY MAX REMINDERS ARE QUIET ===
 # On the server. Two lines, one at a time. Read only.
@@ -39,7 +39,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.106"
+# expected: "version":"2.11.107"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"
@@ -63,6 +63,18 @@ ls -lh /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* ; echo '-
 python3 -c "from pathlib import Path; p=Path('/root/SongForge/.env'); env={};
 [env.__setitem__(k.strip(), v.strip().strip(chr(34)).strip(chr(39))) for line in p.read_text().splitlines() if line.strip() and not line.strip().startswith('#') and '=' in line for k,v in [line.split('=',1)]];
 [print(n, 'set' if env.get(n) else 'empty') for n in ('LLM_MODEL_PRO','LLM_MODEL_LITE','GEMINI_API_KEY','XAI_API_KEY','CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','ADMIN_MAX_USER_ID')]"
+
+=== 14) QUALITY RESERVE, DIRECT GEMINI 3.1 PRO ===
+# On the server. Do not paste the key into chat.
+# 1) Open .env and add one line at the end. Key is from https://aistudio.google.com/apikey
+#    GEMINI_API_KEY=paste-the-key-here
+nano /root/SongForge/.env
+
+# 2) Reserve model is the pro preview. Flash stays out.
+grep -q '^GEMINI_MODELS=' /root/SongForge/.env && sed -i 's/^GEMINI_MODELS=.*/GEMINI_MODELS=gemini-3.1-pro-preview/' /root/SongForge/.env || echo 'GEMINI_MODELS=gemini-3.1-pro-preview' >> /root/SongForge/.env
+
+# 3) Read the new lines. Then block 9 should show GEMINI_API_KEY set.
+pm2 restart songforge --update-env
 
 === 8) SWITCH KIE MODELS (2.5 is dead; 3.1-pro and 3-pro answered) ===
 cd /root/SongForge && sed -i 's/^LLM_MODEL_PRO=.*/LLM_MODEL_PRO=gemini-3.1-pro/' .env && sed -i 's/^LLM_MODEL_LITE=.*/LLM_MODEL_LITE=gemini-3-pro/' .env && grep -E '^LLM_PROVIDER=|^LLM_MODEL_' .env && pm2 restart songforge --update-env && pm2 restart songforge-worker --update-env
