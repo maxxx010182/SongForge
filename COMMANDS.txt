@@ -1,5 +1,12 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108. Do not run block 19. A short verse from gemini-3.1-pro does not undo the failed song on 108. Direct Gemini stays out. Repo is public.
+Version: 2.11.108. Next is block 20: list models with the key. It does not change the site. Direct Gemini is not called. Do not run block 19. Repo is public.
+
+=== 20) LIST KIE MODELS AND FREE CLOUDFLARE TEXT MODELS ===
+# On the server. Two lines, one at a time. Can take several minutes. Paste the output. No keys.
+# KIE list does not spend credits. Cloudflare asks each text model one short word.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/model-list.py?$(date +%s)" -o /tmp/model-list.py
+
+python3 /tmp/model-list.py
 
 === 19) HOLD: DO NOT RUN ===
 # Held. A short verse is not a song. Direct Gemini is out. Model lists come later.
