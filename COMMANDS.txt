@@ -1,5 +1,12 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108 is in git. Production stays 2.11.105 until block 1. Paid Kie text is kept if the next call dies. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
+Version: 2.11.108. Owner already ran block 1. Text is still down: a one-word Kie check can pass while a song fails. Next is block 18. Do not switch the live model until that output shows Russian text. Repo is public.
+
+=== 18) WHICH MODELS WRITE A SHORT RUSSIAN VERSE ===
+# On the server. Two lines, one at a time. Can take a few minutes. Paste the output. No keys.
+# A model that answers spends a little Kie credit. The site model is not changed.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/song-probe.py?$(date +%s)" -o /tmp/song-probe.py
+
+python3 /tmp/song-probe.py
 
 === 17) WHICH TEXT KEYS AND MODELS ANSWER ===
 # On the server. Two lines, one at a time. Paste the output. No keys.
