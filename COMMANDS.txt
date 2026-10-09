@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108. Next is block 20: list models with the key. It does not change the site. Direct Gemini is not called. Do not run block 19. Repo is public.
+Version: 2.11.108. Block 20 already ran. Do not switch the site. Do not run block 19. Repo is public.
 
 === 20) LIST KIE MODELS AND FREE CLOUDFLARE TEXT MODELS ===
 # On the server. Two lines, one at a time. Can take several minutes. Paste the output. No keys.
