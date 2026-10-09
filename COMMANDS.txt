@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.111. Next is block 25: Gemini 3 Pro, then Gemini 3.1 Pro, GPT 5.2 only on error. Sonnet is off. Do not run blocks 24, 23, 22, 21, or 19. Repo is public.
+Version: 2.11.111. Owner confirmed a song on 9 Oct 2026. Do not re-run blocks 25, 24, 23, 22, 21, or 19. Phone alert is not started. Repo is public.
 
 === 25) GEMINI FIRST, GPT ONLY ON ERROR, NO SONNET ===
 # On the server. Seven lines, one at a time. Skip lines that start with #.
