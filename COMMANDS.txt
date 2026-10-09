@@ -1,6 +1,15 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.107 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
 
+=== 14) QUALITY RESERVE: GEMINI PRO, THEN CLOUDFLARE ===
+# On the server. Three lines, one at a time. Do not paste keys into chat.
+# The second command asks for the keys. Paste is invisible. Then Enter.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-reserve.py?$(date +%s)" -o /tmp/set-text-reserve.py
+
+python3 /tmp/set-text-reserve.py
+
+pm2 restart songforge --update-env
+
 === 13) WHY MAX REMINDERS ARE QUIET ===
 # On the server. Two lines, one at a time. Read only.
 ssh root@195.19.20.245
@@ -63,15 +72,6 @@ ls -lh /root/.pm2/logs/songforge-out* /root/.pm2/logs/songforge-error* ; echo '-
 python3 -c "from pathlib import Path; p=Path('/root/SongForge/.env'); env={};
 [env.__setitem__(k.strip(), v.strip().strip(chr(34)).strip(chr(39))) for line in p.read_text().splitlines() if line.strip() and not line.strip().startswith('#') and '=' in line for k,v in [line.split('=',1)]];
 [print(n, 'set' if env.get(n) else 'empty') for n in ('LLM_MODEL_PRO','LLM_MODEL_LITE','GEMINI_API_KEY','XAI_API_KEY','CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID','ADMIN_MAX_USER_ID')]"
-
-=== 14) QUALITY RESERVE: GEMINI PRO, THEN CLOUDFLARE ===
-# On the server. Three lines, one at a time. Do not paste keys into chat.
-# The second command asks for the keys. Paste is invisible. Then Enter.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-reserve.py?$(date +%s)" -o /tmp/set-text-reserve.py
-
-python3 /tmp/set-text-reserve.py
-
-pm2 restart songforge --update-env
 
 === 8) SWITCH KIE MODELS (2.5 is dead; 3.1-pro and 3-pro answered) ===
 cd /root/SongForge && sed -i 's/^LLM_MODEL_PRO=.*/LLM_MODEL_PRO=gemini-3.1-pro/' .env && sed -i 's/^LLM_MODEL_LITE=.*/LLM_MODEL_LITE=gemini-3-pro/' .env && grep -E '^LLM_PROVIDER=|^LLM_MODEL_' .env && pm2 restart songforge --update-env && pm2 restart songforge-worker --update-env
