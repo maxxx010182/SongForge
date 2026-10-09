@@ -74,14 +74,13 @@ API (для проверки):
   CLOUDFLARE_API_TOKEN
   CLOUDFLARE_ACCOUNT_ID
   CLOUDFLARE_MODELS=@cf/meta/llama-3.3-70b-instruct-fp8-fast
-  KIE_CLAUDE_MODELS=claude-sonnet-5-5
-  KIE_MODELS=gpt-5-2,gemini-3.1-pro
+  KIE_CLAUDE_MODELS=
+  KIE_MODELS=gemini-3-pro,gemini-3.1-pro,gpt-5-2
   ADMIN_MAX_USER_ID — ваш id в MAX, одно сообщение при сбое текста
 
-Песню пишет Сонет. Если он молчит, очередь сама спрашивает GPT 5.2,
-затем Gemini 3.1 Pro, затем бесплатную Llama. Короткий разбор идеи
-Сонет не трогает. Прямой Gemini с этого сервера не вызывается.
-Fable 5 и Opus 5.5 в очередь не ставить: они дороже.
+Песню пишет Gemini 3 Pro. Если пришла ошибка — Gemini 3.1 Pro.
+Если снова ошибка — GPT 5.2. Сонет не вызываем: на каждую песню он дорогой.
+Прямой Gemini с этого сервера не вызывается.
 После правки .env: pm2 restart songforge --update-env
 
 

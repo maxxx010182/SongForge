@@ -60,8 +60,8 @@ def _chain(monkeypatch, tmp_path, kie, spare, claude=None):
     monkeypatch.setattr(llm_signal, "_PATH", tmp_path / "llm_signal.json")
     monkeypatch.setattr(llm_signal, "_notify", lambda text: None)
     monkeypatch.setattr(llm_chain, "KIE_API_KEY", "test-key")
-    monkeypatch.setattr(llm_chain, "KIE_CLAUDE_MODELS", ["claude-sonnet-5-5"])
-    monkeypatch.setattr(llm_chain, "KIE_MODELS", ["gpt-5-2", "gemini-3.1-pro"])
+    monkeypatch.setattr(llm_chain, "KIE_CLAUDE_MODELS", [])
+    monkeypatch.setattr(llm_chain, "KIE_MODELS", ["gemini-3-pro", "gemini-3.1-pro", "gpt-5-2"])
     clear_dead_models()
     chain = LlmChain()
     chain._kie = kie
@@ -72,45 +72,42 @@ def _chain(monkeypatch, tmp_path, kie, spare, claude=None):
     return chain
 
 
-def test_song_asks_sonnet_before_gpt(monkeypatch, tmp_path):
+def test_song_starts_with_gemini_3_pro(monkeypatch, tmp_path):
     kie = _Kie(fail=False)
     spare = _Spare()
     claude = _Claude(fail=False)
     chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
     text = chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
-    assert text == "Куплет маме"
-    assert claude.calls == ["claude-sonnet-5-5"]
-    assert claude.timeouts == [llm_chain._SONG_TIMEOUT]
-    assert kie.calls == []
+    assert text.startswith("Текст от Kie")
+    assert kie.calls == ["gemini-3-pro"]
+    assert claude.calls == []
     assert spare.calls == []
 
 
-def test_slow_song_does_not_start_the_next_model(monkeypatch, tmp_path):
+def test_slow_gemini_does_not_start_the_next_model(monkeypatch, tmp_path):
     import requests
 
     kie = _Kie(fail=False)
     spare = _Spare()
-    claude = _Claude()
+    claude = _Claude(fail=False)
 
     def slow(system_prompt, user_text, *, model, max_tokens, temperature, timeout):
-        claude.calls.append(model)
-        claude.timeouts.append(timeout)
+        kie.calls.append(model)
         raise requests.Timeout("timed out")
 
-    claude.complete = slow
+    kie.complete = slow
     chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
     try:
         chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
         raise AssertionError("must fail")
     except LlmUnavailable:
         pass
-    assert claude.calls == ["claude-sonnet-5-5"]
-    assert claude.timeouts == [llm_chain._SONG_TIMEOUT]
-    assert kie.calls == []
+    assert kie.calls == ["gemini-3-pro"]
+    assert claude.calls == []
     assert spare.calls == []
 
 
-def test_short_step_skips_sonnet(monkeypatch, tmp_path):
+def test_short_step_uses_only_gemini_3_pro(monkeypatch, tmp_path):
     kie = _Kie(fail=False)
     spare = _Spare()
     claude = _Claude(fail=False)
@@ -118,7 +115,8 @@ def test_short_step_skips_sonnet(monkeypatch, tmp_path):
     text = chain.complete("sys", "разбор идеи", model=chain.MODEL_LITE)
     assert text.startswith("Текст от Kie")
     assert claude.calls == []
-    assert kie.calls == ["gpt-5-2"]
+    assert kie.calls == ["gemini-3-pro"]
+    assert spare.calls == []
 
 
 def test_dead_kie_uses_grok(monkeypatch, tmp_path):
@@ -128,8 +126,8 @@ def test_dead_kie_uses_grok(monkeypatch, tmp_path):
     chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
     text = chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
     assert text == "Припев про маму и май"
-    assert claude.calls == ["claude-sonnet-5-5"]
-    assert kie.calls == ["gpt-5-2", "gemini-3.1-pro"]
+    assert claude.calls == []
+    assert kie.calls == ["gemini-3-pro", "gemini-3.1-pro", "gpt-5-2"]
     assert spare.calls == ["grok-4.7"]
     alert = llm_signal.current_alert()
     assert alert is not None

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Очередь текста: Сонет, GPT 5.2, Gemini 3.1 Pro, бесплатная Llama. Ключи не печатает."""
+"""Очередь текста: Gemini 3 Pro, Gemini 3.1 Pro, при ошибке GPT 5.2. Сонет выключен."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import re
 from pathlib import Path
 
 ENV = Path("/root/SongForge/.env")
-KIE_CLAUDE_MODELS = "claude-sonnet-5-5"
-KIE_MODELS = "gpt-5-2,gemini-3.1-pro"
+KIE_CLAUDE_MODELS = ""
+KIE_MODELS = "gemini-3-pro,gemini-3.1-pro,gpt-5-2"
 CLOUDFLARE_MODELS = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 
 
@@ -31,7 +31,7 @@ def main() -> None:
     tmp = ENV.with_suffix(".env.tmp")
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(ENV)
-    print("KIE_CLAUDE_MODELS", KIE_CLAUDE_MODELS)
+    print("KIE_CLAUDE_MODELS", KIE_CLAUDE_MODELS or "off")
     print("KIE_MODELS", KIE_MODELS)
     print("CLOUDFLARE_MODELS", CLOUDFLARE_MODELS)
     print("DONE")

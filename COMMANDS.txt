@@ -1,5 +1,24 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.110. Next is block 24: deploy, then let the page wait 3 minutes, then one song. Do not click the button twice. Do not run blocks 23, 22, 21, or 19. Repo is public.
+Version: 2.11.111. Next is block 25: Gemini 3 Pro, then Gemini 3.1 Pro, GPT 5.2 only on error. Sonnet is off. Do not run blocks 24, 23, 22, 21, or 19. Repo is public.
+
+=== 25) GEMINI FIRST, GPT ONLY ON ERROR, NO SONNET ===
+# On the server. Seven lines, one at a time. Skip lines that start with #.
+# Then one song. The button can spin for a bit. Do not click it twice.
+# Paste the health line and say if the text appeared.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.111"
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-fallback.py?$(date +%s)" -o /tmp/set-text-fallback.py
+
+python3 /tmp/set-text-fallback.py
+
+pm2 restart songforge --update-env
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/extend-nginx-wait.py?$(date +%s)" -o /tmp/extend-nginx-wait.py
+
+python3 /tmp/extend-nginx-wait.py
 
 === 24) WAIT FOR THE SONG, DO NOT START THE NEXT MODEL ===
 # On the server. Four lines, one at a time. Skip lines that start with #.
@@ -116,7 +135,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.110"
+# expected: "version":"2.11.111"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

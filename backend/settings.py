@@ -29,10 +29,10 @@ def _csv_env(name: str, default: str) -> list[str]:
     return seen
 
 
-# Песня: Claude Sonnet, затем эти chat-модели. Пустой список в .env берёт запасной ряд.
-# gemini-3-pro сюда не ставим: канал отвечает сетью 500.
-KIE_CLAUDE_MODELS = _csv_env("KIE_CLAUDE_MODELS", "claude-sonnet-5-5")
-KIE_MODELS = _csv_env("KIE_MODELS", "gpt-5-2,gemini-3.1-pro")
+# Песня: Gemini 3 Pro, затем Gemini 3.1 Pro. GPT 5.2 только если обе вернули ошибку.
+# Сонет в очередь не ставим: на каждую песню он слишком дорогой.
+KIE_CLAUDE_MODELS = _csv_env("KIE_CLAUDE_MODELS", "")
+KIE_MODELS = _csv_env("KIE_MODELS", "gemini-3-pro,gemini-3.1-pro,gpt-5-2")
 
 # Запасные ключи. Пустой ключ = провайдер выключен, сайт остаётся на Kie.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
