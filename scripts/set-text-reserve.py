@@ -55,7 +55,7 @@ def main() -> None:
     if cloudflare and account:
         text = upsert(text, "CLOUDFLARE_API_TOKEN", cloudflare)
         text = upsert(text, "CLOUDFLARE_ACCOUNT_ID", account)
-        text = upsert(text, "CLOUDFLARE_MODELS", "@cf/moonshotai/kimi-k2.6")
+        text = upsert(text, "CLOUDFLARE_MODELS", "@cf/qwen/qwen3.8-27b")
 
     tmp = ENV.with_suffix(".env.tmp")
     tmp.write_text(text, encoding="utf-8")

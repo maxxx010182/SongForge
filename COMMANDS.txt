@@ -1,5 +1,13 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108. Owner already ran block 1. Text is still down: a one-word Kie check can pass while a song fails. Next is block 18. Do not switch the live model until that output shows Russian text. Repo is public.
+Version: 2.11.108. Block 18 showed Russian from Kie gemini-3.1-pro, Kie gpt-5-2, and Cloudflare Qwen. Next is block 19, then one song on the site. Repo is public.
+
+=== 19) USE THE MODELS THAT WROTE RUSSIAN ===
+# On the server. Three lines, one at a time. Keys stay. Then try one song.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-fallback.py?$(date +%s)" -o /tmp/set-text-fallback.py
+
+python3 /tmp/set-text-fallback.py
+
+pm2 restart songforge --update-env
 
 === 18) WHICH MODELS WRITE A SHORT RUSSIAN VERSE ===
 # On the server. Two lines, one at a time. Can take a few minutes. Paste the output. No keys.

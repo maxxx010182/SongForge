@@ -73,7 +73,8 @@ API (для проверки):
   XAI_MODELS=grok-4.7,grok-4.6
   CLOUDFLARE_API_TOKEN
   CLOUDFLARE_ACCOUNT_ID
-  CLOUDFLARE_MODELS=@cf/moonshotai/kimi-k2.6
+  CLOUDFLARE_MODELS=@cf/qwen/qwen3.8-27b
+  KIE_MODELS=gemini-3.1-pro,gpt-5-2
   ADMIN_MAX_USER_ID — ваш id в MAX, одно сообщение при сбое текста
 
 Имена моделей меняются в этих строках. Закрытый канал код пропускает сам.
