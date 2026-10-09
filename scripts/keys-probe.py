@@ -82,6 +82,17 @@ def ask(url: str, body: dict, headers: dict, secrets: list[str]) -> str:
     return f"HTTP {http} {redact(raw, secrets)}"
 
 
+def _key_rejected(result: str) -> bool:
+    if "HTTP 401" in result:
+        return True
+    lower = result.lower()
+    if "HTTP 403" not in result:
+        return False
+    if "not available" in lower or "free plan" in lower:
+        return False
+    return "invalid" in lower or "authentication" in lower or "unauthorized" in lower
+
+
 def probe_openai(name: str, url: str, key: str, models: list[str], secrets: list[str]) -> None:
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     for model in models:
@@ -98,7 +109,7 @@ def probe_openai(name: str, url: str, key: str, models: list[str], secrets: list
             secrets,
         )
         print(f"{name} {model} {result}", flush=True)
-        if "HTTP 401" in result or "HTTP 403" in result:
+        if _key_rejected(result):
             print(f"{name} STOP key rejected", flush=True)
             return
 
