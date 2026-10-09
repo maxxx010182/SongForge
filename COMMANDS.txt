@@ -1,6 +1,10 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.107 is in git. Production stays 2.11.105 until block 1. Repo is public. Text chain: Kie first, spare keys only if set. No canned lyrics. Quality spare is Gemini 3.1 Pro, not Flash.
 
+=== 15) WHY THE LAST TEXT FAILED ===
+# On the server. One line. Paste the output into chat. No keys in it.
+grep -E "produce failed|Traceback|Kie |Gemini |Cloudflare |LlmUnavailable|lyrics" /root/.pm2/logs/songforge-out.log /root/.pm2/logs/songforge-error.log | tail -n 60
+
 === 14) QUALITY RESERVE: GEMINI PRO, THEN CLOUDFLARE ===
 # On the server. Three lines, one at a time. Do not paste keys into chat.
 # The second command asks for the keys. Paste is invisible. Then Enter.
