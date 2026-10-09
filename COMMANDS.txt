@@ -1,12 +1,15 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108. Kie support says Gemini 3.1 Pro is unstable and names Gemini 3.8 Flash. Next is block 21. Do not switch the site. Do not run block 19. Repo is public.
+Version: 2.11.108. Next is block 22: a Russian verse from the strong Kie models. Flash is skipped. Do not switch the site. Do not run block 21 or 19. Repo is public.
 
-=== 21) ASK GEMINI 3.8 FLASH FOR A RUSSIAN VERSE ===
-# On the server. Two lines, one at a time. Paste the output. No keys.
-# Asks the model support named. Does not change the site. A real answer spends a little Kie credit.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/flash-probe.py?$(date +%s)" -o /tmp/flash-probe.py
+=== 22) ASK THE STRONG MODELS FOR A RUSSIAN VERSE ===
+# On the server. Two lines, one at a time. Can take a few minutes. Paste the output. No keys.
+# Fable, Opus 5.5, Sonnet 5.5, GPT-6 Astra. Does not change the site. An answer spends a little Kie credit.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/top-probe.py?$(date +%s)" -o /tmp/top-probe.py
 
-python3 /tmp/flash-probe.py
+python3 /tmp/top-probe.py
+
+=== 21) HOLD: DO NOT RUN FLASH ===
+# Held. The verse matters, so Flash is not the next try.
 
 === 20) LIST KIE MODELS AND FREE CLOUDFLARE TEXT MODELS ===
 # On the server. Two lines, one at a time. Can take several minutes. Paste the output. No keys.
