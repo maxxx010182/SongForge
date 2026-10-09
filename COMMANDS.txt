@@ -1,5 +1,19 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.108. Next is block 22: a Russian verse from the strong Kie models. Flash is skipped. Do not switch the site. Do not run block 21 or 19. Repo is public.
+Version: 2.11.109. Next is block 23: deploy, set the text queue, restart, then one real song. Do not run blocks 22, 21, or 19. Repo is public.
+
+=== 23) SONNET, THEN GPT, GEMINI, CLOUDFLARE ===
+# On the server. Five lines, one at a time. Skip lines that start with #.
+# Then try one song on the site. Paste the health line and say if the text appeared.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.109"
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/set-text-fallback.py?$(date +%s)" -o /tmp/set-text-fallback.py
+
+python3 /tmp/set-text-fallback.py
+
+pm2 restart songforge --update-env
 
 === 22) ASK THE STRONG MODELS FOR A RUSSIAN VERSE ===
 # On the server. Two lines, one at a time. Can take a few minutes. Paste the output. No keys.
@@ -89,7 +103,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.108"
+# expected: "version":"2.11.109"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

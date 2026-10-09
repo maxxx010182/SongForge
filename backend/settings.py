@@ -29,11 +29,10 @@ def _csv_env(name: str, default: str) -> list[str]:
     return seen
 
 
-# Пустой KIE_MODELS = текущие PRO и LITE. Имена меняются в .env, без правки кода.
-_kie_default = ",".join(
-    item for item in (LLM_MODEL_PRO, LLM_MODEL_LITE) if item
-)
-KIE_MODELS = _csv_env("KIE_MODELS", _kie_default)
+# Песня: Claude Sonnet, затем эти chat-модели. Пустой список в .env берёт запасной ряд.
+# gemini-3-pro сюда не ставим: канал отвечает сетью 500.
+KIE_CLAUDE_MODELS = _csv_env("KIE_CLAUDE_MODELS", "claude-sonnet-5-5")
+KIE_MODELS = _csv_env("KIE_MODELS", "gpt-5-2,gemini-3.1-pro")
 
 # Запасные ключи. Пустой ключ = провайдер выключен, сайт остаётся на Kie.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
@@ -44,7 +43,10 @@ XAI_MODELS = _csv_env("XAI_MODELS", "grok-4.7,grok-4.6")
 CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
 CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
 CLOUDFLARE_GATEWAY_ID = os.getenv("CLOUDFLARE_GATEWAY_ID", "default").strip() or "default"
-CLOUDFLARE_MODELS = _csv_env("CLOUDFLARE_MODELS", "@cf/moonshotai/kimi-k2.6")
+# Бесплатный запас, который уже написал русский куплет. Kimi на бесплатном тарифе закрыта.
+CLOUDFLARE_MODELS = _csv_env(
+    "CLOUDFLARE_MODELS", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+)
 
 # Куда слать одно сообщение, если текстовая модель сломалась. Пусто = только админка.
 ADMIN_MAX_USER_ID = os.getenv("ADMIN_MAX_USER_ID", "").strip()

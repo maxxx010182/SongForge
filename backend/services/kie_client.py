@@ -3,10 +3,9 @@
 У Kie у каждой модели свой path (не один /v1 на всех):
   POST https://api.kie.ai/{model-slug}/v1/chat/completions
 
-По умолчанию:
-  LITE → gemini-3-pro       (бот, план, быстрые задачи, запас)
-  PRO  → gemini-3.1-pro     (тексты песен)
-  gemini-2.5-* с 29.09.2026 не отвечает.
+Алиасы LITE и PRO по-прежнему указывают на Gemini.
+Очередь песни их не подставляет: её задаёт llm_chain.
+Явный slug, например gpt-5-2, в адресе остаётся как есть.
 
 Баланс кредитов: GET /api/v1/chat/credit
 """
@@ -60,12 +59,9 @@ class KieClient:
         if key in {self.MODEL_LITE, "yandexgpt-lite", "lite", "consultant", "fast"}:
             slug = _slugify(LLM_MODEL_LITE or _DEFAULT_SLUGS["lite"])
             return slug if self._is_kie_gemini(slug) else _DEFAULT_SLUGS["lite"]
-        # Уже slug / полный id провайдера
+        # Явный slug чата: gpt-5-2, gemini-3.1-pro. Не подменять на LITE.
         slug = _slugify(key)
-        if self._is_kie_gemini(slug):
-            return slug
-        # неизвестный id → LITE
-        return _DEFAULT_SLUGS["lite"]
+        return slug or _DEFAULT_SLUGS["lite"]
 
     @staticmethod
     def _is_kie_gemini(slug: str) -> bool:

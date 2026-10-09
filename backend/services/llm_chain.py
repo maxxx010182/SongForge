@@ -1,20 +1,24 @@
 """Очередь текстовых моделей.
 
-Сначала Kie той моделью, которую попросил вызывающий код. Если она не ответила,
-следующая модель Kie, затем прямой Gemini, Grok и Cloudflare — только если
-ключ задан. Удачная модель возвращается сразу. Закрытый канал не спрашиваем
-снова несколько часов. Если не ответил никто, песню не из чего писать.
+Песня (модель Pro): Claude Sonnet на Kie, затем GPT 5.2, затем Gemini 3.1 Pro,
+затем Grok и Cloudflare, если их ключи заданы. Короткий шаг (разбор, название)
+Сонет не трогает: его пишет GPT, чтобы страница успела дождаться песни.
+Прямой Gemini с этого сервера не вызываем. Удачная модель возвращается сразу.
+Закрытый канал не спрашиваем снова несколько часов. Если не ответил никто,
+песню не из чего писать.
 """
 
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import requests
 
 from backend.logger import log
+from backend.services.kie_claude_client import KieClaudeClient
 from backend.services.kie_client import KieClient
 from backend.services.llm_signal import record_all_failed, record_backup_used, record_recovery
 from backend.services.openai_chat_client import OpenaiChatClient
@@ -24,12 +28,20 @@ from backend.settings import (
     CLOUDFLARE_GATEWAY_ID,
     CLOUDFLARE_MODELS,
     GEMINI_API_KEY,
-    GEMINI_MODELS,
     KIE_API_KEY,
+    KIE_CLAUDE_MODELS,
     KIE_MODELS,
     XAI_API_KEY,
     XAI_MODELS,
 )
+
+# Страница ждёт около минуты. Песня: Сонет, и если он завис — ещё GPT.
+# Короткий шаг не забирает это время.
+_PRO_BUDGET = 50
+_LITE_BUDGET = 12
+_PRO_FIRST_TIMEOUT = 32
+_STEP_TIMEOUT = 16
+_MIN_TIMEOUT = 8
 
 USER_LYRICS_FAIL_MESSAGE = (
     "Не получилось написать текст песни. Попытка не списана. Нажмите ещё раз."
@@ -53,7 +65,7 @@ class _Step:
     provider: str
     model: str
     kind: str
-    client: KieClient | OpenaiChatClient
+    client: KieClient | KieClaudeClient | OpenaiChatClient
     kie_model: str = ""
 
 
@@ -64,6 +76,7 @@ class LlmChain:
     MODEL_PRO: str = "yandexgpt"
     MODEL_LITE: str = "yandexgpt-lite"
     _kie: KieClient = field(default_factory=KieClient)
+    _claude: KieClaudeClient = field(default_factory=KieClaudeClient)
     _steps_backup: list[_Step] = field(default_factory=list)
 
     def complete(
@@ -84,8 +97,16 @@ class LlmChain:
             record_all_failed(provider=first.provider, model=first.model, reason="gone")
             raise LlmUnavailable(USER_LYRICS_FAIL_MESSAGE)
         errors: list[tuple[_Step, str]] = []
+        pro = self._is_pro(model)
+        budget = _PRO_BUDGET if pro else _LITE_BUDGET
+        started = time.monotonic()
         for index, step in enumerate(live):
-            timeout = 90 if index == 0 else 45
+            remaining = budget - (time.monotonic() - started)
+            if remaining < _MIN_TIMEOUT:
+                log.warning("LLM queue stopped: page budget")
+                break
+            timeout = _PRO_FIRST_TIMEOUT if pro and index == 0 else _STEP_TIMEOUT
+            timeout = max(_MIN_TIMEOUT, min(timeout, int(remaining)))
             try:
                 text = self._call(
                     step,
@@ -109,21 +130,45 @@ class LlmChain:
                 continue
             self._after_success(step, errors, steps)
             return text
+        if not errors:
+            first = live[0]
+            record_all_failed(provider=first.provider, model=first.model, reason="timeout")
+            raise LlmUnavailable(USER_LYRICS_FAIL_MESSAGE)
         last = errors[-1]
         record_all_failed(provider=last[0].provider, model=last[0].model, reason=last[1])
         raise LlmUnavailable(USER_LYRICS_FAIL_MESSAGE)
 
+    def _is_pro(self, requested_model: str) -> bool:
+        return (requested_model or "").strip() in {
+            self.MODEL_PRO,
+            "yandexgpt",
+            "pro",
+            "lyrics",
+        }
+
     def _ordered_steps(self, requested_model: str) -> list[_Step]:
         steps: list[_Step] = []
         if KIE_API_KEY:
-            first = self._kie._resolve_slug(requested_model)
-            slugs: list[str] = []
-            for slug in [first, *KIE_MODELS]:
-                if slug and slug not in slugs:
-                    slugs.append(slug)
-            for slug in slugs:
+            seen: list[str] = []
+            names = list(KIE_CLAUDE_MODELS) if self._is_pro(requested_model) else []
+            names.extend(KIE_MODELS)
+            for name in names:
+                if not name or name in seen:
+                    continue
+                seen.append(name)
+                if name in KIE_CLAUDE_MODELS and self._is_pro(requested_model):
+                    steps.append(
+                        _Step(provider="Kie", model=name, kind="claude", client=self._claude)
+                    )
+                    continue
                 steps.append(
-                    _Step(provider="Kie", model=slug, kind="kie", client=self._kie, kie_model=slug)
+                    _Step(
+                        provider="Kie",
+                        model=name,
+                        kind="kie",
+                        client=self._kie,
+                        kie_model=name,
+                    )
                 )
         steps.extend(self._steps_backup)
         return steps
@@ -165,8 +210,7 @@ class LlmChain:
         _clear_dead(step.provider, step.model)
         asked = steps[0]
         if step.provider == asked.provider and step.model == asked.model and not errors:
-            if KIE_MODELS and step.model == KIE_MODELS[0]:
-                record_recovery(provider=step.provider, model=step.model)
+            record_recovery(provider=step.provider, model=step.model)
             return
         if errors:
             failed, reason = errors[0]
@@ -193,14 +237,10 @@ def clear_dead_models() -> None:
 
 def _backup_steps() -> list[_Step]:
     steps: list[_Step] = []
+    # Ключ прямого Gemini остаётся в .env. С сервера в РФ он отвечает квотой
+    # или отказом по стране и только отнимает время до Cloudflare.
     if GEMINI_API_KEY:
-        client = OpenaiChatClient(
-            name="Gemini",
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai",
-            api_key=GEMINI_API_KEY,
-        )
-        for model in GEMINI_MODELS:
-            steps.append(_Step(provider="Gemini", model=model, kind="openai", client=client))
+        log.info("Direct Gemini key is set; this server does not call it")
     if XAI_API_KEY:
         client = OpenaiChatClient(
             name="Grok",
