@@ -84,11 +84,33 @@ def test_song_starts_with_gemini_3_pro(monkeypatch, tmp_path):
     assert spare.calls == []
 
 
-def test_slow_gemini_does_not_start_the_next_model(monkeypatch, tmp_path):
+def test_slow_gemini_asks_the_next_model(monkeypatch, tmp_path):
     import requests
 
     kie = _Kie(fail=False)
     spare = _Spare()
+    claude = _Claude(fail=False)
+
+    def slow(system_prompt, user_text, *, model, max_tokens, temperature, timeout):
+        kie.calls.append(model)
+        if model == "gemini-3-pro":
+            raise requests.Timeout("timed out")
+        return "Текст песни от запасной модели"
+
+    kie.complete = slow
+    chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
+    text = chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
+    assert text == "Текст песни от запасной модели"
+    assert kie.calls == ["gemini-3-pro", "gemini-3.1-pro"]
+    assert claude.calls == []
+    assert spare.calls == []
+
+
+def test_silence_walks_the_whole_song_list(monkeypatch, tmp_path):
+    import requests
+
+    kie = _Kie(fail=False)
+    spare = _Spare(text="")
     claude = _Claude(fail=False)
 
     def slow(system_prompt, user_text, *, model, max_tokens, temperature, timeout):
@@ -102,9 +124,7 @@ def test_slow_gemini_does_not_start_the_next_model(monkeypatch, tmp_path):
         raise AssertionError("must fail")
     except LlmUnavailable:
         pass
-    assert kie.calls == ["gemini-3-pro"]
-    assert claude.calls == []
-    assert spare.calls == []
+    assert kie.calls == ["gemini-3-pro", "gemini-3.1-pro", "gpt-5-2"]
 
 
 def test_short_step_uses_only_gemini_3_pro(monkeypatch, tmp_path):

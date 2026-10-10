@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Дать странице 3 минуты на текст песни. Ключи не читает и не печатает.
 
-Nginx по умолчанию обрывает запрос через 60 секунд. Сонет пишет полную песню
-дольше. Скрипт ставит proxy_read_timeout и proxy_send_timeout 180s
+Страница должна дождаться первой модели и, если та кончилась без текста, запасной.
+Скрипт ставит proxy_read_timeout и proxy_send_timeout 300s
 в конфиг sozdaipesnu.ru, проверяет nginx и перезагружает его.
 Если проверка не прошла, возвращает старый файл.
 """
@@ -13,8 +13,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-READ = "proxy_read_timeout 180s;"
-SEND = "proxy_send_timeout 180s;"
+READ = "proxy_read_timeout 300s;"
+SEND = "proxy_send_timeout 300s;"
 ROOTS = (
     Path("/etc/nginx/sites-enabled"),
     Path("/etc/nginx/conf.d"),
@@ -96,7 +96,7 @@ def main() -> None:
         original = path.read_text(encoding="utf-8", errors="replace")
         updated, added = patch(original)
         if added == 0:
-            print(path, "already 180s")
+            print(path, "already 300s")
             continue
         backup = path.with_suffix(path.suffix + ".bak-wait")
         shutil.copy2(path, backup)
@@ -104,7 +104,7 @@ def main() -> None:
         if not nginx_ok():
             shutil.copy2(backup, path)
             raise SystemExit(f"nginx -t не прошёл, вернул {path}")
-        print(path, f"wait 180s ({added})")
+        print(path, f"wait 300s ({added})")
         changed += added
     if changed:
         reload_nginx()

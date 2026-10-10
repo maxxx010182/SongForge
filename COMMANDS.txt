@@ -1,5 +1,17 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.112 is on the server. Do not run blocks 27, 26, 25, 24, 23, 22, 21, or 19. Telegram from this server is closed, same as direct Gemini. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.113. Next is block 28. Do not run blocks 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 28) SONG RESERVE AFTER NO TEXT ===
+# One line at a time. Skip lines that start with #.
+# First the update. Paste the health line. Then the two lines that let the page wait.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.113"
+
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/extend-nginx-wait.py?$(date +%s)" -o /tmp/extend-nginx-wait.py
+
+python3 /tmp/extend-nginx-wait.py
 
 === 27) CAN THE SERVER SEE TELEGRAM ===
 # One line. Paste what it prints. No token in this line.
@@ -154,7 +166,7 @@ sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT subst
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.112"
+# expected: "version":"2.11.113"
 
 === 2) LISTEN TO RECENT TRACKS DIRECTLY VIA SSH ===
 sqlite3 /root/SongForge/data/songforge.db "SELECT created_at, title, music_url_a, music_url_b FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 5;"

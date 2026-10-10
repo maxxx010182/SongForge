@@ -1,9 +1,10 @@
 """Очередь текстовых моделей.
 
-Песня: Gemini 3 Pro, при ошибке Gemini 3.1 Pro, при новой ошибке GPT 5.2.
-Сонет не вызываем. Следующую модель зовём только если предыдущая вернула
-ошибку, а не если она ещё пишет. Короткий разбор идеи — один вызов первой
-модели. Прямой Gemini с этого сервера не вызываем.
+Песня: Gemini 3 Pro, затем Gemini 3.1 Pro, затем GPT 5.2.
+Сонет не вызываем. Следующую модель зовём, когда предыдущая закончилась
+без текста: и на ошибку, и если ответ так и не пришёл. Пока запрос ещё
+идёт, вторую не стартуем. Короткий разбор идеи — один вызов первой модели.
+Прямой Gemini с этого сервера не вызываем.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ from backend.settings import (
     XAI_MODELS,
 )
 
-# Запасную модель не стартуем по таймеру: оборванный запрос Kie всё равно дописывает и берёт деньги.
+# Сначала ждём эту модель до конца. Следующую зовём только если текста нет.
 _SONG_TIMEOUT = 120
 _RESERVE_TIMEOUT = 90
 _SHORT_TIMEOUT = 20
@@ -122,12 +123,11 @@ class LlmChain:
                 )
                 if kind == "timeout":
                     log.warning(
-                        "LLM %s/%s still writing after %ss; next model is not called",
+                        "LLM %s/%s no text after %ss; asking the next model",
                         step.provider,
                         step.model,
                         timeout,
                     )
-                    break
                 continue
             self._after_success(step, errors, steps)
             return text
