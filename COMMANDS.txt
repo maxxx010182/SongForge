@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.112. Next is block 27, one line. Do not repeat the python line. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.112 is on the server. Do not run blocks 27, 26, 25, 24, 23, 22, 21, or 19. Telegram from this server is closed, same as direct Gemini. Do not paste the bot token into chat. Repo is public.
 
 === 27) CAN THE SERVER SEE TELEGRAM ===
 # One line. Paste what it prints. No token in this line.
