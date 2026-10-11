@@ -1,5 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.113. Next is block 29, read only. Do not run blocks 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.113. Next is block 30, read only. Do not run blocks 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 30) LAST SONG: SAVED WORDS VS WHAT WENT TO SUNO ===
+# On the server, where the prompt is root@. One line. Paste the output. No keys.
+echo '--- DB ---'; sqlite3 -header -separator " | " /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS at, substr(COALESCE(title,''),1,32) AS title, length(COALESCE(lyrics,'')) AS words_len, length(COALESCE(style,'')) AS style_len, json_extract(plan_json,'$.instrumental') AS instrumental, json_extract(plan_json,'$.duration_sec') AS duration, substr(COALESCE(task_id,''),1,12) AS task, substr(replace(replace(COALESCE(lyrics,''),char(10),' / '),char(13),''),1,240) AS words FROM generations WHERE status='success' ORDER BY created_at DESC LIMIT 3;"; echo '--- LOG ---'; grep -E "Unified lyrics engine|sunoapi.org create|Production ready" /root/.pm2/logs/songforge-out.log | tail -n 12
 
 === 29) MORNING LOG, READ ONLY ===
 # On the server, where the prompt is root@. One line. Paste the output. No keys.
