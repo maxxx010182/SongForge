@@ -9,7 +9,12 @@ from backend.services.lyrics_craft_prompt import (
     LYRICS_MODEL_ATTEMPTS,
     lyrics_screenplay_user_hint,
 )
-from backend.services.suno_package_composer import SunoPackageComposer
+from backend.services.provided_song import (
+    extract_provided_song,
+    style_from_analysis,
+    title_from_provided,
+)
+from backend.services.suno_package_composer import SunoPackageComposer, SunoPackageResult
 from backend.services.reference_translator import ReferenceTranslator
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.style_enforcer import enforce_style
@@ -59,6 +64,8 @@ class PromptBuilder:
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Parse idea → Reference → Analyst → Composer → Suno payload."""
         custom_mode = style_mode == "custom" and custom_description.strip()
+        request_genre = genre.strip()
+        request_mood = mood.strip()
         parse_text = idea.strip()
         if custom_mode:
             parse_text = (
@@ -69,9 +76,26 @@ class PromptBuilder:
             # Списки жанра/настроения скрыты — не перебивать текст пользователя.
             genre = ""
             mood = ""
+            request_genre = ""
+            request_mood = ""
 
         parsed = parse_idea(parse_text or idea)
         instrumental = bool(instrumental or parsed.instrumental)
+        provided = "" if instrumental else extract_provided_song(parse_text or idea)
+        if provided:
+            # Слово внутри куплета («Спокойной ночи», «поп» в «поп-рок»)
+            # не подменяет выбранный человеком чип и не задаёт его само.
+            if not request_genre:
+                parsed.genre = ""
+                parsed.genre_inline_lock = False
+                parsed.locked_fields = [
+                    name for name in parsed.locked_fields if name != "genre"
+                ]
+            if not request_mood:
+                parsed.mood = ""
+                parsed.locked_fields = [
+                    name for name in parsed.locked_fields if name != "mood"
+                ]
         use_unified = lyrics_engine == "unified" and not instrumental
         (
             genre,
@@ -115,7 +139,18 @@ class PromptBuilder:
         )
 
         package = None
-        if use_unified:
+        if provided:
+            package = SunoPackageResult(
+                title=title_from_provided(provided),
+                lyrics=provided,
+                style=style_from_analysis(analysis) or "warm vocals",
+                source="provided",
+            )
+            log.info(
+                "Pasted song kept without a rewrite (len=%s)",
+                len(provided),
+            )
+        elif use_unified:
             package = self._package.compose(
                 analyst_idea,
                 analysis,
@@ -281,6 +316,10 @@ class PromptBuilder:
         return plan
 
     def generate_lyrics(self, idea: str, plan: ProductionPlan) -> str:
+        provided = "" if plan.instrumental else extract_provided_song(idea)
+        if provided:
+            log.info("Lyrics taken from the pasted song (len=%s)", len(provided))
+            return provided
         try:
             lyrics, source = self._generate_lyrics_with_source(idea, plan)
         except LlmUnavailable as exc:

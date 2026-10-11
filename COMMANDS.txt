@@ -1,5 +1,13 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.113. Next is block 30, read only. Do not run blocks 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.114. Next is block 31. Do not run blocks 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 31) PASTED SONG IS SUNG AS WRITTEN ===
+# One line at a time. Skip lines that start with #.
+# First the update. Paste the health line.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.114"
 
 === 30) LAST SONG: SAVED WORDS VS WHAT WENT TO SUNO ===
 # On the server, where the prompt is root@. One line. Paste the output. No keys.
