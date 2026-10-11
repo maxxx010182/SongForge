@@ -1,5 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.113. Next is block 28. Do not run blocks 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.113. Next is block 29, read only. Do not run blocks 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 29) MORNING LOG, READ ONLY ===
+# On the server, where the prompt is root@. One line. Paste the output. No keys.
+echo '--- ERR ---'; tail -n 30 /root/.pm2/logs/songforge-error.log; echo '--- SONG ---'; grep -E "response received|Unified package|produce failed|Unexpected Kie|lazy lyrics|incomplete|LlmUnavailable|asking the next" /root/.pm2/logs/songforge-out.log | tail -n 40; echo '--- WORKER ---'; tail -n 30 /root/.pm2/logs/songforge-worker-out.log
 
 === 28) SONG RESERVE AFTER NO TEXT ===
 # One line at a time. Skip lines that start with #.
