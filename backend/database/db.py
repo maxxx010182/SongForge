@@ -456,6 +456,8 @@ def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE messenger_contacts ADD COLUMN tz_name TEXT NOT NULL DEFAULT ''"
         )
+    if "nudge_anchor_at" not in existing:
+        conn.execute("ALTER TABLE messenger_contacts ADD COLUMN nudge_anchor_at TEXT")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_messenger_nudge ON messenger_contacts(next_nudge_at)"
     )

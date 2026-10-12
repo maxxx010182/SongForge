@@ -469,34 +469,16 @@ def test_nudge_three_steps_then_weekly():
         assert bot.process_due_nudges() == 0
         assert api.sent == []
 
-        _force_nudge_due(contact["id"])
-        assert bot.process_due_nudges() == 1
-        assert "черновик уже в студии" in api.sent[-1]["text"].lower()
-        contact = MessengerService().get_by_max(max_user_id)
-        assert contact["nudge_step"] == 1
-
-        _force_nudge_due(contact["id"])
-        assert bot.process_due_nudges() == 1
-        assert "черновик ждёт в студии" in api.sent[-1]["text"].lower() or "не вышло зайти" in api.sent[-1]["text"].lower()
-        contact = MessengerService().get_by_max(max_user_id)
-        assert contact["nudge_step"] == 2
-
-        _force_nudge_due(contact["id"])
-        assert bot.process_due_nudges() == 1
-        last = api.sent[-1]
-        assert "некогда" in last["text"].lower()
-        payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
-        assert "nudge:later" in payloads
-        assert "stop_nudge" not in payloads
-        contact = MessengerService().get_by_max(max_user_id)
-        assert contact["nudge_step"] == 3
-        assert contact["next_nudge_at"]
-
-        _force_nudge_due(contact["id"])
-        assert bot.process_due_nudges() == 1
-        contact = MessengerService().get_by_max(max_user_id)
-        assert contact["nudge_step"] == 4
-        assert contact["next_nudge_at"]
+        for n in range(5):
+            _force_nudge_due(contact["id"])
+            assert bot.process_due_nudges() == 1
+            contact = MessengerService().get_by_max(max_user_id)
+        assert "маме" in api.sent[0]["text"].lower()
+        assert "черновик" in api.sent[0]["text"].lower()
+        payloads = [btn.get("payload") for row in api.sent[-1]["buttons"] for btn in row]
+        assert "nudge:later" not in payloads
+        assert not contact["next_nudge_at"]
+        assert int(contact["nudge_step"] or 0) == 9
     finally:
         _cleanup(max_user_id)
 
@@ -537,8 +519,8 @@ def test_ready_followup_waits_if_on_site_then_sends():
         svc.touch_site(contact["user_id"])
         with get_connection() as conn:
             conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ?",
-                ("2000-01-01T00:00:00+00:00", gen_id),
+                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ? AND kind = ?",
+                ("2000-01-01T00:00:00+00:00", gen_id, "ready_listen"),
             )
         api.sent.clear()
         assert bot.process_due_followups() == 0
@@ -549,12 +531,12 @@ def test_ready_followup_waits_if_on_site_then_sends():
                 ("2000-01-01T00:00:00+00:00", contact["id"]),
             )
             conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ?",
-                ("2000-01-01T00:00:00+00:00", gen_id),
+                "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ? AND kind = ?",
+                ("2000-01-01T00:00:00+00:00", gen_id, "ready_listen"),
             )
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "готова" in last["text"].lower() or "уже готово" in last["text"].lower()
+        assert "звучат" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("слушать" in l.lower() for l in labels)
         assert any("open=listen" in (btn.get("url") or "") for row in last["buttons"] for btn in row)
@@ -587,15 +569,15 @@ def test_unpaid_followup_after_preview():
             )
             conn.execute(
                 "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", gen_id, "unpaid_expert"),
+                ("2000-01-01T00:00:00+00:00", gen_id, "keep_d3"),
             )
         api.sent.clear()
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "расширенном" in last["text"].lower()
+        assert "теплее" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
-        assert any("расширенный режим" in l.lower() for l in labels)
         assert any("слушать" in l.lower() for l in labels)
+        assert not any("расширенный" in l.lower() for l in labels)
         svc.on_generation_purchased(user_id=contact["user_id"], generation_id=gen_id)
         api.sent.clear()
         assert bot.process_due_followups() == 0
@@ -645,20 +627,12 @@ def test_opened_studio_nudge_copy_and_snooze():
         _force_nudge_due(contact["id"])
         api.sent.clear()
         assert bot.process_due_nudges() == 1
-        assert "заглянул в студию" in api.sent[-1]["text"].lower() or "зашёл и вышел" in api.sent[-1]["text"].lower()
+        assert "черновик" in api.sent[-1]["text"].lower()
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
         assert "свет на кухне" in api.sent[-1]["text"].lower()
-        _force_nudge_due(contact["id"])
-        assert bot.process_due_nudges() == 1
-        _cb(bot, max_user_id, "nudge:later")
-        assert "напомню позднее" in api.sent[-1]["text"].lower()
-        contact = svc.get_by_max(max_user_id)
-        assert contact["next_nudge_at"]
-        assert contact["nudge_step"] >= 3
-        api.sent.clear()
-        assert bot.process_due_nudges() == 0
-        assert api.sent == []
+        payloads = [btn.get("payload") for row in api.sent[-1]["buttons"] for btn in row]
+        assert "nudge:later" not in payloads
     finally:
         _cleanup(max_user_id)
 
@@ -688,22 +662,10 @@ def test_purchase_schedules_how_received():
                 (contact["id"],),
             ).fetchall()
         kinds = {r["kind"] for r in rows}
-        assert "how_received" in kinds
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE contact_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", contact["id"], "how_received"),
-            )
+        assert "how_received" not in kinds
+        assert kinds == set()
         api.sent.clear()
-        assert bot.process_due_followups() == 1
-        assert "как впечатление" in api.sent[-1]["text"].lower() or "подарок" in api.sent[-1]["text"].lower()
-        with get_connection() as conn:
-            rows2 = conn.execute(
-                "SELECT kind FROM messenger_followups WHERE contact_id = ? AND sent_at IS NULL AND canceled_at IS NULL",
-                (contact["id"],),
-            ).fetchall()
-        kinds2 = {r["kind"] for r in rows2}
-        assert "next_person" in kinds2
+        assert bot.process_due_followups() == 0
     finally:
         _cleanup(max_user_id)
 
@@ -1081,6 +1043,11 @@ def test_nudge_branch3_opened_site_no_generation():
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["funnel_stage"] == "sent_to_site"
         MessengerService().touch_site(contact["user_id"])
+        with get_connection() as conn:
+            conn.execute(
+                "UPDATE messenger_contacts SET last_site_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", contact["id"]),
+            )
         contact = MessengerService().get_by_max(max_user_id)
         assert contact["last_site_at"]
 
@@ -1088,10 +1055,10 @@ def test_nudge_branch3_opened_site_no_generation():
         api.sent.clear()
         assert bot.process_due_nudges() == 1
         last = api.sent[-1]
-        assert "заглянул в студию" in last["text"].lower()
+        assert "черновик" in last["text"].lower()
         assert "маме" in last["text"].lower()
         btn_labels = [btn.get("text") for row in last["buttons"] for btn in row]
-        assert any("перейти к созданию" in b.lower() for b in btn_labels)
+        assert any("создать песню" in b.lower() for b in btn_labels)
     finally:
         _cleanup(max_user_id)
 
@@ -1113,30 +1080,8 @@ def test_followup_periodic_retention_branch6():
                 (gen_id, contact["user_id"]),
             )
         svc.on_generation_purchased(user_id=contact["user_id"], generation_id=gen_id)
-
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE contact_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", contact["id"], "how_received"),
-            )
-        assert bot.process_due_followups() == 1
-
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE contact_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", contact["id"], "next_person"),
-            )
         api.sent.clear()
-        assert bot.process_due_followups() == 1
-        assert "праздник" in api.sent[-1]["text"].lower() or "повод" in api.sent[-1]["text"].lower()
-
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE messenger_followups SET due_at = ? WHERE contact_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", contact["id"], "next_person_periodic"),
-            )
-        api.sent.clear()
-        assert bot.process_due_followups() == 1
-        assert "музыка" in api.sent[-1]["text"].lower() or "кому подарим" in api.sent[-1]["text"].lower()
+        assert bot.process_due_followups() == 0
+        assert api.sent == []
     finally:
         _cleanup(max_user_id)

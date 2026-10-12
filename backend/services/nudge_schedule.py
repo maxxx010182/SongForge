@@ -65,3 +65,35 @@ def evening_after(
             target = local.date() + timedelta(days=1)
     local_send = datetime(target.year, target.month, target.day, SEND_HOUR, 0, tzinfo=tz)
     return local_send.astimezone(timezone.utc).isoformat()
+
+
+def studio_slots(tz_name: str | None, anchor_iso: str) -> list[str]:
+    """Пять вечеров от ухода: ближайший, затем 3, 7, 10 и 14-й день.
+
+    День ухода считается первым. Если 19:00 этого дня уже прошло,
+    ближайший вечер — завтра, а 3, 7, 10 и 14-й остаются на своих датах.
+    """
+    tz = resolve_tz(tz_name)
+    try:
+        anchor = datetime.fromisoformat(anchor_iso)
+    except ValueError:
+        anchor = datetime.now(timezone.utc)
+    if anchor.tzinfo is None:
+        anchor = anchor.replace(tzinfo=timezone.utc)
+    local = anchor.astimezone(tz)
+    nearest = datetime.fromisoformat(evening_after(tz_name, days=0, after=anchor))
+    slots = [nearest.isoformat()]
+    for day_num in (3, 7, 10, 14):
+        target = local.date() + timedelta(days=day_num - 1)
+        local_send = datetime(
+            target.year, target.month, target.day, SEND_HOUR, 0, tzinfo=tz
+        )
+        slot = local_send.astimezone(timezone.utc)
+        if slot > nearest:
+            slots.append(slot.isoformat())
+    return slots
+
+
+def keep_evenings(tz_name: str | None, anchor_iso: str) -> list[str]:
+    """Вечера 3, 7, 10 и 14-го дня после готовой песни. Тот же вечер не дублируем."""
+    return studio_slots(tz_name, anchor_iso)[1:]

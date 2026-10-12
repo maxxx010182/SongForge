@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
-from backend.services.nudge_schedule import evening_after, normalize_tz
+from backend.services.nudge_schedule import evening_after, keep_evenings, normalize_tz, studio_slots
 from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 
 LEGAL_DOC_VERSION = "2026-09-14"
@@ -762,37 +762,23 @@ class MessengerService:
 
     def mark_sent_to_site(self, contact: dict) -> dict:
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        tz = contact.get("tz_name") or ""
+        next_at = evening_after(tz, days=0)
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
                 SET funnel_stage = ?, last_channel = 'max', updated_at = ?,
-                    nudge_step = 0, next_nudge_at = ?
+                    nudge_step = 0, next_nudge_at = ?, nudge_anchor_at = ?
                 WHERE id = ?
                 """,
-                (STAGE_SENT, now, next_at, contact["id"]),
+                (STAGE_SENT, now, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
     def note_studio_opened(self, contact: dict) -> dict:
-        """Открыл студию — первый пинг остаётся на следующий вечер, не через 2 часа."""
-        if int(contact.get("nudge_step") or 0) != 0:
-            return contact
-        if not (contact.get("next_nudge_at") or "").strip():
-            return contact
-        now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=1)
-        with get_connection() as conn:
-            conn.execute(
-                """
-                UPDATE messenger_contacts
-                SET next_nudge_at = ?, updated_at = ?
-                WHERE id = ? AND nudge_step = 0 AND next_nudge_at IS NOT NULL
-                """,
-                (next_at, now, contact["id"]),
-            )
-        return self.get_by_max(contact["max_user_id"]) or contact
+        """Открыл студию. Вечер письма уже стоит, дату не сдвигаем."""
+        return contact
 
     def list_due_nudges(self, *, limit: int = 20) -> list[dict]:
         now = utc_now()
@@ -816,6 +802,8 @@ class MessengerService:
         return [dict(row) for row in rows]
 
     def advance_nudge(self, contact: dict) -> dict:
+        if (contact.get("funnel_stage") or "") == STAGE_SENT:
+            return self._advance_studio_series(contact)
         step = int(contact.get("nudge_step") or 0)
         now = utc_now()
         tz = contact.get("tz_name") or ""
@@ -838,6 +826,39 @@ class MessengerService:
                 (new_step, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
+
+    def _advance_studio_series(self, contact: dict) -> dict:
+        step = int(contact.get("nudge_step") or 0)
+        now = utc_now()
+        anchor = (contact.get("nudge_anchor_at") or "").strip() or now
+        slots = studio_slots(contact.get("tz_name") or "", anchor)
+        nxt = step + 1
+        if nxt >= len(slots):
+            self.silence_studio_nudges(contact)
+            return self.get_by_max(contact["max_user_id"]) or contact
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET nudge_step = ?, next_nudge_at = ?, nudge_anchor_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (nxt, slots[nxt], anchor, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def postpone_studio_nudge(self, contact: dict) -> None:
+        """Человек ещё на сайте — это письмо переносим на следующий вечер, шаг не сдвигаем."""
+        nxt = evening_after(contact.get("tz_name") or "", days=1)
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET next_nudge_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (nxt, utc_now(), contact["id"]),
+            )
 
     def snooze_nudge(self, contact: dict, *, days: int = 3) -> dict:
         tz = contact.get("tz_name") or ""
@@ -1077,42 +1098,39 @@ class MessengerService:
         kind: str,
         generation_id: str,
     ) -> None:
+        """Дальше по цепочке ничего не ставим: вечера уже лежат рядом с письмом «готово»."""
+        del contact, kind, generation_id
+
+    def _pending_followup(self, contact_id: str, generation_id: str, kind: str) -> bool:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT 1 FROM messenger_followups
+                WHERE contact_id = ? AND generation_id = ? AND kind = ?
+                  AND sent_at IS NULL AND canceled_at IS NULL
+                LIMIT 1
+                """,
+                (contact_id, generation_id, kind),
+            ).fetchone()
+        return bool(row)
+
+    def schedule_keep_evenings(
+        self,
+        contact: dict,
+        *,
+        generation_id: str,
+        anchor_iso: str,
+    ) -> None:
         tz = contact.get("tz_name") or ""
-        if kind in {"ready_listen", "ready_weekly"}:
-            days = 1 if kind == "ready_listen" else 7
+        kinds = ("keep_d3", "keep_d7", "keep_d10", "keep_d14")
+        for kind, due in zip(kinds, keep_evenings(tz, anchor_iso)):
+            if self._pending_followup(contact["id"], generation_id, kind):
+                continue
             self.schedule_followup(
                 contact=contact,
-                kind="ready_weekly",
+                kind=kind,
                 generation_id=generation_id,
-                due_at=evening_after(tz, days=days),
-            )
-        elif kind in {"unpaid_preview", "unpaid_expert"}:
-            self.schedule_followup(
-                contact=contact,
-                kind="unpaid_tip",
-                generation_id=generation_id,
-                due_at=evening_after(tz, days=3),
-            )
-        elif kind in {"unpaid_tip", "unpaid_weekly"}:
-            self.schedule_followup(
-                contact=contact,
-                kind="unpaid_weekly",
-                generation_id=generation_id,
-                due_at=evening_after(tz, days=7),
-            )
-        elif kind == "how_received":
-            self.schedule_followup(
-                contact=contact,
-                kind="next_person",
-                generation_id=generation_id,
-                due_at=evening_after(tz, days=7),
-            )
-        elif kind in {"next_person", "next_person_periodic"}:
-            self.schedule_followup(
-                contact=contact,
-                kind="next_person_periodic",
-                generation_id=generation_id,
-                due_at=evening_after(tz, days=8),
+                due_at=due,
             )
 
     def on_generation_ready(self, *, user_id: str, generation_id: str) -> None:
@@ -1123,11 +1141,15 @@ class MessengerService:
         state = self.generation_followup_state(generation_id)
         if int(state.get("purchased") or 0):
             return
+        anchor = utc_now()
         self.schedule_followup(
             contact=contact,
             kind="ready_listen",
             generation_id=generation_id,
             minutes=5,
+        )
+        self.schedule_keep_evenings(
+            contact, generation_id=generation_id, anchor_iso=anchor
         )
 
     def on_preview_played(self, *, user_id: str, generation_id: str) -> None:
@@ -1165,12 +1187,8 @@ class MessengerService:
         )
         if purchased:
             return
-        tz = contact.get("tz_name") or ""
-        self.schedule_followup(
-            contact=contact,
-            kind="unpaid_expert",
-            generation_id=generation_id,
-            due_at=evening_after(tz, days=1),
+        self.schedule_keep_evenings(
+            contact, generation_id=generation_id, anchor_iso=now
         )
 
     def on_generation_purchased(self, *, user_id: str, generation_id: str) -> None:
@@ -1179,15 +1197,6 @@ class MessengerService:
             return
         self.silence_studio_nudges(contact)
         self._cancel_followups(contact_id=contact["id"])
-        if not self.can_message(contact):
-            return
-        tz = contact.get("tz_name") or ""
-        self.schedule_followup(
-            contact=contact,
-            kind="how_received",
-            generation_id=generation_id,
-            due_at=evening_after(tz, days=3),
-        )
 
     def list_due_followups(self, *, limit: int = 20) -> list[dict]:
         now = utc_now()

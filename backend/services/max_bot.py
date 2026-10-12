@@ -6,6 +6,7 @@ from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
 from backend.services.max_legal import legal_page
+from backend.services.max_letters import keep_letter, ready_letter, studio_letter
 from backend.services.max_funnel import (
     ABOUT_TEXT,
     ABOUT_WAIT,
@@ -134,48 +135,6 @@ NUDGE_SURVEY_ABANDONED = (
     "Черновик песни ждёт продолжения. Конечно же, чем больше деталей, тем эффектнее, "
     "но и если нет особо времени, то можно довериться алгоритму и он сам создаст шедевр. Продолжим?"
 )
-NUDGE_A0 = (
-    "Ты заглянул в студию, но не запустил трек. Твоя идея на месте, "
-    "если хочешь — можешь внести правки или дополнения. "
-    "Нажми «Создать песню», и через пару минут можно будет оценить звучание первых вариантов."
-)
-NUDGE_A1_TRIAL = (
-    "Два варианта звучания создаются за пару минут — и сразу понятно, "
-    "твоё это или крутим иначе."
-)
-NUDGE_A_KEEP = "Черновик на месте. Можно открыть студию, когда будет минута."
-NUDGE_B0 = (
-    "Черновик уже в студии. Идея сохранена — осталось открыть и послушать первые варианты."
-)
-NUDGE_B1 = (
-    "Черновик ждёт в студии. Открой ссылку, когда появится минута — всё готово для запуска."
-)
-READY_LISTEN_TEXT = (
-    "Твоя песня готова — создано 2 варианта звучания!\n\n"
-    "Перейди в студию, чтобы оценить первые варианты и послушать, как звучит твоя задумка."
-)
-UNPAID_EXPERT_TEXT = (
-    "Как тебе первые варианты? Если хочется докрутить текст или попробовать другой стиль/голос "
-    "— это легко сделать в расширенном режиме студии.\n\n"
-    "А если трек уже попал в сердце — скачивай полную версию в высоком качестве."
-)
-UNPAID_TIP_TEXT = (
-    "Маленький секрет: в расширенном режиме можно скорректировать ключевые строчки перед финальной записью "
-    "— и только потом запускать музыку. Твой трек сохранён и ждёт тебя!"
-)
-HOW_RECEIVED_TEXT = (
-    "Как впечатление от песни? Надеемся, подарок вызвал яркие эмоции! "
-    "Песня навсегда останется в твоём личном кабинете."
-)
-NEXT_PERSON_TEXT = (
-    "Впереди новый праздник или повод порадовать близких? "
-    "Создать новый уникальный трек можно всего за пару минут."
-)
-NEXT_PERSON_PERIODIC_TEXT = (
-    "Музыка — лучший способ выразить чувства и поздравить от души. "
-    "Кому подарим песню в этот раз?"
-)
-UNPAID_PREVIEW_TEXT = UNPAID_EXPERT_TEXT
 
 
 def _callback_btn(text: str, payload: str, *, intent: str | None = None) -> dict:
@@ -427,13 +386,6 @@ def _studio_buttons(url: str, label: str = "Вперёд и с песней!") -
     return [[_link_btn(label, url)]]
 
 
-def _short_detail(text: str, limit: int = 80) -> str:
-    t = " ".join((text or "").split())
-    if len(t) > limit:
-        t = t[: limit - 1].rstrip() + "…"
-    return t
-
-
 def _nudge_survey_buttons() -> list[list[dict]]:
     return [
         [
@@ -457,52 +409,9 @@ def _nudge_payload(messenger: MessengerService, contact: dict, step: int) -> tup
 
     opened = bool((contact.get("last_site_at") or "").strip())
     url = messenger.studio_url(contact)
-
-    # Ветка 3: Зашёл на сайт, но не нажал «Создать»
-    if opened:
-        whom = (contact.get("brief_whom") or "").strip()
-        just = is_just_plot(whom, contact.get("segment") or "")
-        target = f"для {whom}" if whom and not just else ""
-        idea = f"Твоя идея {target} уже на месте" if target else "Твоя идея уже на месте"
-        a0 = (
-            f"Ты заглянул в студию, но не запустил трек. {idea}, "
-            "если хочешь — можешь внести правки или дополнения. "
-            "Нажми «Создать песню», и через пару минут можно будет оценить звучание первых вариантов."
-        )
-        detail = _short_detail(contact.get("brief_detail") or "")
-        skip_detail = not detail or is_skip(detail)
-        a1 = (
-            f"Помню про «{detail}». Это уже в черновике студии — можно поправить слова или сразу создать песню."
-            if not skip_detail
-            else a0
-        )
-        pool = (a0, a1, NUDGE_A_KEEP)
-        if step <= 0:
-            text = a0
-        elif step == 1:
-            text = a1
-        elif step == 2:
-            text = NUDGE_LATER_TEXT
-        else:
-            text = pool[(step - 3) % len(pool)]
-        label = "▶ Перейти к созданию"
-    else:
-        # Ветка 2: Заполнил анкету, но не кликнул на сайт
-        pool = (NUDGE_B0, NUDGE_B1, NUDGE_A_KEEP)
-        if step <= 0:
-            text = NUDGE_B0
-        elif step == 1:
-            text = NUDGE_B1
-        elif step == 2:
-            text = NUDGE_LATER_TEXT
-        else:
-            text = pool[(step - 3) % len(pool)]
-        label = "▶ Открыть студию"
-
-    buttons = _studio_buttons(url, label)
-    if step >= 2:
-        buttons = buttons + later
-    return text, buttons
+    text = studio_letter(contact, step)
+    label = "▶ Создать песню" if opened else "▶ Открыть студию"
+    return text, _studio_buttons(url, label)
 
 
 def _as_int(value) -> int | None:
@@ -1502,6 +1411,11 @@ class MaxBot:
         step = int(contact.get("nudge_step") or 0)
         if step < 0 or step >= 9:
             return 0
+        if (contact.get("funnel_stage") or "") == STAGE_SENT and self.messenger.site_is_recent(
+            contact, minutes=20
+        ):
+            self.messenger.postpone_studio_nudge(contact)
+            return 0
         text, buttons = _nudge_payload(self.messenger, contact, step)
         ok = self.api.send_message(
             user_id=contact["max_user_id"],
@@ -1529,30 +1443,27 @@ class MaxBot:
             kind = job.get("kind") or ""
             gen_id = job.get("generation_id") or ""
             if kind in {"how_received", "next_person", "next_person_periodic"}:
-                if not contact.get("user_id"):
-                    self.messenger.cancel_followup(job["id"])
-                    continue
-                text, buttons = self._customer_followup(contact, kind)
-            else:
-                gen = self.messenger.generation_followup_state(gen_id)
-                if not gen or (gen.get("status") or "") != "success":
-                    self.messenger.cancel_followup(job["id"])
-                    continue
-                if int(gen.get("purchased") or 0):
-                    self.messenger.cancel_followup(job["id"])
-                    continue
-                if kind in {"ready_listen", "ready_weekly"} and gen.get("previewed_at"):
-                    self.messenger.cancel_followup(job["id"])
-                    continue
-                if self.messenger.site_is_recent(contact, minutes=3):
-                    wait = 5 if kind == "ready_listen" else 30
-                    self.messenger.delay_followup(job["id"], minutes=wait)
-                    continue
-                built = self._generation_followup(contact, kind)
-                if built is None:
-                    self.messenger.cancel_followup(job["id"])
-                    continue
-                text, buttons = built
+                self.messenger.cancel_followup(job["id"])
+                continue
+            gen = self.messenger.generation_followup_state(gen_id)
+            if not gen or (gen.get("status") or "") != "success":
+                self.messenger.cancel_followup(job["id"])
+                continue
+            if int(gen.get("purchased") or 0):
+                self.messenger.cancel_followup(job["id"])
+                continue
+            if kind in {"ready_listen", "ready_weekly"} and gen.get("previewed_at"):
+                self.messenger.cancel_followup(job["id"])
+                continue
+            if self.messenger.site_is_recent(contact, minutes=3):
+                wait = 5 if kind == "ready_listen" else 30
+                self.messenger.delay_followup(job["id"], minutes=wait)
+                continue
+            built = self._generation_followup(contact, kind)
+            if built is None:
+                self.messenger.cancel_followup(job["id"])
+                continue
+            text, buttons = built
             ok = self.api.send_message(
                 user_id=contact["max_user_id"],
                 text=text,
@@ -1568,63 +1479,25 @@ class MaxBot:
                 self.messenger.delay_followup(job["id"], minutes=15)
         return sent
 
-    def _customer_followup(self, contact: dict, kind: str) -> tuple[str, list]:
-        if kind == "how_received":
-            return HOW_RECEIVED_TEXT, [[
-                _link_btn(
-                    "▶ Слушать песню",
-                    self.messenger.studio_url(contact, open_to="listen"),
-                )
-            ]]
-        if kind == "next_person_periodic":
-            return NEXT_PERSON_PERIODIC_TEXT, [[
-                _link_btn(
-                    "▶ Создать новую песню",
-                    self.messenger.studio_url(contact),
-                )
-            ]]
-        whom = (contact.get("brief_whom") or "").strip()
-        text = (
-            f"Песня для {whom} уже готова. Впереди новый праздник или повод? "
-            "Создать новый уникальный трек можно всего за пару минут."
-            if whom
-            else NEXT_PERSON_TEXT
-        )
-        return text, [[_link_btn("▶ Создать новую песню", self.messenger.studio_url(contact))]]
-
     def _generation_followup(self, contact: dict, kind: str):
+        listen = [[
+            _link_btn(
+                "▶ Послушать",
+                self.messenger.studio_url(contact, open_to="listen"),
+            )
+        ]]
         if kind in {"ready_listen", "ready_weekly"}:
-            buttons = [[
-                _link_btn(
-                    "▶ Послушать варианты",
-                    self.messenger.studio_url(contact, open_to="listen"),
-                )
-            ]]
-            if kind == "ready_weekly":
-                buttons = buttons + [[_callback_btn("Напомнить позднее", "nudge:later")]]
-            return READY_LISTEN_TEXT, buttons
-        if kind in {"unpaid_preview", "unpaid_expert", "unpaid_tip", "unpaid_weekly"}:
-            if kind == "unpaid_tip":
-                buttons = [[
-                    _link_btn(
-                        "▶ В студию",
-                        self.messenger.studio_url(contact, open_to="expert"),
-                    )
-                ]]
-                text = UNPAID_TIP_TEXT
-            else:
-                buttons = [
-                    [_link_btn(
-                        "▶ Расширенный режим",
-                        self.messenger.studio_url(contact, open_to="expert"),
-                    )],
-                    [_link_btn(
-                        "▶ Слушать варианты",
-                        self.messenger.studio_url(contact, open_to="listen"),
-                    )],
-                ]
-                text = UNPAID_EXPERT_TEXT
-            if kind in {"unpaid_weekly", "unpaid_tip"}:
-                buttons = buttons + [[_callback_btn("Напомнить позднее", "nudge:later")]]
-            return text, buttons
+            return ready_letter(contact), listen
+        keep_step = {
+            "keep_d3": 0,
+            "unpaid_preview": 0,
+            "unpaid_expert": 0,
+            "keep_d7": 1,
+            "keep_d10": 2,
+            "unpaid_tip": 2,
+            "keep_d14": 3,
+            "unpaid_weekly": 3,
+        }
+        if kind in keep_step:
+            return keep_letter(contact, keep_step[kind]), listen
         return None
