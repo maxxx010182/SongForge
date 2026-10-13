@@ -271,7 +271,7 @@ class HistoryItem(BaseModel):
 
 class HistoryPreviewResponse(BaseModel):
     preview_url: str
-    preview_limit_sec: int = 60
+    preview_limit_sec: int = 90
     title: str = ""
     image_url: str | None = None
 

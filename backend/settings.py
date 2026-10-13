@@ -80,8 +80,10 @@ MUSIC_MAX_WAIT_SEC = 360
 GUEST_GENERATION_LIMIT = 1
 SESSION_TTL_DAYS = 30
 SHOWCASE_HOURS = 24
-PREVIEW_LIMIT_SEC = 60
-PREVIEW_MAX_BYTES = 1_000_000
+# Отрывок до выкупа. Раньше 1 МБ хватало примерно на 60 секунд при ~128 кбит/с.
+# 90 секунд при том же качестве — около 1,5 МБ. Плеер останавливается на PREVIEW_LIMIT_SEC.
+PREVIEW_LIMIT_SEC = 90
+PREVIEW_MAX_BYTES = 1_500_000
 
 # Бета-защита (без Redis; in-memory + SQLite). Мягче для 5–20 тестеров.
 MAX_CONCURRENT_GENERATIONS = int(os.getenv("MAX_CONCURRENT_GENERATIONS", "6"))

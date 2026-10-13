@@ -1,4 +1,4 @@
-"""Unit tests for unclaimed generations showcase and 60-second preview limit."""
+"""Unit tests for unclaimed generations showcase and 90-second preview limit."""
 
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -6,14 +6,16 @@ from datetime import datetime, timedelta, timezone
 from backend.database.db import get_connection, init_db
 from backend.services.cabinet_service import CabinetService
 from backend.services.showcase_admin_service import ShowcaseAdminService
-from backend.settings import PREVIEW_LIMIT_SEC
+from backend.settings import PREVIEW_LIMIT_SEC, PREVIEW_MAX_BYTES
 
 
 def test_preview_limit_setting():
-    assert PREVIEW_LIMIT_SEC == 60
+    assert PREVIEW_LIMIT_SEC == 90
+    # 128 кбит/с × 90 с = 1 440 000 байт. Меньше — отрывок оборвётся раньше плеера.
+    assert PREVIEW_MAX_BYTES >= (128_000 // 8) * PREVIEW_LIMIT_SEC
 
 
-def test_cabinet_history_preview_reports_60s():
+def test_cabinet_history_preview_reports_90s():
     init_db()
     cab = CabinetService()
     uid = uuid.uuid4().hex[:8]
@@ -39,7 +41,7 @@ def test_cabinet_history_preview_reports_60s():
         )
 
     res = cab.get_history_preview(user_id=user_id, generation_id=gen_id, variant="a")
-    assert res["preview_limit_sec"] == 60
+    assert res["preview_limit_sec"] == 90
     assert "/api/audio/preview/" in res["preview_url"]
 
 

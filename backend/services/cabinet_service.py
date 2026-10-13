@@ -4,6 +4,7 @@ import uuid
 
 from backend.database.db import get_connection, init_db, utc_now
 from backend.services.audio_access_service import AudioAccessService
+from backend.settings import PREVIEW_LIMIT_SEC
 
 _STYLE_PREFIX = "Стиль и звучание:"
 _DIRECTIVE_PART_RE = re.compile(
@@ -169,7 +170,7 @@ class CabinetService:
             "preview_url": AudioAccessService.preview_path(
                 generation_id, variant_index
             ),
-            "preview_limit_sec": 60,
+            "preview_limit_sec": PREVIEW_LIMIT_SEC,
             "title": row["title"] or "Без названия",
             "image_url": image_url,
         }

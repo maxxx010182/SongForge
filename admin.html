@@ -261,8 +261,8 @@ async function loadUnclaimed(){
     }
     tbody.innerHTML=items.map(function(t){
       var date=(t.created_at||'').slice(0,16).replace('T',' ');
-      var playA=t.has_a?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_a)+'\')">▶ A (60с)</button>'):'';
-      var playB=t.has_b?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_b)+'\')">▶ B (60с)</button>'):'';
+      var playA=t.has_a?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_a)+'\')">▶ A (90с)</button>'):'';
+      var playB=t.has_b?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_b)+'\')">▶ B (90с)</button>'):'';
       var pubBadge=t.already_published?'<span style="color:#4ade80;font-size:.75rem">✓ На МузПлощадке</span> ':'';
       var pubBtnA=t.has_a?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="A" data-title="'+esc(t.title)+'">Опубликовать A</button> '):'';
       var pubBtnB=t.has_b?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="B" data-title="'+esc(t.title)+'">Опубликовать B</button>'):'';
