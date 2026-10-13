@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.116. Run block 33 only. Do not run blocks 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.117. Run block 33 only. Do not run blocks 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 33) DEMO 90 SECONDS, FULL SONG LENGTH ON THE CARD ===
 # One line at a time. Skip lines that start with #.
@@ -7,7 +7,7 @@ Version: 2.11.116. Run block 33 only. Do not run blocks 32, 31, 30, 29, 28, 27, 
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
-# expected: "version":"2.11.116"
+# expected: "version":"2.11.117"
 
 === 32) BOT LETTERS: FIVE EVENINGS, THEN QUIET ===
 # One line at a time. Skip lines that start with #.
