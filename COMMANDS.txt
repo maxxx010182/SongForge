@@ -1,5 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.118. Block 36 is done. Block 34 is waiting. Do not run blocks 36, 35, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.118. Run block 37 only. Do not run blocks 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 37) SAME PERSON AND LYRIC TAIL, READ ONLY ===
+# On the server, where the prompt is root@. One line. Paste the output. No keys.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-morning-pair.py?$(date +%s)" -o /tmp/check-morning-pair.py; /root/SongForge/venv/bin/python /tmp/check-morning-pair.py
 
 === 36) TODAY SONGS, READ ONLY ===
 # On the server, where the prompt is root@. One line. Paste the output. No keys.
