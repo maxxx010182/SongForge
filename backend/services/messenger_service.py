@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
+from backend.services.provided_song import extract_provided_song
 from backend.services.nudge_schedule import evening_after, keep_evenings, normalize_tz, studio_slots
 from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 
@@ -210,8 +211,6 @@ def compose_brief(
         if mood:
             head += f", {mood}"
         parts.append(head + ".")
-    if detail:
-        parts.append(detail if detail.endswith((".", "!", "?")) else detail + ".")
     if genre:
         parts.append(f"Жанр {genre}.")
     if sound:
@@ -226,7 +225,15 @@ def compose_brief(
         parts.append("Мягко: то, что не выговаривается вслух. Без пафоса.")
     elif whom or mood or detail:
         parts.append("Чтобы адресат узнал себя с первой строки. Без канцелярита.")
-    return " ".join(parts).strip()
+    # Служебное выше текста. Готовую песню не дописываем точкой и не клеим к ней жанр.
+    body = detail
+    if body and not extract_provided_song(body):
+        if not body.endswith((".", "!", "?", "»", "\"")):
+            body += "."
+    chunks = ["\n".join(parts)]
+    if body:
+        chunks.append(body)
+    return "\n\n".join(chunks).strip()
 
 
 class MessengerService:

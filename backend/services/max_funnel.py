@@ -98,6 +98,8 @@ BIZ_TONE_TEXT = "Какой тон нужен?"
 STUDIO_FOOTER = STUDIO_CTA
 
 DETAIL_MAX = 1000
+# Готовая песня длиннее короткой сцены. Потолок, чтобы в студию не уехал целый документ.
+SONG_DETAIL_MAX = 8000
 WHOM_MAX = 40
 OCCASION_MAX = 80
 SOUND_MAX = 80
@@ -473,10 +475,24 @@ def parse_voice(raw: str) -> str | None:
     return None
 
 
+def _cap_pasted_song(text: str) -> str:
+    if len(text) <= SONG_DETAIL_MAX:
+        return text
+    cut = text[:SONG_DETAIL_MAX]
+    line_end = cut.rfind("\n")
+    if line_end >= DETAIL_MAX:
+        return cut[:line_end].rstrip()
+    return cut.rstrip()
+
+
 def parse_detail(raw: str) -> str | None:
     text = (raw or "").strip()
     if not text or is_skip(text):
         return ""
+    from backend.services.provided_song import extract_provided_song
+
+    if extract_provided_song(text):
+        return _cap_pasted_song(text)
     return text[:DETAIL_MAX]
 
 

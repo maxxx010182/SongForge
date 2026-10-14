@@ -173,6 +173,53 @@ def test_compose_brief():
     self_song = compose_brief("", "про коня в поле", plot="just")
     assert "коня" in self_song.lower()
     assert "не указан" not in self_song.lower()
+    assert rich.index("Жанр") < rich.index("свет на кухне")
+    song = "\n".join(
+        [
+            "[Verse 1]",
+            "А можно я сегодня отдохну",
+            "От списка дел и суеты",
+            "[Chorus]",
+            "Ты мой единственный родной",
+            "Мой тихий дом и светлый край",
+            "Без лишних слов и без обид",
+            "С тобой я дома в любой день",
+            "[Verse 2]",
+            "Мы снова рядом поздним вечером",
+            "И чай стынет на столе",
+        ]
+    )
+    pasted = compose_brief(
+        "мужу",
+        "признание",
+        detail=song,
+        sound="романтично",
+        voice="женский",
+        genre="Поп",
+    )
+    assert pasted.index("Жанр Поп") < pasted.index("[Verse 1]")
+    assert pasted.rstrip().endswith("И чай стынет на столе")
+    from backend.services.provided_song import extract_provided_song
+
+    sung = extract_provided_song(pasted)
+    assert "Жанр" not in sung
+    assert "канцелярита" not in sung
+    assert "чай стынет" in sung
+
+
+def test_parse_detail_keeps_a_finished_song():
+    from backend.services.max_funnel import parse_detail
+
+    verse = "Строка песни номер {n} про дом, свет на кухне и долгую дорогу домой этой ночью"
+    lines = ["[Verse 1]"]
+    lines.extend(verse.format(n=i) for i in range(12))
+    lines.append("[Chorus]")
+    lines.extend(f"Припев строка {i} остаётся целиком и не режется посреди слова" for i in range(6))
+    song = "\n".join(lines)
+    assert len(song) > 1000
+    assert parse_detail(song) == song
+    scene = "сцена " * 400
+    assert len(parse_detail(scene)) == 1000
 
 
 def test_gate_on_bot_started():
