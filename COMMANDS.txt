@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.119. Run block 41 only. Do not run blocks 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.119. Block 41 ran. The music bucket is public, so the copy was deleted. Do not run block 41 again. Do not run blocks 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 41) DAILY CLOSED COPY, DATABASE AND SETTINGS ===
 # On the server, where the prompt is root@. One line. Paste the output. No keys.
