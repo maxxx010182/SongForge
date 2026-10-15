@@ -54,6 +54,20 @@ def test_public_url_uses_the_music_base():
     assert url == "https://songs.example/backups/db/songforge.db"
 
 
+def test_backup_urls_use_the_closed_folder_only():
+    urls = backup.backup_urls(
+        "https://s3.regru.cloud",
+        "songforge-backup",
+        "backups/db/songforge.db",
+    )
+    assert urls == [
+        "https://songforge-backup.s3.regru.cloud/backups/db/songforge.db",
+        "https://s3.regru.cloud/songforge-backup/backups/db/songforge.db",
+    ]
+    assert backup.backup_bucket_name({}) == "songforge-backup"
+    assert backup.backup_bucket_name({"BACKUP_S3_BUCKET": "other"}) == "other"
+
+
 def test_both_shelf_addresses_are_checked():
     urls = backup.candidate_urls(
         {

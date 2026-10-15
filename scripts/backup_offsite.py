@@ -65,6 +65,29 @@ def public_object_url(env: dict[str, str], key: str) -> str:
     return found[0] if found else ""
 
 
+BACKUP_BUCKET = "songforge-backup"
+
+
+def backup_bucket_name(env: dict[str, str]) -> str:
+    name = (env.get("BACKUP_S3_BUCKET") or BACKUP_BUCKET).strip().strip("/")
+    return name or BACKUP_BUCKET
+
+
+def backup_urls(endpoint: str, bucket: str, key: str) -> list[str]:
+    clean = key.lstrip("/")
+    host = (endpoint or "").rstrip("/")
+    urls: list[str] = []
+    if "://" in host and bucket and clean:
+        scheme, rest = host.split("://", 1)
+        urls.append(f"{scheme}://{bucket}.{rest}/{clean}")
+        urls.append(f"{host}/{bucket}/{clean}")
+    unique: list[str] = []
+    for url in urls:
+        if url not in unique:
+            unique.append(url)
+    return unique
+
+
 def candidate_urls(env: dict[str, str], key: str) -> list[str]:
     clean = key.lstrip("/")
     urls: list[str] = []
@@ -271,28 +294,29 @@ def main() -> int:
         print("хранилище песен не настроено, наружу копия не ушла")
         return 2
 
+    folder = backup_bucket_name(env)
     db_key = f"backups/db/songforge_{stamp}.db"
     client = _client(primary["endpoint"], primary["access"], primary["secret"], primary["region"])
     db_state = _upload_checked(
         client,
-        primary["bucket"],
+        folder,
         db_key,
         local_db.read_bytes(),
-        candidate_urls(env, db_key),
+        backup_urls(primary["endpoint"], folder, db_key),
     )
     if db_state != "closed":
-        print(f"копия базы в хранилище песен не оставлена: {db_state}")
+        print(f"копия базы в папке {folder} не оставлена: {db_state}")
         return 3
-    print(f"хранилище песен, база закрыта, бакет {primary['bucket']}")
+    print(f"папка {folder}, база закрыта")
 
     if env_path.is_file():
         env_key = f"backups/env/songforge_{stamp}.env"
         env_state = _upload_checked(
             client,
-            primary["bucket"],
+            folder,
             env_key,
             env_path.read_bytes(),
-            candidate_urls(env, env_key),
+            backup_urls(primary["endpoint"], folder, env_key),
         )
         if env_state != "closed":
             print(f"файл настроек в хранилище не оставлен: {env_state}")
@@ -304,12 +328,12 @@ def main() -> int:
     else:
         print("файла настроек нет, его копию пропустил")
 
-    dropped = _prune_prefix(client, primary["bucket"], "backups/db/", KEEP)
-    dropped += _prune_prefix(client, primary["bucket"], "backups/env/", KEEP)
+    dropped = _prune_prefix(client, folder, "backups/db/", KEEP)
+    dropped += _prune_prefix(client, folder, "backups/env/", KEEP)
     _prune_local(local_dir, "songforge_*.db", KEEP)
     _prune_local(local_dir, "env_*.env", KEEP)
     print(f"старых копий снято: {dropped}, держим {KEEP}")
-    print("песни в этом бакете уже лежат, второй раз их не копировал")
+    print("папку с песнями не трогал")
 
     cron_error = ""
     try:
@@ -365,5 +389,12 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as exc:
-        print(f"копия остановилась: {type(exc).__name__}")
+        code = ""
+        response = getattr(exc, "response", None)
+        if isinstance(response, dict):
+            code = str(response.get("Error", {}).get("Code") or "")
+        if code:
+            print(f"папка копий отказала: {code}")
+        else:
+            print(f"копия остановилась: {type(exc).__name__}")
         raise SystemExit(6) from exc
