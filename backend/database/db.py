@@ -310,6 +310,18 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_messenger_followups_due "
             "ON messenger_followups(due_at)"
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS owner_events (
+                id TEXT PRIMARY KEY,
+                kind TEXT NOT NULL,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                mailed_at TEXT,
+                mail_tried_at TEXT
+            )
+            """
+        )
 
 def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in conn.execute("PRAGMA table_info(user_library)")}

@@ -9,10 +9,11 @@ BACKUP2_S3_ENDPOINT, BACKUP2_S3_ACCESS_KEY, BACKUP2_S3_SECRET_KEY
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -37,6 +38,25 @@ def parse_env(text: str) -> dict[str, str]:
         if key:
             out[key] = value
     return out
+
+
+def write_status(root: Path, ok: bool) -> None:
+    path = root / "data" / "backup_status.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "ok": bool(ok),
+        "at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    os.chmod(path, 0o600)
+
+
+def finish(root: Path, ok: bool, code: int) -> int:
+    try:
+        write_status(root, ok)
+    except OSError:
+        print("отметку копии не записал")
+    return code
 
 
 def backup_sqlite(source: Path, dest: Path) -> None:
@@ -278,7 +298,7 @@ def main() -> int:
     env_path = root / ".env"
     if not db_path.is_file():
         print(f"база не найдена: {db_path}")
-        return 1
+        return finish(root, False, 1)
     env = parse_env(env_path.read_text(encoding="utf-8")) if env_path.is_file() else {}
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     local_dir = Path(os.environ.get("SONGFORGE_BACKUP_DIR", "/root/backups/songforge"))
@@ -292,7 +312,7 @@ def main() -> int:
     primary = _shelf_from_env(env, "S3_")
     if primary is None or env.get("S3_ENABLED", "").lower() not in {"1", "true", "yes"}:
         print("хранилище песен не настроено, наружу копия не ушла")
-        return 2
+        return finish(root, False, 2)
 
     folder = backup_bucket_name(env)
     db_key = f"backups/db/songforge_{stamp}.db"
@@ -306,7 +326,7 @@ def main() -> int:
     )
     if db_state != "closed":
         print(f"копия базы в папке {folder} не оставлена: {db_state}")
-        return 3
+        return finish(root, False, 3)
     print(f"папка {folder}, база закрыта")
 
     if env_path.is_file():
@@ -320,7 +340,7 @@ def main() -> int:
         )
         if env_state != "closed":
             print(f"файл настроек в хранилище не оставлен: {env_state}")
-            return 3
+            return finish(root, False, 3)
         local_env = local_dir / f"env_{stamp}.env"
         local_env.write_bytes(env_path.read_bytes())
         os.chmod(local_env, 0o600)
@@ -355,7 +375,7 @@ def main() -> int:
         )
         if other_db != "closed":
             print(f"вторая полка, база не оставлена: {other_db}")
-            return 4
+            return finish(root, False, 4)
         if env_path.is_file():
             other_env = _upload_checked(
                 other,
@@ -366,7 +386,7 @@ def main() -> int:
             )
             if other_env != "closed":
                 print(f"вторая полка, настройки не оставлены: {other_env}")
-                return 4
+                return finish(root, False, 4)
         total, copied = _copy_missing_tracks(client, primary["bucket"], other, second["bucket"])
         _prune_prefix(other, second["bucket"], "backups/db/", KEEP)
         _prune_prefix(other, second["bucket"], "backups/env/", KEEP)
@@ -374,8 +394,8 @@ def main() -> int:
 
     if cron_error:
         print(cron_error)
-        return 5
-    return 0
+        return finish(root, False, 5)
+    return finish(root, True, 0)
 
 
 def _second_url(shelf: dict[str, str], key: str) -> str:
@@ -397,4 +417,8 @@ if __name__ == "__main__":
             print(f"папка копий отказала: {code}")
         else:
             print(f"копия остановилась: {type(exc).__name__}")
+        try:
+            write_status(Path(os.environ.get("SONGFORGE_ROOT", "/root/SongForge")), False)
+        except OSError:
+            print("отметку копии не записал")
         raise SystemExit(6) from exc

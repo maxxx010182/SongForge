@@ -229,6 +229,7 @@ class AdminService:
             },
             "tracks_published": int(published),
             "alerts": self._alerts(int(gen_stuck), int(gen_error)),
+            "incidents": self._incidents(),
         }
 
     @staticmethod
@@ -243,6 +244,15 @@ class AdminService:
         if llm_alert:
             alerts.insert(0, llm_alert)
         return alerts
+
+    @staticmethod
+    def _incidents() -> list[dict[str, str]]:
+        try:
+            from backend.services.owner_events import recent
+
+            return recent()
+        except Exception:
+            return []
 
     @staticmethod
     def _build_alerts(stuck: int, errors_24h: int) -> list[dict[str, str]]:

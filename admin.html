@@ -60,6 +60,10 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
       <span class="badge" id="roleBadge"></span>
     </header>
     <div id="alerts"></div>
+    <div class="sec" id="incidentSec">
+      <h2>Что случилось</h2>
+      <div id="incidents"><p class="muted">Пока тихо.</p></div>
+    </div>
     <div class="grid" id="stats"></div>
     <div class="sec" id="providerBalSec">
       <h2>Балансы провайдеров <button class="btn" type="button" id="balReload" style="margin-left:8px">Обновить</button></h2>
@@ -134,6 +138,17 @@ function renderStats(d){
   h+='<div class="card"><div class="n">'+((d.orders_paid_24h&&d.orders_paid_24h.count)||0)+'</div><div class="l">Оплат 24ч</div></div>';
   document.getElementById('stats').innerHTML=h;
   var al=d.alerts||[];document.getElementById('alerts').innerHTML=al.map(function(a){return'<div class="alert '+esc(a.level)+'">'+esc(a.message)+'</div>';}).join('');
+  renderIncidents(d.incidents||[]);
+}
+function renderIncidents(rows){
+  var el=document.getElementById('incidents');
+  if(!el)return;
+  if(!rows.length){el.innerHTML='<p class="muted">Пока тихо.</p>';return;}
+  el.innerHTML=rows.map(function(r){
+    var level=r.kind==='backup_missed'?'warning':'critical';
+    var when=String(r.created_at||'').slice(0,16);
+    return '<div class="alert '+level+'">'+esc(when)+' · '+esc(r.message)+'</div>';
+  }).join('');
 }
 function fmtCredits(n){
   if(n==null||n===undefined)return '—';

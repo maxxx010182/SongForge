@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sqlite3
 from pathlib import Path
 
@@ -7,6 +8,13 @@ spec = importlib.util.spec_from_file_location("backup_offsite", PATH)
 backup = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(backup)
+
+
+def test_status_mark_says_whether_the_copy_landed(tmp_path: Path):
+    backup.write_status(tmp_path, True)
+    data = json.loads((tmp_path / "data" / "backup_status.json").read_text(encoding="utf-8"))
+    assert data["ok"] is True
+    assert "T" in data["at"]
 
 
 def test_parse_env_skips_comments_and_keeps_values():

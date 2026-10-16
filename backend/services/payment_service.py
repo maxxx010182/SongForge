@@ -142,62 +142,95 @@ class PaymentService:
         provider_payment_id: str | None = None,
     ) -> dict | None:
         """Идемпотентное начисление: два webhook подряд не удвоят ноты."""
-        with get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM payment_orders WHERE id = ?",
-                (order_id,),
-            ).fetchone()
-            if not row:
-                return None
-            if str(row["status"] or "").lower() == "paid":
-                balance_row = conn.execute(
-                    "SELECT balance FROM users WHERE id = ?",
-                    (row["user_id"],),
+        missed = False
+        try:
+            with get_connection() as conn:
+                row = conn.execute(
+                    "SELECT * FROM payment_orders WHERE id = ?",
+                    (order_id,),
                 ).fetchone()
-                return {
-                    "order_id": order_id,
-                    "user_id": row["user_id"],
-                    "notes_added": 0,
-                    "balance": int(balance_row["balance"]) if balance_row else 0,
-                    "already_paid": True,
-                }
+                if not row:
+                    missed = True
+                elif str(row["status"] or "").lower() == "paid":
+                    balance_row = conn.execute(
+                        "SELECT balance FROM users WHERE id = ?",
+                        (row["user_id"],),
+                    ).fetchone()
+                    return {
+                        "order_id": order_id,
+                        "user_id": row["user_id"],
+                        "notes_added": 0,
+                        "balance": int(balance_row["balance"]) if balance_row else 0,
+                        "already_paid": True,
+                    }
+                else:
+                    # Атомарно: только один concurrent-worker пройдёт WHERE status='pending'
+                    cur = conn.execute(
+                        """
+                        UPDATE payment_orders
+                        SET status = 'paid',
+                            provider_payment_id = ?,
+                            paid_at = ?
+                        WHERE id = ? AND status = 'pending'
+                        """,
+                        (provider_payment_id or "", utc_now(), order_id),
+                    )
+                    if cur.rowcount != 1:
+                        again = conn.execute(
+                            "SELECT status FROM payment_orders WHERE id = ?",
+                            (order_id,),
+                        ).fetchone()
+                        if again and str(again["status"] or "").lower() == "paid":
+                            balance_row = conn.execute(
+                                "SELECT balance FROM users WHERE id = ?",
+                                (row["user_id"],),
+                            ).fetchone()
+                            return {
+                                "order_id": order_id,
+                                "user_id": row["user_id"],
+                                "notes_added": 0,
+                                "balance": int(balance_row["balance"]) if balance_row else 0,
+                                "already_paid": True,
+                            }
+                        missed = True
+                    else:
+                        credited = conn.execute(
+                            "UPDATE users SET balance = balance + ? WHERE id = ?",
+                            (int(row["notes_amount"]), row["user_id"]),
+                        )
+                        if credited.rowcount != 1:
+                            raise LookupError("notes were not added")
+                        balance_row = conn.execute(
+                            "SELECT balance FROM users WHERE id = ?",
+                            (row["user_id"],),
+                        ).fetchone()
+                        log.info(
+                            "mark_paid OK order=%s user=%s notes=+%s balance=%s",
+                            order_id,
+                            row["user_id"],
+                            int(row["notes_amount"]),
+                            int(balance_row["balance"]) if balance_row else 0,
+                        )
+                        return {
+                            "order_id": order_id,
+                            "user_id": row["user_id"],
+                            "notes_added": int(row["notes_amount"]),
+                            "balance": int(balance_row["balance"]) if balance_row else 0,
+                        }
+        except LookupError:
+            missed = True
+        if missed:
+            self._note_money_without_notes()
+        return None
 
-            # Атомарно: только один concurrent-worker пройдёт WHERE status='pending'
-            cur = conn.execute(
-                """
-                UPDATE payment_orders
-                SET status = 'paid',
-                    provider_payment_id = ?,
-                    paid_at = ?
-                WHERE id = ? AND status = 'pending'
-                """,
-                (provider_payment_id or "", utc_now(), order_id),
-            )
-            if cur.rowcount != 1:
-                return None
+    @staticmethod
+    def _note_money_without_notes() -> None:
+        try:
+            from backend.services.owner_events import MONEY, MONEY_TEXT, record
 
-            conn.execute(
-                "UPDATE users SET balance = balance + ? WHERE id = ?",
-                (int(row["notes_amount"]), row["user_id"]),
-            )
-            balance_row = conn.execute(
-                "SELECT balance FROM users WHERE id = ?",
-                (row["user_id"],),
-            ).fetchone()
-
-        log.info(
-            "mark_paid OK order=%s user=%s notes=+%s balance=%s",
-            order_id,
-            row["user_id"],
-            int(row["notes_amount"]),
-            int(balance_row["balance"]) if balance_row else 0,
-        )
-        return {
-            "order_id": order_id,
-            "user_id": row["user_id"],
-            "notes_added": int(row["notes_amount"]),
-            "balance": int(balance_row["balance"]) if balance_row else 0,
-        }
+            record(MONEY, MONEY_TEXT)
+        except Exception:
+            log.warning("money without notes was not recorded")
 
     def handle_webhook(self, provider: str, payload: dict) -> dict | None:
         provider = (provider or "").strip().lower()

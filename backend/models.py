@@ -397,6 +397,7 @@ class AdminDashboardResponse(BaseModel):
     orders_paid_24h: dict = {}
     tracks_published: int = 0
     alerts: list[dict] = []
+    incidents: list[dict] = []
 
 
 class AdminBalanceAdjustRequest(BaseModel):

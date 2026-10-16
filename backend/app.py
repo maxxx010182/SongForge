@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.120", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.121", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1980,12 +1980,30 @@ async def download_full_audio(
     return audio_access.stream_download(source, title=lib_title)
 
 
+def _note_no_song(exc: BaseException) -> None:
+    from backend.services.llm_chain import USER_LYRICS_FAIL_MESSAGE
+
+    if USER_LYRICS_FAIL_MESSAGE not in str(exc):
+        return
+    _note_no_song_text("Человек остался без песни. Попытку вернули.")
+
+
+def _note_no_song_text(text: str) -> None:
+    try:
+        from backend.services.owner_events import NO_SONG, record
+
+        record(NO_SONG, text)
+    except Exception:
+        log.warning("owner event was not saved")
+
+
 def _alert_owner_break(kind: str, exc: BaseException) -> None:
     """Телефон, если человек остался без песни. Сбой текста уже шлёт llm_signal."""
     try:
         from backend.services.llm_chain import LlmUnavailable, USER_LYRICS_FAIL_MESSAGE
 
         if isinstance(exc, LlmUnavailable) or USER_LYRICS_FAIL_MESSAGE in str(exc):
+            _note_no_song_text("Человек остался без песни. Попытку вернули.")
             return
         from backend.services.owner_alert import ping
 
@@ -1996,6 +2014,7 @@ def _alert_owner_break(kind: str, exc: BaseException) -> None:
         }.get(kind)
         if text:
             ping(text, fingerprint=kind)
+            _note_no_song_text(text)
     except Exception:
         log.warning("owner alert failed")
 
@@ -2032,6 +2051,7 @@ async def produce_song(
             )
         )
     except ValueError as exc:
+        _note_no_song(exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         log.exception("produce failed")
@@ -2103,6 +2123,7 @@ async def create_song(
         _refund_generation_start(
             mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
         )
+        _note_no_song(exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         _refund_generation_start(
@@ -2193,6 +2214,7 @@ async def start_music(
         _refund_generation_start(
             mode=mode, user=user, guest_id=guest_id, paid_user_id=paid_user_id
         )
+        _note_no_song(exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         _refund_generation_start(

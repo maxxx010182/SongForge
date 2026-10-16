@@ -7,6 +7,7 @@ from email.message import EmailMessage
 
 from backend.logger import log
 from backend.settings import (
+    ALERT_EMAIL,
     SITE_URL,
     SMTP_FROM,
     SMTP_HOST,
@@ -49,6 +50,31 @@ class EmailService:
             )
         )
 
+        self._deliver(msg)
+
+    def send_owner_note(self, text: str) -> bool:
+        """Короткое письмо владельцу. False, если почта не настроена или не ушла."""
+        if not self.is_configured():
+            log.warning("owner note skipped: smtp is off")
+            return False
+        to = ALERT_EMAIL
+        if "@" not in to:
+            log.warning("owner note skipped: no address")
+            return False
+        sender = SMTP_FROM or SMTP_USER or "noreply@sozdaipesnu.ru"
+        msg = EmailMessage()
+        msg["Subject"] = "СоздайСвоюПесню: нужна проверка"
+        msg["From"] = sender
+        msg["To"] = to
+        msg.set_content(text.strip() + "\n\nОткройте админку сайта.\n")
+        try:
+            self._deliver(msg)
+        except Exception:
+            log.warning("owner note was not sent")
+            return False
+        return True
+
+    def _deliver(self, msg: EmailMessage) -> None:
         try:
             if SMTP_USE_TLS:
                 with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
@@ -79,7 +105,7 @@ class EmailService:
                 "SMTP send failed host=%s port=%s to=%s: %s",
                 SMTP_HOST,
                 SMTP_PORT,
-                to_email,
+                msg["To"],
                 exc,
             )
             raise RuntimeError(
