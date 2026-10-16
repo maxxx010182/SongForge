@@ -19,7 +19,9 @@ class YandexClient:
         max_tokens: int = 400,
         temperature: float = 0.7,
         model: str = MODEL_LITE,
+        reserve: bool = False,
     ) -> str:
+        del reserve
         if not YANDEX_API_KEY:
             raise RuntimeError("YANDEX_API_KEY is not configured")
 

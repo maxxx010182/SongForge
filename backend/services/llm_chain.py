@@ -4,6 +4,8 @@
 Сонет не вызываем. Следующую модель зовём, когда предыдущая закончилась
 без текста: и на ошибку, и если ответ так и не пришёл. Пока запрос ещё
 идёт, вторую не стартуем. Короткий разбор идеи — один вызов первой модели.
+Помощник сайта передаёт reserve=True: тогда при пустом ответе идут
+следующие модели того же списка. Grok и Cloudflare на этом пути не зовём.
 Прямой Gemini с этого сервера не вызываем.
 """
 
@@ -82,8 +84,9 @@ class LlmChain:
         max_tokens: int = 400,
         temperature: float = 0.7,
         model: str = MODEL_LITE,
+        reserve: bool = False,
     ) -> str:
-        steps = self._ordered_steps(model)
+        steps = self._ordered_steps(model, reserve=reserve)
         if not steps:
             raise LlmUnavailable(USER_LYRICS_FAIL_MESSAGE)
         live = [step for step in steps if not _is_dead(step.provider, step.model)]
@@ -96,7 +99,7 @@ class LlmChain:
         for index, step in enumerate(live):
             if pro and index == 0:
                 timeout = _SONG_TIMEOUT
-            elif pro:
+            elif index > 0 and (pro or reserve):
                 timeout = _RESERVE_TIMEOUT
             else:
                 timeout = _SHORT_TIMEOUT
@@ -147,13 +150,16 @@ class LlmChain:
             "lyrics",
         }
 
-    def _ordered_steps(self, requested_model: str) -> list[_Step]:
+    def _ordered_steps(self, requested_model: str, *, reserve: bool = False) -> list[_Step]:
         steps: list[_Step] = []
         pro = self._is_pro(requested_model)
         if KIE_API_KEY:
             seen: list[str] = []
             if pro:
                 names = [*KIE_CLAUDE_MODELS, *KIE_MODELS]
+            elif reserve:
+                # Помощник: первая модель, и если текста нет — следующие из списка.
+                names = [*KIE_MODELS]
             else:
                 # Разбор идеи — один короткий ответ первой модели. Вторая здесь не нужна.
                 names = KIE_MODELS[:1]

@@ -23,6 +23,7 @@ class LlmClient(Protocol):
         max_tokens: int = 400,
         temperature: float = 0.7,
         model: str = ...,
+        reserve: bool = False,
     ) -> str: ...
 
 
