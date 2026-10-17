@@ -121,6 +121,14 @@ class CabinetService:
                     return name
         return "Аноним"
 
+    def user_owns_generation(self, user_id: str, generation_id: str) -> bool:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM generations WHERE id = ? AND user_id = ?",
+                (generation_id, user_id),
+            ).fetchone()
+        return row is not None
+
     def _generation_to_history_item(self, row) -> dict:
         plan = json.loads(row["plan_json"] or "{}")
         genre = plan.get("genre", "")

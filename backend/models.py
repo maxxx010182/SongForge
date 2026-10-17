@@ -354,6 +354,7 @@ class PaymentPackage(BaseModel):
 
 class CreatePaymentOrderRequest(BaseModel):
     package_id: str
+    generation_id: str | None = None
 
 
 class PaymentOrderResponse(BaseModel):

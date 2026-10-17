@@ -149,7 +149,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.121", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.122", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1798,11 +1798,15 @@ async def create_payment_order(
             "yes" if str(user.get("email") or "").strip() else "no",
             (request.headers.get("user-agent") or "")[:180],
         )
+        generation_id = payment_service.sanitize_generation_id(req.generation_id)
+        if generation_id and not cabinet.user_owns_generation(user["id"], generation_id):
+            generation_id = None
         order = payment_service.create_order(
             user_id=user["id"],
             package_id=req.package_id,
             user_email=str(user.get("email") or ""),
             user_display_name=str(user.get("display_name") or ""),
+            generation_id=generation_id,
         )
         return PaymentOrderResponse(
             order_id=order["order_id"],

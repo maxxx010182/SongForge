@@ -10,6 +10,8 @@ import re
 import uuid
 from typing import Any
 
+from urllib.parse import quote
+
 import requests
 
 from backend.database.db import get_connection, utc_now
@@ -55,8 +57,30 @@ PACKAGES: dict[str, dict[str, Any]] = {
     },
 }
 
+_GENERATION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,80}$")
+
 
 class PaymentService:
+    @staticmethod
+    def sanitize_generation_id(value: str | None) -> str | None:
+        raw = str(value or "").strip()
+        if not _GENERATION_ID_RE.fullmatch(raw):
+            return None
+        if not re.search(r"[A-Za-z-]", raw):
+            return None
+        return raw
+
+    @staticmethod
+    def return_urls(order_id: str, generation_id: str | None = None) -> tuple[str, str]:
+        success = f"{SITE_URL}/?payment=success&order={order_id}"
+        fail = f"{SITE_URL}/?payment=failed"
+        gid = PaymentService.sanitize_generation_id(generation_id)
+        if gid:
+            token = quote(gid, safe="-")
+            success = f"{success}&g={token}"
+            fail = f"{fail}&g={token}"
+        return success, fail
+
     def list_packages(self) -> list[dict]:
         return list(PACKAGES.values())
 
@@ -67,6 +91,7 @@ class PaymentService:
         package_id: str,
         user_email: str = "",
         user_display_name: str = "",
+        generation_id: str | None = None,
     ) -> dict:
         pkg_str = str(package_id or "").strip()
         if pkg_str.isdigit():
@@ -105,6 +130,7 @@ class PaymentService:
             provider=provider,
             user_email=user_email,
             user_display_name=user_display_name,
+            generation_id=generation_id,
         )
 
         return {
@@ -258,6 +284,7 @@ class PaymentService:
         provider: str,
         user_email: str = "",
         user_display_name: str = "",
+        generation_id: str | None = None,
     ) -> str | None:
         if provider == "stub":
             return None
@@ -268,6 +295,7 @@ class PaymentService:
                 package=package,
                 user_email=user_email,
                 user_display_name=user_display_name,
+                generation_id=generation_id,
             )
         return None
 
@@ -279,6 +307,7 @@ class PaymentService:
         package: dict,
         user_email: str,
         user_display_name: str,
+        generation_id: str | None = None,
     ) -> str | None:
         """Создание ссылки — как в рабочем 2.11.43 (до экспериментов с API v2)."""
         if not GETPLATINUM_API_KEY or not GETPLATINUM_ACCOUNT:
@@ -335,10 +364,14 @@ class PaymentService:
                 "name": safe_name,
             },
             "notificationUrl": f"{SITE_URL}/api/payment/webhook/getplatinum",
-            "successUrl": f"{SITE_URL}/?payment=success&order={order_id}",
-            "failUrl": f"{SITE_URL}/?payment=failed",
             "customParams": {"package_id": package["id"], "notes": notes},
         }
+        success_url, fail_url = self.return_urls(order_id, generation_id)
+        payload["successUrl"] = success_url
+        payload["failUrl"] = fail_url
+        gid = self.sanitize_generation_id(generation_id)
+        if gid:
+            payload["customParams"]["generation_id"] = gid
 
         log.info(
             "GetPlatinum init send url=%s dealId=%s clientId=%s amount=%s notes=%s "
