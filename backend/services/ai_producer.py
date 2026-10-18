@@ -6,9 +6,11 @@ from backend.services.music_provider_service import MusicProviderService
 from backend.services.cabinet_service import CabinetService
 from backend.services.history import HistoryService
 from backend.services.prompt_builder import PromptBuilder
+from backend.services.idea_parser import parse_idea
 from backend.services.plan_overrides import apply_user_to_plan
 from backend.services.llm_factory import get_llm_client
-from backend.utils.text import lyrics_look_lazy
+from backend.utils.suno_payload import duration_from_lyrics
+from backend.utils.text import lyrics_look_lazy, sung_lyrics_len
 
 
 class AiProducer:
@@ -182,6 +184,20 @@ class AiProducer:
                 vocal_hint=vocal_hint,
                 backing_vocal=backing_vocal,
             )
+
+        requested_sec = parse_idea(idea).duration_sec if idea else 0
+        plan.duration_sec = duration_from_lyrics(
+            lyrics,
+            requested_sec=requested_sec,
+            idea=idea,
+            instrumental=plan.instrumental,
+        )
+        log.info(
+            "Music start duration: %s sec (requested=%s sung_len=%s)",
+            plan.duration_sec,
+            requested_sec,
+            sung_lyrics_len(lyrics),
+        )
 
         task_ref = self._music.create_task(
             lyrics=lyrics,

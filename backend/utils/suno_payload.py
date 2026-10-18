@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import re
 
-from backend.utils.text import clean_text, truncate
+from backend.utils.text import (
+    clean_text,
+    idea_allows_short_song,
+    sung_lyrics_len,
+    truncate,
+)
 
 # Suno V6: prompt до 5000; style в доке до 1000 — держим компактным (200).
 SUNO_STYLE_MAX_LEN = 200
@@ -12,8 +17,12 @@ SUNO_TITLE_MAX_LEN = 80
 SUNO_PROMPT_MAX_LEN = 5000
 SUNO_NEGATIVE_MAX_LEN = 500
 SUNO_DURATION_DEFAULT = 240
+SUNO_DURATION_LONG = 300
 SUNO_DURATION_MIN = 10
 SUNO_DURATION_MAX = 360
+# Поющиеся строки (без [Verse]/[Chorus]): обычная песня ~4 мин, дальше 5 и 6.
+SUNO_BODY_LEN_FIVE_MIN = 2300
+SUNO_BODY_LEN_SIX_MIN = 3200
 
 
 def clamp_suno_duration(sec: int | None) -> int:
@@ -24,6 +33,37 @@ def clamp_suno_duration(sec: int | None) -> int:
     if value <= 0:
         return SUNO_DURATION_DEFAULT
     return max(SUNO_DURATION_MIN, min(value, SUNO_DURATION_MAX))
+
+
+def duration_from_lyrics(
+    lyrics: str,
+    *,
+    requested_sec: int = 0,
+    idea: str = "",
+    instrumental: bool = False,
+) -> int:
+    """Длительность под готовый текст. Если человек указал минуты — его число.
+
+    Потолок V6 — 360 сек (6 мин). 8 минут слать нельзя.
+    Детские и инструментал не растягиваем.
+    """
+    try:
+        requested = int(requested_sec or 0)
+    except (TypeError, ValueError):
+        requested = 0
+    if requested > 0:
+        return clamp_suno_duration(requested)
+    if instrumental:
+        return SUNO_DURATION_DEFAULT
+    if idea_allows_short_song(idea):
+        return SUNO_DURATION_DEFAULT
+
+    body_len = sung_lyrics_len(lyrics)
+    if body_len >= SUNO_BODY_LEN_SIX_MIN:
+        return SUNO_DURATION_MAX
+    if body_len >= SUNO_BODY_LEN_FIVE_MIN:
+        return SUNO_DURATION_LONG
+    return SUNO_DURATION_DEFAULT
 
 _TITLE_BAD_RE = re.compile(
     r"^\[|crowd noise|stadium ambience|intro\s*[-—]|outro\s*[-—]|verse\s*\d",

@@ -21,8 +21,8 @@ from backend.services.style_enforcer import enforce_style
 from backend.services.llm_factory import LlmClient
 from backend.logger import log
 from backend.utils.suno_payload import (
-    clamp_suno_duration,
     compact_suno_style,
+    duration_from_lyrics,
     sanitize_negative_tags,
     sanitize_suno_title,
 )
@@ -36,6 +36,7 @@ from backend.utils.text import (
     lyrics_look_lazy,
     resolve_lyrics_language,
     scrub_idea_echo_from_lyrics,
+    sung_lyrics_len,
     truncate,
 )
 
@@ -191,7 +192,6 @@ class PromptBuilder:
 
         plan = self._analysis_to_plan(analysis, payload, parsed=parsed)
         plan.instrumental = instrumental
-        plan.duration_sec = clamp_suno_duration(parsed.duration_sec or plan.duration_sec)
         plan = apply_user_to_plan(
             plan,
             genre=genre,
@@ -237,6 +237,19 @@ class PromptBuilder:
                 payload.lyrics = self.generate_lyrics(idea, plan)
         elif plan.instrumental:
             payload.lyrics = ""
+
+        plan.duration_sec = duration_from_lyrics(
+            payload.lyrics,
+            requested_sec=parsed.duration_sec,
+            idea=analyst_idea,
+            instrumental=plan.instrumental,
+        )
+        log.info(
+            "Duration from lyrics: %s sec (requested=%s sung_len=%s)",
+            plan.duration_sec,
+            parsed.duration_sec or 0,
+            sung_lyrics_len(payload.lyrics),
+        )
 
         if plan.instrumental:
             extra_neg = "vocals, singing, choir, rap vocals, spoken word"

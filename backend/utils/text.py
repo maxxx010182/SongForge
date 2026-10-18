@@ -79,6 +79,11 @@ def _lyric_body_lines(lyrics: str) -> list[str]:
     return lines
 
 
+def sung_lyrics_len(lyrics: str) -> int:
+    """Длина поющихся строк без тегов секций."""
+    return sum(len(line) for line in _lyric_body_lines(lyrics or ""))
+
+
 def idea_allows_short_song(idea: str) -> bool:
     """Детские/колыбельные — короче; остальные целимся в ~4 минуты."""
     blob = (idea or "").lower()

@@ -1,5 +1,13 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.122. Next: block 47. Do not run blocks 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.123. Next: block 48. Do not run blocks 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 48) DURATION FOLLOWS LYRICS LENGTH ===
+# One line at a time. Skip lines that start with #.
+# First the update. Paste the health line.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+
+curl -s https://sozdaipesnu.ru/api/health
+# expected: "version":"2.11.123"
 
 === 47) CLAIM BOTH SONGS 149 AFTER PAYMENT ===
 # One line at a time. Skip lines that start with #.
