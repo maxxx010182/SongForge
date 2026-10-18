@@ -105,6 +105,24 @@ class MusicProviderService:
             raise last_error
         raise RuntimeError("Music generation failed")
 
+    def create_on(
+        self,
+        provider: MusicProviderName,
+        *,
+        lyrics: str,
+        style: str,
+        title: str,
+        plan: ProductionPlan,
+    ) -> str:
+        """Один канал, без цепочки. Запас после сбоя Suno идёт только в ApiPass."""
+        name = self.normalize_provider(provider)
+        return self._client(name).create_task(
+            lyrics=lyrics,
+            style=style,
+            title=title,
+            plan=plan,
+        )
+
     def get_status(
         self,
         task_id: str,

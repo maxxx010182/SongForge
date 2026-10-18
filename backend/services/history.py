@@ -183,14 +183,69 @@ class HistoryService:
         }
 
     def get_by_task(self, task_id: str) -> dict | None:
+        needle = (task_id or "").strip()
+        if not needle:
+            return None
         with get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM generations WHERE task_id = ?",
-                (task_id,),
+                (needle,),
             ).fetchone()
+            if not row:
+                row = conn.execute(
+                    "SELECT * FROM generations WHERE prior_task_id = ?",
+                    (needle,),
+                ).fetchone()
         if not row:
             return None
         return dict(row)
+
+    def claim_music_fallback(self, production_id: str) -> bool:
+        """Один раз: Suno уже принял задачу и сломался. True — этот процесс ведёт запас."""
+        pid = (production_id or "").strip()
+        if not pid:
+            return False
+        with get_connection() as conn:
+            cur = conn.execute(
+                """
+                UPDATE generations
+                SET music_fallback = 1
+                WHERE id = ?
+                  AND COALESCE(music_fallback, 0) = 0
+                  AND lower(COALESCE(music_provider, '')) = 'sunoapi'
+                  AND lower(COALESCE(status, '')) = 'generating'
+                """,
+                (pid,),
+            )
+            return cur.rowcount == 1
+
+    def switch_to_reserve_task(
+        self,
+        *,
+        production_id: str,
+        old_task_id: str,
+        new_task_id: str,
+        music_provider: str = "apipass",
+    ) -> None:
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE generations SET
+                    prior_task_id = ?,
+                    task_id = ?,
+                    music_provider = ?,
+                    status = 'generating',
+                    fail_code = NULL,
+                    fail_msg = NULL
+                WHERE id = ?
+                """,
+                (
+                    old_task_id,
+                    new_task_id,
+                    music_provider,
+                    production_id,
+                ),
+            )
 
     def get_by_id(self, production_id: str) -> dict | None:
         with get_connection() as conn:
