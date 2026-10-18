@@ -439,6 +439,18 @@ class AdminBoostTrackRequest(BaseModel):
     comments: int = 3
 
 
+class SiteNoticeResponse(BaseModel):
+    on: bool = False
+    title: str = ""
+    text: str = ""
+
+
+class AdminSiteNoticeRequest(BaseModel):
+    on: bool
+    title: str = ""
+    text: str = ""
+
+
 class AdminPublishUnclaimedRequest(BaseModel):
     generation_id: str
     variant: str = "A"

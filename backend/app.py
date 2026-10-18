@@ -52,7 +52,9 @@ from backend.models import (
     AdminUpdateAuthorNameRequest,
     AdminBoostTrackRequest,
     AdminPublishUnclaimedRequest,
+    AdminSiteNoticeRequest,
     AdminMeResponse,
+    SiteNoticeResponse,
     AuthProvidersResponse,
     TelegramAuthRequest,
     TrackCommentCreateRequest,
@@ -62,6 +64,7 @@ from backend.models import (
     UserInfo,
 )
 from backend.services.admin_service import AdminService
+from backend.services import site_notice as site_notice_service
 from backend.services.showcase_admin_service import ShowcaseAdminService
 from backend.services.ai_producer import AiProducer
 from backend.services.music_provider_service import MusicProviderService
@@ -149,7 +152,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.124", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.125", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -713,6 +716,11 @@ async def health():
     }
 
 
+@app.get("/api/site-notice", response_model=SiteNoticeResponse)
+async def public_site_notice():
+    return SiteNoticeResponse(**site_notice_service.get_notice())
+
+
 @app.post("/api/webhooks/sunoapi")
 async def sunoapi_webhook(_payload: dict | None = None):
     """Заглушка для callBackUrl sunoapi.org — статус опрашиваем через poll."""
@@ -756,6 +764,32 @@ async def admin_dashboard(admin_user: dict = Depends(require_admin_user)):
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return AdminDashboardResponse(**admin_service.get_dashboard())
+
+
+@app.get("/api/admin/site-notice", response_model=SiteNoticeResponse)
+async def admin_get_site_notice(admin_user: dict = Depends(require_admin_user)):
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "dashboard:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return SiteNoticeResponse(**site_notice_service.get_notice())
+
+
+@app.post("/api/admin/site-notice", response_model=SiteNoticeResponse)
+async def admin_set_site_notice(
+    req: AdminSiteNoticeRequest,
+    admin_user: dict = Depends(require_admin_user),
+):
+    role = admin_user.get("admin_role") or ""
+    if role not in {"super_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    notice = site_notice_service.set_notice(
+        on=req.on,
+        title=req.title,
+        text=req.text,
+    )
+    log.info("Site notice %s by %s", "on" if notice["on"] else "off", role)
+    return SiteNoticeResponse(**notice)
 
 
 @app.get("/api/admin/provider-balances")

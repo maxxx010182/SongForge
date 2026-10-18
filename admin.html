@@ -64,6 +64,25 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
       <h2>Что случилось</h2>
       <div id="incidents"><p class="muted">Пока тихо.</p></div>
     </div>
+    <div class="sec" id="noticeSec">
+      <h2>Объявление на главной</h2>
+      <p class="muted" style="font-size:.8rem;margin-bottom:12px">Большая плашка под шапкой сайта. Пока галочка включена — её видят все.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px;font-size:.9rem">
+        <input type="checkbox" id="noticeOn"> Показать на сайте
+      </label>
+      <div class="row">
+        <div>
+          <div class="muted" style="font-size:.72rem;margin-bottom:4px">Заголовок</div>
+          <input id="noticeTitle" maxlength="120" value="Ведутся технические работы">
+        </div>
+      </div>
+      <div class="muted" style="font-size:.72rem;margin-bottom:4px">Текст</div>
+      <textarea id="noticeText" rows="3" maxlength="500">Просим немного подождать. Извиняемся за временные неудобства.</textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" type="button" id="noticeSave">Сохранить</button>
+        <span class="muted" id="noticeMsg"></span>
+      </div>
+    </div>
     <div class="grid" id="stats"></div>
     <div class="sec" id="providerBalSec">
       <h2>Балансы провайдеров <button class="btn" type="button" id="balReload" style="margin-left:8px">Обновить</button></h2>
@@ -218,6 +237,32 @@ async function loadGen(){
     return '<tr><td class="muted">'+esc((g.created_at||'').slice(0,16))+'</td><td>'+title+'</td>'+genKindCell(g.kind)+'<td>'+who+'</td><td>'+esc(g.note_label||'нет')+'</td><td>'+esc(g.song_label||'нет')+'</td><td>'+fail+'</td><td style="white-space:nowrap">'+audioHtml+'</td></tr>';
   }).join('')||'<tr><td colspan="8" class="muted">Пусто</td></tr>';
   loadPays();
+}
+async function loadNotice(){
+  try{
+    var d=await api('/api/admin/site-notice');
+    document.getElementById('noticeOn').checked=!!d.on;
+    document.getElementById('noticeTitle').value=d.title||'Ведутся технические работы';
+    document.getElementById('noticeText').value=d.text||'Просим немного подождать. Извиняемся за временные неудобства.';
+  }catch(e){}
+}
+async function saveNotice(){
+  var msg=document.getElementById('noticeMsg');
+  msg.textContent='Сохраняем…';
+  try{
+    var d=await api('/api/admin/site-notice',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        on:document.getElementById('noticeOn').checked,
+        title:document.getElementById('noticeTitle').value,
+        text:document.getElementById('noticeText').value
+      })
+    });
+    msg.textContent=d.on?'Плашка на сайте включена.':'Плашка скрыта.';
+  }catch(e){
+    msg.textContent=e.message||'Не удалось сохранить';
+  }
 }
 async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
   document.getElementById('userBody').innerHTML=rows.map(function(u){
@@ -405,6 +450,8 @@ async function init(){
   document.getElementById('adminWho').textContent=(me.display_name||'')+(me.email?' · '+me.email:'');
   buildNav();
   loadDash();
+  loadNotice();
+  document.getElementById('noticeSave').onclick=saveNotice;
   if(!has('admins:manage'))document.getElementById('panelAdmins').innerHTML='<p class="muted">Раздел только для super_admin</p>';
   document.getElementById('genReload').onclick=loadGen;
   document.getElementById('balReload').onclick=loadProviderBal;
