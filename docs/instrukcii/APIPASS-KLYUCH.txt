@@ -25,6 +25,13 @@
    Стало:
    APIPASS_API_KEY=новый_ключ_из_кабинета
 
+   Каждая настройка — ОТДЕЛЬНАЯ строка. Так нельзя (ключ сломан, будет 401):
+   APIPASS_API_KEY=apk_xxxxxDEV_TOPUP_ENABLED=true
+
+   Так надо:
+   APIPASS_API_KEY=apk_xxxxx
+   DEV_TOPUP_ENABLED=true
+
 4. Сохранить и выйти:
    Ctrl+O   (записать)
    Enter
