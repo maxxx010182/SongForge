@@ -54,6 +54,8 @@ from backend.models import (
     AdminPublishUnclaimedRequest,
     AdminSiteNoticeRequest,
     AdminMeResponse,
+    GiftLinkRequest,
+    GiftLinkResponse,
     SiteNoticeResponse,
     AuthProvidersResponse,
     TelegramAuthRequest,
@@ -64,6 +66,7 @@ from backend.models import (
     UserInfo,
 )
 from backend.services.admin_service import AdminService
+from backend.services.gift_service import GiftService, OCCASION_DEFAULTS
 from backend.services import site_notice as site_notice_service
 from backend.services.showcase_admin_service import ShowcaseAdminService
 from backend.services.ai_producer import AiProducer
@@ -130,6 +133,7 @@ auth_service = AuthService()
 email_service = EmailService()
 vk_auth_service = VkAuthService()
 cabinet = CabinetService()
+gift_service = GiftService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
 beta_guards = BetaGuards()
@@ -152,7 +156,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.125", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.126", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -594,6 +598,170 @@ async def track_share_page(library_id: str, request: Request):
             headers={**headers, "Content-Length": str(len(raw))},
         )
     return HTMLResponse(content=html, headers=headers)
+
+
+def _gift_track_or_404(gift_id: str):
+    gift = gift_service.get_by_id(gift_id)
+    if not gift:
+        raise HTTPException(status_code=404, detail="Подарок не найден")
+    row = cabinet.get_library_item_by_id(gift["library_id"])
+    if not row:
+        raise HTTPException(status_code=404, detail="Песня больше недоступна")
+    return gift, row
+
+
+@app.api_route("/g/{gift_id}", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def gift_share_page(gift_id: str, request: Request):
+    from backend.gift_page import render_gift_bot_page, render_gift_page
+    from backend.share_page import is_link_preview_bot
+
+    gift, row = _gift_track_or_404(gift_id)
+    title = (row["title"] or "").strip() or "Песня"
+    cover = (row["image_url"] or "").strip()
+    base = _public_site_base(request)
+    bot = is_link_preview_bot(request.headers.get("user-agent"))
+    if request.method == "GET":
+        try:
+            from backend.og_image import ensure_og_jpeg_file
+
+            fallback = ROOT_DIR / "assets" / "logo_new.png"
+            if not fallback.is_file():
+                fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+            await run_in_threadpool(
+                ensure_og_jpeg_file,
+                library_id=f"gift-{gift_id}",
+                cover_url=cover,
+                cache_dir=UPLOADS_DIR / "og",
+                fallback_path=fallback if fallback.is_file() else None,
+            )
+        except Exception as exc:
+            log.warning("gift og warm-up failed for %s: %s", gift_id, exc)
+    if bot:
+        html = render_gift_bot_page(
+            site_url=base,
+            gift_id=gift_id,
+            title=title,
+            to_line=gift["to_line"],
+            dedication=gift["dedication"],
+            image_url=cover,
+        )
+    else:
+        html = render_gift_page(
+            site_url=base,
+            gift_id=gift_id,
+            title=title,
+            to_line=gift["to_line"],
+            from_line=gift["from_line"],
+            dedication=gift["dedication"],
+            occasion=gift["occasion"],
+            image_url=cover,
+        )
+    headers = {
+        "Cache-Control": "public, max-age=60" if bot else "public, max-age=120",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if request.method == "HEAD":
+        raw = html.encode("utf-8")
+        return Response(
+            content=b"",
+            media_type="text/html; charset=utf-8",
+            headers={**headers, "Content-Length": str(len(raw))},
+        )
+    return HTMLResponse(content=html, headers=headers)
+
+
+@app.api_route("/g/{gift_id}/og.jpg", methods=["GET", "HEAD"])
+async def gift_og_jpeg(gift_id: str):
+    from backend.og_image import ensure_og_jpeg_file
+
+    gift, row = _gift_track_or_404(gift_id)
+    fallback = ROOT_DIR / "assets" / "logo_new.png"
+    if not fallback.is_file():
+        fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
+    path = await run_in_threadpool(
+        ensure_og_jpeg_file,
+        library_id=f"gift-{gift_id}",
+        cover_url=(row["image_url"] or "").strip(),
+        cache_dir=UPLOADS_DIR / "og",
+        fallback_path=fallback if fallback.is_file() else None,
+    )
+    if path is None or not path.is_file():
+        raise HTTPException(status_code=404, detail="Нет обложки")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+@app.get("/api/gift/{gift_id}/listen")
+async def listen_gift_track(gift_id: str, request: Request):
+    gift, row = _gift_track_or_404(gift_id)
+    if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    return audio_access.stream_playback(
+        row["audio_url"],
+        range_header=request.headers.get("range"),
+    )
+
+
+@app.get("/api/gift/occasions")
+async def gift_occasions():
+    return [
+        {"id": key, "to": val["to"], "hint": val["hint"]}
+        for key, val in OCCASION_DEFAULTS.items()
+    ]
+
+
+@app.get("/api/library/{library_id}/gift", response_model=GiftLinkResponse)
+async def get_library_gift(
+    library_id: str,
+    request: Request,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
+    gift = gift_service.get_for_library(user_id=user["id"], library_id=library_id)
+    if not gift:
+        raise HTTPException(status_code=404, detail="Ссылки ещё нет")
+    base = _public_site_base(request)
+    return GiftLinkResponse(
+        id=gift["id"],
+        url=f"{base}/g/{gift['id']}",
+        occasion=gift["occasion"],
+        to_line=gift["to_line"],
+        from_line=gift["from_line"],
+        dedication=gift["dedication"],
+    )
+
+
+@app.post("/api/library/{library_id}/gift", response_model=GiftLinkResponse)
+async def save_library_gift(
+    library_id: str,
+    req: GiftLinkRequest,
+    request: Request,
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
+    gift = gift_service.upsert(
+        user_id=user["id"],
+        library_id=library_id,
+        occasion=req.occasion,
+        to_line=req.to_line,
+        from_line=req.from_line or (user.get("display_name") or ""),
+    )
+    base = _public_site_base(request)
+    return GiftLinkResponse(
+        id=gift["id"],
+        url=f"{base}/g/{gift['id']}",
+        occasion=gift["occasion"],
+        to_line=gift["to_line"],
+        from_line=gift["from_line"],
+        dedication=gift["dedication"],
+    )
 
 
 @app.get("/api/explore/{library_id}/cover")

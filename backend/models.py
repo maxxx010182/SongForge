@@ -439,6 +439,21 @@ class AdminBoostTrackRequest(BaseModel):
     comments: int = 3
 
 
+class GiftLinkRequest(BaseModel):
+    occasion: str = "simple"
+    to_line: str = ""
+    from_line: str = ""
+
+
+class GiftLinkResponse(BaseModel):
+    id: str
+    url: str
+    occasion: str
+    to_line: str
+    from_line: str
+    dedication: str
+
+
 class SiteNoticeResponse(BaseModel):
     on: bool = False
     title: str = ""

@@ -138,6 +138,24 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS gift_links (
+                id TEXT PRIMARY KEY,
+                library_id TEXT NOT NULL UNIQUE,
+                user_id TEXT NOT NULL,
+                occasion TEXT NOT NULL DEFAULT 'simple',
+                to_line TEXT NOT NULL DEFAULT '',
+                from_line TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_gift_links_user_id ON gift_links(user_id)"
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS payment_orders (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
