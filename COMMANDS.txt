@@ -2,8 +2,80 @@ SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.123. Next: block 49 (look, read only). Then block 48 (update). Do not run blocks 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 49) PAY PATH, READ ONLY ===
-# On the server, where the prompt is root@. One line. Paste the output. No keys.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-pay-path.py?$(date +%s)" -o /tmp/check-pay-path.py; /root/SongForge/venv/bin/python /tmp/check-pay-path.py
+# On the server, where the prompt is root@. Paste this WHOLE block, from the python line through PY.
+# GitHub raw is 404 without login. This reads the database on the server. No keys.
+/root/SongForge/venv/bin/python - <<'PY'
+from datetime import datetime, timedelta, timezone
+import sqlite3
+from pathlib import Path
+DB=Path("/root/SongForge/data/songforge.db")
+DAYS=14
+def parse(raw):
+    t=(raw or "").strip().replace("Z","+00:00")
+    if not t: return None
+    try: s=datetime.fromisoformat(t[:32])
+    except ValueError: return None
+    if s.tzinfo is None: s=s.replace(tzinfo=timezone.utc)
+    return s.astimezone(timezone.utc)
+def msk(raw):
+    s=parse(raw)
+    return "?" if s is None else (s+timedelta(hours=3)).strftime("%d.%m %H:%M")
+def short(t,n=32): return " ".join((t or "").split())[:n]
+def bought(r): return int(r["purchased"] or 0)==1 or int(r["note_charged"] or 0)==1
+if not DB.is_file():
+    print("базы нет:", DB); raise SystemExit
+since=(datetime.now(timezone.utc)-timedelta(days=DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
+c=sqlite3.connect(DB); c.row_factory=sqlite3.Row
+gens=c.execute("SELECT id,user_id,substr(created_at,1,19) AS at,status,title,purchased,note_charged FROM generations WHERE created_at>=? ORDER BY created_at",(since,)).fetchall()
+pays=c.execute("SELECT user_id,substr(created_at,1,19) AS at,substr(COALESCE(paid_at,''),1,19) AS paid,status,package_id,notes_amount,price_rub FROM payment_orders WHERE created_at>=? OR COALESCE(paid_at,'')>=? ORDER BY created_at",(since,since)).fetchall()
+ok=[g for g in gens if (g["status"] or "").lower()=="success"]
+print(f"с {DAYS} дней: песен {len(gens)}, готовых {len(ok)}, выкуплено {sum(1 for g in ok if bought(g))}, проб без выкупа {sum(1 for g in ok if not bought(g))}")
+print(f"заказов {len(pays)}, оплачено {sum(1 for p in pays if (p['status'] or '').lower()=='paid')}")
+by,payu={},{}
+for g in gens:
+    u=(g["user_id"] or "").strip()
+    if u: by.setdefault(u,[]).append(g)
+for p in pays:
+    u=(p["user_id"] or "").strip()
+    if u: payu.setdefault(u,[]).append(p)
+interesting=set(payu)|{u for u,rows in by.items() if any(bought(g) for g in rows)}
+counts={"выкупил первую":0,"выкупил следующую":0,"оплатил, песню не выкупил":0,"выкупил без свежей оплаты":0}
+print("--- ПУТЬ ПО ЛЮДЯМ ---")
+shown=0
+for uid in sorted(interesting, key=lambda u: (by.get(u) or payu.get(u) or [{"at":""}])[-1]["at"], reverse=True):
+    user=c.execute("SELECT display_name,balance FROM users WHERE id=?",(uid,)).fetchone()
+    name=short((user["display_name"] if user else "") or "без имени",24)
+    bal=user["balance"] if user else "?"
+    songs=by.get(uid,[]); orders=payu.get(uid,[])
+    success=[g for g in songs if (g["status"] or "").lower()=="success"]
+    first=success[0] if success else None
+    bought_songs=[g for g in success if bought(g)]
+    paid_orders=[p for p in orders if (p["status"] or "").lower()=="paid"]
+    if first and bought(first): v="выкупил первую"
+    elif bought_songs and first and not bought(first): v="выкупил следующую"
+    elif paid_orders and not bought_songs: v="оплатил, песню не выкупил"
+    elif bought_songs: v="выкупил без свежей оплаты"
+    else: continue
+    counts[v]+=1; shown+=1
+    if shown>25: continue
+    print(f"\n{name} | нот сейчас {bal} | {v}")
+    for g in songs[-6:]:
+        lib=c.execute("SELECT COUNT(*) AS n FROM user_library WHERE generation_id=?",(g["id"],)).fetchone()["n"]
+        flag="выкуп" if bought(g) else (g["status"] or "")
+        print(f"  песня {msk(g['at'])} | {short(g['title'] or '',32)} | {flag} | фонотека {lib}")
+    for p in orders[-4:]:
+        print(f"  заказ {msk(p['paid'] or p['at'])} | {p['status']} | {p['package_id']} | {p['notes_amount']} нот | {p['price_rub']} р")
+if shown>25: print(f"\nещё {shown-25} человек")
+print("\n--- СВОДКА ---")
+for k,n in counts.items(): print(f"{k}: {n}")
+print("\n--- ПОСЛЕДНИЕ ГОТОВЫЕ ---")
+for g in ok[-12:]:
+    uid=(g["user_id"] or "").strip(); name="гость"
+    if uid:
+        user=c.execute("SELECT display_name FROM users WHERE id=?",(uid,)).fetchone()
+        name=short((user["display_name"] if user else "") or "без имени",20)
+    print(f"{msk(g['at'])} | {'выкуп' if bought(g) else 'проба'} | {name} | {short(g['title'] or '',34)}")
+PY
 
 === 48) DURATION FOLLOWS LYRICS LENGTH ===
 # One line at a time. Skip lines that start with #.
