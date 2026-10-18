@@ -1,5 +1,12 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.124. Next: block 51 (look, why song fail). Do not run blocks 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.124. Next: block 52 after a fresh ApiPass key is in .env. Do not run blocks 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 52) RESTART AFTER NEW APIPASS KEY ===
+# After APIPASS_API_KEY in /root/SongForge/.env is the current key from the ApiPass cabinet.
+# Do not paste the key into chat. One line at a time.
+pm2 restart songforge --update-env
+
+pm2 restart songforge-worker --update-env
 
 === 51) LAST FAILED SONGS, READ ONLY ===
 # On the server, where the prompt is root@. One line. Paste the output. No keys.
