@@ -2,42 +2,8 @@ SongForge -- SERVER COMMANDS (copy ONE line at a time)
 Version: 2.11.124. Next: block 51 (look, why song fail). Do not run blocks 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 51) LAST FAILED SONGS, READ ONLY ===
-# On the server, where the prompt is root@. Paste this WHOLE block through PY. Output back here. No keys.
-/root/SongForge/venv/bin/python - <<'PY'
-from datetime import datetime, timedelta, timezone
-import sqlite3
-from pathlib import Path
-DB=Path("/root/SongForge/data/songforge.db")
-def msk(raw):
-    t=(raw or "").strip().replace("Z","+00:00")
-    try: s=datetime.fromisoformat(t[:32])
-    except Exception: return (raw or "")[:16]
-    if s.tzinfo is None: s=s.replace(tzinfo=timezone.utc)
-    return (s+timedelta(hours=3)).strftime("%d.%m %H:%M")
-c=sqlite3.connect(DB); c.row_factory=sqlite3.Row
-cols={r[1] for r in c.execute("PRAGMA table_info(generations)")}
-extra=""
-if "music_fallback" in cols: extra+=", COALESCE(music_fallback,0) AS fb"
-else: extra+=", 0 AS fb"
-if "prior_task_id" in cols: extra+=", substr(COALESCE(prior_task_id,''),1,12) AS prior"
-else: extra+=", '' AS prior"
-rows=c.execute("SELECT substr(created_at,1,19) AS at, status, substr(COALESCE(title,''),1,28) AS title, COALESCE(music_provider,'') AS prov, substr(COALESCE(fail_msg,''),1,80) AS fail, substr(COALESCE(task_id,''),1,14) AS task"+extra+" FROM generations ORDER BY created_at DESC LIMIT 8").fetchall()
-print("--- LAST SONGS ---")
-for r in rows:
-    print(f"{msk(r['at'])} | {r['status']} | {r['prov'] or '-'} | запас {r['fb']} | prior {r['prior'] or '-'} | {r['title']} | {r['fail'] or '-'}")
-print("--- LOG ---")
-for name in ("songforge-out.log","songforge-error.log","songforge-worker-out.log","songforge-worker-error.log"):
-    p=Path("/root/.pm2/logs")/name
-    if not p.is_file():
-        print(name, "нет"); continue
-    hit=[]
-    for line in p.read_text(encoding="utf-8", errors="replace").splitlines()[-2500:]:
-        if any(k in line for k in ("Music provider","APIPass","sunoapi.org","fallback","music start failed","create failed","insufficient","credit","402","reserve")):
-            hit.append(" ".join(line.split())[:240])
-    print(name, "строк", len(hit))
-    for line in hit[-18:]:
-        print(line)
-PY
+# On the server, where the prompt is root@. One line. Paste the output. No keys.
+echo '--- DB ---'; sqlite3 -header -separator ' | ' /root/SongForge/data/songforge.db "SELECT substr(created_at,1,19) AS at, status, COALESCE(music_provider,'-') AS prov, COALESCE(music_fallback,0) AS fb, substr(COALESCE(fail_msg,''),1,70) AS fail, substr(COALESCE(title,''),1,24) AS title FROM generations ORDER BY created_at DESC LIMIT 8;"; echo '--- LOG ---'; grep -hE 'Music provider|APIPass create|sunoapi.org create|sunoapi.org error|fallback: apipass|music start failed|insufficient' /root/.pm2/logs/songforge-out.log /root/.pm2/logs/songforge-error.log /root/.pm2/logs/songforge-worker-out.log /root/.pm2/logs/songforge-worker-error.log 2>/dev/null | tail -n 25
 
 === 50) APIPASS RESERVE AFTER SUNO FAIL ===
 # One line at a time. Skip lines that start with #.
