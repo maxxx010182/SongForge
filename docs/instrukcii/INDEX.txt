@@ -16,6 +16,7 @@ SongForge — оглавление инструкций
 
 СЕЙЧАС АКТУАЛЬНО
 ----------------
+  APIPASS-KLYUCH.txt           — как вписать ключ ApiPass в .env
   LLM-KIE-PROSTO.txt           — тексты через Kie + балансы в админке
   SUPPORT-OWNER-PROSTO.txt     — support@ простыми словами (ВЛАДЕЛЬЦУ)
   SUPPORT-EMAIL-SEYCHAS.txt    — создать ящик support@
