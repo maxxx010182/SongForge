@@ -10,13 +10,13 @@ from backend.database.db import get_connection
 
 OCCASIONS = ("family", "love", "birthday", "simple")
 OCCASION_DEFAULTS = {
-    "family": {"to": "Для мамы", "hint": "это тебе"},
-    "love": {"to": "Для тебя", "hint": "это тебе"},
-    "birthday": {"to": "С днём рождения", "hint": "песню собрали для тебя"},
-    "simple": {"to": "Тебе", "hint": ""},
+    "family": {"to": "Для мамы"},
+    "love": {"to": "Для тебя"},
+    "birthday": {"to": "С днём рождения"},
+    "simple": {"to": "Тебе"},
 }
 TO_MAX = 80
-FROM_MAX = 60
+FROM_MAX = 80
 
 
 def normalize_occasion(raw: str) -> str:
@@ -32,14 +32,9 @@ def _clean_line(raw: str, limit: int) -> str:
 
 
 def dedication_line(*, occasion: str, from_line: str) -> str:
-    hint = OCCASION_DEFAULTS.get(occasion, OCCASION_DEFAULTS["simple"])["hint"]
-    who = _clean_line(from_line, FROM_MAX)
-    parts: list[str] = []
-    if hint:
-        parts.append(hint)
-    if who:
-        parts.append(f"от {who}")
-    return " · ".join(parts)
+    """Подпись на карточке — ровно строка «от кого»."""
+    _ = occasion
+    return _clean_line(from_line, FROM_MAX)
 
 
 def _row_to_dict(row) -> dict:

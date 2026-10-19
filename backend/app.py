@@ -156,7 +156,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.126", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.127", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -620,16 +620,29 @@ async def gift_share_page(gift_id: str, request: Request):
     cover = (row["image_url"] or "").strip()
     base = _public_site_base(request)
     bot = is_link_preview_bot(request.headers.get("user-agent"))
+    from backend.og_image import gift_og_version
+
+    og_v = gift_og_version(
+        occasion=gift["occasion"],
+        to_line=gift["to_line"],
+        from_line=gift["from_line"],
+        title=title,
+    )
+    og_image = f"{base}/g/{gift_id}/og.jpg?v={og_v}"
     if request.method == "GET":
         try:
-            from backend.og_image import ensure_og_jpeg_file
+            from backend.og_image import ensure_gift_og_jpeg_file
 
             fallback = ROOT_DIR / "assets" / "logo_new.png"
             if not fallback.is_file():
                 fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
             await run_in_threadpool(
-                ensure_og_jpeg_file,
-                library_id=f"gift-{gift_id}",
+                ensure_gift_og_jpeg_file,
+                gift_id=gift_id,
+                occasion=gift["occasion"],
+                to_line=gift["to_line"],
+                from_line=gift["from_line"],
+                title=title,
                 cover_url=cover,
                 cache_dir=UPLOADS_DIR / "og",
                 fallback_path=fallback if fallback.is_file() else None,
@@ -644,6 +657,7 @@ async def gift_share_page(gift_id: str, request: Request):
             to_line=gift["to_line"],
             dedication=gift["dedication"],
             image_url=cover,
+            og_image=og_image,
         )
     else:
         html = render_gift_page(
@@ -655,6 +669,7 @@ async def gift_share_page(gift_id: str, request: Request):
             dedication=gift["dedication"],
             occasion=gift["occasion"],
             image_url=cover,
+            og_image=og_image,
         )
     headers = {
         "Cache-Control": "public, max-age=60" if bot else "public, max-age=120",
@@ -672,15 +687,19 @@ async def gift_share_page(gift_id: str, request: Request):
 
 @app.api_route("/g/{gift_id}/og.jpg", methods=["GET", "HEAD"])
 async def gift_og_jpeg(gift_id: str):
-    from backend.og_image import ensure_og_jpeg_file
+    from backend.og_image import ensure_gift_og_jpeg_file
 
     gift, row = _gift_track_or_404(gift_id)
     fallback = ROOT_DIR / "assets" / "logo_new.png"
     if not fallback.is_file():
         fallback = ROOT_DIR / "assets" / "apple-touch-icon.png"
     path = await run_in_threadpool(
-        ensure_og_jpeg_file,
-        library_id=f"gift-{gift_id}",
+        ensure_gift_og_jpeg_file,
+        gift_id=gift_id,
+        occasion=gift["occasion"],
+        to_line=gift["to_line"],
+        from_line=gift["from_line"],
+        title=(row["title"] or "").strip() or "Песня",
         cover_url=(row["image_url"] or "").strip(),
         cache_dir=UPLOADS_DIR / "og",
         fallback_path=fallback if fallback.is_file() else None,
@@ -704,7 +723,7 @@ async def listen_gift_track(gift_id: str, request: Request):
 @app.get("/api/gift/occasions")
 async def gift_occasions():
     return [
-        {"id": key, "to": val["to"], "hint": val["hint"]}
+        {"id": key, "to": val["to"]}
         for key, val in OCCASION_DEFAULTS.items()
     ]
 

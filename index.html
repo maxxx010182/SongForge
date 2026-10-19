@@ -1090,12 +1090,12 @@
             </div>
             <button type="button" id="giftModalClose" class="text-zinc-500 hover:text-white px-2">✕</button>
         </div>
-        <p class="text-sm text-zinc-400 mb-3 leading-relaxed">Кому и от кого пишете сами. Повод задаёт тон страницы, строки можно поменять.</p>
+        <p class="text-sm text-zinc-400 mb-3 leading-relaxed">Повод задаёт фон открытки. Кому — заголовок сверху. Подпись — строка под песней.</p>
         <div class="flex flex-wrap gap-2 mb-4" id="giftOccasionChips"></div>
         <label class="block text-xs text-zinc-500 mb-1">Кому</label>
         <input id="giftToInput" maxlength="80" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3" placeholder="Для мамы">
-        <label class="block text-xs text-zinc-500 mb-1">От кого</label>
-        <input id="giftFromInput" maxlength="60" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3" placeholder="Ирина">
+        <label class="block text-xs text-zinc-500 mb-1">Подпись</label>
+        <input id="giftFromInput" maxlength="80" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3" placeholder="Ира или С любовью, Ира">
         <div class="text-sm text-amber-200/90 mb-4" id="giftPreviewLine"></div>
         <button type="button" id="giftSaveBtn" class="w-full upgrade-btn py-3 rounded-2xl text-sm">Сохранить и скопировать ссылку</button>
         <p class="text-xs text-zinc-500 mt-3 hidden" id="giftLinkOut"></p>
@@ -1273,19 +1273,15 @@ function maybeOpenNicknameModal(){if(needsNicknameSetup())openNicknameModal();}
 function getTrackShareUrl(libraryId){return window.location.origin+'/t/'+encodeURIComponent(libraryId);}
 async function sharePublishedTrack(libraryId,title){var url=getTrackShareUrl(libraryId);var shareTitle=(title||'Трек').trim();var shareText='Послушай «'+shareTitle+'» на СоздайСвоюПесню';try{if(navigator.share){await navigator.share({title:shareTitle,text:shareText,url:url});showToast('Ссылка отправлена');return;}}catch(e){}try{await navigator.clipboard.writeText(url);showToast('Ссылка скопирована — отправьте другу');}catch(e2){prompt('Скопируйте ссылку:',url);}}
 var GIFT_OCCASIONS=[
-  {id:'family',label:'Родным',to:'Для мамы',hint:'это тебе'},
-  {id:'love',label:'Любимому',to:'Для тебя',hint:'это тебе'},
-  {id:'birthday',label:'День рождения',to:'С днём рождения',hint:'песню собрали для тебя'},
-  {id:'simple',label:'Просто так',to:'Тебе',hint:''}
+  {id:'family',label:'Родным',to:'Для мамы'},
+  {id:'love',label:'Любимому',to:'Для тебя'},
+  {id:'birthday',label:'День рождения',to:'С днём рождения'},
+  {id:'simple',label:'Просто так',to:'Тебе'}
 ];
 var giftComposer={libraryId:'',occasion:'family',title:''};
 function giftHintLine(occ,fromLine){
-  var def=GIFT_OCCASIONS.find(function(x){return x.id===occ;})||GIFT_OCCASIONS[3];
-  var parts=[];
-  if(def.hint)parts.push(def.hint);
   var who=(fromLine||'').trim();
-  if(who)parts.push('от '+who);
-  return parts.join(' · ');
+  return who?('Под песней: '+who):'Подпись появится под песней';
 }
 function renderGiftOccasionChips(){
   var box=document.getElementById('giftOccasionChips');
@@ -1354,7 +1350,7 @@ async function saveGiftLink(){
     var out=document.getElementById('giftLinkOut');
     out.textContent=data.url;
     out.classList.remove('hidden');
-    try{if(navigator.share){await navigator.share({title:document.getElementById('giftToInput').value||'Песня',text:data.dedication||'',url:data.url});showToast('Ссылка отправлена');return;}}catch(e){}
+    try{if(navigator.share){await navigator.share({title:document.getElementById('giftToInput').value||'Песня',text:data.from_line||data.dedication||'',url:data.url});showToast('Ссылка отправлена');return;}}catch(e){}
     try{await navigator.clipboard.writeText(data.url);showToast('Ссылка скопирована');}catch(e2){prompt('Скопируйте ссылку:',data.url);}
   }catch(e){showToast('Не удалось сохранить ссылку');}
   finally{if(btn){btn.disabled=false;btn.textContent='Сохранить и скопировать ссылку';}}
