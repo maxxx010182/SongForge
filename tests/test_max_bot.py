@@ -574,7 +574,7 @@ def test_nudge_three_steps_then_weekly():
             _force_nudge_due(contact["id"])
             assert bot.process_due_nudges() == 1
             contact = MessengerService().get_by_max(max_user_id)
-        assert "маме" in api.sent[0]["text"].lower()
+        assert "мамы" in api.sent[0]["text"].lower()
         assert "черновик" in api.sent[0]["text"].lower()
         payloads = [btn.get("payload") for row in api.sent[-1]["buttons"] for btn in row]
         assert "nudge:later" not in payloads
@@ -1157,7 +1157,7 @@ def test_nudge_branch3_opened_site_no_generation():
         assert bot.process_due_nudges() == 1
         last = api.sent[-1]
         assert "черновик" in last["text"].lower()
-        assert "маме" in last["text"].lower()
+        assert "мамы" in last["text"].lower()
         btn_labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("создать песню" in b.lower() for b in btn_labels)
     finally:

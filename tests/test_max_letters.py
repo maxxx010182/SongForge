@@ -39,7 +39,7 @@ def test_late_evening_does_not_repeat_the_same_night():
 
 def test_letters_use_the_named_person_and_skip_a_blank_one():
     mom = {"brief_whom": "маме", "segment": "gift", "brief_detail": "рыжая кошка"}
-    assert "маме" in studio_letter(mom, 0)
+    assert "для мамы" in studio_letter(mom, 0)
     assert "мамы" in studio_letter(mom, 2)
     assert "рыжая кошка" in studio_letter(mom, 1)
     plain = {"brief_whom": "", "segment": "just", "brief_detail": ""}
@@ -48,6 +48,31 @@ def test_letters_use_the_named_person_and_skip_a_blank_one():
     assert "маме" not in ready_letter(business)
     assert "ролик" in ready_letter(business)
     assert "для мамы" in keep_letter(mom, 1)
+
+
+def test_studio_letters_two_kinds_no_rolik():
+    mom = {"brief_whom": "маме", "segment": "gift", "brief_detail": "рыжая кошка"}
+    plain = {"brief_whom": "", "segment": "just", "brief_detail": ""}
+    biz = {"brief_whom": "реклама / бренд", "segment": "business", "brief_detail": ""}
+    assert studio_letter(mom, 0).startswith("Черновик для мамы уже есть")
+    assert studio_letter(plain, 0).startswith("Черновик уже есть")
+    assert studio_letter(biz, 0) == studio_letter(plain, 0)
+    assert "ролик" not in studio_letter(mom, 0).lower()
+    assert "ролик" not in studio_letter(biz, 0).lower()
+    assert studio_letter(mom, 1).startswith("рыжая кошка")
+    assert "строчка для мамы" in studio_letter(mom, 1)
+    no_scene = {"brief_whom": "маме", "segment": "gift", "brief_detail": ""}
+    assert studio_letter(no_scene, 1).startswith("Песня для мамы пока без голоса")
+    assert studio_letter(plain, 1).startswith("Черновик пока без голоса")
+    assert "Черновик всё ещё в студии" in studio_letter(mom, 2)
+    assert "два варианта для мамы" in studio_letter(mom, 2)
+    assert studio_letter(plain, 2).startswith("Будет два варианта.")
+    assert studio_letter(biz, 2) == studio_letter(plain, 2)
+    assert "как маме это включается на кухне" in studio_letter(mom, 3)
+    assert studio_letter(plain, 3).startswith("Пара минут — и можно услышать, как черновик звучит")
+    assert studio_letter(mom, 4).startswith("Это последнее письмо про черновик для мамы")
+    assert studio_letter(plain, 4).startswith("Это последнее письмо про этот черновик")
+    assert studio_letter(biz, 4) == studio_letter(plain, 4)
 
 
 def test_keep_letters_two_kinds_no_rolik():
