@@ -114,16 +114,18 @@
         @media (max-width: 1023.98px){
             #mainFooterWrap{ padding-bottom: calc(6.5rem + env(safe-area-inset-bottom,0px)) !important; }
             body{background-attachment:scroll}
-            /* iOS: backdrop-filter на position:fixed пропадает при скролле;
-               transform-слой держит бар у нижнего края экрана */
+            /* Без transform: translateZ на fixed поднимает бар над низом,
+               когда прячется адресная строка. Размытие на fixed при скролле
+               в iOS пропадает — сплошной фон. */
             #bottomNav.bottom-nav{
                 position:fixed!important;
                 left:0!important;
                 right:0!important;
-                bottom:0!important;
+                bottom:0;
+                top:auto!important;
                 z-index:60;
-                transform:translateZ(0);
-                -webkit-transform:translateZ(0);
+                transform:none;
+                -webkit-transform:none;
                 backdrop-filter:none;
                 -webkit-backdrop-filter:none;
                 background:rgba(9,9,11,.94);
@@ -205,18 +207,19 @@
         .btn-locked{background:rgba(255,255,255,.06);color:#71717a;cursor:not-allowed}
         .btn-disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
         .modal-step-hint{text-align:center;font-size:.8rem;color:#a1a1aa;padding:.5rem 0}
-        .lib-track-card{overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
+        .lib-track-card{overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s;position:relative}
         .lib-track-card:hover{border-color:rgba(var(--sf-accent-rgb),.22);transform:translateY(-1px)}
+        .lib-track-card:has(.lib-more-menu.open){z-index:40}
         .lib-track-cover{position:relative;aspect-ratio:1;overflow:hidden;background:#18181b;flex-shrink:0}
         .lib-track-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
         .lib-track-duration{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.72);padding:2px 8px;border-radius:8px;font-size:11px;color:#fafafa}
         .lib-track-actions{display:grid;grid-template-columns:1fr 40px;gap:6px}
         .lib-track-actions button{font-size:12px;padding:8px 6px;border-radius:12px;white-space:nowrap}
-        .lib-more-wrap{position:relative}
+        .lib-more-wrap{position:static}
         .lib-more-btn{width:100%;min-height:36px;display:flex;align-items:center;justify-content:center}
-        .lib-more-menu{position:absolute;bottom:calc(100% + 4px);right:0;min-width:180px;background:#18181b;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:4px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.45);display:none}
+        .lib-more-menu{position:absolute;left:8px;right:8px;bottom:calc(.75rem + 40px + 4px);width:auto;min-width:0;max-height:min(16rem,calc(100% - 3.5rem));overflow-x:hidden;overflow-y:auto;background:#18181b;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:4px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.45);display:none}
         .lib-more-menu.open{display:block}
-        .lib-more-menu button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;text-align:left;color:#e4e4e7;background:transparent;border:none;cursor:pointer;white-space:nowrap}
+        .lib-more-menu button{display:flex;width:100%;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;font-size:12px;text-align:left;color:#e4e4e7;background:transparent;border:none;cursor:pointer;white-space:normal;line-height:1.3;overflow-wrap:anywhere;word-break:break-word}
         .lib-more-menu button:hover{background:rgba(255,255,255,.08)}
         .lib-more-menu button.danger{color:#f87171}
         .lib-published-badge{position:absolute;top:8px;left:8px;background:rgba(var(--sf-accent-rgb),.92);color:var(--sf-accent-on);padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;z-index:2}
@@ -1924,6 +1927,24 @@ document.getElementById('profileAvatarInput').addEventListener('change',function
 
 document.addEventListener('click',function(e){if(!e.target.closest('.lib-more-wrap'))closeAllLibMenus();});
 document.querySelectorAll('.bottom-nav a').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();switchToView(a.dataset.nav);});});
+function pinBottomNav(){
+  var el=document.getElementById('bottomNav');
+  if(!el)return;
+  if(window.matchMedia('(min-width:1024px)').matches){el.style.bottom='';return;}
+  var vv=window.visualViewport;
+  if(!vv){el.style.bottom='0px';return;}
+  var shift=Math.round(window.innerHeight-(vv.offsetTop+vv.height));
+  if(!isFinite(shift)||shift<0)shift=0;
+  if(shift>480)shift=480;
+  el.style.bottom=shift+'px';
+}
+pinBottomNav();
+window.addEventListener('resize',pinBottomNav);
+window.addEventListener('scroll',pinBottomNav,{passive:true});
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',pinBottomNav);
+  window.visualViewport.addEventListener('scroll',pinBottomNav);
+}
 
 // ===== FAQ =====
 var faqs = [

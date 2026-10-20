@@ -148,6 +148,16 @@ def test_composer_copy_in_index():
     assert "<textarea" in html
 
 
+def test_library_menu_stays_inside_card():
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert ".lib-more-wrap{position:static}" in html
+    assert "overflow-wrap:anywhere" in html
+    assert "white-space:normal" in html
+    assert "translateZ(0)" not in html
+    assert "function pinBottomNav(" in html
+    assert "Отправить как подарок" in html
+
+
 def test_gift_og_card_is_1200x630_with_greeting():
     jpeg = build_gift_og_jpeg(
         occasion="birthday",
