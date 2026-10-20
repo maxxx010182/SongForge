@@ -47,24 +47,36 @@ def test_letters_use_the_named_person_and_skip_a_blank_one():
     business = {"brief_whom": "реклама / бренд", "segment": "business", "brief_detail": ""}
     assert "маме" not in ready_letter(business)
     assert "ролик" in ready_letter(business)
-    assert "маме" in keep_letter(mom, 1)
+    assert "для мамы" in keep_letter(mom, 1)
 
 
-def test_keep_day3_three_kinds():
-    mom = keep_letter({"brief_whom": "маме", "segment": "gift"}, 0)
-    assert mom.startswith("Песня для мамы уже звучит")
-    assert "оба для мамы" in mom
-    assert "теплее" in mom
-    lena = keep_letter({"brief_whom": "Лене", "segment": "gift"}, 0)
-    assert "Песня Лене уже звучит" in lena
-    assert "оба Лене" in lena
-    plain = keep_letter({"brief_whom": "", "segment": "just"}, 0)
-    assert plain.startswith("Она уже звучит")
-    assert "маме" not in plain
-    assert "ролик" not in plain.lower()
-    biz = keep_letter({"brief_whom": "реклама / бренд", "segment": "business"}, 0)
-    assert biz.startswith("Ролик уже звучит")
-    assert "какой оставить" in biz
-    assert keep_letter({"brief_whom": "маме", "segment": "gift"}, 1).startswith(
-        "Её уже можно поставить маме"
-    )
+def test_keep_letters_two_kinds_no_rolik():
+    mom = {"brief_whom": "маме", "segment": "gift"}
+    plain = {"brief_whom": "", "segment": "just"}
+    biz = {"brief_whom": "реклама / бренд", "segment": "business"}
+    d3_mom = keep_letter(mom, 0)
+    assert d3_mom.startswith("Песня для мамы уже звучит")
+    assert "оба для мамы" in d3_mom
+    d3_plain = keep_letter(plain, 0)
+    assert d3_plain.startswith("Она уже звучит")
+    assert keep_letter(biz, 0) == d3_plain
+    assert "ролик" not in keep_letter(mom, 0).lower()
+    assert "ролик" not in d3_plain.lower()
+    assert "ролик" not in keep_letter(biz, 0).lower()
+    d7_mom = keep_letter(mom, 1)
+    assert "Песню для мамы уже можно поставить" in d7_mom
+    d7_plain = keep_letter(plain, 1)
+    assert d7_plain.startswith("Два варианта всё ещё ждут")
+    assert keep_letter(biz, 1) == d7_plain
+    d10_mom = keep_letter(mom, 2)
+    assert "История для мамы уже внутри" in d10_mom
+    d10_plain = keep_letter(plain, 2)
+    assert "Историю заново рассказывать не нужно" in d10_plain
+    assert keep_letter(biz, 2) == d10_plain
+    d14_mom = keep_letter(mom, 3)
+    assert d14_mom.startswith("Это последнее письмо про песню для мамы")
+    d14_plain = keep_letter(plain, 3)
+    assert d14_plain.startswith("Это последнее письмо про эту песню")
+    assert keep_letter(biz, 3) == d14_plain
+    lena = keep_letter({"brief_whom": "Лене", "segment": "gift"}, 1)
+    assert "Песню Лене уже можно поставить" in lena
