@@ -41,6 +41,7 @@ THEMES = {
         "photo_wide": "/assets/gift/simple-wide.jpg",
     },
 }
+THEMES["other"] = THEMES["simple"]
 
 _CSS = """
 :root{--bg:@@BG@@;--accent:@@ACCENT@@;--accent2:@@ACCENT2@@;--glow:@@GLOW@@;--photo:url('@@PHOTO@@');--photo-wide:url('@@PHOTO_WIDE@@');}
@@ -69,9 +70,9 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:#f7f1ea;font-famil
 }
 .brand{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.62);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;margin-bottom:18px}
 .brand span{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block}
-.stage{position:relative;z-index:2;flex:1;width:min(100%,420px);max-width:100%;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center}
+.stage{position:relative;z-index:2;flex:1;width:min(100%,420px);max-width:100%;margin:0 auto;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:22px;text-align:center}
 .copy{width:100%;min-width:0;max-width:100%}
-.to{font-family:Unbounded,Inter,sans-serif;font-size:1.45rem;font-weight:600;color:#fff;letter-spacing:-.02em;line-height:1.25;margin:0;width:100%;padding:0 4px;overflow-wrap:break-word;text-shadow:0 8px 28px rgba(0,0,0,.55)}
+.to{font-family:Unbounded,Inter,sans-serif;font-size:1.2rem;font-weight:600;color:#fff;letter-spacing:-.02em;line-height:1.35;margin:0 auto;width:100%;max-width:18rem;padding:0 8px;overflow-wrap:anywhere;word-break:break-word;white-space:pre-wrap;text-shadow:0 8px 28px rgba(0,0,0,.55)}
 .player{width:100%;min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:center}
 .cover{width:min(100%,280px);aspect-ratio:1;margin:0 auto 16px;border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 22px 48px rgba(0,0,0,.45),0 0 0 8px rgba(255,255,255,.06)}
 .cover img{width:100%;height:100%;object-fit:cover;display:block}
@@ -87,7 +88,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:#f7f1ea;font-famil
 @media (min-width:768px) and (max-width:859px){
   .scene{padding:max(28px,env(safe-area-inset-top)) 36px 36px}
   .stage{width:min(100%,540px);gap:28px}
-  .to{font-size:2.15rem}
+  .to{font-size:1.55rem;max-width:24rem}
   .cover{width:min(100%,340px)}
   .seek,.times{max-width:340px}
 }
@@ -98,7 +99,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:#f7f1ea;font-famil
   }
   .stage{width:min(1120px,100%);flex-direction:row;align-items:center;justify-content:space-between;gap:72px;text-align:left}
   .copy{flex:1}
-  .to{font-size:clamp(2.2rem,4vw,3.3rem)}
+  .to{font-size:clamp(1.55rem,2.8vw,2.15rem);max-width:22rem;margin:0}
   .player{flex:0 0 min(360px,38vw)}
   .cover{width:100%;max-width:340px}
   .title{font-size:1.35rem}

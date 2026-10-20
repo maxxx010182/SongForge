@@ -8,14 +8,15 @@ from datetime import datetime, timezone
 
 from backend.database.db import get_connection
 
-OCCASIONS = ("family", "love", "birthday", "simple")
+OCCASIONS = ("family", "love", "birthday", "simple", "other")
 OCCASION_DEFAULTS = {
     "family": {"to": "Для мамы"},
     "love": {"to": "Для тебя"},
     "birthday": {"to": "С днём рождения"},
     "simple": {"to": "Тебе"},
+    "other": {"to": "Тебе"},
 }
-TO_MAX = 80
+TO_MAX = 200
 FROM_MAX = 80
 
 
@@ -29,6 +30,15 @@ def normalize_occasion(raw: str) -> str:
 def _clean_line(raw: str, limit: int) -> str:
     text = re.sub(r"\s+", " ", (raw or "").strip())
     return text[:limit]
+
+
+def _clean_wish(raw: str, limit: int) -> str:
+    lines: list[str] = []
+    for part in (raw or "").replace("\r\n", "\n").split("\n"):
+        line = re.sub(r" +", " ", part.strip())
+        if line:
+            lines.append(line)
+    return "\n".join(lines)[:limit]
 
 
 def dedication_line(*, occasion: str, from_line: str) -> str:
@@ -91,7 +101,7 @@ class GiftService:
         from_line: str,
     ) -> dict:
         occasion = normalize_occasion(occasion)
-        to_line = _clean_line(to_line, TO_MAX) or OCCASION_DEFAULTS[occasion]["to"]
+        to_line = _clean_wish(to_line, TO_MAX) or OCCASION_DEFAULTS[occasion]["to"]
         from_line = _clean_line(from_line, FROM_MAX)
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         existing = self.get_for_library(user_id=user_id, library_id=library_id)

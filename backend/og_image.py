@@ -17,7 +17,7 @@ _OG_H = 630
 _OG_CACHE_TTL_SEC = 86400
 _SAFE_ID = re.compile(r"^[a-fA-F0-9-]{8,64}$")
 _GIFT_OG_ID = re.compile(r"^gift-[a-fA-F0-9-]{8,40}-[a-fA-F0-9]{8,16}$")
-_GIFT_OG_REV = "127"
+_GIFT_OG_REV = "128"
 _ROOT = Path(__file__).resolve().parent.parent
 _FONTS = _ROOT / "assets" / "fonts"
 _GIFT_BG = _ROOT / "assets" / "gift"
@@ -171,23 +171,26 @@ def _cyr_font(size: int, bold: bool = False):
 
 
 def _wrap_text(draw, text: str, font, max_width: int, limit: int = 4) -> list[str]:
-    words = (text or "").split()
-    if not words:
-        return []
     lines: list[str] = []
-    current = ""
-    for word in words:
-        trial = (current + " " + word).strip()
-        if draw.textlength(trial, font=font) <= max_width:
-            current = trial
-            continue
-        if current:
+    paras = [p.strip() for p in (text or "").split("\n") if p.strip()]
+    if not paras:
+        return []
+    for para in paras:
+        current = ""
+        for word in para.split():
+            trial = (current + " " + word).strip()
+            if draw.textlength(trial, font=font) <= max_width:
+                current = trial
+                continue
+            if current:
+                lines.append(current)
+            current = word
+            if len(lines) >= limit:
+                return lines[:limit]
+        if current and len(lines) < limit:
             lines.append(current)
-        current = word
         if len(lines) >= limit:
             break
-    if current and len(lines) < limit:
-        lines.append(current)
     return lines[:limit]
 
 
@@ -228,8 +231,9 @@ def _cover_square(cover_url: str, fallback_path: Path | None, side: int):
 def _theme_background(occasion: str):
     from PIL import Image
 
-    wide = _GIFT_BG / f"{occasion}-wide.jpg"
-    portrait = _GIFT_BG / f"{occasion}.jpg"
+    key = occasion if occasion in ("family", "love", "birthday", "simple") else "simple"
+    wide = _GIFT_BG / f"{key}-wide.jpg"
+    portrait = _GIFT_BG / f"{key}.jpg"
     src = wide if wide.is_file() else portrait
     if src.is_file():
         im = Image.open(src).convert("RGB")
@@ -274,16 +278,19 @@ def build_gift_og_jpeg(
     card = Image.alpha_composite(bg, shade).convert("RGB")
     draw = ImageDraw.Draw(card)
 
-    font_h = _cyr_font(64, bold=True)
+    heading_size = 42 if len(heading) > 48 else 64
+    wrap_limit = 5 if len(heading) > 48 else 3
+    font_h = _cyr_font(heading_size, bold=True)
     font_t = _cyr_font(32, bold=False)
     font_s = _cyr_font(28, bold=False)
     font_b = _cyr_font(20, bold=False)
 
     text_w = 640
-    y = 88
-    for line in _wrap_text(draw, heading, font_h, text_w, 3):
+    y = 72 if heading_size < 64 else 88
+    line_h = 52 if heading_size < 64 else 74
+    for line in _wrap_text(draw, heading, font_h, text_w, wrap_limit):
         draw.text((64, y), line, fill=(255, 248, 236), font=font_h)
-        y += 74
+        y += line_h
     y += 10
     draw.rectangle((64, y, 64 + 72, y + 4), fill=accent)
     y += 28

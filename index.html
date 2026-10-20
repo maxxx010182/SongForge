@@ -1090,10 +1090,11 @@
             </div>
             <button type="button" id="giftModalClose" class="text-zinc-500 hover:text-white px-2">✕</button>
         </div>
-        <p class="text-sm text-zinc-400 mb-3 leading-relaxed">Повод задаёт фон открытки. Кому — заголовок сверху. Подпись — строка под песней.</p>
+        <p class="text-sm text-zinc-400 mb-3 leading-relaxed">Повод задаёт фон. Текст на открытке — рядом с песней. Подпись — под песней.</p>
         <div class="flex flex-wrap gap-2 mb-4" id="giftOccasionChips"></div>
-        <label class="block text-xs text-zinc-500 mb-1">Кому</label>
-        <input id="giftToInput" maxlength="80" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3" placeholder="Для мамы">
+        <label class="block text-xs text-zinc-500 mb-1">Текст на открытке</label>
+        <p class="text-xs text-zinc-500 mb-1 leading-relaxed">Имя адресата и пожелание — покажем рядом с песней.</p>
+        <textarea id="giftToInput" maxlength="200" rows="3" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3 resize-y min-h-[4.5rem]" placeholder="Мама, спасибо что ты есть"></textarea>
         <label class="block text-xs text-zinc-500 mb-1">Подпись</label>
         <input id="giftFromInput" maxlength="80" class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm mb-3" placeholder="Ира или С любовью, Ира">
         <div class="text-sm text-amber-200/90 mb-4" id="giftPreviewLine"></div>
@@ -1274,14 +1275,20 @@ function getTrackShareUrl(libraryId){return window.location.origin+'/t/'+encodeU
 async function sharePublishedTrack(libraryId,title){var url=getTrackShareUrl(libraryId);var shareTitle=(title||'Трек').trim();var shareText='Послушай «'+shareTitle+'» на СоздайСвоюПесню';try{if(navigator.share){await navigator.share({title:shareTitle,text:shareText,url:url});showToast('Ссылка отправлена');return;}}catch(e){}try{await navigator.clipboard.writeText(url);showToast('Ссылка скопирована — отправьте другу');}catch(e2){prompt('Скопируйте ссылку:',url);}}
 var GIFT_OCCASIONS=[
   {id:'family',label:'Родным',to:'Для мамы'},
-  {id:'love',label:'Любимому',to:'Для тебя'},
+  {id:'love',label:'Половинке',to:'Для тебя'},
   {id:'birthday',label:'День рождения',to:'С днём рождения'},
-  {id:'simple',label:'Просто так',to:'Тебе'}
+  {id:'simple',label:'Просто так',to:'Тебе'},
+  {id:'other',label:'Другой повод',to:'Тебе'}
 ];
 var giftComposer={libraryId:'',occasion:'family',title:''};
 function giftHintLine(occ,fromLine){
+  var toEl=document.getElementById('giftToInput');
+  var wish=(toEl&&toEl.value||'').trim();
   var who=(fromLine||'').trim();
-  return who?('Под песней: '+who):'Подпись появится под песней';
+  var bits=[];
+  bits.push(wish?('Рядом с песней: '+wish):'Напишите имя и пожелание');
+  bits.push(who?('Подпись: '+who):'Подпись появится под песней');
+  return bits.join(' · ');
 }
 function renderGiftOccasionChips(){
   var box=document.getElementById('giftOccasionChips');

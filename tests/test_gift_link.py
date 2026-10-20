@@ -7,17 +7,24 @@ from PIL import Image
 from backend.database.db import get_connection, init_db
 from backend.gift_page import render_gift_page
 from backend.og_image import build_gift_og_jpeg
-from backend.services.gift_service import GiftService, dedication_line, normalize_occasion
+from backend.services.gift_service import (
+    GiftService,
+    _clean_wish,
+    dedication_line,
+    normalize_occasion,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_occasion_and_dedication():
     assert normalize_occasion("love") == "love"
+    assert normalize_occasion("other") == "other"
     assert normalize_occasion("xxx") == "simple"
     assert dedication_line(occasion="family", from_line="Ирина") == "Ирина"
     assert dedication_line(occasion="birthday", from_line="С любовью, Ира") == "С любовью, Ира"
     assert dedication_line(occasion="simple", from_line="") == ""
+    assert _clean_wish("Мама\n  спасибо что ты есть  ", 200) == "Мама\nспасибо что ты есть"
 
 
 def test_upsert_gift_keeps_same_url():
@@ -112,6 +119,33 @@ def test_gift_backgrounds_exist():
     ):
         path = ROOT / "assets" / "gift" / name
         assert path.is_file() and path.stat().st_size > 1000, name
+
+
+def test_other_occasion_uses_simple_background():
+    html = render_gift_page(
+        site_url="https://sozdaipesnu.ru",
+        gift_id="abc",
+        title="Песня",
+        to_line="На свадьбу вам",
+        from_line="Ира",
+        dedication="Ира",
+        occasion="other",
+        image_url="",
+    )
+    assert "/assets/gift/simple.jpg" in html
+    assert "/assets/gift/simple-wide.jpg" in html
+    assert "На свадьбу вам" in html
+    assert "white-space:pre-wrap" in html
+
+
+def test_composer_copy_in_index():
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "Половинке" in html
+    assert "Любимому" not in html
+    assert "Другой повод" in html
+    assert "Имя адресата и пожелание" in html
+    assert 'id="giftToInput"' in html
+    assert "<textarea" in html
 
 
 def test_gift_og_card_is_1200x630_with_greeting():
