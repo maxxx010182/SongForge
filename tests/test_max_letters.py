@@ -48,3 +48,23 @@ def test_letters_use_the_named_person_and_skip_a_blank_one():
     assert "маме" not in ready_letter(business)
     assert "ролик" in ready_letter(business)
     assert "маме" in keep_letter(mom, 1)
+
+
+def test_keep_day3_three_kinds():
+    mom = keep_letter({"brief_whom": "маме", "segment": "gift"}, 0)
+    assert mom.startswith("Песня для мамы уже звучит")
+    assert "оба для мамы" in mom
+    assert "теплее" in mom
+    lena = keep_letter({"brief_whom": "Лене", "segment": "gift"}, 0)
+    assert "Песня Лене уже звучит" in lena
+    assert "оба Лене" in lena
+    plain = keep_letter({"brief_whom": "", "segment": "just"}, 0)
+    assert plain.startswith("Она уже звучит")
+    assert "маме" not in plain
+    assert "ролик" not in plain.lower()
+    biz = keep_letter({"brief_whom": "реклама / бренд", "segment": "business"}, 0)
+    assert biz.startswith("Ролик уже звучит")
+    assert "какой оставить" in biz
+    assert keep_letter({"brief_whom": "маме", "segment": "gift"}, 1).startswith(
+        "Её уже можно поставить маме"
+    )
