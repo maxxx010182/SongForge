@@ -1,6 +1,7 @@
 #!/bin/bash
 # Одна команда для обновления SongForge на VPS до последней версии с GitHub
 set -e
+trap '' HUP
 DIR="${HOME}/SongForge"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 mkdir -p "$DIR/scripts"

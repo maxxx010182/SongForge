@@ -3,6 +3,7 @@ Version: 2.11.132. Next: block 61 (update). Do not run blocks 60, 59, 58, 57, 56
 
 === 61) STUDIO LETTERS NO SONG ===
 # One line at a time. Skip lines that start with #.
+# Log should say deploy-script-version: 26 (not 23). Then health 2.11.132.
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 curl -s https://sozdaipesnu.ru/api/health
