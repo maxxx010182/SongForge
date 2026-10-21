@@ -115,13 +115,11 @@ def studio_letter(contact: dict, step: int) -> str:
 
 
 def ready_letter(contact: dict) -> str:
-    role = _role(contact)
+    """Через ~5 минут после того, как песня зазвучала."""
     whom = _whom(contact)
-    if role == "business":
-        return "Два варианта уже звучат. Минута — и понятно, какой садится на ролик."
     if whom:
         return (
-            f"Два варианта {whom} уже звучат. Минута — и понятно, "
+            f"Два варианта {_for(whom)} уже звучат. Минута — и понятно, "
             "какой ближе к тому, что хотелось сказать."
         )
     return (

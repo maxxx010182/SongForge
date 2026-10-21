@@ -46,8 +46,21 @@ def test_letters_use_the_named_person_and_skip_a_blank_one():
     assert "маме" not in studio_letter(plain, 0)
     business = {"brief_whom": "реклама / бренд", "segment": "business", "brief_detail": ""}
     assert "маме" not in ready_letter(business)
-    assert "ролик" in ready_letter(business)
+    assert "ролик" not in ready_letter(business).lower()
     assert "для мамы" in keep_letter(mom, 1)
+
+
+def test_ready_letter_two_kinds_no_rolik():
+    mom = ready_letter({"brief_whom": "маме", "segment": "gift"})
+    plain = ready_letter({"brief_whom": "", "segment": "just"})
+    biz = ready_letter({"brief_whom": "реклама / бренд", "segment": "business"})
+    assert mom.startswith("Два варианта для мамы уже звучат")
+    assert plain.startswith("Два варианта уже звучат")
+    assert biz == plain
+    assert "ролик" not in mom.lower()
+    assert "ролик" not in biz.lower()
+    lena = ready_letter({"brief_whom": "Лене", "segment": "gift"})
+    assert "Два варианта Лене уже звучат" in lena
 
 
 def test_studio_letters_two_kinds_no_rolik():
