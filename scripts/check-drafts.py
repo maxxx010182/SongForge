@@ -71,10 +71,11 @@ def name_for(conn: sqlite3.Connection, user_id: str | None) -> str:
 def print_row(conn: sqlite3.Connection, row: sqlite3.Row) -> None:
     task = (row["task_id"] or "").strip()
     fail = " ".join((row["fail_msg"] or "").split())[:80]
+    music = (row["music_provider"] or "").strip() if task else "не вызывалась"
     print(
         f"- {msk(row['created_at'])} мск | {str(row['title'] or '')[:32]} | "
         f"{row['status']} | задача {'есть' if task else 'нет'} | "
-        f"музыка {row['music_provider'] or '-'} | "
+        f"музыка {music or '-'} | "
         f"текст {row['lyrics_len'] or 0} | стиль {row['style_len'] or 0} | "
         f"нота {row['note_charged']} | {name_for(conn, row['user_id'])}"
         + (f" | {fail}" if fail else "")
