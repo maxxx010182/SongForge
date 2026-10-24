@@ -156,7 +156,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.134", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.135", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -989,6 +989,24 @@ async def admin_provider_balances(admin_user: dict = Depends(require_admin_user)
     from backend.services.provider_balance_service import get_provider_balances
 
     return await run_in_threadpool(get_provider_balances)
+
+
+@app.get("/api/admin/log-tail")
+async def admin_log_tail(admin_user: dict = Depends(require_admin_user)):
+    """Короткие строки сбоев из журнала. Только admin. Ключи вырезаются."""
+    try:
+        admin_service.assert_permission(admin_user["admin_role"], "system:read")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    _rate_or_429(
+        f"admin-log:{admin_user.get('id') or 'admin'}",
+        limit=20,
+        window_sec=60,
+        detail="Слишком часто. Подождите минуту.",
+    )
+    from backend.services.admin_log_tail import recent_failures
+
+    return await run_in_threadpool(recent_failures)
 
 
 @app.get("/api/admin/generations")

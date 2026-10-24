@@ -89,6 +89,11 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
       <div class="grid" id="providerBal"></div>
       <p class="muted" style="font-size:.75rem;margin-top:6px" id="providerBalMeta">Kie = тексты; sunoapi = музыка (если ключ задан)</p>
     </div>
+    <div class="sec hidden" id="logTailSec">
+      <h2>Последние сбои <button class="btn" type="button" id="logReload" style="margin-left:8px">Обновить</button></h2>
+      <p class="muted" style="font-size:.75rem;margin-bottom:8px">Только предупреждения и ошибки. Ключи скрыты. Обычные строки запуска сюда не попадают.</p>
+      <pre id="logTail" style="white-space:pre-wrap;max-height:280px;overflow:auto;font-size:.75rem;line-height:1.45;margin:0"></pre>
+    </div>
     <div class="tabs" id="navTabs"></div>
     <div id="panelDash" class="panel active sec"><p class="muted">Обновление каждые 60 сек. Зависшие — статус generating дольше 10 минут.</p></div>
     <div id="panelGen" class="panel sec">
@@ -196,7 +201,24 @@ async function loadProviderBal(){
     document.getElementById('providerBal').innerHTML='<div class="card"><div class="n muted">?</div><div class="l">'+esc(e.message||'ошибка')+'</div></div>';
   }
 }
-async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);loadProviderBal();}
+async function loadLogTail(){
+  var box=document.getElementById('logTail');
+  var sec=document.getElementById('logTailSec');
+  if(!box||!sec)return;
+  if(!has('system:read')){sec.classList.add('hidden');return;}
+  sec.classList.remove('hidden');
+  try{
+    var d=await api('/api/admin/log-tail');
+    var rows=d.lines||[];
+    var text=rows.map(function(row){return row.source+': '+row.text;}).join('\n');
+    if(!text)text='Сбоев в хвосте журнала нет.';
+    if(d.starts_in_tail)text+='\n\nЗапусков в хвосте журнала: '+d.starts_in_tail;
+    box.textContent=text;
+  }catch(e){
+    box.textContent=e.message||'Не удалось прочитать журнал';
+  }
+}
+async function loadDash(){var d=await api('/api/admin/dashboard');renderStats(d);loadProviderBal();loadLogTail();}
 function genKindCell(kind){
   if(kind==='Ошибка')return '<td style="color:#fca5a5">'+esc(kind)+'</td>';
   if(kind==='Черновик')return '<td class="muted">'+esc(kind)+'</td>';
@@ -455,6 +477,7 @@ async function init(){
   if(!has('admins:manage'))document.getElementById('panelAdmins').innerHTML='<p class="muted">Раздел только для super_admin</p>';
   document.getElementById('genReload').onclick=loadGen;
   document.getElementById('balReload').onclick=loadProviderBal;
+  document.getElementById('logReload').onclick=loadLogTail;
   document.getElementById('userSearch').onclick=searchUsers;
   document.getElementById('auditReload').onclick=loadAudit;
   document.getElementById('grantBtn').onclick=function(){
