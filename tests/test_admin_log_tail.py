@@ -75,6 +75,28 @@ def test_traceback_shows_exception_not_code_or_carets(tmp_path, monkeypatch):
     assert "^" not in text
 
 
+def test_keyboard_interrupt_is_a_restart_not_a_broken_trace(tmp_path, monkeypatch):
+    monkeypatch.setenv("SONGFORGE_LOG_DIR", str(tmp_path))
+    block = "\n".join(
+        [
+            "Traceback (most recent call last):",
+            '  File "/root/SongForge/backend/worker.py", line 50, in run_forever',
+            "    time.sleep(WORKER_POLL_INTERVAL_SEC)",
+            "    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^",
+            "KeyboardInterrupt",
+        ]
+    )
+    (tmp_path / "songforge-worker-error.log").write_text(
+        (block + "\n") * 2,
+        encoding="utf-8",
+    )
+    report = admin_log_tail.recent_failures()
+    row = report["lines"][0]
+    assert row["count"] == 2
+    assert "остановили" in row["text"]
+    assert "оборванный" not in row["text"]
+
+
 def test_tail_missing_dir_is_empty(tmp_path, monkeypatch):
     monkeypatch.setenv("SONGFORGE_LOG_DIR", str(tmp_path / "нет"))
     report = admin_log_tail.recent_failures()

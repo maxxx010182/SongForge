@@ -60,7 +60,9 @@ _TS = re.compile(
     r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:[,.]\d+)?\s+"
     r"(?:\[[A-Z]+\]\s+\S+:\s+)?"
 )
-_EXC = re.compile(r"^[A-Za-z_][\w.]*(?:Error|Exception|Exit):")
+_EXC = re.compile(
+    r"^(?:KeyboardInterrupt|SystemExit|[A-Za-z_][\w.]*(?:Error|Exception|Exit):)"
+)
 _CARET = re.compile(r"^[\s~^]+$")
 
 
@@ -75,6 +77,8 @@ def explain(text: str) -> str:
             "При обновлении лишний запуск не занял порт 8000: его уже держит работающий сайт. "
             "Сайт при этом отвечает. Число справа — сколько таких попыток лежит в хвосте журнала."
         )
+    if low in {"keyboardinterrupt", "systemexit"} or low.startswith("keyboardinterrupt"):
+        return "Процесс остановили, пока он ждал следующей проверки. Так бывает при обновлении. Это не сбой песни."
     return text
 
 
@@ -82,7 +86,7 @@ def _trace_follow(raw: str) -> bool:
     body = _body(raw)
     if not body:
         return False
-    if body.startswith(("File ", "Traceback", "During handling", "The above exception")):
+    if body.startswith(("File ", "During handling", "The above exception")):
         return True
     if raw[:1] in {" ", "\t"} or _CARET.match(body):
         return True
@@ -130,14 +134,13 @@ def _collect(label: str, raw_lines: list[str]) -> tuple[list[dict], int]:
 
 def _fold(rows: list[dict]) -> list[dict]:
     folded: list[dict] = []
+    place: dict[tuple[str, str], int] = {}
     for row in rows:
-        if (
-            folded
-            and folded[-1]["source"] == row["source"]
-            and folded[-1]["text"] == row["text"]
-        ):
-            folded[-1]["count"] += 1
+        key = (row["source"], row["text"])
+        if key in place:
+            folded[place[key]]["count"] += 1
             continue
+        place[key] = len(folded)
         folded.append({"source": row["source"], "text": row["text"], "count": 1})
     return folded[-15:]
 
