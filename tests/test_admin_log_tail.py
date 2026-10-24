@@ -54,6 +54,27 @@ def test_same_bind_error_is_one_russian_line(tmp_path, monkeypatch):
     assert rows[1]["text"] == "RuntimeError: очередь музыки не отвечает"
 
 
+def test_traceback_shows_exception_not_code_or_carets(tmp_path, monkeypatch):
+    monkeypatch.setenv("SONGFORGE_LOG_DIR", str(tmp_path))
+    (tmp_path / "songforge-error.log").write_text(
+        "\n".join(
+            [
+                "Traceback (most recent call last):",
+                '  File "pydantic.py", line 10, in _eval_type',
+                "    qualname = getattr(origin, '__qualname__', f'<No __qualname__: {origin}>')",
+                "    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^",
+                "AttributeError: 'NoneType' object has no attribute '__qualname__'",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    report = admin_log_tail.recent_failures()
+    text = report["lines"][0]["text"]
+    assert text.startswith("AttributeError:")
+    assert "getattr" not in text
+    assert "^" not in text
+
+
 def test_tail_missing_dir_is_empty(tmp_path, monkeypatch):
     monkeypatch.setenv("SONGFORGE_LOG_DIR", str(tmp_path / "нет"))
     report = admin_log_tail.recent_failures()

@@ -56,25 +56,48 @@ def _tail_text(path: Path) -> str:
     return text
 
 
+_TS = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:[,.]\d+)?\s+"
+    r"(?:\[[A-Z]+\]\s+\S+:\s+)?"
+)
+_EXC = re.compile(r"^[A-Za-z_][\w.]*(?:Error|Exception|Exit):")
+_CARET = re.compile(r"^[\s~^]+$")
+
+
+def _body(raw: str) -> str:
+    return _TS.sub("", raw or "").strip()
+
+
 def explain(text: str) -> str:
     low = text.lower()
     if "address already in use" in low or "errno 98" in low:
         return (
-            "Повторный запуск не занял порт 8000: его уже держит работающий сайт. "
-            "Старая копия продолжает отвечать, новая сразу выходит. На песни это не влияет."
+            "При обновлении лишний запуск не занял порт 8000: его уже держит работающий сайт. "
+            "Сайт при этом отвечает. Число справа — сколько таких попыток лежит в хвосте журнала."
         )
     return text
 
 
 def _trace_follow(raw: str) -> bool:
-    stripped = raw.strip()
-    if not stripped:
+    body = _body(raw)
+    if not body:
         return False
-    if stripped.startswith(("File ", "Traceback", "During handling")):
+    if body.startswith(("File ", "Traceback", "During handling", "The above exception")):
         return True
-    if raw[:1] in {" ", "\t"}:
+    if raw[:1] in {" ", "\t"} or _CARET.match(body):
         return True
-    return bool(re.match(r"^[A-Za-z_][\w.]*(Error|Exception|Exit):", stripped))
+    return bool(_EXC.match(body))
+
+
+def _exception_text(block: list[str]) -> str:
+    chosen = ""
+    for raw in block:
+        body = _body(raw)
+        if _EXC.match(body):
+            chosen = redact(body)
+    if not chosen:
+        return "В журнале оборванный след ошибки, самой причины в хвосте нет."
+    return explain(chosen)
 
 
 def _collect(label: str, raw_lines: list[str]) -> tuple[list[dict], int]:
@@ -93,11 +116,7 @@ def _collect(label: str, raw_lines: list[str]) -> tuple[list[dict], int]:
             while index < len(raw_lines) and _trace_follow(raw_lines[index]):
                 block.append(raw_lines[index])
                 index += 1
-            last = redact(block[-1])
-            text = explain(last) if last and not last.startswith("Traceback") else (
-                "В журнале оборванный след ошибки, самой причины в хвосте нет."
-            )
-            found.append({"source": label, "text": text})
+            found.append({"source": label, "text": _exception_text(block)})
             continue
         if not _KEEP.search(raw):
             index += 1
