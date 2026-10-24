@@ -17,7 +17,7 @@ LOGS = [
 ]
 NEEDLE = re.compile(
     r"failed \(|asking the next|LlmUnavailable|Unified |Production ready|"
-    r"ReadTimeout|ConnectTimeout|error 4|402|401|no text",
+    r"ReadTimeout|ConnectTimeout|error 40[12]|status[=: ]40[12]|\bno text\b",
     re.I,
 )
 SKIP = "LLM provider:"
