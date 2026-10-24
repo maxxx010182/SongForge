@@ -56,9 +56,76 @@ def _tail_text(path: Path) -> str:
     return text
 
 
+def explain(text: str) -> str:
+    low = text.lower()
+    if "address already in use" in low or "errno 98" in low:
+        return (
+            "Повторный запуск не занял порт 8000: его уже держит работающий сайт. "
+            "Старая копия продолжает отвечать, новая сразу выходит. На песни это не влияет."
+        )
+    return text
+
+
+def _trace_follow(raw: str) -> bool:
+    stripped = raw.strip()
+    if not stripped:
+        return False
+    if stripped.startswith(("File ", "Traceback", "During handling")):
+        return True
+    if raw[:1] in {" ", "\t"}:
+        return True
+    return bool(re.match(r"^[A-Za-z_][\w.]*(Error|Exception|Exit):", stripped))
+
+
+def _collect(label: str, raw_lines: list[str]) -> tuple[list[dict], int]:
+    found: list[dict] = []
+    starts = 0
+    index = 0
+    while index < len(raw_lines):
+        raw = raw_lines[index]
+        if _START in raw:
+            starts += 1
+            index += 1
+            continue
+        if raw.strip().startswith("Traceback (most recent call last)"):
+            block = [raw]
+            index += 1
+            while index < len(raw_lines) and _trace_follow(raw_lines[index]):
+                block.append(raw_lines[index])
+                index += 1
+            last = redact(block[-1])
+            text = explain(last) if last and not last.startswith("Traceback") else (
+                "В журнале оборванный след ошибки, самой причины в хвосте нет."
+            )
+            found.append({"source": label, "text": text})
+            continue
+        if not _KEEP.search(raw):
+            index += 1
+            continue
+        cleaned = explain(redact(raw))
+        if cleaned:
+            found.append({"source": label, "text": cleaned})
+        index += 1
+    return found, starts
+
+
+def _fold(rows: list[dict]) -> list[dict]:
+    folded: list[dict] = []
+    for row in rows:
+        if (
+            folded
+            and folded[-1]["source"] == row["source"]
+            and folded[-1]["text"] == row["text"]
+        ):
+            folded[-1]["count"] += 1
+            continue
+        folded.append({"source": row["source"], "text": row["text"], "count": 1})
+    return folded[-15:]
+
+
 def recent_failures() -> dict:
     root = log_dir()
-    lines: list[dict[str, str]] = []
+    lines: list[dict] = []
     starts = 0
     for name, label in _NAMES:
         path = (root / name).resolve()
@@ -71,16 +138,9 @@ def recent_failures() -> dict:
         try:
             text = _tail_text(path)
         except OSError:
-            lines.append({"source": label, "text": "журнал не прочитан"})
+            lines.append({"source": label, "text": "журнал не прочитан", "count": 1})
             continue
-        for raw in text.splitlines():
-            if _START in raw:
-                starts += 1
-                continue
-            if not _KEEP.search(raw):
-                continue
-            cleaned = redact(raw)
-            if cleaned:
-                lines.append({"source": label, "text": cleaned})
-    lines = lines[-_MAX_LINES:]
-    return {"lines": lines, "starts_in_tail": starts}
+        found, seen = _collect(label, text.splitlines())
+        lines.extend(found)
+        starts += seen
+    return {"lines": _fold(lines), "starts_in_tail": starts}

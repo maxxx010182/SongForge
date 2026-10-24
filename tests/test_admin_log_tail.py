@@ -20,12 +20,38 @@ def test_tail_keeps_warnings_and_hides_secrets(tmp_path, monkeypatch):
     )
     report = admin_log_tail.recent_failures()
     texts = [row["text"] for row in report["lines"]]
+    joined = " ".join(texts)
     assert report["starts_in_tail"] == 1
     assert len(texts) == 2
-    assert all("abcdefghijklmnop" not in item for item in texts)
-    assert all("supersecretvalue" not in item for item in texts)
-    assert all("2505401" not in item for item in texts)
-    assert "обычная строка" not in " ".join(texts)
+    assert "abcdefghijklmnop" not in joined
+    assert "supersecretvalue" not in joined
+    assert "2505401" not in joined
+    assert "обычная строка" not in joined
+
+
+def test_same_bind_error_is_one_russian_line(tmp_path, monkeypatch):
+    monkeypatch.setenv("SONGFORGE_LOG_DIR", str(tmp_path))
+    line = (
+        "ERROR: [Errno 98] error while attempting to bind on address "
+        "('0.0.0.0', 8000): [errno 98] address already in use"
+    )
+    (tmp_path / "songforge-error.log").write_text((line + "\n") * 5, encoding="utf-8")
+    (tmp_path / "songforge-worker-error.log").write_text(
+        "\n".join(
+            [
+                "Traceback (most recent call last):",
+                '  File "app.py", line 1, in <module>',
+                "RuntimeError: очередь музыки не отвечает",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    report = admin_log_tail.recent_failures()
+    rows = report["lines"]
+    assert rows[0]["count"] == 5
+    assert "порт 8000" in rows[0]["text"]
+    assert "address already in use" not in rows[0]["text"]
+    assert rows[1]["text"] == "RuntimeError: очередь музыки не отвечает"
 
 
 def test_tail_missing_dir_is_empty(tmp_path, monkeypatch):

@@ -210,7 +210,10 @@ async function loadLogTail(){
   try{
     var d=await api('/api/admin/log-tail');
     var rows=d.lines||[];
-    var text=rows.map(function(row){return row.source+': '+row.text;}).join('\n');
+    var text=rows.map(function(row){
+      var times=row.count>1?' × '+row.count:'';
+      return row.source+': '+row.text+times;
+    }).join('\n');
     if(!text)text='Сбоев в хвосте журнала нет.';
     if(d.starts_in_tail)text+='\n\nЗапусков в хвосте журнала: '+d.starts_in_tail;
     box.textContent=text;
