@@ -2141,6 +2141,11 @@ initProfileThemes();initChips();initSidebarActions();setStudioMode('producer');s
       }
     }
     restorePendingStudioState();
+    var openView = (qs.get('view') || '').toLowerCase();
+    if (openView && 'library,explore,profile,payment,create'.split(',').indexOf(openView) >= 0 && payParam !== 'success' && payParam !== 'failed') {
+      switchToView(openView);
+      if (window.history && window.history.replaceState) window.history.replaceState({}, '', '/');
+    }
   } catch(e) { /* ignore */ }
 })();
 </script>

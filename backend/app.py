@@ -156,7 +156,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.138", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.139", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -510,6 +510,30 @@ async def legal_offer():
     from backend.legal_pages import render_legal_page
 
     return HTMLResponse(render_legal_page("offer"))
+
+
+@app.api_route("/otkrytka", methods=["GET", "HEAD"])
+async def otkrytka_page():
+    """Своя страница открытки. В студии на неё ссылки нет."""
+    path = ROOT_DIR / "otkrytka.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path)
+
+
+@app.get("/api/otkrytka")
+async def otkrytka_status():
+    from backend.services.image_gate import status
+
+    return status()
+
+
+@app.post("/api/otkrytka")
+async def otkrytka_create():
+    """Замок. Тело запроса не читаем и никуда не отправляем."""
+    from backend.services.image_gate import refuse
+
+    raise HTTPException(status_code=403, detail=refuse())
 
 
 def _public_site_base(request: Request) -> str:

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <script>(function(){var k='создайсвоюпесню_theme',d='classic',ok={classic:1,burgundy:1,olive:1,obsidian:1},t;try{t=localStorage.getItem(k);}catch(e){}if(!ok[t])t=d;document.documentElement.setAttribute('data-theme',t);})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Открытка — СоздайСвоюПесню</title>
+    <meta name="description" content="Открытка и картинка в студии СоздайСвоюПесню. Страница пока закрыта.">
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" sizes="180x180">
+    <meta name="theme-color" content="#09090b">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        :root{--sf-accent:#eab308;--sf-accent-on:#09090b;--sf-accent-rgb:234,179,8;--sf-bg:#09090b;--sf-ink:#e8e4e2;--sf-muted:#a1a1aa;--sf-line:rgba(255,255,255,.08)}
+        html[data-theme="burgundy"]{--sf-accent:#C94B5C;--sf-accent-on:#0e0809;--sf-accent-rgb:201,75,92;--sf-bg:#0e0809}
+        html[data-theme="olive"]{--sf-accent:#B8D86A;--sf-accent-on:#1a1c14;--sf-accent-rgb:184,216,106;--sf-bg:#2e302a}
+        html[data-theme="obsidian"]{--sf-accent:#E8955A;--sf-accent-on:#0b0b0b;--sf-accent-rgb:232,149,90;--sf-bg:#0b0b0b}
+        *{box-sizing:border-box}
+        html{min-height:100%}
+        body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--sf-ink);background:var(--sf-bg);background-image:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(var(--sf-accent-rgb),.14),transparent 60%)}
+        a{color:inherit;text-decoration:none}
+        button,input,textarea{font:inherit;color:inherit}
+        .wrap{max-width:760px;margin:0 auto;padding:0 16px calc(7.5rem + env(safe-area-inset-bottom,0px))}
+        header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:18px 0 8px;border-bottom:1px solid var(--sf-line)}
+        .brand{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:clamp(1.05rem,4.2vw,1.35rem);letter-spacing:-.02em;color:var(--sf-accent);min-width:0}
+        .notes{flex:0 0 auto;border:1px solid var(--sf-line);border-radius:999px;padding:8px 14px;font-size:.875rem;min-height:44px;display:inline-flex;align-items:center;gap:6px}
+        .nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px 0}
+        .nav a{min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;color:var(--sf-muted);white-space:nowrap}
+        .nav a:hover{color:#fff;background:rgba(255,255,255,.05)}
+        h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,6vw,2.8rem);line-height:1.05;margin:22px 0 8px;letter-spacing:-.03em}
+        .lead{color:var(--sf-muted);margin:0 0 18px;max-width:40rem}
+        .lock{border:1px solid rgba(var(--sf-accent-rgb),.45);background:rgba(var(--sf-accent-rgb),.1);border-radius:1.25rem;padding:14px 16px;margin-bottom:16px}
+        .panel{border:1px solid var(--sf-line);border-radius:1.75rem;padding:18px;background:rgba(18,18,24,.72)}
+        label.field{display:block;font-size:.8rem;color:var(--sf-muted);margin:14px 0 8px}
+        textarea{width:100%;min-height:140px;resize:vertical;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.35);padding:14px;outline:none}
+        textarea:focus{border-color:rgba(var(--sf-accent-rgb),.7)}
+        .choices{display:flex;flex-wrap:wrap;gap:8px}
+        .choices button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--sf-line);background:rgba(255,255,255,.04);cursor:pointer}
+        .choices button[aria-pressed="true"]{background:var(--sf-accent);color:var(--sf-accent-on);border-color:var(--sf-accent);font-weight:600}
+        .choices button:disabled{opacity:.45;cursor:not-allowed}
+        .price{margin-top:14px;font-size:.95rem}
+        .price strong{color:var(--sf-accent)}
+        .drop{display:flex;align-items:center;justify-content:center;min-height:88px;border:1px dashed rgba(255,255,255,.2);border-radius:1rem;padding:12px;text-align:center;color:var(--sf-muted);cursor:pointer}
+        .drop input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+        .files{margin:8px 0 0;padding:0;list-style:none;color:var(--sf-muted);font-size:.85rem}
+        .go{width:100%;min-height:52px;margin-top:16px;border:0;border-radius:1rem;background:var(--sf-accent);color:var(--sf-accent-on);font-weight:600;cursor:pointer}
+        .note{color:var(--sf-muted);font-size:.8rem;margin:8px 0 0}
+        .shelf{margin-top:22px;color:var(--sf-muted)}
+        .msg{min-height:1.4em;margin-top:10px}
+        .bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);border-top:1px solid var(--sf-line);padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));z-index:5}
+        .bottom a{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:48px;justify-content:center;font-size:10px;color:var(--sf-muted)}
+        @media (min-width:900px){.bottom{display:none}.wrap{padding-bottom:48px}}
+        @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <a class="brand" href="/?view=create">СоздайСвоюПесню</a>
+        <a class="notes" id="notesLink" href="/?view=payment"><i class="fa-solid fa-music" style="color:var(--sf-accent)"></i> <span id="notesCount">0 нот</span></a>
+    </header>
+    <nav class="nav" aria-label="Студия">
+        <a href="/?view=create">Студия</a>
+        <a href="/?view=library">Фонотека</a>
+        <a href="/?view=explore">МузПлощадка</a>
+        <a href="/?view=profile">Профиль</a>
+        <a href="/?view=payment">Пакеты</a>
+    </nav>
+
+    <h1>Открытка</h1>
+    <p class="lead">Картинка к песне или просто открытка. Песню эта страница не создаёт и ноту не тратит.</p>
+    <div class="lock" id="lockBanner" role="status">Закрыто. Рисовать пока нельзя. Когда откроем, здесь будет видно, сколько кредитов спишется, до нажатия кнопки.</div>
+
+    <form class="panel" id="cardForm">
+        <label class="field" for="prompt">Описание</label>
+        <textarea id="prompt" name="prompt" maxlength="20000" placeholder="Например: тёплая открытка, мама в саду, летний свет"></textarea>
+
+        <div class="field">Что рисуем</div>
+        <div class="choices" role="group" aria-label="Картинка или видео">
+            <button type="button" id="kindImage" aria-pressed="true">Картинка</button>
+            <button type="button" id="kindVideo" disabled aria-pressed="false" title="Ролик пока не включаем">Видео позже</button>
+        </div>
+
+        <div class="field">Модель</div>
+        <div class="choices" role="group" aria-label="Модель" id="models">
+            <button type="button" data-model="nano" aria-pressed="true">Nano Banana 2.1</button>
+            <button type="button" data-model="gpt" aria-pressed="false">GPT Image 2.5</button>
+        </div>
+
+        <div class="field">Форма</div>
+        <div class="choices" role="group" aria-label="Форма" id="shapes">
+            <button type="button" data-shape="1:1" aria-pressed="false">Квадрат</button>
+            <button type="button" data-shape="3:4" aria-pressed="true">Открытка</button>
+            <button type="button" data-shape="16:9" aria-pressed="false">Широкая</button>
+        </div>
+
+        <div class="field">Размер</div>
+        <div class="choices" role="group" aria-label="Размер" id="sizes">
+            <button type="button" data-size="1K" data-credits="1" aria-pressed="true">Обычный</button>
+            <button type="button" data-size="2K" data-credits="1" aria-pressed="false">Чётче</button>
+            <button type="button" data-size="4K" data-credits="2" aria-pressed="false">Крупный</button>
+        </div>
+        <p class="price" id="priceLine">На кнопке будет: <strong>1 кредит</strong>. Сейчас ничего не списывается. Это не нота за песню.</p>
+
+        <label class="field drop" for="photos">Свои фото, если хотите себя на открытке. До 10 штук, jpeg, png или webp. На сервер пока не уходят.
+            <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        </label>
+        <ul class="files" id="fileList"></ul>
+        <p class="note" id="fileNote"></p>
+
+        <button class="go" type="submit" id="drawBtn">Нарисовать</button>
+        <p class="msg" id="drawMsg" role="status"></p>
+        <p class="note">Кредиты на кнопке — черновик цены. Купить их пока нельзя.</p>
+    </form>
+
+    <p class="shelf">Готовых картинок пока нет. Они будут лежать здесь, не в фонотеке.</p>
+</div>
+<nav class="bottom" aria-label="Разделы">
+    <a href="/?view=create"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Студия</span></a>
+    <a href="/?view=library"><i class="fa-solid fa-tower-broadcast"></i><span>Фонотека</span></a>
+    <a href="/?view=explore"><i class="fa-solid fa-trophy"></i><span>МузПлощадка</span></a>
+    <a href="/?view=profile"><i class="fa-regular fa-user"></i><span>Кабинет</span></a>
+    <a href="/?view=payment"><i class="fa-regular fa-gem"></i><span>Пакеты</span></a>
+</nav>
+<script>
+(function(){
+    var form = document.getElementById('cardForm');
+    var msg = document.getElementById('drawMsg');
+    var priceLine = document.getElementById('priceLine');
+    var fileList = document.getElementById('fileList');
+    var fileNote = document.getElementById('fileNote');
+    var photos = document.getElementById('photos');
+
+    function plural(n, one, few, many){
+        var a = Math.abs(n) % 100, b = a % 10;
+        var word = many;
+        if (!(a > 10 && a < 20)) {
+            if (b === 1) word = one;
+            else if (b > 1 && b < 5) word = few;
+        }
+        return n + ' ' + word;
+    }
+    function notesWord(n){
+        if (n === 1) return '1 нота';
+        if (n >= 2 && n <= 4) return n + ' ноты';
+        return n + ' нот';
+    }
+    function selected(group){
+        return group.querySelector('[aria-pressed="true"]');
+    }
+    function paintPrice(){
+        var size = selected(document.getElementById('sizes'));
+        var credits = size ? Number(size.getAttribute('data-credits') || '1') : 1;
+        priceLine.innerHTML = 'На кнопке будет: <strong>' + plural(credits, 'кредит', 'кредита', 'кредитов') + '</strong>. Сейчас ничего не списывается. Это не нота за песню.';
+    }
+    function bindGroup(id){
+        var group = document.getElementById(id);
+        group.addEventListener('click', function(event){
+            var btn = event.target.closest('button');
+            if (!btn || btn.disabled || !group.contains(btn)) return;
+            Array.prototype.forEach.call(group.querySelectorAll('button'), function(item){
+                item.setAttribute('aria-pressed', item === btn ? 'true' : 'false');
+            });
+            paintPrice();
+        });
+    }
+    bindGroup('models');
+    bindGroup('shapes');
+    bindGroup('sizes');
+    paintPrice();
+
+    photos.addEventListener('change', function(){
+        var files = Array.prototype.slice.call(photos.files || []);
+        fileList.innerHTML = '';
+        fileNote.textContent = '';
+        var tooBig = files.filter(function(file){ return file.size > 30 * 1024 * 1024; });
+        if (tooBig.length) {
+            fileNote.textContent = 'Файл больше 30 МБ сюда не берём.';
+            photos.value = '';
+            return;
+        }
+        if (files.length > 10) {
+            fileNote.textContent = 'Можно до 10 фото.';
+            photos.value = '';
+            return;
+        }
+        files.forEach(function(file){
+            var item = document.createElement('li');
+            item.textContent = file.name;
+            fileList.appendChild(item);
+        });
+        if (files.length) fileNote.textContent = 'Фото остаются на этом экране. Сервер их не забирает.';
+    });
+
+    form.addEventListener('submit', function(event){
+        event.preventDefault();
+        msg.textContent = 'Проверяем замок…';
+        fetch('/api/otkrytka', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: '{}'
+        }).then(function(res){
+            return res.json().then(function(data){ return {ok: res.ok, data: data}; });
+        }).then(function(result){
+            var detail = (result.data && (result.data.detail || result.data.message)) || '';
+            msg.textContent = detail || 'Закрыто. Рисовать пока нельзя.';
+        }).catch(function(){
+            msg.textContent = 'Закрыто. Рисовать пока нельзя.';
+        });
+    });
+
+    fetch('/api/me', {credentials: 'include'}).then(function(res){ return res.json(); }).then(function(data){
+        var balance = data && data.user && data.user.balance;
+        if (typeof balance === 'number') document.getElementById('notesCount').textContent = notesWord(balance);
+    }).catch(function(){});
+
+    fetch('/api/otkrytka', {credentials: 'include'}).then(function(res){ return res.json(); }).then(function(data){
+        if (data && data.detail) document.getElementById('lockBanner').textContent = data.detail + ' Когда откроем, цену будет видно до кнопки.';
+    }).catch(function(){});
+})();
+</script>
+</body>
+</html>
