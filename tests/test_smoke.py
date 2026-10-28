@@ -56,6 +56,8 @@ def test_unbought_demo_is_on_the_studio_and_in_the_library():
     assert 'id="studioDemos"' in html
     assert 'id="libraryDemos"' in html
     assert "Послушать 1" in html
+    assert "parkOldDemos" in html
+    assert "лежит в «Истории»" in html
     assert "лежат на вкладке «История»" not in html
     assert "во вкладке «История»" not in html
 
