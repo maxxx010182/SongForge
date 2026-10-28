@@ -140,3 +140,23 @@ class StorageService:
         )
         log.info("S3 mirror complete: %s", production_id)
         return True
+
+    def delete_generation_mirror(self, production_id: str) -> bool:
+        """Снять копии трека с хранилища. True, если хранилище выключено или файлы сняты."""
+        if not self.enabled():
+            return True
+        safe_id = (production_id or "").strip()
+        if not safe_id or "/" in safe_id or "\\" in safe_id or ".." in safe_id:
+            return False
+        try:
+            client = self._get_client()
+            for variant in ("a", "b"):
+                client.delete_object(
+                    Bucket=S3_BUCKET,
+                    Key=f"tracks/{safe_id}/{variant}.mp3",
+                )
+            log.info("S3 delete complete: %s", safe_id)
+            return True
+        except Exception:
+            log.exception("S3 delete failed: production=%s", safe_id)
+            return False

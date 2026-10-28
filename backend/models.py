@@ -267,6 +267,7 @@ class HistoryItem(BaseModel):
     has_preview_b: bool = False
     image_url_a: str | None = None
     image_url_b: str | None = None
+    claim_open: bool = True
 
 
 class HistoryPreviewResponse(BaseModel):

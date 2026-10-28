@@ -139,8 +139,8 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
         <button class="btn" type="button" id="showcaseReload">Обновить треки</button>
       </div>
       <div style="overflow-x:auto"><table><thead><tr><th>Трек</th><th>Автор</th><th>Лайки</th><th>Комменты</th><th>Действия</th></tr></thead><tbody id="showcaseBody"></tbody></table></div>
-      <h3 style="margin-top:28px;margin-bottom:8px">Забытые песни (48ч+ без покупки)</h3>
-      <p class="muted" style="font-size:.8rem;margin-bottom:14px">Пробные треки, которые пользователи не выкупили за 48+ часов. По п. 7.4 Соглашения их можно выставить на МузПлощадку от лица студии или выбранной персоны для демонстрации возможностей сервиса.</p>
+      <h3 style="margin-top:28px;margin-bottom:8px">Песни без выкупа 14 дней</h3>
+      <p class="muted" style="font-size:.9rem;line-height:1.45;margin-bottom:14px">Сами на МузПлощадку не попадают. Здесь песня, которую не выкупили за 14 дней. Послушайте отрывок и решите: опубликовать, чтобы другие увидели, что умеет студия, или удалить совсем. Пока вы не нажмёте, на площадке её нет.</p>
       <div class="row" style="margin-bottom:12px">
         <button class="btn" type="button" id="unclaimedReload">Обновить забытые треки</button>
       </div>
@@ -336,12 +336,12 @@ function playAdminPreview(url){
 
 async function loadUnclaimed(){
   try{
-    var d=await api('/api/admin/showcase/unclaimed?hours=48&limit=50');
+    var d=await api('/api/admin/showcase/unclaimed?limit=50');
     var items=d.items||[];
     var tbody=document.getElementById('unclaimedBody');
     if(!tbody)return;
     if(!items.length){
-      tbody.innerHTML='<tr><td colspan="5" class="muted">Нет забытых песен старше 48 часов</td></tr>';
+      tbody.innerHTML='<tr><td colspan="5" class="muted">Нет песен, которые не выкупили за 14 дней</td></tr>';
       return;
     }
     tbody.innerHTML=items.map(function(t){
@@ -350,11 +350,15 @@ async function loadUnclaimed(){
       var playB=t.has_b?('<button class="btn" type="button" onclick="playAdminPreview(\''+esc(t.preview_url_b)+'\')">▶ B (90с)</button>'):'';
       var pubBadge=t.already_published?'<span style="color:#4ade80;font-size:.75rem">✓ На МузПлощадке</span> ':'';
       var pubBtnA=t.has_a?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="A" data-title="'+esc(t.title)+'">Опубликовать A</button> '):'';
-      var pubBtnB=t.has_b?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="B" data-title="'+esc(t.title)+'">Опубликовать B</button>'):'';
-      return'<tr><td class="muted" style="white-space:nowrap">'+esc(date)+'</td><td><strong>'+esc(t.title)+'</strong><br><span class="muted" style="font-size:.75rem">'+esc(t.genre)+'</span></td><td>'+esc(t.user_name)+'</td><td style="white-space:nowrap">'+playA+' '+playB+'</td><td style="white-space:nowrap">'+pubBadge+pubBtnA+pubBtnB+'</td></tr>';
+      var pubBtnB=t.has_b?('<button class="btn primary" type="button" data-genid="'+esc(t.id)+'" data-var="B" data-title="'+esc(t.title)+'">Опубликовать B</button> '):'';
+      var delBtn='<button class="btn" type="button" data-del="'+esc(t.id)+'" data-title="'+esc(t.title)+'" data-published="'+(t.already_published?'1':'0')+'">Удалить совсем</button>';
+      return'<tr><td class="muted" style="white-space:nowrap">'+esc(date)+'</td><td><strong>'+esc(t.title)+'</strong><br><span class="muted" style="font-size:.75rem">'+esc(t.genre)+'</span></td><td>'+esc(t.user_name)+'</td><td style="white-space:nowrap">'+playA+' '+playB+'</td><td style="white-space:nowrap">'+pubBadge+pubBtnA+pubBtnB+delBtn+'</td></tr>';
     }).join('');
     tbody.querySelectorAll('button[data-genid]').forEach(function(btn){
       btn.onclick=function(){publishUnclaimedTrack(btn);};
+    });
+    tbody.querySelectorAll('button[data-del]').forEach(function(btn){
+      btn.onclick=function(){deleteUnclaimedTrack(btn);};
     });
   }catch(e){console.error(e);}
 }
@@ -398,6 +402,24 @@ async function publishUnclaimedTrack(btn){
     loadUnclaimed();
   }catch(e){
     alert(e.message||'Ошибка публикации');
+  }
+}
+async function deleteUnclaimedTrack(btn){
+  var title=btn.dataset.title||'эту песню';
+  var onSite=btn.dataset.published==='1';
+  var ask=onSite
+    ?('Удалить совсем «'+title+'»? Она пропадёт у человека и с МузПлощадки. Вернуть нельзя.')
+    :('Удалить совсем «'+title+'»? Она пропадёт у человека. На МузПлощадку её не ставим. Вернуть нельзя.');
+  if(!confirm(ask))return;
+  try{
+    var res=await api('/api/admin/showcase/unclaimed/'+encodeURIComponent(btn.dataset.del),{method:'DELETE'});
+    var msg='Песня «'+(res.title||title)+'» удалена с сайта.';
+    if(res.storage_cleared===false)msg+=' Файл в хранилище мог остаться. Напишите об этом в чат.';
+    alert(msg);
+    loadUnclaimed();
+    if(typeof loadDash==='function')loadDash();
+  }catch(e){
+    alert(e.message||'Не удалось удалить');
   }
 }
 async function handleShowcaseAction(btn){

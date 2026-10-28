@@ -68,6 +68,7 @@ from backend.models import (
 from backend.services.admin_service import AdminService
 from backend.services.gift_service import GiftService, OCCASION_DEFAULTS
 from backend.services import site_notice as site_notice_service
+from backend.services.demo_claim import UNCLAIMED_HOURS
 from backend.services.showcase_admin_service import ShowcaseAdminService
 from backend.services.ai_producer import AiProducer
 from backend.services.music_provider_service import MusicProviderService
@@ -156,7 +157,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.140", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.141", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1392,7 +1393,7 @@ async def admin_clear_seed_engagement(
 
 @app.get("/api/admin/showcase/unclaimed")
 async def admin_list_unclaimed_generations(
-    hours: int = 48,
+    hours: int = UNCLAIMED_HOURS,
     limit: int = 50,
     admin_user: dict = Depends(require_admin_user),
 ):
@@ -1405,6 +1406,35 @@ async def admin_list_unclaimed_generations(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return {"items": items}
+
+
+@app.delete("/api/admin/showcase/unclaimed/{generation_id}")
+async def admin_delete_unclaimed_generation(
+    generation_id: str,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        _assert_showcase_permission(admin_user)
+        result = showcase_admin.delete_unclaimed_generation(
+            generation_id=generation_id,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _log_showcase_action(
+        admin_user=admin_user,
+        request=request,
+        action="showcase.delete_unclaimed",
+        target_id=generation_id,
+        details={
+            "title": result["title"],
+            "removed_tracks": result["removed_tracks"],
+            "storage_cleared": result["storage_cleared"],
+        },
+    )
+    return result
 
 
 @app.post("/api/admin/showcase/publish-unclaimed")

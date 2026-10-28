@@ -9,8 +9,20 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
+from backend.logger import log
 from backend.services.audio_access_service import AudioAccessService
 from backend.services.cabinet_service import CabinetService
+from backend.services.demo_claim import UNCLAIMED_HOURS, demo_claim_open
+
+
+def unclaimed_notice_message(title: str) -> str:
+    """Текст плашки. Только название, без текста песни и без почты."""
+    safe = (title or "").strip()[:80] or "Без названия"
+    return (
+        f"Песня «{safe}» не выкуплена 14 дней. "
+        "Можно опубликовать на МузПлощадке или удалить. "
+        "Откройте «Витрина»."
+    )
 
 # Готовые «живые» ники — как на реальной площадке, не «Марина» / «Алексей».
 PERSONA_NICKNAMES = (
@@ -665,12 +677,12 @@ class ShowcaseAdminService:
     def list_unclaimed_generations(
         self,
         *,
-        hours: int = 48,
+        hours: int = UNCLAIMED_HOURS,
         limit: int = 50,
     ) -> list[dict]:
-        """Невыкупленные генерации старше N часов для демонстрации на МузПлощадке."""
+        """Невыкупленные демо старше 14 дней. Сами на МузПлощадку не ставятся."""
         limit = max(1, min(limit, 100))
-        hours = max(1, int(hours))
+        hours = max(UNCLAIMED_HOURS, int(hours))
         cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
 
         with get_connection() as conn:
@@ -700,6 +712,7 @@ class ShowcaseAdminService:
                 LEFT JOIN users u ON u.id = g.user_id
                 WHERE g.status = 'success'
                   AND COALESCE(g.purchased, 0) = 0
+                  AND COALESCE(g.note_charged, 0) = 0
                   AND (g.music_url_a IS NOT NULL OR g.music_url_b IS NOT NULL)
                   AND g.created_at <= ?
                 ORDER BY g.created_at DESC
@@ -757,6 +770,10 @@ class ShowcaseAdminService:
                 raise ValueError("Генерация не найдена")
             if gen["status"] != "success":
                 raise ValueError("Генерация не завершена успешно")
+            if int(gen["purchased"] or 0) or int(gen["note_charged"] or 0):
+                raise ValueError("Эта песня уже выкуплена")
+            if demo_claim_open(gen["created_at"] or ""):
+                raise ValueError("Ещё не прошло 14 дней")
 
             url = gen["music_url_b"] if variant_key == "B" else gen["music_url_a"]
             if not url:
@@ -838,4 +855,109 @@ class ShowcaseAdminService:
             "variant": variant_key,
             "author_name": pub_author,
             "published_at": now,
+        }
+
+    def unclaimed_admin_notices(self, *, limit: int = 6) -> list[dict[str, str]]:
+        """Имена песен для плашки в админке. Текст песни и почту сюда не кладём."""
+        items = self.list_unclaimed_generations(limit=max(1, min(limit, 20)))
+        notices: list[dict[str, str]] = []
+        for item in items[:5]:
+            notices.append(
+                {
+                    "level": "warning",
+                    "message": unclaimed_notice_message(item.get("title") or ""),
+                }
+            )
+        if len(items) > 5:
+            notices.append(
+                {
+                    "level": "warning",
+                    "message": (
+                        "Ещё есть песни, которые не выкупили за 14 дней. "
+                        "Откройте «Витрина»."
+                    ),
+                }
+            )
+        return notices
+
+    def delete_unclaimed_generation(self, *, generation_id: str) -> dict:
+        """Убрать невыкупленное демо с сайта. Купленную песню не трогаем."""
+        generation_id = (generation_id or "").strip()
+        if not generation_id:
+            raise ValueError("Песня не найдена")
+
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+            if not gen:
+                raise ValueError("Песня не найдена")
+            if int(gen["purchased"] or 0) or int(gen["note_charged"] or 0):
+                raise ValueError("Купленную песню удалять нельзя")
+            if gen["status"] != "success":
+                raise ValueError("Удалять можно только готовое демо")
+            if demo_claim_open(gen["created_at"] or ""):
+                raise ValueError("Ещё не прошло 14 дней")
+
+            title = ((gen["title"] or "Без названия").strip()[:120] or "Без названия")
+            removed = conn.execute(
+                """
+                DELETE FROM generations
+                WHERE id = ?
+                  AND status = 'success'
+                  AND COALESCE(purchased, 0) = 0
+                  AND COALESCE(note_charged, 0) = 0
+                """,
+                (generation_id,),
+            )
+            if removed.rowcount != 1:
+                raise ValueError("Эту песню удалить нельзя")
+
+            lib_rows = conn.execute(
+                "SELECT id FROM user_library WHERE generation_id = ?",
+                (generation_id,),
+            ).fetchall()
+            lib_ids = [row["id"] for row in lib_rows]
+            for lib_id in lib_ids:
+                conn.execute("DELETE FROM track_likes WHERE library_id = ?", (lib_id,))
+                conn.execute(
+                    "DELETE FROM track_comments WHERE library_id = ?",
+                    (lib_id,),
+                )
+                conn.execute("DELETE FROM gift_links WHERE library_id = ?", (lib_id,))
+            if lib_ids:
+                conn.execute(
+                    "DELETE FROM user_library WHERE generation_id = ?",
+                    (generation_id,),
+                )
+            conn.execute(
+                "DELETE FROM showcase_tracks WHERE generation_id = ?",
+                (generation_id,),
+            )
+            conn.execute(
+                """
+                UPDATE messenger_followups
+                SET canceled_at = ?
+                WHERE generation_id = ?
+                  AND sent_at IS NULL
+                  AND canceled_at IS NULL
+                """,
+                (utc_now(), generation_id),
+            )
+
+        storage_cleared = True
+        try:
+            from backend.services.storage_service import StorageService
+
+            storage_cleared = StorageService().delete_generation_mirror(generation_id)
+        except Exception:
+            log.exception("unclaimed audio delete failed: %s", generation_id)
+            storage_cleared = False
+
+        return {
+            "success": True,
+            "title": title,
+            "removed_tracks": len(lib_ids),
+            "storage_cleared": storage_cleared,
         }

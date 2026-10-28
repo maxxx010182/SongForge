@@ -58,6 +58,8 @@ def test_unbought_demo_is_on_the_studio_and_in_the_library():
     assert "Послушать 1" in html
     assert "parkOldDemos" in html
     assert "лежит в «Истории»" in html
+    assert "не выкупить за 14 дней" in html
+    assert "demo-rights" in html
     assert "лежат на вкладке «История»" not in html
     assert "во вкладке «История»" not in html
 
@@ -91,6 +93,8 @@ def test_legal_pages_have_canonical():
         assert f'<link rel="canonical" href="https://sozdaipesnu.ru{path}">' in response.text
         assert description in response.text
         assert response.text.count("<h1") == 1
+        assert "14 (четырнадцати) дней" in response.text
+        assert "48 (сорока восьми) часов" not in response.text
 
 
 def test_landing_seo_marks():

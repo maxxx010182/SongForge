@@ -243,6 +243,12 @@ class AdminService:
             llm_alert = None
         if llm_alert:
             alerts.insert(0, llm_alert)
+        try:
+            from backend.services.showcase_admin_service import ShowcaseAdminService
+
+            alerts.extend(ShowcaseAdminService().unclaimed_admin_notices())
+        except Exception:
+            pass
         return alerts
 
     @staticmethod

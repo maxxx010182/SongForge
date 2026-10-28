@@ -4,6 +4,7 @@ import uuid
 
 from backend.database.db import get_connection, init_db, utc_now
 from backend.services.audio_access_service import AudioAccessService
+from backend.services.demo_claim import demo_claim_open
 from backend.settings import PREVIEW_LIMIT_SEC
 
 _STYLE_PREFIX = "Стиль и звучание:"
@@ -143,6 +144,7 @@ class CabinetService:
             "has_preview_b": bool(row["music_url_b"]),
             "image_url_a": row["image_url_a"] or row["image_url_b"],
             "image_url_b": row["image_url_b"] or row["image_url_a"],
+            "claim_open": bool(row["note_charged"]) or demo_claim_open(row["created_at"] or ""),
         }
 
     def get_history_preview(
@@ -717,6 +719,10 @@ class CabinetService:
                 raise ValueError("Уже куплено")
             if gen["status"] != "success":
                 raise ValueError("Генерация ещё не готова")
+            if not gen["note_charged"] and not demo_claim_open(gen["created_at"] or ""):
+                raise ValueError(
+                    "Срок выкупа прошёл. Права на это демо перешли сервису."
+                )
 
             charge_balance = not bool(gen["note_charged"])
             if charge_balance:
