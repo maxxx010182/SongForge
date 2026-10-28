@@ -51,6 +51,15 @@ def test_apex_host_stays():
     assert response.status_code == 200
 
 
+def test_unbought_demo_is_on_the_studio_and_in_the_library():
+    html = client.get("/").text
+    assert 'id="studioDemos"' in html
+    assert 'id="libraryDemos"' in html
+    assert "Послушать 1" in html
+    assert "лежат на вкладке «История»" not in html
+    assert "во вкладке «История»" not in html
+
+
 def test_homepage_seo_marks():
     html = client.get("/").text
     assert html.count("<h1") == 1

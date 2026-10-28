@@ -107,9 +107,11 @@ def test_keep_letters_two_kinds_no_rolik():
     assert d7_plain.startswith("Два варианта всё ещё ждут")
     assert keep_letter(biz, 1) == d7_plain
     d10_mom = keep_letter(mom, 2)
-    assert "История для мамы уже внутри" in d10_mom
+    assert "Песня для мамы уже ждёт" in d10_mom
+    assert "Послушать" in d10_mom
     d10_plain = keep_letter(plain, 2)
-    assert "Историю заново рассказывать не нужно" in d10_plain
+    assert "Песня уже ждёт" in d10_plain
+    assert "Послушать" in ready_letter(mom)
     assert keep_letter(biz, 2) == d10_plain
     d14_mom = keep_letter(mom, 3)
     assert d14_mom.startswith("Это последнее письмо про песню для мамы")
