@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from backend.database.db import get_connection, init_db
 from backend.services.cabinet_service import CabinetService
@@ -300,3 +301,23 @@ def test_delete_expired_demo_keeps_paid_song(monkeypatch):
 
     explore_ids = [item["id"] for item in cab.list_explore(limit=50)]
     assert published["library_id"] not in explore_ids
+
+
+def test_admin_puts_unclaimed_on_its_own_tab():
+    root = Path(__file__).resolve().parents[1]
+    html = (root / "admin.html").read_text(encoding="utf-8")
+    service = (root / "backend" / "services" / "admin_service.py").read_text(encoding="utf-8")
+    assert html.index('id="navTabs"') < html.index('id="alerts"')
+    dash = html.split('id="panelDash"', 1)[1].split('id="panelGen"', 1)[0]
+    assert 'id="alerts"' in dash
+    assert "unclaimedBody" not in dash
+    showcase = html.split('id="panelShowcase"', 1)[1].split('id="panelUnclaimed"', 1)[0]
+    assert "unclaimedBody" not in showcase
+    assert "unclaimedBody" in html.split('id="panelUnclaimed"', 1)[1]
+    nav = html.split("function buildNav()", 1)[1].split("async function init()", 1)[0]
+    assert nav.index("Витрина") < nav.index("Демо 14 дней") < nav.index("Пользователи")
+    shown = html.split("async function loadShowcase()", 1)[1].split("function playAdminPreview", 1)[0]
+    assert "loadUnclaimed()" not in shown
+    assert "unclaimed_admin_notices" not in service
+    switch = html.split("function switchTab", 1)[1].split("function buildNav", 1)[0]
+    assert ".tab" not in switch
