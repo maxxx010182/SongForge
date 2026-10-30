@@ -15,7 +15,8 @@ from backend.services.provided_song import extract_provided_song
 from backend.services.nudge_schedule import (
     evening_after,
     evening_on_day,
-    keep_evenings,
+    hour_ping,
+    keep_plan,
     normalize_tz,
     studio_slots,
 )
@@ -424,7 +425,7 @@ class MessengerService:
         name: str = "",
     ) -> dict:
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -556,7 +557,7 @@ class MessengerService:
             goal, contact.get("brief_mood") or "", contact.get("brief_detail") or ""
         )
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -574,7 +575,7 @@ class MessengerService:
         goal = contact.get("brief_whom") or ""
         brief = compose_brief_business(goal, contact.get("brief_mood") or "", detail)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -592,7 +593,7 @@ class MessengerService:
         goal = contact.get("brief_whom") or ""
         brief = compose_brief_business(goal, tone, contact.get("brief_detail") or "")
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -650,7 +651,7 @@ class MessengerService:
             contact, brief_whom=whom, brief_detail=extra, segment=plot
         )
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -668,7 +669,7 @@ class MessengerService:
         next_stage = STAGE_UNSAID if occasion_key == "unsaid" else STAGE_DETAIL
         brief = self._gift_brief(contact, brief_mood=mood)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -685,7 +686,7 @@ class MessengerService:
     def set_theme(self, contact: dict, theme: str, *, theme_key: str = "") -> dict:
         brief = self._gift_brief(contact, brief_mood=theme, segment="just")
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -705,7 +706,7 @@ class MessengerService:
     def set_genre(self, contact: dict, genre: str) -> dict:
         brief = self._gift_brief(contact, brief_genre=genre)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -725,7 +726,7 @@ class MessengerService:
     def set_detail(self, contact: dict, detail: str) -> dict:
         brief = self._gift_brief(contact, brief_detail=detail)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -742,7 +743,7 @@ class MessengerService:
     def set_sound(self, contact: dict, sound: str) -> dict:
         brief = self._gift_brief(contact, brief_sound=sound)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -759,7 +760,7 @@ class MessengerService:
     def set_voice(self, contact: dict, voice: str) -> dict:
         brief = self._gift_brief(contact, brief_voice=voice)
         now = utc_now()
-        next_at = evening_after(contact.get("tz_name") or "", days=0)
+        next_at = hour_ping(contact.get("tz_name") or "")
         with get_connection() as conn:
             conn.execute(
                 """
@@ -776,7 +777,7 @@ class MessengerService:
     def mark_sent_to_site(self, contact: dict) -> dict:
         now = utc_now()
         tz = contact.get("tz_name") or ""
-        next_at = evening_after(tz, days=0)
+        next_at = hour_ping(tz)
         with get_connection() as conn:
             conn.execute(
                 """
@@ -826,7 +827,7 @@ class MessengerService:
         tz = contact.get("tz_name") or ""
         if step <= 0:
             anchor = now
-            next_at = evening_after(tz, days=1, after=now_dt)
+            next_at = evening_after(tz, days=0, after=now_dt)
             new_step = 1
         else:
             anchor = (contact.get("nudge_anchor_at") or "").strip() or now
@@ -1143,8 +1144,7 @@ class MessengerService:
         anchor_iso: str,
     ) -> None:
         tz = contact.get("tz_name") or ""
-        kinds = ("keep_d3", "keep_d7", "keep_d10", "keep_d14")
-        for kind, due in zip(kinds, keep_evenings(tz, anchor_iso)):
+        for kind, due in keep_plan(tz, anchor_iso):
             if self._pending_followup(contact["id"], generation_id, kind):
                 continue
             self.schedule_followup(
@@ -1177,7 +1177,6 @@ class MessengerService:
         if not user_id or not generation_id:
             return
         now = utc_now()
-        purchased = 0
         with get_connection() as conn:
             conn.execute(
                 """
@@ -1187,11 +1186,6 @@ class MessengerService:
                 """,
                 (now, generation_id),
             )
-            row = conn.execute(
-                "SELECT purchased FROM generations WHERE id = ?",
-                (generation_id,),
-            ).fetchone()
-            purchased = int(row["purchased"] or 0) if row else 0
         self.touch_site(user_id)
         contact = self.get_max_contact_for_user(user_id)
         if not contact or not self.can_message(contact):
@@ -1206,11 +1200,7 @@ class MessengerService:
             generation_id=generation_id,
             kind="ready_weekly",
         )
-        if purchased:
-            return
-        self.schedule_keep_evenings(
-            contact, generation_id=generation_id, anchor_iso=now
-        )
+        return
 
     def on_generation_purchased(self, *, user_id: str, generation_id: str) -> None:
         contact = self.get_max_contact_for_user(user_id)
@@ -1266,7 +1256,7 @@ class MessengerService:
         with get_connection() as conn:
             row = conn.execute(
                 """
-                SELECT id, user_id, purchased, previewed_at, status, title
+                SELECT id, user_id, purchased, previewed_at, status, title, created_at
                 FROM generations WHERE id = ?
                 """,
                 (generation_id,),

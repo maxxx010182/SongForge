@@ -616,9 +616,9 @@ def test_ready_followup_waits_if_on_site_then_sends():
                 """
                 INSERT INTO generations (
                     id, created_at, status, user_id, purchased, title
-                ) VALUES (?, '2026-09-11T10:00:00', 'success', ?, 0, 'Тест')
+                ) VALUES (?, ?, 'success', ?, 0, 'Тест')
                 """,
-                (gen_id, contact["user_id"]),
+                (gen_id, datetime.now(timezone.utc).isoformat(), contact["user_id"]),
             )
         svc.on_generation_ready(user_id=contact["user_id"], generation_id=gen_id)
         contact = svc.get_by_max(max_user_id)
@@ -643,7 +643,7 @@ def test_ready_followup_waits_if_on_site_then_sends():
             )
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "звучат" in last["text"].lower()
+        assert "готова" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("слушать" in l.lower() for l in labels)
         assert any("open=listen" in (btn.get("url") or "") for row in last["buttons"] for btn in row)
@@ -663,9 +663,9 @@ def test_unpaid_followup_after_preview():
                 """
                 INSERT INTO generations (
                     id, created_at, status, user_id, purchased, title
-                ) VALUES (?, '2026-09-11T10:00:00', 'success', ?, 0, 'Тест')
+                ) VALUES (?, ?, 'success', ?, 0, 'Тест')
                 """,
-                (gen_id, contact["user_id"]),
+                (gen_id, datetime.now(timezone.utc).isoformat(), contact["user_id"]),
             )
         svc.on_generation_ready(user_id=contact["user_id"], generation_id=gen_id)
         svc.on_preview_played(user_id=contact["user_id"], generation_id=gen_id)
@@ -676,12 +676,12 @@ def test_unpaid_followup_after_preview():
             )
             conn.execute(
                 "UPDATE messenger_followups SET due_at = ? WHERE generation_id = ? AND kind = ?",
-                ("2000-01-01T00:00:00+00:00", gen_id, "keep_d3"),
+                ("2000-01-01T00:00:00+00:00", gen_id, "keep_d1"),
             )
         api.sent.clear()
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "теплее" in last["text"].lower()
+        assert "понравился" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("слушать" in l.lower() for l in labels)
         assert not any("расширенный" in l.lower() for l in labels)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from backend.logger import log
 from backend.services.auth_service import AuthService
+from backend.services.demo_claim import demo_claim_open
 from backend.services.max_api import MaxApi
 from backend.services.max_legal import legal_page
 from backend.services.max_letters import (
@@ -1470,6 +1471,9 @@ class MaxBot:
             if int(gen.get("purchased") or 0):
                 self.messenger.cancel_followup(job["id"])
                 continue
+            if gen.get("created_at") and not demo_claim_open(gen.get("created_at") or ""):
+                self.messenger.cancel_followup(job["id"])
+                continue
             if kind in {"ready_listen", "ready_weekly"} and gen.get("previewed_at"):
                 self.messenger.cancel_followup(job["id"])
                 continue
@@ -1477,7 +1481,11 @@ class MaxBot:
                 wait = 5 if kind == "ready_listen" else 30
                 self.messenger.delay_followup(job["id"], minutes=wait)
                 continue
-            built = self._generation_followup(contact, kind)
+            built = self._generation_followup(
+                contact,
+                kind,
+                listened=bool(gen.get("previewed_at")),
+            )
             if built is None:
                 self.messenger.cancel_followup(job["id"])
                 continue
@@ -1497,7 +1505,7 @@ class MaxBot:
                 self.messenger.delay_followup(job["id"], minutes=15)
         return sent
 
-    def _generation_followup(self, contact: dict, kind: str):
+    def _generation_followup(self, contact: dict, kind: str, *, listened: bool = False):
         listen = [[
             _link_btn(
                 "▶ Послушать",
@@ -1506,16 +1514,18 @@ class MaxBot:
         ]]
         if kind in {"ready_listen", "ready_weekly"}:
             return ready_letter(contact), listen
-        keep_step = {
-            "keep_d3": 0,
-            "unpaid_preview": 0,
-            "unpaid_expert": 0,
-            "keep_d7": 1,
-            "keep_d10": 2,
-            "unpaid_tip": 2,
-            "keep_d14": 3,
-            "unpaid_weekly": 3,
-        }
-        if kind in keep_step:
-            return keep_letter(contact, keep_step[kind]), listen
+        if kind in {
+            "keep_d1",
+            "keep_d3",
+            "unpaid_preview",
+            "keep_d4",
+            "keep_d7",
+            "unpaid_expert",
+            "keep_d10",
+            "keep_d11",
+            "unpaid_tip",
+            "keep_d14",
+            "unpaid_weekly",
+        }:
+            return keep_letter(contact, kind, listened=listened), listen
         return None
