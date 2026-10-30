@@ -1,22 +1,56 @@
-"""Тексты писем бота. Имя подставляется из анкеты, не одно на всех."""
+"""Тексты писем бота. Кнопка даёт готовую форму. Своё имя в письмо не вставляем."""
 
 from __future__ import annotations
 
-from backend.services.max_funnel import is_just_plot, is_skip
+from backend.database.db import get_connection
+from backend.services.max_funnel import is_just_plot, is_skip, whom_for_phrase
+from backend.settings import GUEST_GENERATION_LIMIT
 
-_GENITIVE = {
-    "маме": "мамы",
-    "папе": "папы",
-    "жене": "жены",
-    "мужу": "мужа",
-    "парню": "парня",
-    "девушке": "девушки",
-    "дружбану": "дружбана",
-    "подружке": "подружки",
-    "родственнику": "родственника",
-    "ребёнку": "ребёнка",
-    "половинке": "половинки",
-}
+
+def trial_is_open(user_id: str | None) -> bool:
+    """Проба ещё есть. Без аккаунта считаем, что первая песня впереди."""
+    uid = (user_id or "").strip()
+    if not uid:
+        return True
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT trial_generations_used FROM users WHERE id = ?",
+            (uid,),
+        ).fetchone()
+    used = int(row["trial_generations_used"]) if row else 0
+    return used < GUEST_GENERATION_LIMIT
+
+
+def _note_prices() -> tuple[int, int, int, int]:
+    from backend.services.payment_service import PACKAGES
+
+    return (
+        int(PACKAGES["notes_1"]["price_rub"]),
+        int(PACKAGES["notes_3"]["price_rub"]),
+        int(PACKAGES["notes_5"]["price_rub"]),
+        int(PACKAGES["notes_10"]["price_rub"]),
+    )
+
+
+def price_reply(*, trial_open: bool) -> str:
+    one, three, five, ten = _note_prices()
+    packs = f"Пакетом выгоднее: 3 ноты — {three} ₽, 5 — {five} ₽, 10 — {ten} ₽."
+    if trial_open:
+        return (
+            "Первая проба бесплатна: создаёшь песню и слушаешь два демо-варианта "
+            "отрывками по 90 секунд.\n"
+            f"Понравилось — забираешь полные версии за 1 ноту ({one} ₽). "
+            "За неё обе версии: слушать целиком, скачать, опубликовать на МузПлощадке.\n"
+            f"{packs}\n"
+            "\n"
+            "Продолжим?"
+        )
+    return (
+        f"Одна песня — 1 нота ({one} ₽): сразу две полные версии, скачивание и публикация.\n"
+        f"{packs}\n"
+        "\n"
+        "Продолжим?"
+    )
 
 
 def _role(contact: dict) -> str:
@@ -28,17 +62,11 @@ def _role(contact: dict) -> str:
     return "gift"
 
 
-def _whom(contact: dict) -> str:
+def _named(contact: dict) -> str:
+    """«для мамы» только если адресат — кнопка. Своё имя сюда не подставляем."""
     if _role(contact) != "gift":
         return ""
-    return (contact.get("brief_whom") or "").strip()
-
-
-def _for(whom: str) -> str:
-    gen = _GENITIVE.get(whom)
-    if gen:
-        return f"для {gen}"
-    return whom
+    return whom_for_phrase(contact.get("brief_whom") or "")
 
 
 def _detail(contact: dict) -> str:
@@ -51,75 +79,94 @@ def _detail(contact: dict) -> str:
 
 
 def studio_letter(contact: dict, step: int) -> str:
-    """Письмо тому, кто песню ещё не запустил. step 0..4 = вечера 1, 3, 7, 10, 14."""
-    whom = _whom(contact)
+    """Песню ещё не запускали. step 0..3 = ближайший вечер, следующий, день 3, день 7."""
+    named = _named(contact)
     detail = _detail(contact)
-    n = step if step < 4 else 4
-    whom_for = _for(whom) if whom else ""
+    n = step if step < 3 else 3
+    trial = trial_is_open(contact.get("user_id"))
+    one, _, _, _ = _note_prices()
     if n == 0:
-        if whom:
-            return (
-                f"Черновик {whom_for} уже есть. Нажми — через пару минут "
-                "можно услышать, как это звучит."
+        if named:
+            text = (
+                f"Анкета {named} уже в студии, но песни пока нет — её нужно запустить. "
+                "Нажми «Создать песню»: примерно через 3 минуты будут два варианта."
             )
-        return (
-            "Черновик уже есть. Нажми — через пару минут "
-            "можно услышать, как это звучит."
-        )
+        else:
+            text = (
+                "Анкета уже в студии, но песни пока нет — её нужно запустить. "
+                "Нажми «Создать песню»: примерно через 3 минуты будут два варианта."
+            )
+        if trial:
+            text += "\n\nПервая проба бесплатна: 2 демо-варианта по 90 секунд."
+        return text
     if n == 1:
-        if detail and whom:
-            return (
-                f"{detail}. Из этого уже получается строчка {whom_for}. "
-                "Можно поправить — или сразу услышать, как она поётся."
-            )
         if detail:
-            return (
-                f"{detail}. Из этого уже получается строчка. "
-                "Можно поправить — или сразу услышать, как она поётся."
+            text = (
+                f"«{detail}» — из этого может получиться строчка в песне. "
+                "Нажми «Создать песню» и послушай, как она поётся."
             )
-        if whom:
-            return (
-                f"Песня {whom_for} пока без голоса. "
-                "Пара минут — и можно услышать первый вариант."
+        else:
+            text = (
+                "Все пожелания к песне уже вписаны в студии. "
+                "Одна кнопка — и примерно через 3 минуты два варианта."
             )
-        return "Черновик пока без голоса. Пара минут — и можно услышать первый вариант."
+        if trial:
+            text += "\n\nЭто бесплатно."
+        return text
     if n == 2:
-        if whom:
+        if trial:
             return (
-                f"Будет два варианта {whom_for}. Обычно один теплее, другой смелее. "
-                "Черновик всё ещё в студии — можно услышать оба."
+                "Как это работает:\n"
+                "1. Нажимаешь «Создать песню».\n"
+                "2. Примерно через 3 минуты — два варианта: текст один, музыка разная.\n"
+                "3. Слушаешь демо-отрывки по 90 секунд — бесплатно.\n"
+                f"4. Понравилось — забираешь обе полные версии за {one} ₽.\n"
+                "Платить заранее не нужно."
             )
         return (
-            "Будет два варианта. Обычно один теплее, другой смелее. "
-            "Черновик всё ещё в студии — можно услышать оба."
+            f"Одна генерация — 1 нота ({one} ₽) — и сразу две полные версии: "
+            "слушать, скачать, опубликовать. Анкета уже в студии."
         )
-    if n == 3:
-        if whom:
-            return (
-                f"Представь, как {whom} это включается на кухне. "
-                "Пара минут — и можно услышать песню до того, как дарить."
+    if named:
+        return f"Последнее напоминание: анкета {named} ждёт в студии. Кнопка та же."
+    return "Последнее напоминание: анкета ждёт в студии. Кнопка та же."
+
+
+def survey_letter(contact: dict, step: int) -> str:
+    """Бросил анкету. Три разных письма, потом тишина."""
+    named = _named(contact)
+    n = step if step < 2 else 2
+    if n == 0:
+        if named:
+            text = (
+                f"Анкета песни {named} остановилась на середине. "
+                "Осталась пара вопросов — и можно в студию."
             )
+        else:
+            text = (
+                "Анкета песни остановилась на середине. "
+                "Осталась пара вопросов — и можно в студию."
+            )
+        if trial_is_open(contact.get("user_id")):
+            text += "\n\nПервая проба бесплатна: 2 демо-варианта по 90 секунд."
+        return text
+    if n == 1:
         return (
-            "Пара минут — и можно услышать, как черновик звучит. "
-            "Он всё ещё в студии."
-        )
-    if whom:
-        return (
-            f"Это последнее письмо про черновик {whom_for}. "
-            "Он лежит в студии. Когда захочется услышать — ссылка та же."
+            "Не знаешь, что ответить? На каждый вопрос можно просто нажать готовый вариант, "
+            "а деталь — пропустить. Песня соберётся и так, детали только делают её точнее."
         )
     return (
-        "Это последнее письмо про этот черновик. "
-        "Он лежит в студии. Когда захочется услышать — ссылка та же."
+        "Последнее напоминание про эту анкету. "
+        "Ответы сохранены — вернуться можно в любой момент."
     )
 
 
 def ready_letter(contact: dict) -> str:
     """Через ~5 минут после того, как песня зазвучала."""
-    whom = _whom(contact)
-    if whom:
+    named = _named(contact)
+    if named:
         return (
-            f"Два варианта {_for(whom)} уже звучат. "
+            f"Два варианта {named} уже звучат. "
             "Нажми «Послушать» — откроется песня."
         )
     return (
@@ -130,9 +177,10 @@ def ready_letter(contact: dict) -> str:
 
 def keep_letter(contact: dict, step: int) -> str:
     """Письмо, если песня есть, а покупки нет. step 0..3 = дни 3, 7, 10, 14."""
-    whom = _whom(contact)
+    named = _named(contact)
     n = step if step < 3 else 3
-    whom_for = _for(whom) if whom else ""
+    whom = named
+    whom_for = named
     if n == 0:
         if whom:
             return (
@@ -168,10 +216,10 @@ def keep_letter(contact: dict, step: int) -> str:
         )
     if whom:
         return (
-            f"Это последнее письмо про песню {whom_for}. "
-            "Она сохранена. Нажми «Послушать» — песня откроется."
+            f"Сегодня последний день, когда песню {whom_for} ещё можно забрать. "
+            "Потом это демо уже не купить. Нажми «Послушать»."
         )
     return (
-        "Это последнее письмо про эту песню. "
-        "Она сохранена. Нажми «Послушать» — песня откроется."
+        "Сегодня последний день, когда эту песню ещё можно забрать. "
+        "Потом это демо уже не купить. Нажми «Послушать»."
     )

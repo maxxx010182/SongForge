@@ -6,7 +6,14 @@ from backend.logger import log
 from backend.services.auth_service import AuthService
 from backend.services.max_api import MaxApi
 from backend.services.max_legal import legal_page
-from backend.services.max_letters import keep_letter, ready_letter, studio_letter
+from backend.services.max_letters import (
+    keep_letter,
+    price_reply,
+    ready_letter,
+    studio_letter,
+    survey_letter,
+    trial_is_open,
+)
 from backend.services.max_funnel import (
     ABOUT_TEXT,
     ABOUT_WAIT,
@@ -17,10 +24,7 @@ from backend.services.max_funnel import (
     CONFIRM_FOOTER,
     DETAIL_JUST,
     DETAIL_WAIT,
-    FAQ_TEXT,
     GATE_FORMAT,
-    GATE_RETURN_TEXT,
-    GATE_TEXT,
     GENRE_TEXT,
     GENRE_WAIT,
     GREET_STAY_TEXT,
@@ -30,8 +34,10 @@ from backend.services.max_funnel import (
     RESUME_TEXT,
     SOUND_TEXT,
     STOP_TEXT,
-    STUDIO_CTA,
+    STUDIO_AGAIN,
     STUDIO_FORMAT,
+    gate_text,
+    studio_cta,
     studio_legal_html,
     THEME_TEXT,
     UNSAID_TEXT,
@@ -49,6 +55,7 @@ from backend.services.max_funnel import (
     is_skip,
     looks_business,
     occasion_key_of,
+    whom_for_phrase,
     parse_detail,
     parse_genre,
     parse_occasion,
@@ -56,7 +63,6 @@ from backend.services.max_funnel import (
     parse_theme,
     parse_voice,
     parse_whom,
-    studio_mirror,
     theme_key_of,
 )
 from backend.services.messenger_service import (
@@ -131,10 +137,6 @@ ACCEPT_WORDS = {
 }
 NUDGE_LATER_TEXT = "Сейчас некогда? Ок, давай в другой раз — напомню позднее."
 NUDGE_SNOOZE_OK = "Ок, напомню позднее."
-NUDGE_SURVEY_ABANDONED = (
-    "Черновик песни ждёт продолжения. Конечно же, чем больше деталей, тем эффектнее, "
-    "но и если нет особо времени, то можно довериться алгоритму и он сам создаст шедевр. Продолжим?"
-)
 
 
 def _callback_btn(text: str, payload: str, *, intent: str | None = None) -> dict:
@@ -399,11 +401,11 @@ def _nudge_payload(messenger: MessengerService, contact: dict, step: int) -> tup
     stage = contact.get("funnel_stage") or ""
     later = [[_callback_btn("Напомнить позднее", "nudge:later")]]
 
-    # Ветка 1: Завис на середине анкеты
+    # Анкета не доведена. Три письма, кнопка «позднее» на втором.
     if stage not in {STAGE_SENT, STAGE_GATE, STAGE_STOPPED}:
-        text = NUDGE_SURVEY_ABANDONED
+        text = survey_letter(contact, step)
         buttons = _nudge_survey_buttons()
-        if step >= 2:
+        if step == 1:
             buttons = buttons + later
         return text, buttons
 
@@ -727,7 +729,7 @@ class MaxBot:
 
     def _send_gate(self, contact: dict) -> None:
         returning = self.messenger.has_legal(contact)
-        text = GATE_RETURN_TEXT if returning else GATE_TEXT
+        text = gate_text(trial_open=trial_is_open(contact.get("user_id")))
         self._send_step(
             contact,
             text,
@@ -937,7 +939,7 @@ class MaxBot:
             return
         if not self.messenger.can_message(contact):
             if self.messenger.has_legal(contact):
-                self._send(contact, RESUME_TEXT, [[_callback_btn("Продолжить", "resume")]])
+                self._send(contact, RESUME_TEXT, [[_callback_btn("Начать", "resume")]])
             else:
                 self._send_gate(contact)
             return
@@ -999,7 +1001,7 @@ class MaxBot:
                     self._send_gate(contact)
                     return
             if self.messenger.has_legal(contact):
-                self._send(contact, RESUME_TEXT, [[_callback_btn("Продолжить", "resume")]])
+                self._send(contact, RESUME_TEXT, [[_callback_btn("Начать", "resume")]])
             else:
                 self._send_gate(contact)
             return
@@ -1017,7 +1019,10 @@ class MaxBot:
             self._stay(contact)
             return
         if is_price_question(text):
-            self._stay(contact, FAQ_TEXT)
+            self._stay(
+                contact,
+                price_reply(trial_open=trial_is_open(contact.get("user_id"))),
+            )
             return
         awaiting = (contact.get("funnel_await") or "").strip()
         stage_now = contact.get("funnel_stage") or ""
@@ -1088,7 +1093,11 @@ class MaxBot:
         if stage == STAGE_BIZ_TONE:
             self._apply_biz_tone(contact, text)
             return
-        self._send_studio(contact, extra="Черновик на месте.")
+        if stage == STAGE_SENT:
+            url = self.messenger.studio_url(contact)
+            self._send(contact, STUDIO_AGAIN, _studio_buttons(url))
+            return
+        self._send_studio(contact)
 
     def _accept(self, contact: dict, *, name: str) -> None:
         try:
@@ -1123,12 +1132,12 @@ class MaxBot:
         if patching:
             self._back_to_confirm(contact)
             return
-        if plot == "just":
-            prefix = "Ок, без адресата."
-        elif whom:
-            prefix = f"Ок, {whom}."
+        if plot == "just" or not whom:
+            prefix = "Ок, песня без адресата."
+        elif whom_for_phrase(whom):
+            prefix = f"Ок, песня {whom_for_phrase(whom)}."
         else:
-            prefix = "Ок."
+            prefix = f"Ок, адресат — {whom}."
         self._send_occasion(contact, prefix)
 
     def _apply_occasion(self, contact: dict, raw: str) -> None:
@@ -1201,7 +1210,7 @@ class MaxBot:
         if patching:
             self._back_to_confirm(contact)
             return
-        prefix = "Хорошая деталь." if detail else ""
+        prefix = "Отличная деталь — вошьём в текст." if detail else ""
         self._send_genre(contact, prefix)
 
     def _apply_unsaid(self, contact: dict, raw: str) -> None:
@@ -1253,7 +1262,7 @@ class MaxBot:
         if patching:
             self._back_to_confirm(contact)
             return
-        self._send_voice(contact, "Последний штрих.")
+        self._send_voice(contact, "Последний вопрос.")
 
     def _apply_voice(self, contact: dict, raw: str) -> None:
         patching = self._is_patching(contact)
@@ -1340,6 +1349,8 @@ class MaxBot:
             privacy_url=self.messenger.studio_url(contact, next_path="/legal/privacy"),
             offer_url=self.messenger.studio_url(contact, next_path="/legal/offer"),
         )
+        trial_open = trial_is_open(contact.get("user_id"))
+        closing = studio_cta(trial_open=trial_open)
         if (contact.get("segment") or "") == "business":
             text = (
                 biz_studio_mirror(
@@ -1348,7 +1359,7 @@ class MaxBot:
                     contact.get("brief_mood") or "",
                 )
                 + "\n\n"
-                + STUDIO_CTA
+                + closing
             )
             if extra:
                 text = extra + "\n\n" + text
@@ -1369,7 +1380,7 @@ class MaxBot:
             voice=contact.get("brief_voice") or "",
             plot=contact.get("segment") or "gift",
         )
-        text = recap + "\n\n" + STUDIO_CTA
+        text = recap + "\n\n" + closing
         if extra:
             text = extra + "\n\n" + text
         self.messenger.mark_sent_to_site(contact)
@@ -1410,6 +1421,13 @@ class MaxBot:
             return 0
         step = int(contact.get("nudge_step") or 0)
         if step < 0 or step >= 9:
+            return 0
+        if (contact.get("funnel_stage") or "") not in {
+            STAGE_SENT,
+            STAGE_GATE,
+            STAGE_STOPPED,
+        } and step >= 3:
+            self.messenger.silence_studio_nudges(contact)
             return 0
         if (contact.get("funnel_stage") or "") == STAGE_SENT and self.messenger.site_is_recent(
             contact, minutes=20

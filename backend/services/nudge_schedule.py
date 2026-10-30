@@ -67,22 +67,60 @@ def evening_after(
     return local_send.astimezone(timezone.utc).isoformat()
 
 
-def studio_slots(tz_name: str | None, anchor_iso: str) -> list[str]:
-    """Пять вечеров от ухода: ближайший, затем 3, 7, 10 и 14-й день.
-
-    День ухода считается первым. Если 19:00 этого дня уже прошло,
-    ближайший вечер — завтра, а 3, 7, 10 и 14-й остаются на своих датах.
-    """
-    tz = resolve_tz(tz_name)
+def _as_utc(anchor_iso: str) -> datetime:
     try:
         anchor = datetime.fromisoformat(anchor_iso)
     except ValueError:
         anchor = datetime.now(timezone.utc)
     if anchor.tzinfo is None:
         anchor = anchor.replace(tzinfo=timezone.utc)
+    return anchor
+
+
+def evening_on_day(tz_name: str | None, anchor_iso: str, day_num: int) -> str:
+    """19:00 в день `day_num`. Дата якоря — день 1."""
+    tz = resolve_tz(tz_name)
+    local = _as_utc(anchor_iso).astimezone(tz)
+    target = local.date() + timedelta(days=max(int(day_num), 1) - 1)
+    local_send = datetime(
+        target.year, target.month, target.day, SEND_HOUR, 0, tzinfo=tz
+    )
+    return local_send.astimezone(timezone.utc).isoformat()
+
+
+def _append_later(slots: list[str], slot: str) -> None:
+    if slots and datetime.fromisoformat(slot) <= datetime.fromisoformat(slots[-1]):
+        return
+    slots.append(slot)
+
+
+def studio_slots(tz_name: str | None, anchor_iso: str) -> list[str]:
+    """Четыре вечера, если песню ещё не запустили: ближайший, следующий, 3-й и 7-й.
+
+    День ухода считается первым. Если 19:00 уже прошло, ближайший вечер — завтра.
+    Совпадающие даты не повторяем. Письмо через час не ставим.
+    """
+    anchor = _as_utc(anchor_iso)
+    nearest = evening_after(tz_name, days=0, after=anchor)
+    slots = [nearest]
+    nxt = evening_after(tz_name, days=1, after=datetime.fromisoformat(nearest))
+    _append_later(slots, nxt)
+    for day_num in (3, 7):
+        _append_later(slots, evening_on_day(tz_name, anchor_iso, day_num))
+    return slots
+
+
+def keep_evenings(tz_name: str | None, anchor_iso: str) -> list[str]:
+    """Вечера 3, 7, 10 и 14-го дня после готовой песни.
+
+    Отсчёт от готовности, не от прослушивания. Тот же вечер, что и письмо
+    «через 5 минут», не дублируем.
+    """
+    tz = resolve_tz(tz_name)
+    anchor = _as_utc(anchor_iso)
     local = anchor.astimezone(tz)
     nearest = datetime.fromisoformat(evening_after(tz_name, days=0, after=anchor))
-    slots = [nearest.isoformat()]
+    slots: list[str] = []
     for day_num in (3, 7, 10, 14):
         target = local.date() + timedelta(days=day_num - 1)
         local_send = datetime(
@@ -92,8 +130,3 @@ def studio_slots(tz_name: str | None, anchor_iso: str) -> list[str]:
         if slot > nearest:
             slots.append(slot.isoformat())
     return slots
-
-
-def keep_evenings(tz_name: str | None, anchor_iso: str) -> list[str]:
-    """Вечера 3, 7, 10 и 14-го дня после готовой песни. Тот же вечер не дублируем."""
-    return studio_slots(tz_name, anchor_iso)[1:]

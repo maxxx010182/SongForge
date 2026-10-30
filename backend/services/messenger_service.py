@@ -12,7 +12,13 @@ from datetime import datetime, timedelta, timezone
 
 from backend.database.db import get_connection, init_db, utc_now
 from backend.services.provided_song import extract_provided_song
-from backend.services.nudge_schedule import evening_after, keep_evenings, normalize_tz, studio_slots
+from backend.services.nudge_schedule import (
+    evening_after,
+    evening_on_day,
+    keep_evenings,
+    normalize_tz,
+    studio_slots,
+)
 from backend.settings import MAX_BOT_TOKEN, MAX_WEBHOOK_SECRET, SITE_URL
 
 LEGAL_DOC_VERSION = "2026-09-14"
@@ -812,25 +818,36 @@ class MessengerService:
         if (contact.get("funnel_stage") or "") == STAGE_SENT:
             return self._advance_studio_series(contact)
         step = int(contact.get("nudge_step") or 0)
+        if step >= 2:
+            self.silence_studio_nudges(contact)
+            return self.get_by_max(contact["max_user_id"]) or contact
         now = utc_now()
+        now_dt = datetime.now(timezone.utc)
         tz = contact.get("tz_name") or ""
         if step <= 0:
-            next_at = evening_after(tz, days=3)
+            anchor = now
+            next_at = evening_after(tz, days=1, after=now_dt)
             new_step = 1
-        elif step == 1:
-            next_at = evening_after(tz, days=7)
-            new_step = 2
         else:
-            next_at = evening_after(tz, days=7)
-            new_step = step + 1
+            anchor = (contact.get("nudge_anchor_at") or "").strip() or now
+            next_at = evening_on_day(tz, anchor, 5)
+            try:
+                due = datetime.fromisoformat(next_at)
+            except ValueError:
+                due = now_dt
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            if due <= now_dt:
+                next_at = evening_after(tz, days=1, after=now_dt)
+            new_step = 2
         with get_connection() as conn:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET nudge_step = ?, next_nudge_at = ?, updated_at = ?
+                SET nudge_step = ?, next_nudge_at = ?, nudge_anchor_at = ?, updated_at = ?
                 WHERE id = ?
                 """,
-                (new_step, next_at, now, contact["id"]),
+                (new_step, next_at, anchor, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 
@@ -868,30 +885,27 @@ class MessengerService:
             )
 
     def snooze_nudge(self, contact: dict, *, days: int = 3) -> dict:
+        """«Напомнить позднее»: следующее письмо анкеты сдвигается на 3 дня. Шаг не сгорает."""
         tz = contact.get("tz_name") or ""
         now = utc_now()
-        next_at = evening_after(tz, days=days)
+        raw = (contact.get("next_nudge_at") or "").strip()
         step = int(contact.get("nudge_step") or 0)
+        try:
+            base = datetime.fromisoformat(raw)
+        except ValueError:
+            base = datetime.now(timezone.utc)
+        if base.tzinfo is None:
+            base = base.replace(tzinfo=timezone.utc)
+        next_at = evening_after(tz, days=days, after=base)
         with get_connection() as conn:
-            conn.execute(
-                """
-                UPDATE messenger_followups
-                SET due_at = ?
-                WHERE contact_id = ?
-                  AND sent_at IS NULL
-                  AND canceled_at IS NULL
-                """,
-                (next_at, contact["id"]),
-            )
-            if (contact.get("next_nudge_at") or "").strip() and step < 9:
-                new_step = step if step >= 3 else 3
+            if raw and step < 9:
                 conn.execute(
                     """
                     UPDATE messenger_contacts
-                    SET nudge_step = ?, next_nudge_at = ?, updated_at = ?
+                    SET next_nudge_at = ?, updated_at = ?
                     WHERE id = ?
                     """,
-                    (new_step, next_at, now, contact["id"]),
+                    (next_at, now, contact["id"]),
                 )
         return self.get_by_max(contact["max_user_id"]) or contact
 
