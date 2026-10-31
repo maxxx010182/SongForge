@@ -1,7 +1,8 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.147. Site is still 2.11.146 until block 79. Block 78 is done. Do not run blocks 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.147. On 31.10.2026 health already showed 2.11.147. Block 79 is done. Do not run blocks 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 79) ADMIN DEMO LISTEN ===
+# DONE 31.10.2026. Health already showed 2.11.147. Do not run again.
 # One line at a time. Skip lines that start with #.
 # Admin can play a 90 second clip of a demo older than 14 days.
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
