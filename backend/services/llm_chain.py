@@ -1,12 +1,13 @@
 """Очередь текстовых моделей.
 
 Песня: Gemini 3 Pro, затем Gemini 3.1 Pro, затем GPT 5.2.
+Если все три промолчали — один чат ApiPass, тем же ключом, что запас музыки.
+Адрес чата другой: не задания Suno. Короткий разбор и помощник ApiPass не зовут.
 Сонет не вызываем. Следующую модель зовём, когда предыдущая закончилась
 без текста: и на ошибку, и если ответ так и не пришёл. Пока запрос ещё
 идёт, вторую не стартуем. Короткий разбор идеи — один вызов первой модели.
 Помощник сайта передаёт reserve=True: тогда при пустом ответе идут
-следующие модели того же списка. Grok и Cloudflare на этом пути не зовём.
-Прямой Gemini с этого сервера не вызываем.
+следующие модели того же списка. Прямой Gemini с этого сервера не вызываем.
 """
 
 from __future__ import annotations
@@ -23,6 +24,9 @@ from backend.services.kie_client import KieClient
 from backend.services.llm_signal import record_all_failed, record_backup_used, record_recovery
 from backend.services.openai_chat_client import OpenaiChatClient
 from backend.settings import (
+    APIPASS_API_KEY,
+    APIPASS_CHAT_BASE,
+    APIPASS_CHAT_MODEL,
     CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_API_TOKEN,
     CLOUDFLARE_GATEWAY_ID,
@@ -74,6 +78,7 @@ class LlmChain:
     MODEL_LITE: str = "yandexgpt-lite"
     _kie: KieClient = field(default_factory=KieClient)
     _claude: KieClaudeClient = field(default_factory=KieClaudeClient)
+    _apipass: OpenaiChatClient | None = None
     _steps_backup: list[_Step] = field(default_factory=list)
 
     def complete(
@@ -182,8 +187,30 @@ class LlmChain:
                     )
                 )
         if pro:
+            reserve_text = self._apipass_text_step()
+            if reserve_text is not None:
+                steps.append(reserve_text)
             steps.extend(self._steps_backup)
         return steps
+
+    def _apipass_text_step(self) -> _Step | None:
+        """Один чат ApiPass. Только полная песня, не музыка и не короткий разбор."""
+        if not APIPASS_API_KEY or not APIPASS_CHAT_MODEL:
+            return None
+        client = self._apipass
+        if client is None:
+            client = OpenaiChatClient(
+                name="ApiPass",
+                base_url=APIPASS_CHAT_BASE,
+                api_key=APIPASS_API_KEY,
+            )
+            self._apipass = client
+        return _Step(
+            provider="ApiPass",
+            model=APIPASS_CHAT_MODEL,
+            kind="openai",
+            client=client,
+        )
 
     @staticmethod
     def _call(

@@ -60,6 +60,9 @@ def _chain(monkeypatch, tmp_path, kie, spare, claude=None):
     monkeypatch.setattr(llm_signal, "_PATH", tmp_path / "llm_signal.json")
     monkeypatch.setattr(llm_signal, "_notify", lambda text: None)
     monkeypatch.setattr(llm_chain, "KIE_API_KEY", "test-key")
+    monkeypatch.setattr(llm_chain, "APIPASS_API_KEY", "")
+    monkeypatch.setattr(llm_chain, "APIPASS_CHAT_MODEL", "gemini-3-pro-preview")
+    monkeypatch.setattr(llm_chain, "APIPASS_CHAT_BASE", "https://api.apipass.dev/v1")
     monkeypatch.setattr(llm_chain, "KIE_CLAUDE_MODELS", [])
     monkeypatch.setattr(llm_chain, "KIE_MODELS", ["gemini-3-pro", "gemini-3.1-pro", "gpt-5-2"])
     clear_dead_models()
@@ -184,6 +187,53 @@ def test_short_step_uses_only_gemini_3_pro(monkeypatch, tmp_path):
     assert text.startswith("Текст от Kie")
     assert claude.calls == []
     assert kie.calls == ["gemini-3-pro"]
+    assert spare.calls == []
+
+
+def test_silent_kie_asks_apipass_chat_once(monkeypatch, tmp_path):
+    kie = _Kie()
+    spare = _Spare()
+    apipass = _Spare(text="Куплет от ApiPass")
+    chain = _chain(monkeypatch, tmp_path, kie, spare)
+    monkeypatch.setattr(llm_chain, "APIPASS_API_KEY", "text-key")
+    chain._apipass = apipass
+    text = chain.complete("sys", "песня маме", model=chain.MODEL_PRO)
+    assert text == "Куплет от ApiPass"
+    assert kie.calls == ["gemini-3-pro", "gemini-3.1-pro", "gpt-5-2"]
+    assert apipass.calls == ["gemini-3-pro-preview"]
+    assert spare.calls == []
+
+
+def test_apipass_chat_door_is_not_the_music_jobs_door(monkeypatch, tmp_path):
+    kie = _Kie(fail=False)
+    spare = _Spare()
+    chain = _chain(monkeypatch, tmp_path, kie, spare)
+    monkeypatch.setattr(llm_chain, "APIPASS_API_KEY", "text-key")
+    chain._apipass = None
+    step = chain._apipass_text_step()
+    assert step is not None
+    assert step.client._url == "https://api.apipass.dev/v1/chat/completions"
+    assert "jobs" not in step.client._url
+
+
+def test_short_paths_do_not_ask_apipass(monkeypatch, tmp_path):
+    kie = _Kie()
+    spare = _Spare()
+    apipass = _Spare(text="не должен")
+    chain = _chain(monkeypatch, tmp_path, kie, spare)
+    monkeypatch.setattr(llm_chain, "APIPASS_API_KEY", "text-key")
+    chain._apipass = apipass
+    try:
+        chain.complete("sys", "разбор идеи", model=chain.MODEL_LITE)
+        raise AssertionError("must fail")
+    except LlmUnavailable:
+        pass
+    try:
+        chain.complete("sys", "где демо", model=chain.MODEL_LITE, reserve=True)
+        raise AssertionError("must fail")
+    except LlmUnavailable:
+        pass
+    assert apipass.calls == []
     assert spare.calls == []
 
 

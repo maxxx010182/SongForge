@@ -52,7 +52,11 @@ CLOUDFLARE_MODELS = _csv_env(
 ADMIN_MAX_USER_ID = os.getenv("ADMIN_MAX_USER_ID", "").strip()
 
 APIPASS_API_KEY = os.getenv("APIPASS_API_KEY", "")
+# Музыка: задания Suno. Текст сюда не отправлять.
 APIPASS_BASE = os.getenv("APIPASS_BASE", "https://api.apipass.dev/api/v1/jobs")
+# Текст песни, только если Кие молчит целиком. Тот же ключ, другой адрес.
+APIPASS_CHAT_BASE = os.getenv("APIPASS_CHAT_BASE", "https://api.apipass.dev/v1").strip().rstrip("/")
+APIPASS_CHAT_MODEL = os.getenv("APIPASS_CHAT_MODEL", "gemini-3-pro-preview").strip() or "gemini-3-pro-preview"
 
 # apipass | sunoapi | fallback (ApiPass→sunoapi) | fallback_suno (sunoapi→ApiPass)
 # Прод: fallback_suno — sunoapi.org основной, ApiPass резерв.
