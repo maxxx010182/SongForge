@@ -1,5 +1,11 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.147. On 31.10.2026 health already showed 2.11.147. Block 79 is done. Do not run blocks 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.147. On 31.10.2026 health already showed 2.11.147. Block 79 is done. Next is block 80 only. Do not run blocks 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 80) COUNT PHONOTHEQUE COPIES ===
+# One line. Skip lines that start with #.
+# Counts purchased songs. Does not change the site. Do not run update-now.
+# Paste the printed lines back. Do not paste song links.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-phonotheque-copies.py?$(date +%s)" -o /tmp/check-phonotheque-copies.py; /root/SongForge/venv/bin/python /tmp/check-phonotheque-copies.py
 
 === 79) ADMIN DEMO LISTEN ===
 # DONE 31.10.2026. Health already showed 2.11.147. Do not run again.
