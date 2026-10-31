@@ -1,7 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.147. On 31.10.2026 health already showed 2.11.147. Block 80 is done. Next is block 81 only. Do not run blocks 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.147. On 31.10.2026 health already showed 2.11.147. Block 81 is done. Do not run blocks 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 81) SAVE PHONOTHEQUE COPIES ===
+# DONE 31.10.2026. Do not run again.
+# Switched 4, fetched 7, factory refused 3. Now 149 of 152 files are on our storage.
 # One line. Skip lines that start with #.
 # Copies purchased songs onto our storage. Does not delete songs. Does not update the site.
 # Wait until the lines are printed. Paste them back. Do not paste song links.
