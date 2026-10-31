@@ -265,14 +265,13 @@ class MaxApi:
     ) -> bool:
         if not callback_id:
             return False
-        body: dict = {}
-        if notification:
-            body["notification"] = notification
+        # Пустое тело Макс отвергает. Пробел — отписка без новой фразы в чат.
+        note = (notification or "").strip() or " "
         data = self._request(
             "POST",
             "/answers",
             params={"callback_id": callback_id},
-            json_body=body or None,
+            json_body={"notification": note},
         )
         return data is not None
 
