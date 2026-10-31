@@ -157,7 +157,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.146", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.147", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1406,6 +1406,27 @@ async def admin_list_unclaimed_generations(
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return {"items": items}
+
+
+@app.get("/api/admin/showcase/unclaimed/{generation_id}/preview/{variant}")
+async def admin_preview_unclaimed_generation(
+    generation_id: str,
+    variant: int,
+    admin_user: dict = Depends(require_admin_user),
+):
+    """90 секунд для вкладки «Демо 14 дней». Автору письмо о прослушивании не шлём."""
+    try:
+        _assert_showcase_permission(admin_user)
+        source = showcase_admin.unclaimed_preview_source(generation_id, variant)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        missing = "не найдена" in str(exc)
+        raise HTTPException(
+            status_code=404 if missing else 400,
+            detail=str(exc),
+        ) from exc
+    return audio_access.stream_preview(source)
 
 
 @app.delete("/api/admin/showcase/unclaimed/{generation_id}")

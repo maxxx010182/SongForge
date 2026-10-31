@@ -734,8 +734,14 @@ class ShowcaseAdminService:
                 "created_at": r["created_at"],
                 "has_a": bool(r["music_url_a"]),
                 "has_b": bool(r["music_url_b"]),
-                "preview_url_a": AudioAccessService.preview_path(r["id"], 0) if r["music_url_a"] else "",
-                "preview_url_b": AudioAccessService.preview_path(r["id"], 1) if r["music_url_b"] else "",
+                "preview_url_a": (
+                    AudioAccessService.admin_unclaimed_preview_path(r["id"], 0)
+                    if r["music_url_a"] else ""
+                ),
+                "preview_url_b": (
+                    AudioAccessService.admin_unclaimed_preview_path(r["id"], 1)
+                    if r["music_url_b"] else ""
+                ),
                 "image_url": r["image_url_a"] or r["image_url_b"] or "",
                 "duration_a": r["duration_a"] or 0,
                 "duration_b": r["duration_b"] or 0,
@@ -744,6 +750,28 @@ class ShowcaseAdminService:
                 "already_published": bool(r["already_published"]),
             })
         return out
+
+    def unclaimed_preview_source(self, generation_id: str, variant: int) -> str:
+        """Адрес файла для отрывка. Только демо, которое уже в этой вкладке."""
+        if variant not in (0, 1):
+            raise ValueError("Вариант должен быть A или B")
+        with get_connection() as conn:
+            gen = conn.execute(
+                "SELECT * FROM generations WHERE id = ?",
+                (generation_id,),
+            ).fetchone()
+        if not gen:
+            raise ValueError("Генерация не найдена")
+        if gen["status"] != "success":
+            raise ValueError("Генерация не завершена успешно")
+        if int(gen["purchased"] or 0) or int(gen["note_charged"] or 0):
+            raise ValueError("Эта песня уже выкуплена")
+        if demo_claim_open(gen["created_at"] or ""):
+            raise ValueError("Ещё не прошло 14 дней")
+        url = gen["music_url_b"] if variant == 1 else gen["music_url_a"]
+        if not url:
+            raise ValueError("Аудио для этого варианта отсутствует")
+        return url
 
     def publish_unclaimed_generation(
         self,

@@ -330,11 +330,39 @@ async function loadShowcase(){await loadPersonas();var d=await api('/api/admin/s
 }
 
 var adminAudioPlayer=null;
-function playAdminPreview(url){
+var adminPreviewToken=0;
+var adminPreviewObjectUrl='';
+function stopAdminPreview(){
   if(adminAudioPlayer){adminAudioPlayer.pause();adminAudioPlayer=null;}
+  if(adminPreviewObjectUrl){URL.revokeObjectURL(adminPreviewObjectUrl);adminPreviewObjectUrl='';}
+}
+async function playAdminPreview(url){
+  stopAdminPreview();
   if(!url)return;
-  adminAudioPlayer=new Audio(url);
-  adminAudioPlayer.play().catch(function(e){alert('Не удалось воспроизвести: '+e.message);});
+  var token=++adminPreviewToken;
+  try{
+    var res=await fetch(url,{credentials:'include'});
+    if(token!==adminPreviewToken)return;
+    if(!res.ok){
+      var data=await res.json().catch(function(){return {};});
+      alert(data.detail||'Не удалось воспроизвести отрывок');
+      return;
+    }
+    var blob=await res.blob();
+    if(token!==adminPreviewToken)return;
+    var type=(blob.type||'').toLowerCase();
+    if(type && type.indexOf('audio/')!==0 && type.indexOf('video/')!==0 && type!=='application/octet-stream'){
+      alert('Файл песни не открылся');
+      return;
+    }
+    adminPreviewObjectUrl=URL.createObjectURL(blob);
+    adminAudioPlayer=new Audio(adminPreviewObjectUrl);
+    await adminAudioPlayer.play();
+  }catch(e){
+    if(token!==adminPreviewToken)return;
+    stopAdminPreview();
+    alert('Не удалось воспроизвести отрывок');
+  }
 }
 
 function setUnclaimedCount(n){

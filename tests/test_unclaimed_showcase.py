@@ -114,7 +114,9 @@ def test_list_and_publish_unclaimed_generations():
     assert target["title"] == "Забытый рок-хит"
     assert target["has_a"] is True
     assert target["has_b"] is True
-    assert "/api/audio/preview/" in target["preview_url_a"]
+    assert "/api/admin/showcase/unclaimed/" in target["preview_url_a"]
+    assert target["preview_url_a"].endswith("/preview/0")
+    assert "/api/audio/preview/" not in target["preview_url_a"]
     assert target["already_published"] is False
 
     # Publish variant A under custom author
@@ -321,3 +323,116 @@ def test_admin_puts_unclaimed_on_its_own_tab():
     assert "unclaimed_admin_notices" not in service
     switch = html.split("function switchTab", 1)[1].split("function buildNav", 1)[0]
     assert ".tab" not in switch
+    player = html.split("function playAdminPreview", 1)[1].split("function setUnclaimedCount", 1)[0]
+    assert "credentials:'include'" in player
+    assert "e.message" not in player
+    assert "Не удалось воспроизвести отрывок" in player
+
+
+def test_admin_hears_old_demo_without_telling_the_author(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend.app import app, require_admin_user
+
+    init_db()
+    uid = uuid.uuid4().hex[:8]
+    owner_id = f"owner-{uid}"
+    old_id = f"gen-hear-{uid}"
+    young_id = f"gen-young-hear-{uid}"
+    old_time = (datetime.now(timezone.utc) - timedelta(days=16)).isoformat()
+    young_time = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO users (id, email, display_name, balance, created_at)
+            VALUES (?, ?, ?, 0, '2026-07-01T10:00:00')
+            """,
+            (owner_id, f"hear-{uid}@demo.local", f"Автор-{uid}"),
+        )
+        conn.execute(
+            """
+            INSERT INTO generations (
+                id, user_id, title, status, music_url_a, music_url_b,
+                created_at, purchased
+            ) VALUES (?, ?, 'Старое демо', 'success',
+                     'https://cdn.example/old_a.mp3', 'https://cdn.example/old_b.mp3', ?, 0)
+            """,
+            (old_id, owner_id, old_time),
+        )
+        conn.execute(
+            """
+            INSERT INTO generations (
+                id, user_id, title, status, music_url_a, created_at, purchased
+            ) VALUES (?, ?, 'Молодое демо', 'success', 'https://cdn.example/young.mp3', ?, 0)
+            """,
+            (young_id, owner_id, young_time),
+        )
+
+    asked: list[str] = []
+    played: list[dict] = []
+
+    class FakeUpstream:
+        headers = {"Content-Type": "audio/mpeg"}
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=32768):
+            yield b"ID3fake-demo"
+
+        def close(self):
+            return None
+
+    def fake_get(url, stream=True, timeout=60):
+        asked.append(url)
+        return FakeUpstream()
+
+    monkeypatch.setattr("backend.services.audio_access_service.requests.get", fake_get)
+    monkeypatch.setattr(
+        "backend.app.messenger_service.on_preview_played",
+        lambda **kwargs: played.append(kwargs),
+    )
+
+    admin = {
+        "id": f"admin-{uid}",
+        "email": f"admin-{uid}@demo.local",
+        "admin_role": "admin",
+    }
+    app.dependency_overrides[require_admin_user] = lambda: admin
+    try:
+        client = TestClient(app)
+        heard = client.get(f"/api/admin/showcase/unclaimed/{old_id}/preview/0")
+        assert heard.status_code == 200
+        assert heard.headers["content-type"].startswith("audio/")
+        assert heard.content.startswith(b"ID3")
+        assert asked == ["https://cdn.example/old_a.mp3"]
+
+        heard_b = client.get(f"/api/admin/showcase/unclaimed/{old_id}/preview/1")
+        assert heard_b.status_code == 200
+        assert asked[-1] == "https://cdn.example/old_b.mp3"
+
+        missing = client.get(f"/api/admin/showcase/unclaimed/no-such-{uid}/preview/0")
+        assert missing.status_code == 404
+
+        young = client.get(f"/api/admin/showcase/unclaimed/{young_id}/preview/0")
+        assert young.status_code == 400
+        assert "14 дней" in young.json()["detail"]
+
+        stranger = client.get(f"/api/audio/preview/{old_id}/0")
+        assert stranger.status_code == 403
+        assert played == []
+
+        app.dependency_overrides[require_admin_user] = lambda: {
+            **admin,
+            "admin_role": "support",
+        }
+        denied = client.get(f"/api/admin/showcase/unclaimed/{old_id}/preview/0")
+        assert denied.status_code == 403
+
+        app.dependency_overrides.pop(require_admin_user, None)
+        locked = client.get(f"/api/admin/showcase/unclaimed/{old_id}/preview/0")
+        assert locked.status_code == 401
+        assert played == []
+    finally:
+        app.dependency_overrides.pop(require_admin_user, None)

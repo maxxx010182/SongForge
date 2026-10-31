@@ -46,6 +46,11 @@ class AudioAccessService:
     def preview_path(production_id: str, variant: int) -> str:
         return f"/api/audio/preview/{production_id}/{variant}"
 
+    @staticmethod
+    def admin_unclaimed_preview_path(production_id: str, variant: int) -> str:
+        """Отрывок для вкладки «Демо 14 дней». Чужой публичный адрес сюда не кладём."""
+        return f"/api/admin/showcase/unclaimed/{production_id}/preview/{variant}"
+
     def sanitize_tracks(
         self,
         tracks: list[dict],
