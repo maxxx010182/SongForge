@@ -10,12 +10,14 @@ from backend.services.music_poll_service import MusicPollService
 from backend.settings import WORKER_POLL_INTERVAL_SEC
 
 NUDGE_EVERY_SEC = 30
+COPY_EVERY_SEC = 600
 
 
 def run_forever() -> None:
     poll_service = MusicPollService()
     max_bot = MaxBot()
     last_nudge = 0.0
+    last_copy = 0.0
     log.info(
         "SongForge worker started (poll interval=%ss)",
         WORKER_POLL_INTERVAL_SEC,
@@ -47,6 +49,16 @@ def run_forever() -> None:
                 watch_backup()
             except Exception:
                 log.exception("owner alert pass failed")
+        if now - last_copy >= COPY_EVERY_SEC:
+            last_copy = now
+            try:
+                from backend.services.storage_service import StorageService
+
+                saved = StorageService().retry_pending_copies()
+                if saved:
+                    log.info("Storage copies saved: %s", saved)
+            except Exception:
+                log.exception("storage copy pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)
 
 

@@ -517,6 +517,8 @@ def _migrate_generations_columns(conn: sqlite3.Connection) -> None:
         "note_charged": "INTEGER NOT NULL DEFAULT 0",
         "progress_hint": "TEXT",
         "storage_synced": "INTEGER NOT NULL DEFAULT 0",
+        "storage_attempts": "INTEGER NOT NULL DEFAULT 0",
+        "storage_next_try": "TEXT",
         "music_provider": "TEXT NOT NULL DEFAULT 'apipass'",
         "previewed_at": "TEXT",
         "prior_task_id": "TEXT",

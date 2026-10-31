@@ -3,6 +3,7 @@ import re
 import uuid
 
 from backend.database.db import get_connection, init_db, utc_now
+from backend.logger import log
 from backend.services.audio_access_service import AudioAccessService
 from backend.services.demo_claim import demo_claim_open
 from backend.settings import PREVIEW_LIMIT_SEC
@@ -701,6 +702,12 @@ class CabinetService:
         return True
 
     def purchase_generation(self, *, user_id: str, generation_id: str) -> dict:
+        try:
+            from backend.services.storage_service import StorageService
+
+            StorageService().copy_generation(generation_id)
+        except Exception:
+            log.exception("copy before purchase failed: %s", generation_id)
         with get_connection() as conn:
             user = conn.execute(
                 "SELECT balance FROM users WHERE id = ?",

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import requests
 
+from backend.database.db import get_connection, utc_now
 from backend.logger import log
 from backend.services.cabinet_service import CabinetService
 from backend.services.history import HistoryService
@@ -19,6 +22,9 @@ from backend.settings import (
 
 
 MIN_MIRROR_BYTES = 100_000
+MAX_COPY_ATTEMPTS = 8
+COPY_LOOKBACK_DAYS = 45
+_COPY_DELAYS_MIN = (15, 60, 360, 1440, 1440, 1440, 1440, 1440)
 
 
 class StorageService:
@@ -140,6 +146,81 @@ class StorageService:
         )
         log.info("S3 mirror complete: %s", production_id)
         return True
+
+    def copy_generation(self, production_id: str, *, respect_schedule: bool = False) -> bool:
+        """Забрать файл к нам. Если не вышло, следующая попытка позже, не сразу."""
+        if not self.enabled():
+            return False
+        row = self._history.get_by_id(production_id)
+        if not row:
+            return False
+        if int(row.get("storage_synced") or 0):
+            return True
+        attempts = int(row.get("storage_attempts") or 0)
+        if attempts >= MAX_COPY_ATTEMPTS:
+            return False
+        nxt = (row.get("storage_next_try") or "").strip()
+        if respect_schedule and nxt and nxt > utc_now():
+            return False
+        ok = self.mirror_generation(production_id)
+        if not ok:
+            self._schedule_retry(production_id)
+        return ok
+
+    def retry_pending_copies(self, *, limit: int = 2) -> int:
+        """Догнать песни, у которых первая копия не удалась. За один заход мало."""
+        if not self.enabled():
+            return 0
+        now = utc_now()
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=COPY_LOOKBACK_DAYS)
+        ).isoformat()
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id
+                FROM generations
+                WHERE status = 'success'
+                  AND COALESCE(storage_synced, 0) = 0
+                  AND COALESCE(storage_attempts, 0) < ?
+                  AND (storage_next_try IS NULL OR storage_next_try <= ?)
+                  AND created_at >= ?
+                  AND (music_url_a IS NOT NULL OR music_url_b IS NOT NULL)
+                ORDER BY COALESCE(storage_next_try, created_at) ASC
+                LIMIT ?
+                """,
+                (MAX_COPY_ATTEMPTS, now, cutoff, max(1, limit)),
+            ).fetchall()
+        saved = 0
+        for row in rows:
+            if self.copy_generation(row["id"], respect_schedule=True):
+                saved += 1
+        return saved
+
+    def _schedule_retry(self, production_id: str) -> None:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(storage_attempts, 0) AS attempts
+                FROM generations
+                WHERE id = ?
+                """,
+                (production_id,),
+            ).fetchone()
+            if not row:
+                return
+            attempts = int(row["attempts"]) + 1
+            delay = _COPY_DELAYS_MIN[min(attempts - 1, len(_COPY_DELAYS_MIN) - 1)]
+            nxt = (datetime.now(timezone.utc) + timedelta(minutes=delay)).isoformat()
+            conn.execute(
+                """
+                UPDATE generations
+                SET storage_attempts = ?, storage_next_try = ?
+                WHERE id = ?
+                """,
+                (attempts, nxt, production_id),
+            )
+        log.info("S3 copy postponed: production=%s attempt=%s", production_id, attempts)
 
     def delete_generation_mirror(self, production_id: str) -> bool:
         """Снять копии трека с хранилища. True, если хранилище выключено или файлы сняты."""

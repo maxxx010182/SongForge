@@ -157,7 +157,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.147", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.148", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -738,6 +738,10 @@ async def gift_og_jpeg(gift_id: str):
 async def listen_gift_track(gift_id: str, request: Request):
     gift, row = _gift_track_or_404(gift_id)
     if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    await run_in_threadpool(_pull_song_copy, row["generation_id"] or "")
+    row = cabinet.get_library_item_by_id(gift["library_id"])
+    if not row or not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
     return audio_access.stream_playback(
         row["audio_url"],
@@ -1599,6 +1603,10 @@ async def listen_library_track(
         raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
     if not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
+    await run_in_threadpool(_pull_song_copy, row["generation_id"] or "")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row or not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
     return audio_access.stream_playback(
         row["audio_url"],
         range_header=request.headers.get("range"),
@@ -1703,6 +1711,10 @@ async def listen_explore_track(library_id: str, request: Request):
     if not row:
         raise HTTPException(status_code=404, detail="Публичный трек не найден")
     if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    await run_in_threadpool(_pull_song_copy, row["generation_id"] or "")
+    row = cabinet.get_published_library_item(library_id)
+    if not row or not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
     return audio_access.stream_playback(
         row["audio_url"],
@@ -2206,6 +2218,18 @@ async def payment_webhook(provider: str, request: Request):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _pull_song_copy(production_id: str) -> None:
+    """Пока ссылка цеха жива, забираем файл к нам. Частые нажатия не долбят цех."""
+    if not (production_id or "").strip():
+        return
+    try:
+        from backend.services.storage_service import StorageService
+
+        StorageService().copy_generation(production_id, respect_schedule=True)
+    except Exception:
+        log.exception("song copy failed: %s", production_id)
+
+
 @app.get("/api/audio/preview/{production_id}/{variant}")
 async def stream_audio_preview(
     production_id: str,
@@ -2221,6 +2245,10 @@ async def stream_audio_preview(
         user_id=user["id"] if user else None,
         guest_id=guest_id,
     )
+    await run_in_threadpool(_pull_song_copy, production_id)
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
     if row["purchased"]:
         raise HTTPException(status_code=400, detail="Трек уже куплен — откройте фонотеку")
     source = audio_access.resolve_source_url(row, variant)
@@ -2248,6 +2276,10 @@ async def get_full_audio_url(
     audio_access.assert_access(row, user_id=user["id"], guest_id=None)
     if not row["purchased"]:
         raise HTTPException(status_code=403, detail="Сначала купите трек")
+    await run_in_threadpool(_pull_song_copy, production_id)
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
     source = audio_access.resolve_source_url(row, variant)
     return FullAudioResponse(
         audio_url=source,
@@ -2266,6 +2298,10 @@ async def download_library_audio(
     if not row:
         raise HTTPException(status_code=404, detail="Трек не найден в фонотеке")
     if not row["audio_url"]:
+        raise HTTPException(status_code=404, detail="Аудио не найдено")
+    await run_in_threadpool(_pull_song_copy, row["generation_id"] or "")
+    row = cabinet.get_library_item(user_id=user["id"], library_id=library_id)
+    if not row or not row["audio_url"]:
         raise HTTPException(status_code=404, detail="Аудио не найдено")
     log.info("Download proxy: user=%s library=%s", user["id"], library_id)
     return audio_access.stream_download(
@@ -2288,6 +2324,10 @@ async def download_full_audio(
     audio_access.assert_access(row, user_id=user["id"], guest_id=None)
     if not row["purchased"]:
         raise HTTPException(status_code=403, detail="Сначала купите трек")
+    await run_in_threadpool(_pull_song_copy, production_id)
+    row = audio_access.get_generation_row(production_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Генерация не найдена")
     source = audio_access.resolve_source_url(row, variant)
     lib_title = row["title"] or "Без названия"
     if variant == 1:

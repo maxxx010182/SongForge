@@ -84,9 +84,9 @@ class MusicPollService:
                 progress_hint=progress_hint,
             )
             if production_id:
+                self._storage.copy_generation(production_id)
                 if not self._cabinet.complete_prepaid_generation(production_id):
                     self._cabinet.sync_library_audio_from_generation(production_id)
-                self._storage.mirror_generation(production_id)
                 user_id = (production.get("user_id") or "").strip()
                 if user_id:
                     try:
