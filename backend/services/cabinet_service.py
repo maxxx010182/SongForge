@@ -621,6 +621,33 @@ class CabinetService:
                     (url_b, generation_id),
                 )
 
+    def update_library_image_urls(
+        self,
+        *,
+        generation_id: str,
+        url_a: str | None = None,
+        url_b: str | None = None,
+    ) -> None:
+        with get_connection() as conn:
+            if url_a is not None:
+                conn.execute(
+                    """
+                    UPDATE user_library
+                    SET image_url = ?
+                    WHERE generation_id = ? AND UPPER(variant) = 'A'
+                    """,
+                    (url_a, generation_id),
+                )
+            if url_b is not None:
+                conn.execute(
+                    """
+                    UPDATE user_library
+                    SET image_url = ?
+                    WHERE generation_id = ? AND UPPER(variant) = 'B'
+                    """,
+                    (url_b, generation_id),
+                )
+
     def library_entry_count(self, generation_id: str) -> int:
         with get_connection() as conn:
             row = conn.execute(
@@ -705,7 +732,9 @@ class CabinetService:
         try:
             from backend.services.storage_service import StorageService
 
-            StorageService().copy_generation(generation_id)
+            storage = StorageService()
+            storage.copy_generation(generation_id)
+            storage.copy_covers(generation_id, respect_schedule=True)
         except Exception:
             log.exception("copy before purchase failed: %s", generation_id)
         with get_connection() as conn:

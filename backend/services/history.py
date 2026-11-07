@@ -368,3 +368,28 @@ class HistoryService:
                     "UPDATE generations SET storage_synced = ? WHERE id = ?",
                     (1 if storage_synced else 0, production_id),
                 )
+
+    def update_image_urls(
+        self,
+        *,
+        production_id: str,
+        image_url_a: str | None = None,
+        image_url_b: str | None = None,
+        cover_synced: bool | None = None,
+    ) -> None:
+        with get_connection() as conn:
+            if image_url_a is not None:
+                conn.execute(
+                    "UPDATE generations SET image_url_a = ? WHERE id = ?",
+                    (image_url_a, production_id),
+                )
+            if image_url_b is not None:
+                conn.execute(
+                    "UPDATE generations SET image_url_b = ? WHERE id = ?",
+                    (image_url_b, production_id),
+                )
+            if cover_synced is not None:
+                conn.execute(
+                    "UPDATE generations SET cover_synced = ? WHERE id = ?",
+                    (1 if cover_synced else 0, production_id),
+                )

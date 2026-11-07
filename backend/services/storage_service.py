@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 import requests
 
@@ -22,9 +23,32 @@ from backend.settings import (
 
 
 MIN_MIRROR_BYTES = 100_000
+MIN_COVER_BYTES = 500
+MAX_COVER_BYTES = 4_500_000
 MAX_COPY_ATTEMPTS = 8
 COPY_LOOKBACK_DAYS = 45
 _COPY_DELAYS_MIN = (15, 60, 360, 1440, 1440, 1440, 1440, 1440)
+
+
+def image_kind(data: bytes) -> tuple[str, str] | None:
+    """Настоящая картинка, не страница ошибки."""
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg", "jpg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png", "png"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp", "webp"
+    return None
+
+
+class CoverCopyResult:
+    def __init__(self) -> None:
+        self.state = "skip"
+        self.saved = 0
+        self.already = 0
+        self.failed = 0
+        self.cleared = 0
+        self.empty = 0
 
 
 class StorageService:
@@ -32,6 +56,7 @@ class StorageService:
         self._history = HistoryService()
         self._cabinet = CabinetService()
         self._client = None
+        self._silent_cover_hosts: set[str] = set()
 
     def enabled(self) -> bool:
         return bool(
@@ -81,6 +106,54 @@ class StorageService:
         )
         public = self.public_url(key)
         log.info("S3 uploaded: %s (%s bytes)", key, len(response.content))
+        return public
+
+    def is_our_storage_url(self, url: str) -> bool:
+        raw = (url or "").strip()
+        if not raw:
+            return False
+        if S3_PUBLIC_BASE and (
+            raw == S3_PUBLIC_BASE or raw.startswith(S3_PUBLIC_BASE + "/")
+        ):
+            return True
+        parsed = urlparse(raw)
+        host = (parsed.netloc or "").lower()
+        path = parsed.path or ""
+        return "s3.regru.cloud" in host and "/tracks/" in path
+
+    def upload_image_from_url(self, *, key_prefix: str, source_url: str) -> str:
+        host = (urlparse(source_url).netloc or "").lower()
+        if host and host in self._silent_cover_hosts:
+            raise RuntimeError("cover host silent")
+        try:
+            response = requests.get(
+                source_url,
+                timeout=12,
+                headers={
+                    "User-Agent": "SongForgeCoverBot/1.0",
+                    "Accept": "image/*,*/*",
+                },
+            )
+            response.raise_for_status()
+        except requests.ConnectionError:
+            if host:
+                self._silent_cover_hosts.add(host)
+            raise
+        data = response.content or b""
+        kind = image_kind(data)
+        if kind is None or not (MIN_COVER_BYTES <= len(data) <= MAX_COVER_BYTES):
+            raise RuntimeError("cover is not an image")
+        content_type, ext = kind
+        key = f"{key_prefix}.{ext}"
+        client = self._get_client()
+        client.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+        )
+        public = self.public_url(key)
+        log.info("S3 cover uploaded: %s (%s bytes)", key, len(data))
         return public
 
     def mirror_generation(self, production_id: str, *, force: bool = False) -> bool:
@@ -222,6 +295,187 @@ class StorageService:
             )
         log.info("S3 copy postponed: production=%s attempt=%s", production_id, attempts)
 
+    def copy_covers(
+        self,
+        production_id: str,
+        *,
+        respect_schedule: bool = False,
+        give_up: bool = False,
+    ) -> CoverCopyResult:
+        """Забрать обложку к нам. Мёртвый адрес не мешает уже скопированной музыке."""
+        result = CoverCopyResult()
+        if not self.enabled():
+            result.state = "off"
+            return result
+        safe_id = self._safe_track_id(production_id)
+        if not safe_id:
+            return result
+        row = self._history.get_by_id(safe_id)
+        if not row or row.get("status") != "success":
+            return result
+        if int(row.get("cover_synced") or 0):
+            result.state = "ready"
+            result.already = self._our_cover_count(row)
+            return result
+        attempts = int(row.get("cover_attempts") or 0)
+        if attempts >= MAX_COPY_ATTEMPTS and not give_up:
+            result.cleared = self._settle_failed_covers(safe_id)
+            result.state = "ready"
+            return result
+        nxt = (row.get("cover_next_try") or "").strip()
+        if respect_schedule and nxt and nxt > utc_now():
+            result.state = "wait"
+            return result
+
+        saved: dict[str, str] = {}
+        for variant, field in (("a", "image_url_a"), ("b", "image_url_b")):
+            url = (row.get(field) or "").strip()
+            if not url:
+                result.empty += 1
+                continue
+            if self.is_our_storage_url(url):
+                result.already += 1
+                continue
+            try:
+                saved[variant] = self.upload_image_from_url(
+                    key_prefix=f"tracks/{safe_id}/{variant}-cover",
+                    source_url=url,
+                )
+                result.saved += 1
+            except Exception:
+                log.info("cover not saved: production=%s variant=%s", safe_id, variant)
+                result.failed += 1
+
+        if saved:
+            self._history.update_image_urls(
+                production_id=safe_id,
+                image_url_a=saved.get("a"),
+                image_url_b=saved.get("b"),
+            )
+            self._cabinet.update_library_image_urls(
+                generation_id=safe_id,
+                url_a=saved.get("a"),
+                url_b=saved.get("b"),
+            )
+
+        if result.failed and not give_up and attempts + 1 < MAX_COPY_ATTEMPTS:
+            self._schedule_cover_retry(safe_id)
+            result.state = "failed"
+            return result
+        if result.failed:
+            result.cleared = self._settle_failed_covers(safe_id)
+            result.state = "ready"
+            return result
+        self._history.update_image_urls(production_id=safe_id, cover_synced=True)
+        result.state = "ready"
+        return result
+
+    def list_cover_song_ids(self) -> list[str]:
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id
+                FROM generations
+                WHERE status = 'success'
+                  AND COALESCE(cover_synced, 0) = 0
+                ORDER BY created_at ASC
+                """
+            ).fetchall()
+        return [row["id"] for row in rows]
+
+    def retry_pending_covers(self, *, limit: int = 2) -> int:
+        """Догнать обложки новых песен. За один заход мало."""
+        if not self.enabled():
+            return 0
+        now = utc_now()
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id
+                FROM generations
+                WHERE status = 'success'
+                  AND COALESCE(cover_synced, 0) = 0
+                  AND COALESCE(cover_attempts, 0) < ?
+                  AND (cover_next_try IS NULL OR cover_next_try <= ?)
+                ORDER BY COALESCE(cover_next_try, created_at) ASC
+                LIMIT ?
+                """,
+                (MAX_COPY_ATTEMPTS, now, max(1, limit)),
+            ).fetchall()
+        saved = 0
+        for row in rows:
+            result = self.copy_covers(row["id"], respect_schedule=True)
+            saved += result.saved
+        return saved
+
+    def _our_cover_count(self, row: dict) -> int:
+        count = 0
+        for field in ("image_url_a", "image_url_b"):
+            if self.is_our_storage_url(row.get(field) or ""):
+                count += 1
+        return count
+
+    def _settle_failed_covers(self, production_id: str) -> int:
+        row = self._history.get_by_id(production_id)
+        if not row:
+            return 0
+        cleared = 0
+        url_a = (row.get("image_url_a") or "").strip()
+        url_b = (row.get("image_url_b") or "").strip()
+        new_a = None
+        new_b = None
+        if url_a and not self.is_our_storage_url(url_a):
+            new_a = ""
+            cleared += 1
+        if url_b and not self.is_our_storage_url(url_b):
+            new_b = ""
+            cleared += 1
+        self._history.update_image_urls(
+            production_id=production_id,
+            image_url_a=new_a,
+            image_url_b=new_b,
+            cover_synced=True,
+        )
+        self._cabinet.update_library_image_urls(
+            generation_id=production_id,
+            url_a=new_a,
+            url_b=new_b,
+        )
+        log.info("cover settled: production=%s cleared=%s", production_id, cleared)
+        return cleared
+
+    def _schedule_cover_retry(self, production_id: str) -> None:
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(cover_attempts, 0) AS attempts
+                FROM generations
+                WHERE id = ?
+                """,
+                (production_id,),
+            ).fetchone()
+            if not row:
+                return
+            attempts = int(row["attempts"]) + 1
+            delay = _COPY_DELAYS_MIN[min(attempts - 1, len(_COPY_DELAYS_MIN) - 1)]
+            nxt = (datetime.now(timezone.utc) + timedelta(minutes=delay)).isoformat()
+            conn.execute(
+                """
+                UPDATE generations
+                SET cover_attempts = ?, cover_next_try = ?
+                WHERE id = ?
+                """,
+                (attempts, nxt, production_id),
+            )
+        log.info("cover copy postponed: production=%s attempt=%s", production_id, attempts)
+
+    @staticmethod
+    def _safe_track_id(production_id: str) -> str:
+        safe = (production_id or "").strip()
+        if not safe or "/" in safe or "\\" in safe or ".." in safe:
+            return ""
+        return safe
+
     def delete_generation_mirror(self, production_id: str) -> bool:
         """Снять копии трека с хранилища. True, если хранилище выключено или файлы сняты."""
         if not self.enabled():
@@ -236,6 +490,11 @@ class StorageService:
                     Bucket=S3_BUCKET,
                     Key=f"tracks/{safe_id}/{variant}.mp3",
                 )
+                for ext in ("jpg", "png", "webp"):
+                    client.delete_object(
+                        Bucket=S3_BUCKET,
+                        Key=f"tracks/{safe_id}/{variant}-cover.{ext}",
+                    )
             log.info("S3 delete complete: %s", safe_id)
             return True
         except Exception:

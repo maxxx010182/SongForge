@@ -148,7 +148,7 @@ _PAGE = """<!DOCTYPE html>
       <h1 class="to">@@HEADING@@</h1>
     </div>
     <div class="player">
-      <div class="cover"><img src="@@IMG@@" alt="@@TITLE@@"></div>
+      <div class="cover"><img src="@@IMG@@" alt="@@TITLE@@" onerror="this.onerror=null;this.src='/SongForgeLogo.png'"></div>
       <h2 class="title">@@TITLE@@</h2>
       <button type="button" class="play" id="play" aria-label="Слушать">▶</button>
       <input type="range" class="seek" id="seek" min="0" max="100" value="0">

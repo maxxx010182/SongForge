@@ -289,7 +289,7 @@ a:hover{{text-decoration:underline}}
   <div class="card">
     <div class="cover-wrap">
       <img id="cover" src="{_esc(img_display)}" alt="{_esc(title_s)}"
-           onerror="this.onerror=null;this.src='/api/explore/{_esc(tid)}/cover'">
+           onerror="this.onerror=null;this.src='/SongForgeLogo.png'">
       <div class="eq" id="eq" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span>

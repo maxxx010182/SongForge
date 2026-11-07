@@ -54,9 +54,11 @@ def run_forever() -> None:
             try:
                 from backend.services.storage_service import StorageService
 
-                saved = StorageService().retry_pending_copies()
-                if saved:
-                    log.info("Storage copies saved: %s", saved)
+                storage = StorageService()
+                saved = storage.retry_pending_copies()
+                covers = storage.retry_pending_covers()
+                if saved or covers:
+                    log.info("Storage copies saved: %s covers: %s", saved, covers)
             except Exception:
                 log.exception("storage copy pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)
