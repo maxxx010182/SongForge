@@ -580,8 +580,8 @@ def test_nudge_three_steps_then_weekly():
             sent.append(api.sent[-1]["text"])
             contact = MessengerService().get_by_max(max_user_id)
         assert len(sent) in {3, 4}
-        assert "мамы" in sent[0].lower()
-        assert "песни пока нет" in sent[0].lower()
+        assert "студия уже ждёт" in sent[0].lower()
+        assert "мамы" not in sent[0].lower()
         payloads = [btn.get("payload") for row in api.sent[-1]["buttons"] for btn in row]
         assert "nudge:later" not in payloads
         assert not contact["next_nudge_at"]
@@ -643,7 +643,7 @@ def test_ready_followup_waits_if_on_site_then_sends():
             )
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "готова" in last["text"].lower()
+        assert "уже готовы" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("слушать" in l.lower() for l in labels)
         assert any("open=listen" in (btn.get("url") or "") for row in last["buttons"] for btn in row)
@@ -681,7 +681,7 @@ def test_unpaid_followup_after_preview():
         api.sent.clear()
         assert bot.process_due_followups() == 1
         last = api.sent[-1]
-        assert "понравился" in last["text"].lower()
+        assert "фонотеке" in last["text"].lower()
         labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("слушать" in l.lower() for l in labels)
         assert not any("расширенный" in l.lower() for l in labels)
@@ -734,10 +734,11 @@ def test_opened_studio_nudge_copy_and_snooze():
         _force_nudge_due(contact["id"])
         api.sent.clear()
         assert bot.process_due_nudges() == 1
-        assert "песни пока нет" in api.sent[-1]["text"].lower()
+        assert "студия уже ждёт" in api.sent[-1]["text"].lower()
         _force_nudge_due(contact["id"])
         assert bot.process_due_nudges() == 1
-        assert "свет на кухне" in api.sent[-1]["text"].lower()
+        assert "свет на кухне" not in api.sent[-1]["text"].lower()
+        assert "два варианта" in api.sent[-1]["text"].lower()
         payloads = [btn.get("payload") for row in api.sent[-1]["buttons"] for btn in row]
         assert "nudge:later" not in payloads
     finally:
@@ -811,8 +812,8 @@ def test_price_question_does_not_become_whom():
         contact = MessengerService().get_by_max(max_user_id)
         assert (contact.get("brief_whom") or "") == ""
         last = api.sent[-1]
-        assert "149" in last["text"]
-        assert "вариант" in last["text"].lower()
+        assert "149" not in last["text"]
+        assert "пакет" in last["text"].lower()
         payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
         assert "whom:mom" in payloads
     finally:
@@ -1047,7 +1048,7 @@ def test_old_song_does_not_cancel_nudge():
         _force_nudge_due(contact["id"])
         api.sent.clear()
         assert bot.process_due_nudges() == 1
-        assert "анкета песни" in api.sent[-1]["text"].lower()
+        assert "ещё не собрана" in api.sent[-1]["text"].lower()
         contact = svc.get_by_max(max_user_id)
         assert contact["next_nudge_at"]
         assert int(contact["nudge_step"] or 0) == 1
@@ -1126,8 +1127,8 @@ def test_nudge_branch1_mid_survey_stuck_and_resume():
         api.sent.clear()
         assert bot.process_due_nudges() == 1
         last = api.sent[-1]
-        assert "анкета песни" in last["text"].lower()
-        assert "для мамы" in last["text"].lower()
+        assert "ещё не собрана" in last["text"].lower()
+        assert "для мамы" not in last["text"].lower()
         assert "шедевр" not in last["text"].lower()
         payloads = [btn.get("payload") for row in last["buttons"] for btn in row]
         assert "nudge:resume_survey" in payloads
@@ -1165,8 +1166,8 @@ def test_nudge_branch3_opened_site_no_generation():
         api.sent.clear()
         assert bot.process_due_nudges() == 1
         last = api.sent[-1]
-        assert "песни пока нет" in last["text"].lower()
-        assert "мамы" in last["text"].lower()
+        assert "студия уже ждёт" in last["text"].lower()
+        assert "мамы" not in last["text"].lower()
         btn_labels = [btn.get("text") for row in last["buttons"] for btn in row]
         assert any("создать песню" in b.lower() for b in btn_labels)
     finally:
