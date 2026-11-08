@@ -1,7 +1,8 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.152. Block 91 is the next step. Do not run blocks 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.152. Block 91 is done. Do not run it again. Do not run blocks 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 91) KEEP THE NEXT COVERS ===
+# DONE 08.11.2026. Health 2.11.152. Do not run again.
 # One line at a time. Skip lines that start with #.
 # First line: site update. A new song keeps its cover in our storage.
 # Second line: health. Expected version 2.11.152.
