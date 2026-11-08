@@ -26,17 +26,15 @@ def main() -> int:
         return 1
     songs = storage.list_cover_song_ids()
     saved = 0
-    cleared = 0
+    waiting = 0
     for song_id in songs:
         first = storage.copy_covers(song_id)
         saved += first.saved
         if first.state == "failed":
-            second = storage.copy_covers(song_id, give_up=True)
-            saved += second.saved
-            cleared += second.cleared
+            waiting += 1
     print(f"песен проверено: {len(songs)}")
     print(f"обложек сохранено: {saved}")
-    print(f"обложек больше нет, на карточке знак сайта: {cleared}")
+    print(f"ещё не открылись, адрес оставлен: {waiting}")
     return 0
 
 

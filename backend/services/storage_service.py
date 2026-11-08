@@ -30,6 +30,54 @@ COPY_LOOKBACK_DAYS = 45
 _COPY_DELAYS_MIN = (15, 60, 360, 1440, 1440, 1440, 1440, 1440)
 
 
+def cover_is_ours(url: str) -> bool:
+    """Картинка уже лежит в нашем хранилище."""
+    raw = (url or "").strip()
+    if not raw:
+        return False
+    if S3_PUBLIC_BASE and (
+        raw == S3_PUBLIC_BASE or raw.startswith(S3_PUBLIC_BASE + "/")
+    ):
+        return True
+    parsed = urlparse(raw)
+    host = (parsed.netloc or "").lower()
+    path = parsed.path or ""
+    return "s3.regru.cloud" in host and "/tracks/" in path
+
+
+_COVER_COLUMNS = frozenset({"image_url", "image_url_a", "image_url_b"})
+
+
+def cover_keep_sql(column: str) -> str:
+    """Кусок UPDATE: нашу картинку не затирать, пустым ответом адрес не стирать."""
+    if column not in _COVER_COLUMNS:
+        raise ValueError(column)
+    return f"""CASE
+        WHEN TRIM(COALESCE(?, '')) != ''
+         AND ({column} = ? OR {column} LIKE ? ESCAPE '\\')
+        THEN {column}
+        WHEN INSTR(COALESCE({column}, ''), 's3.regru.cloud') > 0
+         AND INSTR(COALESCE({column}, ''), '/tracks/') > 0
+        THEN {column}
+        WHEN TRIM(COALESCE({column}, '')) != ''
+         AND TRIM(COALESCE(?, '')) = ''
+        THEN {column}
+        ELSE ?
+    END"""
+
+
+def cover_keep_params(incoming: str | None) -> tuple[str, str, str, str, str]:
+    base = S3_PUBLIC_BASE or ""
+    escaped = (
+        base.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        if base
+        else ""
+    )
+    prefix = f"{escaped}/%" if escaped else ""
+    value = incoming or ""
+    return (base, base, prefix, value, value)
+
+
 def image_kind(data: bytes) -> tuple[str, str] | None:
     """Настоящая картинка, не страница ошибки."""
     if data.startswith(b"\xff\xd8\xff"):
@@ -109,17 +157,7 @@ class StorageService:
         return public
 
     def is_our_storage_url(self, url: str) -> bool:
-        raw = (url or "").strip()
-        if not raw:
-            return False
-        if S3_PUBLIC_BASE and (
-            raw == S3_PUBLIC_BASE or raw.startswith(S3_PUBLIC_BASE + "/")
-        ):
-            return True
-        parsed = urlparse(raw)
-        host = (parsed.netloc or "").lower()
-        path = parsed.path or ""
-        return "s3.regru.cloud" in host and "/tracks/" in path
+        return cover_is_ours(url)
 
     def upload_image_from_url(self, *, key_prefix: str, source_url: str) -> str:
         host = (urlparse(source_url).netloc or "").lower()
@@ -302,7 +340,10 @@ class StorageService:
         respect_schedule: bool = False,
         give_up: bool = False,
     ) -> CoverCopyResult:
-        """Забрать обложку к нам. Мёртвый адрес не мешает уже скопированной музыке."""
+        """Забрать обложку к нам. Мёртвый адрес не мешает уже скопированной музыке.
+
+        give_up оставлен для старого скрипта. Без файла отметку «готово» не ставим.
+        """
         result = CoverCopyResult()
         if not self.enabled():
             result.state = "off"
@@ -313,15 +354,11 @@ class StorageService:
         row = self._history.get_by_id(safe_id)
         if not row or row.get("status") != "success":
             return result
-        if int(row.get("cover_synced") or 0):
+        if not self._has_foreign_cover(row):
+            if not int(row.get("cover_synced") or 0):
+                self._history.update_image_urls(production_id=safe_id, cover_synced=True)
             result.state = "ready"
             result.already = self._our_cover_count(row)
-            return result
-        attempts = int(row.get("cover_attempts") or 0)
-        if attempts >= MAX_COPY_ATTEMPTS and not give_up:
-            # Адрес не стираем: карточка ещё может открыть чужую картинку.
-            self._history.update_image_urls(production_id=safe_id, cover_synced=True)
-            result.state = "ready"
             return result
         nxt = (row.get("cover_next_try") or "").strip()
         if respect_schedule and nxt and nxt > utc_now():
@@ -359,13 +396,12 @@ class StorageService:
                 url_b=saved.get("b"),
             )
 
-        if result.failed and not give_up and attempts + 1 < MAX_COPY_ATTEMPTS:
-            self._schedule_cover_retry(safe_id)
-            result.state = "failed"
-            return result
         if result.failed:
-            result.cleared = self._settle_failed_covers(safe_id)
-            result.state = "ready"
+            # Пока картинка не у нас, пробуем снова. Адрес цеха не стираем.
+            self._schedule_cover_retry(safe_id)
+            if give_up:
+                log.info("cover give-up ignored: production=%s", safe_id)
+            result.state = "failed"
             return result
         self._history.update_image_urls(production_id=safe_id, cover_synced=True)
         result.state = "ready"
@@ -385,7 +421,7 @@ class StorageService:
         return [row["id"] for row in rows]
 
     def retry_pending_covers(self, *, limit: int = 2) -> int:
-        """Догнать обложки новых песен. За один заход мало."""
+        """Догнать обложки. Сначала свежие песни. Пока файл не у нас, не бросаем."""
         if not self.enabled():
             return 0
         now = utc_now()
@@ -395,13 +431,21 @@ class StorageService:
                 SELECT id
                 FROM generations
                 WHERE status = 'success'
-                  AND COALESCE(cover_synced, 0) = 0
-                  AND COALESCE(cover_attempts, 0) < ?
                   AND (cover_next_try IS NULL OR cover_next_try <= ?)
-                ORDER BY COALESCE(cover_next_try, created_at) ASC
+                  AND (
+                    (
+                      TRIM(COALESCE(image_url_a, '')) != ''
+                      AND INSTR(image_url_a, 's3.regru.cloud') = 0
+                    )
+                    OR (
+                      TRIM(COALESCE(image_url_b, '')) != ''
+                      AND INSTR(image_url_b, 's3.regru.cloud') = 0
+                    )
+                  )
+                ORDER BY created_at DESC
                 LIMIT ?
                 """,
-                (MAX_COPY_ATTEMPTS, now, max(1, limit)),
+                (now, max(1, limit)),
             ).fetchall()
         saved = 0
         for row in rows:
@@ -409,21 +453,19 @@ class StorageService:
             saved += result.saved
         return saved
 
+    def _has_foreign_cover(self, row: dict) -> bool:
+        for field in ("image_url_a", "image_url_b"):
+            url = (row.get(field) or "").strip()
+            if url and not self.is_our_storage_url(url):
+                return True
+        return False
+
     def _our_cover_count(self, row: dict) -> int:
         count = 0
         for field in ("image_url_a", "image_url_b"):
             if self.is_our_storage_url(row.get(field) or ""):
                 count += 1
         return count
-
-    def _settle_failed_covers(self, production_id: str) -> int:
-        """Остановить повтор, адрес картинки не стирать."""
-        row = self._history.get_by_id(production_id)
-        if not row:
-            return 0
-        self._history.update_image_urls(production_id=production_id, cover_synced=True)
-        log.info("cover left in place: production=%s", production_id)
-        return 0
 
     def _schedule_cover_retry(self, production_id: str) -> None:
         with get_connection() as conn:

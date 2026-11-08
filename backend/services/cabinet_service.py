@@ -658,6 +658,9 @@ class CabinetService:
 
     def sync_library_audio_from_generation(self, generation_id: str) -> bool:
         """Обновить MP3 в фонотеке, если повторная генерация на том же production_id."""
+        from backend.services.storage_service import cover_keep_params, cover_keep_sql
+
+        keep_image = cover_keep_sql("image_url")
         with get_connection() as conn:
             gen = conn.execute(
                 "SELECT * FROM generations WHERE id = ?",
@@ -676,12 +679,20 @@ class CabinetService:
                 if not url:
                     continue
                 cur = conn.execute(
-                    """
+                    f"""
                     UPDATE user_library
-                    SET audio_url = ?, image_url = ?, duration = ?
+                    SET audio_url = ?,
+                        image_url = {keep_image},
+                        duration = ?
                     WHERE generation_id = ? AND variant = ?
                     """,
-                    (url, image or "", duration, generation_id, variant),
+                    (
+                        url,
+                        *cover_keep_params(image),
+                        duration,
+                        generation_id,
+                        variant,
+                    ),
                 )
                 if cur.rowcount:
                     updated = True

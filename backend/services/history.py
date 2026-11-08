@@ -312,16 +312,22 @@ class HistoryService:
     ) -> None:
         track_a = tracks[0] if len(tracks) > 0 else None
         track_b = tracks[1] if len(tracks) > 1 else None
+        image_a = track_a.image_url if track_a else None
+        image_b = track_b.image_url if track_b else None
+        from backend.services.storage_service import cover_keep_params, cover_keep_sql
+
+        keep_a = cover_keep_sql("image_url_a")
+        keep_b = cover_keep_sql("image_url_b")
 
         with get_connection() as conn:
             conn.execute(
-                """
+                f"""
                 UPDATE generations SET
                     status = ?,
                     music_url_a = ?,
                     music_url_b = ?,
-                    image_url_a = ?,
-                    image_url_b = ?,
+                    image_url_a = {keep_a},
+                    image_url_b = {keep_b},
                     duration_a = ?,
                     duration_b = ?,
                     fail_code = ?,
@@ -333,8 +339,8 @@ class HistoryService:
                     status,
                     track_a.audio_url if track_a else None,
                     track_b.audio_url if track_b else None,
-                    track_a.image_url if track_a else None,
-                    track_b.image_url if track_b else None,
+                    *cover_keep_params(image_a),
+                    *cover_keep_params(image_b),
                     track_a.duration if track_a else None,
                     track_b.duration if track_b else None,
                     fail_code,
