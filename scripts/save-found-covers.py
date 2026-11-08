@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path("/root/SongForge")
@@ -129,7 +130,7 @@ def _store(storage: StorageService, generation_id: str, variant: str, data: byte
     return storage.public_url(key)
 
 
-def _remember(
+def _remember_once(
     storage: StorageService,
     generation_id: str,
     variant: str,
@@ -171,9 +172,26 @@ def _remember(
             )
 
 
+def _remember(
+    storage: StorageService,
+    generation_id: str,
+    variant: str,
+    public: str,
+) -> None:
+    for attempt in range(5):
+        try:
+            _remember_once(storage, generation_id, variant, public)
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() or attempt == 4:
+                raise
+            time.sleep(2)
+
+
 def main() -> int:
     from PIL import Image
 
+    print("скрипт 2")
     storage = StorageService()
     if not storage.enabled():
         print("хранилище выключено")
