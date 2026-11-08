@@ -148,6 +148,14 @@ def test_composer_copy_in_index():
     assert "<textarea" in html
 
 
+def test_result_gift_button_opens_composer():
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert 'id="modalGiftBtn"' in html
+    assert "upgrade-btn py-4 rounded-2xl text-base mb-2" in html
+    assert "Сначала откройте фонотеку" not in html
+    assert "async function openGiftFromResult()" in html
+
+
 def test_library_menu_stays_inside_card():
     html = (ROOT / "index.html").read_text(encoding="utf-8")
     assert ".lib-more-wrap{position:static}" in html
