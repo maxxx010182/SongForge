@@ -129,7 +129,12 @@ def _store(storage: StorageService, generation_id: str, variant: str, data: byte
     return storage.public_url(key)
 
 
-def _remember(generation_id: str, variant: str, public: str) -> None:
+def _remember(
+    storage: StorageService,
+    generation_id: str,
+    variant: str,
+    public: str,
+) -> None:
     with get_connection() as conn:
         if variant == "A":
             conn.execute(
@@ -153,7 +158,6 @@ def _remember(generation_id: str, variant: str, public: str) -> None:
             "SELECT image_url_a, image_url_b FROM generations WHERE id = ?",
             (generation_id,),
         ).fetchone()
-        storage = StorageService()
         urls = ((row["image_url_a"] if row else ""), (row["image_url_b"] if row else ""))
         foreign = [
             url
@@ -203,7 +207,7 @@ def main() -> int:
             skipped += 1
             continue
         public = _store(storage, generation_id, variant, data)
-        _remember(generation_id, variant, public)
+        _remember(storage, generation_id, variant, public)
         saved += 1
     old_left = [
         row
