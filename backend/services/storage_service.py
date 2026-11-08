@@ -319,7 +319,8 @@ class StorageService:
             return result
         attempts = int(row.get("cover_attempts") or 0)
         if attempts >= MAX_COPY_ATTEMPTS and not give_up:
-            result.cleared = self._settle_failed_covers(safe_id)
+            # Адрес не стираем: карточка ещё может открыть чужую картинку.
+            self._history.update_image_urls(production_id=safe_id, cover_synced=True)
             result.state = "ready"
             return result
         nxt = (row.get("cover_next_try") or "").strip()
@@ -416,33 +417,13 @@ class StorageService:
         return count
 
     def _settle_failed_covers(self, production_id: str) -> int:
+        """Остановить повтор, адрес картинки не стирать."""
         row = self._history.get_by_id(production_id)
         if not row:
             return 0
-        cleared = 0
-        url_a = (row.get("image_url_a") or "").strip()
-        url_b = (row.get("image_url_b") or "").strip()
-        new_a = None
-        new_b = None
-        if url_a and not self.is_our_storage_url(url_a):
-            new_a = ""
-            cleared += 1
-        if url_b and not self.is_our_storage_url(url_b):
-            new_b = ""
-            cleared += 1
-        self._history.update_image_urls(
-            production_id=production_id,
-            image_url_a=new_a,
-            image_url_b=new_b,
-            cover_synced=True,
-        )
-        self._cabinet.update_library_image_urls(
-            generation_id=production_id,
-            url_a=new_a,
-            url_b=new_b,
-        )
-        log.info("cover settled: production=%s cleared=%s", production_id, cleared)
-        return cleared
+        self._history.update_image_urls(production_id=production_id, cover_synced=True)
+        log.info("cover left in place: production=%s", production_id)
+        return 0
 
     def _schedule_cover_retry(self, production_id: str) -> None:
         with get_connection() as conn:

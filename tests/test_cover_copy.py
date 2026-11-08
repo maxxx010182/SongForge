@@ -99,7 +99,7 @@ def test_live_cover_is_stored_on_our_host(monkeypatch):
         _forget(song_id)
 
 
-def test_dead_cover_waits_then_mark_replaces_it(monkeypatch):
+def test_dead_cover_stays_when_copy_fails(monkeypatch):
     init_db()
     song_id = "cover-dead"
     _song(song_id, "https://musicfile.removeai.ai/gone.jpeg")
@@ -129,7 +129,7 @@ def test_dead_cover_waits_then_mark_replaces_it(monkeypatch):
 
         second = storage.copy_covers(song_id, give_up=True)
         assert second.state == "ready"
-        assert second.cleared == 1
+        assert second.cleared == 0
         with get_connection() as conn:
             row = conn.execute(
                 "SELECT image_url_a, cover_synced FROM generations WHERE id = ?",
@@ -139,9 +139,9 @@ def test_dead_cover_waits_then_mark_replaces_it(monkeypatch):
                 "SELECT image_url FROM user_library WHERE generation_id = ?",
                 (song_id,),
             ).fetchone()
-        assert row["image_url_a"] == ""
+        assert row["image_url_a"] == "https://musicfile.removeai.ai/gone.jpeg"
         assert int(row["cover_synced"]) == 1
-        assert lib["image_url"] == ""
+        assert lib["image_url"] == "https://musicfile.removeai.ai/gone.jpeg"
     finally:
         _forget(song_id)
 
