@@ -157,7 +157,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.153", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.154", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -2406,6 +2406,7 @@ async def produce_song(
                 style_mode=req.style_mode,
                 custom_description=req.custom_description,
                 lyrics_engine=req.lyrics_engine,
+                own_lyrics=req.own_lyrics,
             )
         )
     except ValueError as exc:
@@ -2461,6 +2462,7 @@ async def create_song(
                 style_mode=req.style_mode,
                 custom_description=req.custom_description,
                 lyrics_engine=req.lyrics_engine,
+                own_lyrics=req.own_lyrics,
             )
         )
         if mode == "paid" and result.production_id:

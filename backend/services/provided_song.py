@@ -80,6 +80,73 @@ def extract_provided_song(idea: str) -> str:
     return "\n".join(out).strip()
 
 
+def _suno_section(name: str, number: int, verse_n: int) -> tuple[str, int]:
+    if name == "verse":
+        verse_n = number or verse_n + 1
+        return f"[Verse {verse_n}]", verse_n
+    labels = {
+        "chorus": "[Chorus]",
+        "final": "[Final Chorus]",
+        "pre": "[Pre-Chorus]",
+        "bridge": "[Bridge]",
+        "outro": "[Outro]",
+        "intro": "[Intro]",
+    }
+    return labels.get(name, "[Verse]"), verse_n
+
+
+def normalize_own_lyrics(text: str) -> str:
+    """Свой текст из отдельного окна: метки на английский, строки не выбрасываем."""
+    raw = (text or "").replace("\r\n", "\n").strip()
+    if not raw:
+        return ""
+    out: list[str] = []
+    verse_n = 0
+    for raw_line in raw.splitlines():
+        if _is_advice(raw_line):
+            break
+        if _is_meta(raw_line):
+            continue
+        kind = _section_kind(raw_line)
+        if kind:
+            name, number = kind
+            label, verse_n = _suno_section(name, number, verse_n)
+            out.append(label)
+            continue
+        if not raw_line.strip():
+            if out and out[-1] != "":
+                out.append("")
+            continue
+        out.append(raw_line.strip())
+    body = [line for line in out if line.strip() and not line.startswith("[")]
+    if not body:
+        return ""
+    return "\n".join(out).strip()
+
+
+def keep_own_lyrics(text: str) -> str:
+    """Готовая песня с куплетом и припевом — как раньше. Короткий текст тоже оставляем."""
+    extracted = extract_provided_song(text)
+    if extracted:
+        return extracted
+    return normalize_own_lyrics(text)
+
+
+def title_from_own(lyrics: str) -> str:
+    titled = title_from_provided(lyrics)
+    if titled and titled != "Моя песня":
+        return titled
+    for line in (lyrics or "").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("["):
+            continue
+        words = stripped.strip(" .,!?:;—-\"'«»").split()
+        title = " ".join(words[:6]).strip(" .,!?:;—-")
+        if title:
+            return title
+    return "Моя песня"
+
+
 def title_from_provided(lyrics: str) -> str:
     grab = False
     for line in (lyrics or "").splitlines():

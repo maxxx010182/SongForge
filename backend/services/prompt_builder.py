@@ -11,7 +11,9 @@ from backend.services.lyrics_craft_prompt import (
 )
 from backend.services.provided_song import (
     extract_provided_song,
+    keep_own_lyrics,
     style_from_analysis,
+    title_from_own,
     title_from_provided,
 )
 from backend.services.suno_package_composer import SunoPackageComposer, SunoPackageResult
@@ -41,6 +43,22 @@ from backend.utils.text import (
 )
 
 
+def _style_keeps_brief(style: str, *bits: str) -> str:
+    """Фраза человека остаётся в начале стиля, даже если модель молчит."""
+    text = style or ""
+    front: list[str] = []
+    lowered = text.lower()
+    for bit in bits:
+        piece = truncate(clean_text(bit), 80)
+        if piece and piece.lower() not in lowered:
+            front.append(piece)
+            lowered = f"{piece.lower()}, {lowered}"
+    if not front:
+        return text
+    merged = ", ".join(front + ([text] if text.strip() else []))
+    return compact_suno_style(merged)
+
+
 class PromptBuilder:
     def __init__(self, llm: LlmClient) -> None:
         self._yandex = llm  # имя историческое; клиент Yandex или OpenAI-compat
@@ -62,6 +80,7 @@ class PromptBuilder:
         style_mode: str = "presets",
         custom_description: str = "",
         lyrics_engine: str = "classic",
+        own_lyrics: str = "",
     ) -> tuple[ProductionPlan, SunoPromptPayload]:
         """Parse idea → Reference → Analyst → Composer → Suno payload."""
         custom_mode = style_mode == "custom" and custom_description.strip()
@@ -82,7 +101,15 @@ class PromptBuilder:
 
         parsed = parse_idea(parse_text or idea)
         instrumental = bool(instrumental or parsed.instrumental)
-        provided = "" if instrumental else extract_provided_song(parse_text or idea)
+        own_text = "" if instrumental else (own_lyrics or "").strip()
+        if own_text:
+            provided = keep_own_lyrics(own_text)
+            if not provided:
+                raise ValueError(
+                    "В своём тексте нужны строки песни, а не только пометки."
+                )
+        else:
+            provided = "" if instrumental else extract_provided_song(parse_text or idea)
         if provided:
             # Слово внутри куплета («Спокойной ночи», «поп» в «поп-рок»)
             # не подменяет выбранный человеком чип и не задаёт его само.
@@ -142,13 +169,15 @@ class PromptBuilder:
         package = None
         if provided:
             package = SunoPackageResult(
-                title=title_from_provided(provided),
+                title=title_from_own(provided) if own_text else title_from_provided(provided),
                 lyrics=provided,
                 style=style_from_analysis(analysis) or "warm vocals",
-                source="provided",
+                source="own" if own_text else "provided",
             )
             log.info(
-                "Pasted song kept without a rewrite (len=%s)",
+                "Own lyrics kept without a rewrite (len=%s)"
+                if own_text
+                else "Pasted song kept without a rewrite (len=%s)",
                 len(provided),
             )
         elif use_unified:
@@ -221,6 +250,12 @@ class PromptBuilder:
             backing_vocal_gender=backing_gender,
         )
         payload.style = compact_suno_style(payload.style)
+        if own_text:
+            payload.style = _style_keeps_brief(
+                payload.style,
+                idea,
+                custom_description if custom_mode else "",
+            )
         payload.title = sanitize_suno_title(payload.title, analyst_idea)
         payload.negative_tags = sanitize_negative_tags(
             payload.negative_tags, payload.style, plan.genre

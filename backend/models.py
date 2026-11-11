@@ -22,6 +22,7 @@ class ProduceRequest(BaseModel):
     style_mode: str = "presets"
     custom_description: str = ""
     lyrics_engine: str = "classic"
+    own_lyrics: str = ""
 
 
 class MusicAnalysis(BaseModel):
@@ -138,6 +139,7 @@ class CreateSongRequest(BaseModel):
     style_mode: str = "presets"
     custom_description: str = ""
     lyrics_engine: str = "classic"
+    own_lyrics: str = ""
 
 
 class CreateSongResponse(BaseModel):

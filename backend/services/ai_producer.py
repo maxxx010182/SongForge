@@ -36,10 +36,12 @@ class AiProducer:
         style_mode: str = "presets",
         custom_description: str = "",
         lyrics_engine: str = "classic",
+        own_lyrics: str = "",
     ) -> ProduceResponse:
         idea = idea.strip()
+        own = (own_lyrics or "").strip()
         custom_mode = style_mode == "custom" and custom_description.strip()
-        if not idea and not custom_mode:
+        if not idea and not custom_mode and not own:
             raise ValueError("Идея песни не может быть пустой")
         if custom_mode and not idea:
             idea = custom_description.strip()
@@ -55,6 +57,7 @@ class AiProducer:
             style_mode=style_mode,
             custom_description=custom_description,
             lyrics_engine=lyrics_engine,
+            own_lyrics=own,
         )
         plan.optimized_idea = idea
 
@@ -240,6 +243,7 @@ class AiProducer:
         style_mode: str = "presets",
         custom_description: str = "",
         lyrics_engine: str = "classic",
+        own_lyrics: str = "",
     ) -> CreateSongResponse:
         produced = self.produce(
             idea,
@@ -252,6 +256,7 @@ class AiProducer:
             style_mode=style_mode,
             custom_description=custom_description,
             lyrics_engine=lyrics_engine,
+            own_lyrics=own_lyrics,
         )
         task_id = self.start_music(
             production_id=produced.production_id,
