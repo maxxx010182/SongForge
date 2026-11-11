@@ -117,6 +117,42 @@ VOICE_LABELS = {
     "duet": "дуэт",
     "auto": "на усмотрение",
 }
+_SITE_MOOD_KEYS = {
+    "uplifting",
+    "melancholy",
+    "romantic",
+    "dark",
+    "joyful",
+    "adventurous",
+    "peaceful",
+    "nostalgic",
+    "party",
+}
+_SITE_VOICE = {
+    "женский": "female",
+    "мужской": "male",
+    "дуэт": "duet",
+    "на усмотрение": "auto",
+}
+
+
+def site_chips(genre: str, sound: str, voice: str) -> dict:
+    """Подпись бота, если она есть в списке сайта. Своя фраза остаётся пустой."""
+    genre_label = (genre or "").strip()
+    if genre_label not in set(GENRE_LABELS.values()):
+        genre_label = ""
+    mood = ""
+    want = (sound or "").strip().lower()
+    if want:
+        for key, label in SOUND_LABELS.items():
+            if key in _SITE_MOOD_KEYS and label == want:
+                mood = key
+                break
+    return {
+        "genre": genre_label,
+        "mood": mood,
+        "voice": _SITE_VOICE.get((voice or "").strip().lower(), ""),
+    }
 BIZ_GOAL_LABELS = {
     "ads": "реклама / бренд",
     "event": "корпоратив, праздник компании",
@@ -282,6 +318,43 @@ class MessengerService:
                 (user_id,),
             ).fetchone()
         return (row["brief"] or "").strip() if row else ""
+
+    def get_handoff_for_user(self, user_id: str) -> dict:
+        """Описание и свой текст из одной строки. Слова не входят в описание."""
+        empty = {
+            "brief": "",
+            "own_lyrics": "",
+            "genre": "",
+            "mood": "",
+            "voice": "",
+        }
+        if not user_id:
+            return empty
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT brief, brief_lyrics, brief_genre, brief_sound, brief_voice
+                FROM messenger_contacts
+                WHERE user_id = ? AND TRIM(brief) != ''
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (user_id,),
+            ).fetchone()
+        if not row:
+            return empty
+        chips = site_chips(
+            row["brief_genre"] or "",
+            row["brief_sound"] or "",
+            row["brief_voice"] or "",
+        )
+        return {
+            "brief": (row["brief"] or "").strip(),
+            "own_lyrics": (row["brief_lyrics"] or "").strip(),
+            "genre": chips["genre"],
+            "mood": chips["mood"],
+            "voice": chips["voice"],
+        }
 
     def get_max_contact_for_user(self, user_id: str) -> dict | None:
         if not user_id:
@@ -633,7 +706,7 @@ class MessengerService:
                 """
                 UPDATE messenger_contacts
                 SET funnel_stage = ?, brief = '', brief_whom = '', brief_mood = '',
-                    brief_detail = '', brief_sound = '', brief_voice = '',
+                    brief_detail = '', brief_lyrics = '', brief_sound = '', brief_voice = '',
                     brief_genre = '', occasion_key = '', segment = '', funnel_await = '',
                     nudge_step = 0, next_nudge_at = NULL,
                     last_channel = 'max', updated_at = ?
@@ -731,12 +804,30 @@ class MessengerService:
             conn.execute(
                 """
                 UPDATE messenger_contacts
-                SET brief_detail = ?, brief = ?, funnel_stage = ?,
+                SET brief_detail = ?, brief_lyrics = '', brief = ?, funnel_stage = ?,
                     funnel_await = '', nudge_step = 0, next_nudge_at = ?,
                     last_channel = 'max', updated_at = ?
                 WHERE id = ?
                 """,
                 (detail, brief, STAGE_GENRE, next_at, now, contact["id"]),
+            )
+        return self.get_by_max(contact["max_user_id"]) or contact
+
+    def set_own_lyrics(self, contact: dict, lyrics: str) -> dict:
+        """Слова отдельно. В описание песни они не попадают."""
+        brief = self._gift_brief(contact, brief_detail="")
+        now = utc_now()
+        next_at = hour_ping(contact.get("tz_name") or "")
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE messenger_contacts
+                SET brief_detail = '', brief_lyrics = ?, brief = ?, funnel_stage = ?,
+                    funnel_await = '', nudge_step = 0, next_nudge_at = ?,
+                    last_channel = 'max', updated_at = ?
+                WHERE id = ?
+                """,
+                (lyrics, brief, STAGE_GENRE, next_at, now, contact["id"]),
             )
         return self.get_by_max(contact["max_user_id"]) or contact
 

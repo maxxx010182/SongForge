@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from backend.utils.suno_payload import SUNO_PROMPT_MAX_LEN
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
@@ -49,8 +50,21 @@ DETAIL_TIPS = (
     "Лена. Свет на кухне не гасит — «чтобы дом не казался пустой». "
     "Смеётся так, что соседи знают: она дома. В декабре ехали всю ночь, "
     "спала на плече. Пусть в песне будет этот свет и эта дорога — "
-    "и чтобы мы так и ехали дальше."
+    "и чтобы мы так и ехали дальше.\n"
+    "\n"
+    "Если уже есть готовый текст, нажми «Вставить готовый текст»."
 )
+OWN_PASTE_HINT = "Ниже в сообщение вставь свой готовый текст."
+OWN_NEED_LINES = (
+    "В своём тексте нужны строки песни, а не только пометки. "
+    "Вставь текст ещё раз."
+)
+OWN_NOT_GENRE = (
+    "Это похоже на жанр или настроение, а не на слова песни. "
+    "Вставь текст ещё раз."
+)
+OWN_TAKEN = "Слова взял. Теперь жанр."
+OWN_CUT = "Конец не влез, взял целые строки. Теперь жанр."
 DETAIL_NEUTRAL = (
     "Расскажи одну сцену или момент — и песня оживёт.\n\n" + DETAIL_TIPS
 )
@@ -78,6 +92,17 @@ STUDIO_CTA = (
     "Сейчас откроется твоя студия — пожелания уже вписаны. "
     "Нажми там «Создать песню», и примерно через 3 минуты будут два варианта."
 )
+STUDIO_OWN_CTA = (
+    "Анкета готова ✅\n"
+    "\n"
+    "Сейчас откроется расширенный режим. Слова уже лежат в окне. "
+    "Сначала нажми «Сгенерировать текст», потом «Создать песню». "
+    "Примерно через 3 минуты будут два варианта."
+)
+STUDIO_OWN_AGAIN = (
+    "Анкета уже в студии. Откроется расширенный режим, слова уже в окне. "
+    "Сначала «Сгенерировать текст», потом «Создать песню»."
+)
 STUDIO_FORMAT = "html"
 
 
@@ -100,6 +125,12 @@ def studio_cta(*, trial_open: bool) -> str:
     if trial_open:
         return STUDIO_CTA + "\n" + TRIAL_LINE
     return STUDIO_CTA
+
+
+def studio_own_cta(*, trial_open: bool) -> str:
+    if trial_open:
+        return STUDIO_OWN_CTA + "\n" + TRIAL_LINE
+    return STUDIO_OWN_CTA
 FAQ_TEXT = (
     "Сначала собираем черновик и слушаем первые варианты в студии, а потом решаем по заказу.\n"
     "Сначала соберём, кому песня."
@@ -537,6 +568,38 @@ def _cap_pasted_song(text: str) -> str:
     return cut.rstrip()
 
 
+def is_not_song_text(raw: str) -> bool:
+    """Одно слово жанра, настроения или голоса. Это не текст песни."""
+    if "\n" in (raw or ""):
+        return False
+    key = _norm(raw)
+    if not key:
+        return True
+    if key in GENRE_LABELS or key in GENRE_ALIASES:
+        return True
+    if key in {_norm(value) for value in GENRE_LABELS.values()}:
+        return True
+    if key in SOUND_LABELS or key in {_norm(value) for value in SOUND_LABELS.values()}:
+        return True
+    if key in VOICE_LABELS or key in VOICE_ALIASES:
+        return True
+    if key in {_norm(value) for value in VOICE_LABELS.values()}:
+        return True
+    return False
+
+
+def cap_own_lyrics(text: str) -> tuple[str, bool]:
+    """Потолок цеха. Режем по целой строке и говорим, что конец не влез."""
+    body = (text or "").strip()
+    if len(body) <= SUNO_PROMPT_MAX_LEN:
+        return body, False
+    cut = body[:SUNO_PROMPT_MAX_LEN]
+    line_end = cut.rfind("\n")
+    if line_end > 0:
+        return cut[:line_end].rstrip(), True
+    return cut.rstrip(), True
+
+
 def parse_detail(raw: str) -> str | None:
     text = (raw or "").strip()
     if not text or is_skip(text):
@@ -573,6 +636,7 @@ def human_recap(
     sound: str,
     voice: str,
     plot: str = "gift",
+    own: bool = False,
 ) -> str:
     bits = []
     if plot == "just" or not (whom or "").strip():
@@ -584,7 +648,9 @@ def human_recap(
         bits.append(f"песня {whom}")
         if occasion:
             bits.append(occasion)
-    if detail:
+    if own:
+        bits.append("с твоим готовым текстом")
+    elif detail:
         bits.append(detail)
     if genre:
         bits.append(f"жанр {genre.lower()}")

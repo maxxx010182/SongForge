@@ -290,7 +290,9 @@ def test_accept_whom_mood_sends_studio_link():
             for btn in row
         ]
         assert any("/api/auth/max?m=" in url for url in urls)
+        assert all("open=expert" not in url for url in urls)
         last_text = last["text"].lower()
+        assert "готовым текстом" not in last_text
         assert "открывая студию, вы соглашаетесь" in last_text
         assert "или документы" not in last_text
         assert "/api/auth/max?m=" in last["text"]
@@ -448,6 +450,13 @@ def test_business_branch_sends_studio_brief():
             }
         )
         _cb(bot, max_user_id, "bizgoal:ads")
+        biz_payloads = [
+            btn.get("payload") or ""
+            for row in api.sent[-1]["buttons"]
+            for btn in row
+        ]
+        assert "detail:own" not in biz_payloads
+        assert "bizdetail:skip" in biz_payloads
         _cb(bot, max_user_id, "bizdetail:skip")
         _cb(bot, max_user_id, "biztone:friendly")
         last = api.sent[-1]
@@ -1196,3 +1205,166 @@ def test_followup_periodic_retention_branch6():
         assert api.sent == []
     finally:
         _cleanup(max_user_id)
+
+
+def test_own_lyrics_stay_out_of_the_brief_and_the_recap():
+    from backend.services.max_letters import keep_letter, studio_letter, survey_letter
+
+    bot, api, max_user_id = _bot()
+    song = "Куплет\nШур юр урам тулли\nПрипев\nАттепе анне юнашар"
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        last = api.sent[-1]
+        assert "Вставить готовый текст" in last["text"]
+        payloads = [btn.get("payload") or "" for row in last["buttons"] for btn in row]
+        assert "detail:own" in payloads
+        assert "detail:phrase" in payloads
+        assert "detail:skip" in payloads
+        _cb(bot, max_user_id, "detail:own")
+        assert "вставь свой готовый текст" in api.sent[-1]["text"].lower()
+        _text(bot, max_user_id, song)
+        contact = MessengerService().get_by_max(max_user_id)
+        assert "шур юр" in (contact.get("brief_lyrics") or "").lower()
+        assert "[Verse" in (contact.get("brief_lyrics") or "")
+        assert "[Chorus]" in (contact.get("brief_lyrics") or "")
+        assert "шур юр" not in (contact.get("brief") or "").lower()
+        assert not (contact.get("brief_detail") or "").strip()
+        assert contact["funnel_stage"] == "genre"
+        _cb(bot, max_user_id, "genre:pop")
+        _cb(bot, max_user_id, "sound:uplifting")
+        _cb(bot, max_user_id, "voice:female")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert "шур юр" not in (contact.get("brief") or "").lower()
+        recap = api.sent[-1]["text"].lower()
+        assert "с твоим готовым текстом" in recap
+        assert "шур юр" not in recap
+        assert "маме" in recap
+        assert "день рождения" in recap
+        assert "поп" in recap
+        assert "энергично" in recap
+        assert "женский" in recap
+        _cb(bot, max_user_id, "confirm:ok")
+        last = api.sent[-1]
+        assert "сгенерировать текст" in last["text"].lower()
+        assert "шур юр" not in last["text"].lower()
+        urls = [btn.get("url") or "" for row in last["buttons"] for btn in row]
+        assert any("open=expert" in url for url in urls)
+        assert "шур" not in survey_letter(contact, 0).lower()
+        assert "шур" not in studio_letter(contact, 0).lower()
+        assert "шур" not in keep_letter(contact, "keep_d1").lower()
+        token = MessengerService().make_login_token(contact["id"])
+        client = TestClient(app)
+        res = client.get(
+            f"/api/auth/max?m={token}&open=expert", follow_redirects=False
+        )
+        assert res.status_code in {302, 307}
+        assert "open=expert" in res.headers.get("location", "")
+        me = client.get("/api/me")
+        data = me.json()
+        assert "шур юр" in data["messenger_own_lyrics"].lower()
+        assert "шур юр" not in data["messenger_brief"].lower()
+        assert "маме" in data["messenger_brief"].lower()
+        assert data["messenger_genre"] == "Поп"
+        assert data["messenger_mood"] == "uplifting"
+        assert data["messenger_voice"] == "female"
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_own_lyrics_rejects_labels_genre_word_and_skip():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:nobody")
+        _cb(bot, max_user_id, "occasion:just")
+        _cb(bot, max_user_id, "detail:own")
+        _text(bot, max_user_id, "Куплет\nПрипев")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert not (contact.get("brief_lyrics") or "").strip()
+        assert contact["funnel_await"] == "own"
+        assert "строки песни" in api.sent[-1]["text"].lower()
+        _text(bot, max_user_id, "поп")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert not (contact.get("brief_lyrics") or "").strip()
+        assert "не на слова" in api.sent[-1]["text"].lower()
+        _text(bot, max_user_id, "пока без этого")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert not (contact.get("brief_lyrics") or "").strip()
+        assert contact["funnel_stage"] == "genre"
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_plain_scene_still_lands_in_the_brief():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _text(bot, max_user_id, "свет на кухне не гасит")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert "свет на кухне" in (contact.get("brief") or "").lower()
+        assert "свет на кухне" in (contact.get("brief_detail") or "").lower()
+        assert not (contact.get("brief_lyrics") or "").strip()
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_replacing_the_scene_clears_own_lyrics():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _cb(bot, max_user_id, "detail:own")
+        _text(bot, max_user_id, "Шур юр урам тулли\nАттепе анне юнашар")
+        _cb(bot, max_user_id, "genre:pop")
+        _cb(bot, max_user_id, "sound:uplifting")
+        _cb(bot, max_user_id, "voice:female")
+        _cb(bot, max_user_id, "confirm:edit")
+        _cb(bot, max_user_id, "edit:detail")
+        payloads = [btn.get("payload") or "" for row in api.sent[-1]["buttons"] for btn in row]
+        assert "detail:own" in payloads
+        _cb(bot, max_user_id, "detail:phrase")
+        _text(bot, max_user_id, "свет на кухне")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert not (contact.get("brief_lyrics") or "").strip()
+        assert "свет на кухне" in (contact.get("brief") or "").lower()
+        assert "шур юр" not in (contact.get("brief") or "").lower()
+        assert "готовым текстом" not in api.sent[-1]["text"].lower()
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_song_with_business_words_stays_personal():
+    bot, api, max_user_id = _bot()
+    song = "Куплет\nЭто не реклама бренда а просто дом\nПрипев\nМы рядом идём домой"
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:mom")
+        _cb(bot, max_user_id, "occasion:birthday")
+        _cb(bot, max_user_id, "detail:own")
+        _text(bot, max_user_id, song)
+        contact = MessengerService().get_by_max(max_user_id)
+        assert contact["segment"] != "business"
+        assert "реклама" in (contact.get("brief_lyrics") or "").lower()
+        assert "реклама" not in (contact.get("brief") or "").lower()
+    finally:
+        _cleanup(max_user_id)
+
+
+def test_cap_own_lyrics_cuts_on_a_whole_line():
+    from backend.services.max_funnel import cap_own_lyrics
+
+    lines = [f"строка песни номер {i} про дом и долгую дорогу" for i in range(400)]
+    text = "\n".join(lines)
+    cut, was = cap_own_lyrics(text)
+    assert was
+    assert len(cut) <= 5000
+    assert cut.splitlines()[-1] in lines
+    assert not cut.endswith("...")
+    short, short_cut = cap_own_lyrics("Шур юр")
+    assert short == "Шур юр"
+    assert short_cut is False

@@ -267,6 +267,7 @@ def init_db() -> None:
                 brief_whom TEXT NOT NULL DEFAULT '',
                 brief_mood TEXT NOT NULL DEFAULT '',
                 brief_detail TEXT NOT NULL DEFAULT '',
+                brief_lyrics TEXT NOT NULL DEFAULT '',
                 brief_sound TEXT NOT NULL DEFAULT '',
                 brief_voice TEXT NOT NULL DEFAULT '',
                 last_channel TEXT NOT NULL DEFAULT '',
@@ -465,6 +466,10 @@ def _migrate_messenger_columns(conn: sqlite3.Connection) -> None:
     if "brief_detail" not in existing:
         conn.execute(
             "ALTER TABLE messenger_contacts ADD COLUMN brief_detail TEXT NOT NULL DEFAULT ''"
+        )
+    if "brief_lyrics" not in existing:
+        conn.execute(
+            "ALTER TABLE messenger_contacts ADD COLUMN brief_lyrics TEXT NOT NULL DEFAULT ''"
         )
     if "brief_sound" not in existing:
         conn.execute(

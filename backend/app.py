@@ -157,7 +157,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.154", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.155", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1514,14 +1514,18 @@ async def get_me(
             pass
     else:
         remaining = 0
-    brief = messenger_service.get_brief_for_user(user["id"]) if user else ""
+    handoff = messenger_service.get_handoff_for_user(user["id"]) if user else {}
     return MeResponse(
         logged_in=bool(user),
         user=_user_info(user) if user else None,
         guest_remaining=remaining,
         guest_limit=GUEST_GENERATION_LIMIT,
         payment_provider=PAYMENT_PROVIDER,
-        messenger_brief=brief,
+        messenger_brief=handoff.get("brief") or "",
+        messenger_own_lyrics=handoff.get("own_lyrics") or "",
+        messenger_genre=handoff.get("genre") or "",
+        messenger_mood=handoff.get("mood") or "",
+        messenger_voice=handoff.get("voice") or "",
     )
 
 

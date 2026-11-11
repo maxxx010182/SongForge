@@ -256,6 +256,10 @@ class MeResponse(BaseModel):
     guest_limit: int = 1
     payment_provider: str = "stub"
     messenger_brief: str = ""
+    messenger_own_lyrics: str = ""
+    messenger_genre: str = ""
+    messenger_mood: str = ""
+    messenger_voice: str = ""
 
 
 class HistoryItem(BaseModel):

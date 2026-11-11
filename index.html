@@ -1409,7 +1409,44 @@ async function openSharedTrack(libraryId){if(!libraryId)return;try{var res=await
 function handleTrackDeepLink(){var p=new URLSearchParams(window.location.search);var id=p.get('track');if(!id)return;openSharedTrack(id);if(window.history&&window.history.replaceState){window.history.replaceState({},'',window.location.pathname);}}
 async function saveNicknameFromModal(){if(!session.loggedIn)return;var input=document.getElementById('nicknameModalInput');var hint=document.getElementById('nicknameModalHint');var btn=document.getElementById('nicknameModalSaveBtn');var name=(input?input.value:'').trim();if(name.length<2){if(hint){hint.textContent='Ник — от 2 до 40 символов';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(btn){btn.disabled=true;btn.textContent='...';}try{var res=await fetch('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name}),...fetchOpts});var data=await res.json().catch(function(){return{};});if(!res.ok){if(hint){hint.textContent=data.detail||(res.status===409?'Этот ник уже занят':'Не удалось сохранить');hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}return;}if(data.user){session.user=data.user;updateProfileAuthUI();}closeNicknameModal();showToast('Ник сохранён');}catch(e){if(hint){hint.textContent='Ошибка сети';hint.className='text-xs text-red-400 min-h-[1rem] mb-4';}}finally{if(btn){btn.disabled=false;btn.textContent='Продолжить';}}}
 function apiMeUrl(){var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}return tz?('/api/me?tz='+encodeURIComponent(tz)):'/api/me';}
-async function fetchMe(){try{var res=await fetch(apiMeUrl(),fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.paymentProvider=data.payment_provider||'stub';session.messengerBrief=data.messenger_brief||'';if(session.messengerBrief){var inp=document.getElementById('ideaInput');if(inp&&!inp.value.trim())inp.value=session.messengerBrief;if(!currentIdea)currentIdea=session.messengerBrief;}if(data.user){session.user=data.user;user.balance=data.user.balance;syncThemeFromSession();}else{session.user=null;loadLocalData();applyTheme(getStoredTheme());updateThemeHint();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();applyTheme(getStoredTheme());updateBalanceUI();}}
+function applyMessengerOwnLyrics(){
+  var lyrics=(session.messengerOwnLyrics||'').trim();
+  if(!lyrics)return;
+  setStudioMode('expert');
+  switchToView('create');
+  instrumentalMode=false;
+  var instr=document.getElementById('instrumentalCheckbox');
+  if(instr)instr.checked=false;
+  var box=document.getElementById('ownLyricsCheckbox');
+  if(box)box.checked=true;
+  var own=document.getElementById('ownLyricsInput');
+  if(own&&!own.value.trim())own.value=lyrics;
+  var ideaEl=document.getElementById('ideaInput');
+  var brief=(session.messengerBrief||'').trim();
+  if(ideaEl&&brief&&!ideaEl.value.trim()){ideaEl.value=brief;if(!currentIdea)currentIdea=brief;}
+  var genre=session.messengerGenre||'';
+  if(genre&&genreMap[genre]){
+    selectedGenre=genre;genreTouched=true;
+    var gs=document.getElementById('genreSelect');
+    if(gs)gs.value=genre;
+  }
+  var mood=session.messengerMood||'';
+  var ms=document.getElementById('moodSelect');
+  if(mood&&ms){
+    var moodOk=false;
+    for(var i=0;i<ms.options.length;i++){if(ms.options[i].value===mood)moodOk=true;}
+    if(moodOk){selectedMood=mood;moodTouched=true;ms.value=mood;}
+  }
+  var voice=session.messengerVoice||'';
+  var vs=document.getElementById('vocalSelect');
+  if(voice&&vs){
+    var voiceOk=false;
+    for(var j=0;j<vs.options.length;j++){if(vs.options[j].value===voice)voiceOk=true;}
+    if(voiceOk){selectedVocal=voice;vs.value=voice;}
+  }
+  updateIdeaFieldUI();
+}
+async function fetchMe(){try{var res=await fetch(apiMeUrl(),fetchOpts);if(!res.ok)return;var data=await res.json();session.loggedIn=!!data.logged_in;session.guestRemaining=data.guest_remaining!=null?data.guest_remaining:0;session.guestLimit=data.guest_limit||1;session.paymentProvider=data.payment_provider||'stub';session.messengerBrief=data.messenger_brief||'';session.messengerOwnLyrics=data.messenger_own_lyrics||'';session.messengerGenre=data.messenger_genre||'';session.messengerMood=data.messenger_mood||'';session.messengerVoice=data.messenger_voice||'';if(session.messengerBrief){var inp=document.getElementById('ideaInput');if(inp&&!inp.value.trim())inp.value=session.messengerBrief;if(!currentIdea)currentIdea=session.messengerBrief;}if(data.user){session.user=data.user;user.balance=data.user.balance;syncThemeFromSession();}else{session.user=null;loadLocalData();applyTheme(getStoredTheme());updateThemeHint();}updateBalanceUI();maybeOpenNicknameModal();}catch(e){loadLocalData();applyTheme(getStoredTheme());updateBalanceUI();}}
 async function fetchHistory(){if(!session.loggedIn){session.history=[];return;}try{var res=await fetch('/api/history',fetchOpts);if(res.ok)session.history=await res.json();else session.history=[];}catch(e){session.history=[];}}
 async function fetchServerLibrary(){if(!session.loggedIn){session.serverLibrary=[];return;}try{var res=await fetch('/api/library',fetchOpts);if(res.ok)session.serverLibrary=await res.json();else session.serverLibrary=[];}catch(e){session.serverLibrary=[];}}
 async function fetchExploreTracks(limit){limit=limit||50;try{var res=await fetch('/api/explore?limit='+limit,fetchOpts);if(res.ok)session.exploreTracks=await res.json();else session.exploreTracks=[];}catch(e){session.exploreTracks=[];}bindPlayerDefaultFromChart();}
@@ -1427,8 +1464,9 @@ function clearAuthResendTimer(){if(authResendTimer){clearInterval(authResendTime
 function updateAuthResendBtn(){var btn=document.getElementById('authResendCodeBtn');if(!btn)return;if(authResendLeft>0){btn.disabled=true;btn.textContent='Отправить ещё раз через '+authResendLeft+' с';}else{btn.disabled=false;btn.textContent='Отправить код ещё раз';}}
 function startAuthResendCooldown(){clearAuthResendTimer();authResendLeft=AUTH_RESEND_COOLDOWN_SEC;updateAuthResendBtn();authResendTimer=setInterval(function(){authResendLeft-=1;if(authResendLeft<=0){clearAuthResendTimer();updateAuthResendBtn();}else{updateAuthResendBtn();}},1000);}
 function openAuthModalForEmailVerify(email){openAuthModal();var consent=document.getElementById('authConsentCheckbox');if(consent)consent.checked=true;updateAuthButtonsState();if(email)document.getElementById('authEmailInput').value=email;authEmailStep='verify';document.getElementById('authCodeBlock').classList.remove('hidden');document.getElementById('authEmailSubmitBtn').textContent='Войти';startAuthResendCooldown();var codeInput=document.getElementById('authCodeInput');if(codeInput)setTimeout(function(){codeInput.focus();},150);showToast('Введите код из письма');}
-async function loadData(){await fetchAuthProviders();var authRedirect=handleAuthRedirect();await fetchMe();await fetchHistory();await fetchServerLibrary();await fetchExploreTracks();renderLibrary();renderHistory();renderExplore();renderHomeExplore();handleTrackDeepLink();handleEmailAuthDeepLink();var holdStudio=false;if(authRedirect==='ok'){showToast('Вы вошли в аккаунт');if(pendingMaxOpen==='listen'){switchToView('library');if(parkOldDemos()){switchLibraryTab('history');var histBox=document.getElementById('historyTabContent');if(histBox&&histBox.scrollIntoView){try{histBox.scrollIntoView({block:'start'});}catch(err){}}}else{switchLibraryTab('library');var demoBox=document.getElementById('libraryDemos');if(demoBox&&demoBox.scrollIntoView){try{demoBox.scrollIntoView({block:'start'});}catch(err){}}}}else if(pendingMaxOpen==='expert'){holdStudio=true;setStudioMode('expert');switchToView('create');}else restorePendingStudioState();pendingMaxOpen='';await resumePendingClaim({autoPurchase:true});}
+async function loadData(){await fetchAuthProviders();var authRedirect=handleAuthRedirect();await fetchMe();await fetchHistory();await fetchServerLibrary();await fetchExploreTracks();renderLibrary();renderHistory();renderExplore();renderHomeExplore();handleTrackDeepLink();handleEmailAuthDeepLink();var holdStudio=false;if(authRedirect==='ok'){showToast('Вы вошли в аккаунт');if(pendingMaxOpen==='listen'){switchToView('library');if(parkOldDemos()){switchLibraryTab('history');var histBox=document.getElementById('historyTabContent');if(histBox&&histBox.scrollIntoView){try{histBox.scrollIntoView({block:'start'});}catch(err){}}}else{switchLibraryTab('library');var demoBox=document.getElementById('libraryDemos');if(demoBox&&demoBox.scrollIntoView){try{demoBox.scrollIntoView({block:'start'});}catch(err){}}}}else if(pendingMaxOpen==='expert'){holdStudio=true;setStudioMode('expert');switchToView('create');}else restorePendingStudioState();var maxOpen=pendingMaxOpen;pendingMaxOpen='';await resumePendingClaim({autoPurchase:true});}
 restorePendingStudioState();
+if(typeof maxOpen!=='undefined'&&maxOpen==='expert')applyMessengerOwnLyrics();
 }
 
 // Восстанавливаем состояние студии после возврата из оплаты GetPlatinum

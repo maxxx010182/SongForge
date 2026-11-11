@@ -32,14 +32,23 @@ from backend.services.max_funnel import (
     LATER_TEXT,
     OCCASION_TEXT,
     OCCASION_WRITE_PROMPT,
+    OWN_CUT,
+    OWN_NEED_LINES,
+    OWN_NOT_GENRE,
+    OWN_PASTE_HINT,
+    OWN_TAKEN,
     RESUME_TEXT,
     SOUND_TEXT,
     STOP_TEXT,
     STUDIO_AGAIN,
     STUDIO_FORMAT,
+    STUDIO_OWN_AGAIN,
+    cap_own_lyrics,
     gate_text,
+    is_not_song_text,
     studio_cta,
     studio_legal_html,
+    studio_own_cta,
     THEME_TEXT,
     UNSAID_TEXT,
     UNSAID_WAIT,
@@ -66,6 +75,7 @@ from backend.services.max_funnel import (
     parse_whom,
     theme_key_of,
 )
+from backend.services.provided_song import keep_own_lyrics
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
@@ -282,6 +292,7 @@ def _detail_gift_buttons() -> list[list[dict]]:
     return [
         [_callback_btn("💬 Есть фраза или привычка", "detail:phrase")],
         [_callback_btn("🎬 Есть сцена, момент", "detail:scene")],
+        [_callback_btn("📝 Вставить готовый текст", "detail:own")],
         [_callback_btn("⏭ Пока без этого", "detail:skip")],
     ]
 
@@ -289,8 +300,13 @@ def _detail_gift_buttons() -> list[list[dict]]:
 def _detail_just_buttons() -> list[list[dict]]:
     return [
         [_callback_btn("✅ Да, есть", "detail:scene")],
+        [_callback_btn("📝 Вставить готовый текст", "detail:own")],
         [_callback_btn("⏭ Пропустить", "detail:skip")],
     ]
+
+
+def _has_own_lyrics(contact: dict) -> bool:
+    return bool((contact.get("brief_lyrics") or "").strip())
 
 
 def _unsaid_buttons() -> list[list[dict]]:
@@ -765,6 +781,7 @@ class MaxBot:
             sound=contact.get("brief_sound") or "",
             voice=contact.get("brief_voice") or "",
             plot=contact.get("segment") or "gift",
+            own=_has_own_lyrics(contact),
         )
         text = _join(prefix, recap + "\n" + CONFIRM_FOOTER)
         self._send_step(contact, text, _confirm_buttons(), "confirm")
@@ -812,6 +829,9 @@ class MaxBot:
             return
         if kind == "detail":
             self._send_detail(contact, prefix)
+            return
+        if kind == "own":
+            self._send(contact, _join(prefix, OWN_PASTE_HINT))
             return
         if kind == "genre":
             self._send_genre(contact, prefix)
@@ -879,6 +899,9 @@ class MaxBot:
             self._send_unsaid(contact, prefix)
             return
         if stage == STAGE_DETAIL:
+            if awaiting in {"own", "patch:own"}:
+                self._send(contact, _join(prefix, OWN_PASTE_HINT))
+                return
             if awaiting == "detail":
                 self._send(contact, _join(prefix, DETAIL_WAIT), _detail_gift_buttons())
                 return
@@ -1019,23 +1042,23 @@ class MaxBot:
         if _is_greeting(text) and (contact.get("funnel_await") or "") == "":
             self._stay(contact)
             return
-        if is_price_question(text):
+        awaiting = (contact.get("funnel_await") or "").strip()
+        await_kind = awaiting.split(":", 1)[-1] if awaiting.startswith("patch:") else awaiting
+        if is_price_question(text) and await_kind != "own":
             self._stay(
                 contact,
                 price_reply(trial_open=trial_is_open(contact.get("user_id"))),
             )
             return
-        awaiting = (contact.get("funnel_await") or "").strip()
         stage_now = contact.get("funnel_stage") or ""
         if looks_business(text) and (contact.get("segment") or "") != "business":
             if (
                 not awaiting.startswith("patch:")
-                and awaiting not in {"occasion", "whom", "detail", "about"}
+                and awaiting not in {"occasion", "whom", "detail", "about", "own"}
                 and stage_now not in {STAGE_OCCASION, STAGE_DETAIL, STAGE_CONFIRM}
             ):
                 self._switch_business(contact)
                 return
-        await_kind = awaiting.split(":", 1)[-1] if awaiting.startswith("patch:") else awaiting
         if await_kind == "whom":
             self._apply_whom(contact, text)
             return
@@ -1044,6 +1067,9 @@ class MaxBot:
             return
         if await_kind == "detail":
             self._apply_detail(contact, text)
+            return
+        if await_kind == "own":
+            self._apply_own(contact, text)
             return
         if await_kind == "unsaid":
             self._apply_unsaid(contact, text)
@@ -1095,8 +1121,12 @@ class MaxBot:
             self._apply_biz_tone(contact, text)
             return
         if stage == STAGE_SENT:
-            url = self.messenger.studio_url(contact)
-            self._send(contact, STUDIO_AGAIN, _studio_buttons(url))
+            has_own = _has_own_lyrics(contact)
+            url = self.messenger.studio_url(
+                contact, open_to="expert" if has_own else ""
+            )
+            again = STUDIO_OWN_AGAIN if has_own else STUDIO_AGAIN
+            self._send(contact, again, _studio_buttons(url))
             return
         self._send_studio(contact)
 
@@ -1193,6 +1223,12 @@ class MaxBot:
 
     def _apply_detail(self, contact: dict, raw: str) -> None:
         patching = self._is_patching(contact)
+        if raw == "own":
+            contact = self.messenger.set_await(
+                contact, "patch:own" if patching else "own"
+            )
+            self._send(contact, OWN_PASTE_HINT)
+            return
         if raw in {"phrase", "scene"}:
             contact = self.messenger.set_await(contact, "patch:detail" if patching else "detail")
             self._send(contact, DETAIL_WAIT)
@@ -1212,6 +1248,31 @@ class MaxBot:
             self._back_to_confirm(contact)
             return
         prefix = "Отличная деталь — вошьём в текст." if detail else ""
+        self._send_genre(contact, prefix)
+
+    def _apply_own(self, contact: dict, raw: str) -> None:
+        patching = self._is_patching(contact)
+        if raw == "skip" or is_skip(raw):
+            detail = (contact.get("brief_detail") or "").strip()
+            contact = self.messenger.set_detail(contact, detail)
+            if patching:
+                self._back_to_confirm(contact)
+                return
+            self._send_genre(contact)
+            return
+        if is_not_song_text(raw):
+            self._send(contact, OWN_NOT_GENRE)
+            return
+        lyrics = keep_own_lyrics(raw)
+        if not lyrics:
+            self._send(contact, OWN_NEED_LINES)
+            return
+        lyrics, cut = cap_own_lyrics(lyrics)
+        contact = self.messenger.set_own_lyrics(contact, lyrics)
+        prefix = OWN_CUT if cut else OWN_TAKEN
+        if patching:
+            self._back_to_confirm(contact, prefix)
+            return
         self._send_genre(contact, prefix)
 
     def _apply_unsaid(self, contact: dict, raw: str) -> None:
@@ -1344,14 +1405,19 @@ class MaxBot:
         if not contact.get("user_id"):
             self._send_gate(contact)
             return
-        url = self.messenger.studio_url(contact)
+        has_own = _has_own_lyrics(contact) and (contact.get("segment") or "") != "business"
+        url = self.messenger.studio_url(contact, open_to="expert" if has_own else "")
         legal = studio_legal_html(
             terms_url=self.messenger.studio_url(contact, next_path="/legal/terms"),
             privacy_url=self.messenger.studio_url(contact, next_path="/legal/privacy"),
             offer_url=self.messenger.studio_url(contact, next_path="/legal/offer"),
         )
         trial_open = trial_is_open(contact.get("user_id"))
-        closing = studio_cta(trial_open=trial_open)
+        closing = (
+            studio_own_cta(trial_open=trial_open)
+            if has_own
+            else studio_cta(trial_open=trial_open)
+        )
         if (contact.get("segment") or "") == "business":
             text = (
                 biz_studio_mirror(
@@ -1380,6 +1446,7 @@ class MaxBot:
             sound=contact.get("brief_sound") or "",
             voice=contact.get("brief_voice") or "",
             plot=contact.get("segment") or "gift",
+            own=has_own,
         )
         text = recap + "\n\n" + closing
         if extra:
