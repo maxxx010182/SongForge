@@ -2,6 +2,7 @@
 
 from backend.services.prompt_builder import PromptBuilder
 from backend.services.provided_song import keep_own_lyrics
+from backend.services.suno_input import build_suno_custom_payload
 
 _OWN = """Куплет 1
 Шур юр, урам тулли
@@ -59,6 +60,15 @@ def test_own_lyrics_are_not_rewritten_and_wish_reaches_the_model():
     assert "Шур юр, урам тулли" in payload.lyrics
     assert "чувашская песня о родной земле" in payload.style.lower()
     assert plan.genre == "Pop"
+    suno = build_suno_custom_payload(
+        lyrics=payload.lyrics,
+        style=payload.style,
+        title=payload.title,
+        plan=plan,
+    )
+    assert "Шур юр, урам тулли" in suno["prompt"]
+    assert "чувашская песня о родной земле" in suno["style"].lower()
+    assert "Куплет" not in suno["prompt"]
 
 
 def test_wish_stays_in_style_when_the_model_is_silent():
@@ -80,3 +90,12 @@ def test_wish_stays_in_style_when_the_model_is_silent():
     assert "[Chorus]" in payload.lyrics
     assert "чувашская песня о родной земле" in payload.style.lower()
     assert payload.title
+    suno = build_suno_custom_payload(
+        lyrics=payload.lyrics,
+        style=payload.style,
+        title=payload.title,
+        plan=_plan,
+    )
+    assert "Шур юр, урам тулли" in suno["prompt"]
+    assert "чувашская песня о родной земле" in suno["style"].lower()
+    assert "Куплет" not in suno["prompt"]
