@@ -60,6 +60,8 @@ def test_unbought_demo_is_on_the_studio_and_in_the_library():
     assert "лежит в «Истории»" in html
     assert "не выкупить за 14 дней" in html
     assert "demo-rights" in html
+    assert "Сама песня туда не попадает" not in html
+    assert ".demo-rights.hidden{display:none!important}" in html
     assert "лежат на вкладке «История»" not in html
     assert "во вкладке «История»" not in html
 

@@ -1,13 +1,19 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.156. Next is block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.157. Next is block 98. Do not run block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 98) DEMO NOTICE ONLY ON DEMOS ===
+# One line. Skip lines that start with #.
+# The yellow rights note stays only on demos. The last sentence is gone.
+# A song paid with a note no longer shows that note.
+# This update also includes the sound-card reserve if block 97 was not run.
+# The update already prints health and "Готово! v2.11.157".
+# Paste the last lines here. Do not run a second health command.
+# Do not run block 97.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 97) SOUND CARD RESERVE ===
-# One line. Skip lines that start with #.
-# A failed sound card asks the next text model, then the song text.
-# The update already prints health and "Готово! v2.11.156".
-# Paste the last lines here. Do not run a second health command.
-# Do not run block 96.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# Do not run. Block 98 already includes this update.
+# Expected end is "Готово! v2.11.157", not v2.11.156.
 
 === 96) OWN LYRICS IN THE MAX BOT ===
 # DONE 11.11.2026. Health version 2.11.155, generating 0. Do not run again.
