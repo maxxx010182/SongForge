@@ -19,6 +19,25 @@ def test_health():
     assert "version" in data
 
 
+def test_now_playing_disc_follows_the_theme():
+    html = client.get("/").text
+    assert 'id="nowPlaying"' in html
+    assert 'id="playerCover"' in html
+    assert 'id="playerPlayPause"' in html
+    assert 'id="playerStop"' in html
+    assert 'id="playerSeek"' in html
+    assert 'id="miniPlayerBar"' in html
+    assert "var(--sf-accent)" in html
+    assert "var(--sf-accent-on)" in html
+    assert "np-spin 1.8s" in html
+    assert "prefers-reduced-motion:reduce" in html
+    assert "data-theme=\"burgundy\"" in html
+    assert "data-theme=\"olive\"" in html
+    assert "data-theme=\"obsidian\"" in html
+    assert "#f97316" not in html
+    assert "Low Tide" not in html
+
+
 def test_index_html():
     response = client.get("/")
     assert response.status_code == 200

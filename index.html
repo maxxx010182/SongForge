@@ -296,15 +296,48 @@
         .mini-player-seek-wrap{position:absolute;left:0;right:0;top:0;height:3px}
         .mini-player-seek{width:100%;height:3px;accent-color:var(--sf-accent);cursor:pointer;display:block;margin:0}
         /* Эквалайзер в окне плеера (CSS, без Web Audio — без риска CORS) */
-        .player-eq{position:absolute;left:0;right:0;bottom:0;height:42%;display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:0 14% 12px;background:linear-gradient(to top,rgba(0,0,0,.65),transparent);pointer-events:none;opacity:0;transition:opacity .28s ease;z-index:2}
+        .now-playing{background:rgba(0,0,0,.28);border:1px solid var(--sf-glass-border);border-radius:1.25rem;padding:.8rem .55rem .7rem}
+        .np-row{display:flex;align-items:center;gap:.65rem}
+        .np-stage{position:relative;width:9.2rem;height:8.3rem;flex-shrink:0}
+        .np-disc{position:absolute;left:0;top:.25rem;width:8rem;height:8rem;border-radius:50%;overflow:hidden;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.08) 0 1px,transparent 1px 4px),#0a0a0a;box-shadow:0 8px 18px -8px rgba(0,0,0,.55);animation:np-spin 1.8s linear infinite;animation-play-state:paused}
+        @media(min-width:1024px){.np-stage{width:8.15rem;height:7.35rem}.np-disc{top:.2rem;width:7.15rem;height:7.15rem}}
+        .now-playing.is-playing .np-disc{animation-play-state:running}
+        @keyframes np-spin{to{transform:rotate(360deg)}}
+        .np-label{position:absolute;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);border-radius:50%;object-fit:cover;background:#18181b}
+        .np-hole{position:absolute;left:50%;top:50%;width:7px;height:7px;transform:translate(-50%,-50%);border-radius:50%;background:#0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+        .np-arm{position:absolute;top:0;right:0;height:78%;width:auto;transform-origin:77.5% 10%;transform:rotate(-8deg);transition:transform .5s cubic-bezier(.77,0,.175,1);pointer-events:none}
+        .now-playing.is-playing .np-arm{transform:rotate(11deg)}
+        .np-copy{min-width:0;flex:1}
+        .np-kicker{display:flex;align-items:center;gap:.4rem;color:var(--sf-accent);font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+        .np-title{margin-top:.35rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .np-author{margin-top:.1rem;font-size:.75rem;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .np-controls{display:flex;gap:.45rem;margin-top:.65rem}
+        .np-play,.np-stop{width:2.25rem;height:2.25rem;border-radius:999px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+        .np-play{background:var(--sf-accent);color:var(--sf-accent-on)}
+        .np-stop{background:rgba(255,255,255,.12);color:#fff}
+        .np-times{display:flex;justify-content:space-between;margin-top:.25rem;font-size:.72rem;color:#71717a;font-variant-numeric:tabular-nums}
+        .np-roll{display:inline-flex}
+        .np-roll-digit{display:inline-block;height:1.15em;overflow:hidden;line-height:1.15}
+        .np-roll-in-up,.np-roll-in-down{display:block}
+        .np-roll-in-up{animation:np-in-up .22s cubic-bezier(.23,1,.32,1) both}
+        .np-roll-in-down{animation:np-in-down .22s cubic-bezier(.23,1,.32,1) both}
+        @keyframes np-in-up{from{transform:translateY(90%);opacity:0}to{transform:none;opacity:1}}
+        @keyframes np-in-down{from{transform:translateY(-90%);opacity:0}to{transform:none;opacity:1}}
+        .player-eq{height:14px;display:flex;align-items:flex-end;gap:2px;opacity:.4;pointer-events:none}
         .player-eq.is-playing{opacity:1}
-        .player-eq span{flex:1;max-width:7px;height:22%;min-height:8px;border-radius:2px;background:linear-gradient(to top,#ca8a04,#eab308,#fef08a);box-shadow:0 0 6px rgba(234,179,8,.35)}
-        .player-eq.is-playing span{animation:player-eq-bar .9s ease-in-out infinite}
-        .player-eq span:nth-child(1){animation-delay:0s}.player-eq span:nth-child(2){animation-delay:.08s}.player-eq span:nth-child(3){animation-delay:.16s}
-        .player-eq span:nth-child(4){animation-delay:.04s}.player-eq span:nth-child(5){animation-delay:.2s}.player-eq span:nth-child(6){animation-delay:.12s}
-        .player-eq span:nth-child(7){animation-delay:.24s}.player-eq span:nth-child(8){animation-delay:.06s}.player-eq span:nth-child(9){animation-delay:.18s}
-        .player-eq span:nth-child(10){animation-delay:.1s}.player-eq span:nth-child(11){animation-delay:.22s}.player-eq span:nth-child(12){animation-delay:.14s}
+        .player-eq span{width:3px;height:100%;border-radius:1px;background:var(--sf-accent);transform:scaleY(.14);transform-origin:bottom}
+        .player-eq.is-playing span{animation:np-bar .9s ease-in-out infinite}
+        .player-eq span:nth-child(2){animation-delay:.08s}
+        .player-eq span:nth-child(3){animation-delay:.16s}
+        .player-eq span:nth-child(4){animation-delay:.04s}
+        .player-eq span:nth-child(5){animation-delay:.2s}
+        @keyframes np-bar{0%,100%{transform:scaleY(.18)}50%{transform:scaleY(1)}}
         @keyframes player-eq-bar{0%,100%{height:18%}25%{height:55%}50%{height:100%}75%{height:40%}}
+        @media (prefers-reduced-motion:reduce){
+            .np-disc{animation:none}
+            .np-arm,.np-roll-in-up,.np-roll-in-down{transition:none;animation:none}
+            .player-eq.is-playing span{animation:none;transform:scaleY(.7)}
+        }
         .mini-player-eq{display:flex;align-items:flex-end;gap:2px;height:22px;flex-shrink:0;opacity:.35;transition:opacity .2s}
         .mini-player-eq.is-playing{opacity:1}
         .mini-player-eq span{width:3px;height:30%;border-radius:1px;background:var(--sf-accent)}
@@ -902,28 +935,38 @@
     <div class="sidebar-panel glass-panel p-6 flex flex-col gap-6">
         <div>
             <div class="text-xs text-zinc-400 mb-4 flex items-center gap-2"><i class="fa-solid fa-headphones"></i>Сейчас играет</div>
-            <div class="bg-zinc-900/70 rounded-2xl overflow-hidden">
-                <div class="h-36 sm:h-40 lg:h-48 bg-zinc-900 relative overflow-hidden">
-                    <img id="playerCover" src="/SongForgeLogo.png" alt="" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='/SongForgeLogo.png'">
-                    <div id="playerEq" class="player-eq" aria-hidden="true">
-                        <span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span>
+            <div id="nowPlaying" class="now-playing">
+                <div class="np-row">
+                    <div class="np-stage">
+                        <div class="np-disc">
+                            <img id="playerCover" src="/SongForgeLogo.png" alt="" class="np-label" onerror="this.onerror=null;this.src='/SongForgeLogo.png'">
+                            <span class="np-hole" aria-hidden="true"></span>
+                        </div>
+                        <svg class="np-arm" viewBox="0 0 40 110" aria-hidden="true">
+                            <circle cx="31" cy="11" r="8" fill="#d4d4d8" stroke="#a1a1aa"></circle>
+                            <circle cx="31" cy="11" r="3" fill="#71717a"></circle>
+                            <path d="M31 11 L31 70 L18 92" fill="none" stroke="#a1a1aa" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+                            <rect x="12.5" y="90" width="7" height="12" rx="1.5" fill="#e4e4e7" transform="rotate(32 16 96)"></rect>
+                        </svg>
+                    </div>
+                    <div class="np-copy">
+                        <div class="np-kicker">
+                            <div id="playerEq" class="player-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                            <div id="playerSubtitle">Топ чарта</div>
+                        </div>
+                        <div class="np-title" id="playingTitle">—</div>
+                        <div class="np-author" id="playerAuthor">СоздайСвоюПесню</div>
+                        <div class="np-controls">
+                            <button type="button" id="playerPlayPause" class="np-play" aria-label="Слушать"><i class="fa-solid fa-play"></i></button>
+                            <button type="button" id="playerStop" class="np-stop" aria-label="Стоп"><i class="fa-solid fa-stop"></i></button>
+                        </div>
                     </div>
                 </div>
-                <div class="p-4">
-                    <div class="text-amber-300 text-xs" id="playerSubtitle">Топ чарта</div>
-                    <div class="font-semibold" id="playingTitle">—</div>
-                    <div class="text-xs text-zinc-500" id="playerAuthor">СоздайСвоюПесню</div>
-                    <div class="flex gap-2 mt-3">
-                        <button id="playerPlayPause" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-play text-white"></i></button>
-                        <button id="playerStop" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition"><i class="fa-solid fa-stop text-white"></i></button>
-                    </div>
-                    <div id="playerProgressWrap" class="hidden">
-                        <input type="range" id="playerSeek" class="player-seek" min="0" max="100" value="0" step="1" aria-label="Позиция трека">
-                        <div class="flex justify-between text-[10px] text-zinc-500 mt-1">
-                            <span id="playerTimeCurrent">0:00</span>
-                            <span id="playerTimeTotal">0:00</span>
-                        </div>
+                <div id="playerProgressWrap" class="hidden">
+                    <input type="range" id="playerSeek" class="player-seek" min="0" max="100" value="0" step="1" aria-label="Позиция трека">
+                    <div class="np-times">
+                        <span id="playerTimeCurrent">0:00</span>
+                        <span id="playerTimeTotal">0:00</span>
                     </div>
                 </div>
             </div>
@@ -1827,8 +1870,10 @@ async function renderPackets() {
 }
 
 function formatPlayerTime(sec){sec=Math.max(0,Math.floor(sec||0));var m=Math.floor(sec/60);var s=sec%60;return m+':'+(s<10?'0':'')+s;}
-function updatePlayerTimeLabels(cur,total){var c=document.getElementById('playerTimeCurrent');var t=document.getElementById('playerTimeTotal');if(c)c.textContent=formatPlayerTime(cur);if(t)t.textContent=formatPlayerTime(total);}
-function setPlayerEqActive(on){var eq=document.getElementById('playerEq');var meq=document.getElementById('miniPlayerEq');if(eq)eq.classList.toggle('is-playing',!!on);if(meq)meq.classList.toggle('is-playing',!!on);}
+function parseClock(text){var p=String(text||'0:0').split(':');return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);}
+function paintRollTime(el,text){if(!el)return;var prev=el.getAttribute('data-t')||'';if(prev===text)return;el.setAttribute('data-t',text);var reduce=false;try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}if(reduce||!prev){el.textContent=text;return;}var olds=prev.split('').reverse();var dir=parseClock(text)>=parseClock(prev)?1:-1;var html='<span class="np-roll">';for(var i=0;i<text.length;i++){var ch=text.charAt(i);if(ch===':'){html+='<span>:</span>';continue;}var oldCh=olds[text.length-1-i]||'';var cls=ch===oldCh?'':' '+(dir>0?'np-roll-in-up':'np-roll-in-down');html+='<span class="np-roll-digit"><span class="'+cls.trim()+'">'+ch+'</span></span>';}html+='</span>';el.innerHTML=html;}
+function updatePlayerTimeLabels(cur,total){paintRollTime(document.getElementById('playerTimeCurrent'),formatPlayerTime(cur));var t=document.getElementById('playerTimeTotal');if(t)t.textContent=formatPlayerTime(total);}
+function setPlayerEqActive(on){var eq=document.getElementById('playerEq');var meq=document.getElementById('miniPlayerEq');var card=document.getElementById('nowPlaying');if(eq)eq.classList.toggle('is-playing',!!on);if(meq)meq.classList.toggle('is-playing',!!on);if(card)card.classList.toggle('is-playing',!!on);}
 function showMiniPlayer(){var bar=document.getElementById('miniPlayerBar');if(bar)bar.classList.remove('hidden');document.body.classList.add('sf-player-active');}
 function hideMiniPlayer(){var bar=document.getElementById('miniPlayerBar');if(bar)bar.classList.add('hidden');document.body.classList.remove('sf-player-active');setPlayerEqActive(false);}
 function syncMiniPlayerUI(){var cov=document.getElementById('miniPlayerCover');var mainCov=document.getElementById('playerCover');var tit=document.getElementById('miniPlayerTitle');var aut=document.getElementById('miniPlayerAuthor');var mainTit=document.getElementById('playingTitle');var mainAut=document.getElementById('playerAuthor');if(cov&&mainCov)cov.src=mainCov.src;if(tit&&mainTit)tit.textContent=mainTit.textContent;if(aut&&mainAut)aut.textContent=mainAut.textContent;var mpp=document.getElementById('miniPlayerPlayPause');var pp=document.getElementById('playerPlayPause');if(mpp&&pp)mpp.innerHTML=pp.innerHTML;var msk=document.getElementById('miniPlayerSeek');var sk=document.getElementById('playerSeek');if(msk&&sk){msk.max=sk.max;msk.value=sk.value;}}
@@ -1838,13 +1883,13 @@ function audioDuration(audio,isDemo){if(!audio)return 0;if(isDemo)return PREVIEW
 function libraryListenUrl(track){if(track&&track.id)return'/api/library/'+encodeURIComponent(track.id)+'/listen';return track.audio_url||track.audioUrl||'';}
 function disposeAudio(audio){if(!audio)return;try{audio.onended=null;audio.onerror=null;audio.pause();audio.removeAttribute('src');audio.load();}catch(e){}}
 function bindPlayerSeekOnce(){var seek=document.getElementById('playerSeek');if(!seek||seek._sfBound)return;seek._sfBound=true;seek.addEventListener('input',function(){playerSeeking=true;var a=currentAudio;var dur=audioDuration(a,playerIsDemo)||parseInt(seek.max,10)||0;updatePlayerTimeLabels(parseInt(seek.value,10)||0,dur);var msk=document.getElementById('miniPlayerSeek');if(msk)msk.value=seek.value;});seek.addEventListener('change',function(){var a=currentAudio;if(a){var t=parseInt(seek.value,10)||0;if(playerIsDemo)t=Math.min(t,PREVIEW_LIMIT_SEC);try{a.currentTime=t;}catch(e){}}playerSeeking=false;});var msk=document.getElementById('miniPlayerSeek');if(msk&&!msk._sfBound){msk._sfBound=true;msk.addEventListener('input',function(){playerSeeking=true;var a=currentAudio;var dur=audioDuration(a,playerIsDemo)||parseInt(msk.max,10)||0;updatePlayerTimeLabels(parseInt(msk.value,10)||0,dur);if(seek)seek.value=msk.value;});msk.addEventListener('change',function(){var a=currentAudio;if(a){var t=parseInt(msk.value,10)||0;if(playerIsDemo)t=Math.min(t,PREVIEW_LIMIT_SEC);try{a.currentTime=t;}catch(e){}}if(seek)seek.value=msk.value;playerSeeking=false;});}}
-function bindAudioPlayerHandlers(audio,isDemo){playerIsDemo=!!isDemo;bindPlayerSeekOnce();var bound=audio;audio.addEventListener('play',function(){if(bound!==currentAudio)return;setPlayerEqActive(true);});audio.addEventListener('pause',function(){if(bound!==currentAudio)return;setPlayerEqActive(false);});audio.addEventListener('loadedmetadata',function(){if(bound!==currentAudio)return;var dur=audioDuration(bound,isDemo);if(dur>0)showPlayerProgress(dur);});audio.addEventListener('canplay',function(){if(bound!==currentAudio)return;var ps=document.getElementById('playerSubtitle');if(ps&&ps.textContent==='Загрузка…')ps.textContent='Сейчас играет';});audio.addEventListener('waiting',function(){if(bound!==currentAudio)return;var ps=document.getElementById('playerSubtitle');if(ps)ps.textContent='Загрузка…';});audio.addEventListener('timeupdate',function(){if(bound!==currentAudio||playerSeeking)return;var dur=audioDuration(bound,isDemo);if(dur<=0)return;var cur=bound.currentTime;if(isDemo&&cur>=PREVIEW_LIMIT_SEC){bound.pause();bound.currentTime=0;updatePlayerTimeLabels(0,PREVIEW_LIMIT_SEC);var sk=document.getElementById('playerSeek');if(sk)sk.value=0;var msk0=document.getElementById('miniPlayerSeek');if(msk0)msk0.value=0;var pp2=document.getElementById('playerPlayPause');if(pp2)pp2.innerHTML='<i class="fa-solid fa-play text-white"></i>';setPlayerEqActive(false);syncMiniPlayerUI();currentPlayingId=null;return;}updatePlayerTimeLabels(cur,dur);var sk2=document.getElementById('playerSeek');if(sk2)sk2.value=Math.floor(cur);var msk2=document.getElementById('miniPlayerSeek');if(msk2)msk2.value=Math.floor(cur);});audio.addEventListener('ended',function(){if(bound!==currentAudio)return;stopAudio();});audio.addEventListener('error',function(){if(bound!==currentAudio)return;showToast('Не удалось воспроизвести трек');stopAudio();});}
+function bindAudioPlayerHandlers(audio,isDemo){playerIsDemo=!!isDemo;bindPlayerSeekOnce();var bound=audio;audio.addEventListener('play',function(){if(bound!==currentAudio)return;setPlayerEqActive(true);});audio.addEventListener('pause',function(){if(bound!==currentAudio)return;setPlayerEqActive(false);});audio.addEventListener('loadedmetadata',function(){if(bound!==currentAudio)return;var dur=audioDuration(bound,isDemo);if(dur>0)showPlayerProgress(dur);});audio.addEventListener('canplay',function(){if(bound!==currentAudio)return;var ps=document.getElementById('playerSubtitle');if(ps&&ps.textContent==='Загрузка…')ps.textContent='Сейчас играет';});audio.addEventListener('waiting',function(){if(bound!==currentAudio)return;var ps=document.getElementById('playerSubtitle');if(ps)ps.textContent='Загрузка…';});audio.addEventListener('timeupdate',function(){if(bound!==currentAudio||playerSeeking)return;var dur=audioDuration(bound,isDemo);if(dur<=0)return;var cur=bound.currentTime;if(isDemo&&cur>=PREVIEW_LIMIT_SEC){bound.pause();bound.currentTime=0;updatePlayerTimeLabels(0,PREVIEW_LIMIT_SEC);var sk=document.getElementById('playerSeek');if(sk)sk.value=0;var msk0=document.getElementById('miniPlayerSeek');if(msk0)msk0.value=0;var pp2=document.getElementById('playerPlayPause');if(pp2)pp2.innerHTML='<i class="fa-solid fa-play"></i>';setPlayerEqActive(false);syncMiniPlayerUI();currentPlayingId=null;return;}updatePlayerTimeLabels(cur,dur);var sk2=document.getElementById('playerSeek');if(sk2)sk2.value=Math.floor(cur);var msk2=document.getElementById('miniPlayerSeek');if(msk2)msk2.value=Math.floor(cur);});audio.addEventListener('ended',function(){if(bound!==currentAudio)return;stopAudio();});audio.addEventListener('error',function(){if(bound!==currentAudio)return;showToast('Не удалось воспроизвести трек');stopAudio();});}
 function updatePlayerMeta(title,author,subtitle){var pt=document.getElementById('playingTitle');var ps=document.getElementById('playerSubtitle');var pa=document.getElementById('playerAuthor');if(pt)pt.textContent=title||'—';if(ps)ps.textContent=subtitle||'Сейчас играет';if(pa)pa.textContent=author||'СоздайСвоюПесню';syncMiniPlayerUI();}
-function startAudioPlayback(audio,url,title,cover,author,isDemo){currentAudio=audio;currentPlayingId=url;audio.preload='auto';bindAudioPlayerHandlers(audio,isDemo);if(isDemo)showPlayerProgress(PREVIEW_LIMIT_SEC);updatePlayerMeta(title,author||'СоздайСвоюПесню',isDemo?'Отрывок 1:30':'Загрузка…');setPlayerCover(cover);showMiniPlayer();syncMiniPlayerUI();var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-pause text-white"></i>';audio.play().then(function(){setPlayerEqActive(true);}).catch(function(){setPlayerEqActive(false);showToast('Нажмите play ещё раз');});}
-function playDemoAudio(url,title,cover){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause text-white"></i>';setPlayerEqActive(true);syncMiniPlayerUI();}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play text-white"></i>';setPlayerEqActive(false);syncMiniPlayerUI();}return;}stopAudio(false);startAudioPlayback(new Audio(url),url,title,cover,'СоздайСвоюПесню',true);}
-function stopAudio(resetCover){if(currentAudio){disposeAudio(currentAudio);currentAudio=null;currentPlayingId=null;}setPlayerEqActive(false);resetPlayerProgress();hideMiniPlayer();var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-play text-white"></i>';if(resetCover!==false){if(playerDefaultTrack)applyPlayerDefaultDisplay();else{setPlayerCover('');updatePlayerMeta('—','СоздайСвоюПесню','Топ чарта');}}}
-function playAudio(url,title,cover,author){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause text-white"></i>';setPlayerEqActive(true);syncMiniPlayerUI();}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play text-white"></i>';setPlayerEqActive(false);syncMiniPlayerUI();}return;}stopAudio(false);startAudioPlayback(new Audio(url),url,title,cover,author,false);}
-function togglePlayerPlayPause(){if(currentAudio){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause text-white"></i>';setPlayerEqActive(true);}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play text-white"></i>';setPlayerEqActive(false);}syncMiniPlayerUI();}else{playPlayerDefault();}}
+function startAudioPlayback(audio,url,title,cover,author,isDemo){currentAudio=audio;currentPlayingId=url;audio.preload='auto';bindAudioPlayerHandlers(audio,isDemo);if(isDemo)showPlayerProgress(PREVIEW_LIMIT_SEC);updatePlayerMeta(title,author||'СоздайСвоюПесню',isDemo?'Отрывок 1:30':'Загрузка…');setPlayerCover(cover);showMiniPlayer();syncMiniPlayerUI();var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-pause"></i>';audio.play().then(function(){setPlayerEqActive(true);}).catch(function(){setPlayerEqActive(false);showToast('Нажмите play ещё раз');});}
+function playDemoAudio(url,title,cover){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause"></i>';setPlayerEqActive(true);syncMiniPlayerUI();}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play"></i>';setPlayerEqActive(false);syncMiniPlayerUI();}return;}stopAudio(false);startAudioPlayback(new Audio(url),url,title,cover,'СоздайСвоюПесню',true);}
+function stopAudio(resetCover){if(currentAudio){disposeAudio(currentAudio);currentAudio=null;currentPlayingId=null;}setPlayerEqActive(false);resetPlayerProgress();hideMiniPlayer();var pp=document.getElementById('playerPlayPause');if(pp)pp.innerHTML='<i class="fa-solid fa-play"></i>';if(resetCover!==false){if(playerDefaultTrack)applyPlayerDefaultDisplay();else{setPlayerCover('');updatePlayerMeta('—','СоздайСвоюПесню','Топ чарта');}}}
+function playAudio(url,title,cover,author){if(currentAudio&&currentPlayingId===url){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause"></i>';setPlayerEqActive(true);syncMiniPlayerUI();}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play"></i>';setPlayerEqActive(false);syncMiniPlayerUI();}return;}stopAudio(false);startAudioPlayback(new Audio(url),url,title,cover,author,false);}
+function togglePlayerPlayPause(){if(currentAudio){if(currentAudio.paused){currentAudio.play();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-pause"></i>';setPlayerEqActive(true);}else{currentAudio.pause();document.getElementById('playerPlayPause').innerHTML='<i class="fa-solid fa-play"></i>';setPlayerEqActive(false);}syncMiniPlayerUI();}else{playPlayerDefault();}}
 document.getElementById('playerPlayPause').addEventListener('click',togglePlayerPlayPause);
 document.getElementById('playerStop').addEventListener('click',stopAudio);
 document.getElementById('miniPlayerPlayPause').addEventListener('click',togglePlayerPlayPause);
