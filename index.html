@@ -302,11 +302,13 @@
         .np-front{position:relative;z-index:2}
         .np-row{display:flex;align-items:center;gap:.65rem}
         .np-stage{position:relative;width:9.2rem;height:8.3rem;flex-shrink:0}
-        .np-disc{position:absolute;left:0;top:.25rem;width:8rem;height:8rem;border-radius:50%;overflow:hidden;background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.28) 0 1px,transparent 1px 5px),rgba(0,0,0,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 8px 18px -8px rgba(0,0,0,.45);animation:np-spin 1.8s linear infinite;animation-play-state:paused}
+        .np-disc{position:absolute;left:0;top:.25rem;width:8rem;height:8rem;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.22),transparent 38%),repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.14) 0 1px,transparent 1px 4px),#0a0a0a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 10px 16px -8px rgba(0,0,0,.75);animation:np-spin 1.8s linear infinite;animation-play-state:paused}
         @media(min-width:1024px){.np-stage{width:8.15rem;height:7.35rem}.np-disc{top:.2rem;width:7.15rem;height:7.15rem}}
         .now-playing.is-playing .np-disc{animation-play-state:running}
         @keyframes np-spin{to{transform:rotate(360deg)}}
-        .np-hole{position:absolute;left:50%;top:50%;width:7px;height:7px;transform:translate(-50%,-50%);border-radius:50%;background:#0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+        .np-paper{position:absolute;left:50%;top:50%;width:44%;height:44%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.55),transparent 48%),radial-gradient(circle at 50% 58%,rgba(var(--sf-accent-rgb),.96),rgba(var(--sf-accent-rgb),.62));box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
+        .np-mark{position:absolute;left:50%;top:48%;width:64%;height:64%;transform:translate(-50%,-50%);background-color:#14080a;-webkit-mask:url(/assets/logo_new.png) center/contain no-repeat;mask:url(/assets/logo_new.png) center/contain no-repeat}
+        .np-hole{position:absolute;left:50%;top:50%;z-index:1;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:#0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.45)}
         .np-arm{position:absolute;top:0;right:0;height:78%;width:auto;transform-origin:77.5% 10%;transform:rotate(-8deg);transition:transform .5s cubic-bezier(.77,0,.175,1);pointer-events:none}
         .now-playing.is-playing .np-arm{transform:rotate(11deg)}
         .np-copy{min-width:0;flex:1;text-shadow:0 1px 8px rgba(0,0,0,.7)}
@@ -943,6 +945,7 @@
                 <div class="np-row np-front">
                     <div class="np-stage">
                         <div class="np-disc">
+                            <span class="np-paper" aria-hidden="true"><span class="np-mark"></span></span>
                             <span class="np-hole" aria-hidden="true"></span>
                         </div>
                         <svg class="np-arm" viewBox="0 0 40 110" aria-hidden="true">

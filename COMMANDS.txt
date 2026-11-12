@@ -1,13 +1,17 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.159. Next is block 100. Do not run block 99. Block 98 is done. Do not run it again. Do not run block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.160. Next is block 101. Block 100 is done. Do not run it again. Do not run block 99. Block 98 is done. Do not run it again. Do not run block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+
+=== 101) REAL DISC AND SITE MARK ===
+# One line. Skip lines that start with #.
+# The cover stays behind the player. The disc is black again, with the site mark.
+# The update already prints health and "Готово! v2.11.160".
+# Paste the last lines here. Do not run a second health command.
+# Do not run block 100.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 100) COVER BEHIND THE PLAYER ===
-# One line. Skip lines that start with #.
-# The song cover fills the player card. The disc sits on top of it.
-# The update already prints health and "Готово! v2.11.159".
-# Paste the last lines here. Do not run a second health command.
-# Do not run block 99.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# DONE. Owner updated. The cover stays as the background. Do not run again.
+# Expected end of the next update is "Готово! v2.11.160".
 
 === 99) DISC IN NOW PLAYING ===
 # Do not run. Block 100 already includes this update.
