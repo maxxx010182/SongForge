@@ -23,6 +23,8 @@ def test_now_playing_disc_follows_the_theme():
     html = client.get("/").text
     assert 'id="nowPlaying"' in html
     assert 'id="playerCover"' in html
+    assert 'class="np-cover"' in html
+    assert "np-label" not in html
     assert 'id="playerPlayPause"' in html
     assert 'id="playerStop"' in html
     assert 'id="playerSeek"' in html
