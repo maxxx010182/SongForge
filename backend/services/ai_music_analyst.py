@@ -133,6 +133,7 @@ class AiMusicAnalyst:
                 user_text,
                 max_tokens=700,
                 temperature=0.45,
+                reserve=True,
             )
             data = extract_json(raw)
             analysis = MusicAnalysis.model_validate(data)

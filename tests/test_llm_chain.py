@@ -155,6 +155,33 @@ def test_helper_reserve_asks_the_next_model(monkeypatch, tmp_path):
     assert spare.calls == []
 
 
+def test_sound_card_error_asks_the_next_model(monkeypatch, tmp_path):
+    kie = _Kie(fail=False)
+    spare = _Spare()
+    claude = _Claude(fail=False)
+    apipass = _Spare(text="не должен")
+
+    def fail_first(system_prompt, user_text, *, model, max_tokens, temperature, timeout):
+        kie.calls.append(model)
+        if model == "gemini-3-pro":
+            raise RuntimeError(
+                "Unexpected Kie response: "
+                "{'msg': 'Internal Error, Please try again later.', 'code': 500}"
+            )
+        return '{"genre":"Pop","mood":"party"}'
+
+    kie.complete = fail_first
+    chain = _chain(monkeypatch, tmp_path, kie, spare, claude)
+    monkeypatch.setattr(llm_chain, "APIPASS_API_KEY", "text-key")
+    chain._apipass = apipass
+    text = chain.complete("sys", "разбор идеи", model=chain.MODEL_LITE, reserve=True)
+    assert "Pop" in text
+    assert kie.calls == ["gemini-3-pro", "gemini-3.1-pro"]
+    assert apipass.calls == []
+    assert spare.calls == []
+    assert claude.calls == []
+
+
 def test_analyst_timeout_stays_on_the_first_model(monkeypatch, tmp_path):
     import requests
 
