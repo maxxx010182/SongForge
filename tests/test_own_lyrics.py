@@ -1,13 +1,22 @@
 """Свой текст в расширенном режиме поётся как есть. Описание остаётся в стиле."""
 
+import pytest
+
 from backend.services.prompt_builder import PromptBuilder
-from backend.services.provided_song import keep_own_lyrics
+from backend.services.provided_song import (
+    OWN_LYRICS_MIN_CHARS,
+    keep_own_lyrics,
+    own_sung_length,
+)
 from backend.services.suno_input import build_suno_custom_payload
 
 _OWN = """Куплет 1
 Шур юр, урам тулли
+Тинёс таврашёсем çутăлаççĕ ирпе
 Припев
 Тинёс таврашёсем
+Аттепе анне юнашар юрлаççĕ
+Юрă ялан пирĕнпе пырать
 """
 
 _WISH = "чувашская песня о родной земле, близких и единстве народа"
@@ -25,10 +34,24 @@ _ANALYST = (
 
 def test_short_own_lyrics_keep_lines_and_english_labels():
     lyrics = keep_own_lyrics(_OWN)
+    assert own_sung_length(lyrics) >= OWN_LYRICS_MIN_CHARS
     assert "[Verse 1]" in lyrics
     assert "[Chorus]" in lyrics
     assert "Шур юр, урам тулли" in lyrics
     assert "Тинёс" in lyrics
+
+
+def test_one_short_line_does_not_reach_kie_or_suno():
+    class See:
+        def complete(self, *args, **kwargs):
+            raise AssertionError("Кие не должен писать карточку для короткой строки")
+
+    with pytest.raises(ValueError, match="80 знаков"):
+        PromptBuilder(See()).build(
+            "Песня Никита морозов, без повода. Жанр Реп.",
+            lyrics_engine="unified",
+            own_lyrics="Я Никита крутой парень как",
+        )
 
 
 def test_own_lyrics_are_not_rewritten_and_wish_reaches_the_model():

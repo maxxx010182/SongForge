@@ -11,7 +11,9 @@ from backend.services.lyrics_craft_prompt import (
 )
 from backend.services.provided_song import (
     extract_provided_song,
+    OWN_LYRICS_MIN_CHARS,
     keep_own_lyrics,
+    own_sung_length,
     style_from_analysis,
     title_from_own,
     title_from_provided,
@@ -107,6 +109,11 @@ class PromptBuilder:
             if not provided:
                 raise ValueError(
                     "В своём тексте нужны строки песни, а не только пометки."
+                )
+            if own_sung_length(provided) < OWN_LYRICS_MIN_CHARS:
+                raise ValueError(
+                    "В своём тексте мало слов для песни. "
+                    "Нужно хотя бы 80 знаков, или снимите галочку."
                 )
         else:
             provided = "" if instrumental else extract_provided_song(parse_text or idea)

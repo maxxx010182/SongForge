@@ -1211,7 +1211,10 @@ def test_own_lyrics_stay_out_of_the_brief_and_the_recap():
     from backend.services.max_letters import keep_letter, studio_letter, survey_letter
 
     bot, api, max_user_id = _bot()
-    song = "Куплет\nШур юр урам тулли\nПрипев\nАттепе анне юнашар"
+    song = (
+        "Куплет\nШур юр урам тулли, аттепе анне юнашар сегодня\n"
+        "Припев\nЮрлать пётём ял, и свет на кухне не гаснет\n"
+    )
     try:
         _cb(bot, max_user_id, "accept")
         _cb(bot, max_user_id, "whom:mom")
@@ -1273,6 +1276,22 @@ def test_own_lyrics_stay_out_of_the_brief_and_the_recap():
         _cleanup(max_user_id)
 
 
+def test_own_lyrics_rejects_a_short_line():
+    bot, api, max_user_id = _bot()
+    try:
+        _cb(bot, max_user_id, "accept")
+        _cb(bot, max_user_id, "whom:nobody")
+        _cb(bot, max_user_id, "occasion:just")
+        _cb(bot, max_user_id, "detail:own")
+        _text(bot, max_user_id, "Я Никита крутой парень как")
+        contact = MessengerService().get_by_max(max_user_id)
+        assert not (contact.get("brief_lyrics") or "").strip()
+        assert contact["funnel_await"] == "own"
+        assert "80" in api.sent[-1]["text"]
+    finally:
+        _cleanup(max_user_id)
+
+
 def test_own_lyrics_rejects_labels_genre_word_and_skip():
     bot, api, max_user_id = _bot()
     try:
@@ -1319,7 +1338,12 @@ def test_replacing_the_scene_clears_own_lyrics():
         _cb(bot, max_user_id, "whom:mom")
         _cb(bot, max_user_id, "occasion:birthday")
         _cb(bot, max_user_id, "detail:own")
-        _text(bot, max_user_id, "Шур юр урам тулли\nАттепе анне юнашар")
+        _text(
+            bot,
+            max_user_id,
+            "Шур юр урам тулли, аттепе анне юнашар сегодня\n"
+            "Юрлать пётём ял, и свет на кухне не гаснет",
+        )
         _cb(bot, max_user_id, "genre:pop")
         _cb(bot, max_user_id, "sound:uplifting")
         _cb(bot, max_user_id, "voice:female")
@@ -1340,7 +1364,10 @@ def test_replacing_the_scene_clears_own_lyrics():
 
 def test_song_with_business_words_stays_personal():
     bot, api, max_user_id = _bot()
-    song = "Куплет\nЭто не реклама бренда а просто дом\nПрипев\nМы рядом идём домой"
+    song = (
+        "Куплет\nЭто не реклама бренда а просто дом и свет\n"
+        "Припев\nМы рядом идём домой до самого утра вместе\n"
+    )
     try:
         _cb(bot, max_user_id, "accept")
         _cb(bot, max_user_id, "whom:mom")

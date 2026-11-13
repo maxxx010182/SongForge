@@ -124,6 +124,21 @@ def normalize_own_lyrics(text: str) -> str:
     return "\n".join(out).strip()
 
 
+# Четыре короткие строки. Короче Суно дописывает сама, как строка «Я Никита» из 26 знаков.
+OWN_LYRICS_MIN_CHARS = 80
+
+
+def own_sung_length(lyrics: str) -> int:
+    """Знаки строк, которые поют. Пометки вроде [Verse] и «Куплет» не считаем."""
+    total = 0
+    for line in (lyrics or "").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("["):
+            continue
+        total += len(stripped)
+    return total
+
+
 def keep_own_lyrics(text: str) -> str:
     """Готовая песня с куплетом и припевом — как раньше. Короткий текст тоже оставляем."""
     extracted = extract_provided_song(text)

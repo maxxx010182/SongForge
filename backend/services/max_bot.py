@@ -34,6 +34,7 @@ from backend.services.max_funnel import (
     OCCASION_WRITE_PROMPT,
     OWN_CUT,
     OWN_NEED_LINES,
+    OWN_TOO_SHORT,
     OWN_NOT_GENRE,
     OWN_PASTE_HINT,
     OWN_TAKEN,
@@ -75,7 +76,11 @@ from backend.services.max_funnel import (
     parse_whom,
     theme_key_of,
 )
-from backend.services.provided_song import keep_own_lyrics
+from backend.services.provided_song import (
+    OWN_LYRICS_MIN_CHARS,
+    keep_own_lyrics,
+    own_sung_length,
+)
 from backend.services.messenger_service import (
     BIZ_GOAL_LABELS,
     BIZ_TONE_LABELS,
@@ -1266,6 +1271,9 @@ class MaxBot:
         lyrics = keep_own_lyrics(raw)
         if not lyrics:
             self._send(contact, OWN_NEED_LINES)
+            return
+        if own_sung_length(lyrics) < OWN_LYRICS_MIN_CHARS:
+            self._send(contact, OWN_TOO_SHORT)
             return
         lyrics, cut = cap_own_lyrics(lyrics)
         contact = self.messenger.set_own_lyrics(contact, lyrics)
