@@ -317,27 +317,51 @@ class AdminService:
         return [present_payment(dict(r)) for r in rows]
 
     def search_users(self, *, q: str, limit: int = 30) -> list[dict]:
+        """Имя, почта, номер аккаунта и номер входа. Русские буквы в любом регистре."""
         limit = max(1, min(limit, 100))
-        term = f"%{q.strip().lower()}%"
-        if not q.strip():
+        needle = (q or "").strip().casefold()
+        if not needle:
             return []
         with get_connection() as conn:
-            rows = conn.execute(
+            users = conn.execute(
                 """
                 SELECT id, email, display_name, balance, created_at, trial_generations_used
                 FROM users
                 WHERE COALESCE(is_persona, 0) = 0
-                  AND (
-                    LOWER(COALESCE(email, '')) LIKE ?
-                   OR LOWER(display_name) LIKE ?
-                   OR id = ?
-                  )
                 ORDER BY created_at DESC
-                LIMIT ?
-                """,
-                (term, term, q.strip(), limit),
+                """
             ).fetchall()
-        return [dict(r) for r in rows]
+            extra: dict[str, list[str]] = {}
+            for row in conn.execute(
+                "SELECT user_id, provider_user_id FROM auth_identities"
+            ):
+                token = (row["provider_user_id"] or "").strip()
+                if token:
+                    extra.setdefault(row["user_id"], []).append(token)
+            for row in conn.execute(
+                """
+                SELECT user_id, max_user_id
+                FROM messenger_contacts
+                WHERE user_id IS NOT NULL
+                  AND TRIM(COALESCE(max_user_id, '')) != ''
+                """
+            ):
+                extra.setdefault(row["user_id"], []).append(
+                    (row["max_user_id"] or "").strip()
+                )
+        found: list[dict] = []
+        for row in users:
+            parts = [
+                row["id"] or "",
+                row["email"] or "",
+                row["display_name"] or "",
+                *extra.get(row["id"], []),
+            ]
+            if any(needle in part.casefold() for part in parts if part):
+                found.append(dict(row))
+                if len(found) >= limit:
+                    break
+        return found
 
     def adjust_balance(
         self,
