@@ -83,21 +83,26 @@ class SunoApiOrgClient:
         )
         from backend.utils.suno_payload import clamp_suno_duration
 
+        voice_id = (plan.own_voice_id or "").strip()
         payload = {
             **fields,
             "duration": clamp_suno_duration(plan.duration_sec),
             "model": self._normalize_model(plan.model_version),
             "callBackUrl": self._callback_url(),
         }
+        if voice_id:
+            payload["personaId"] = voice_id
+            payload["personaModel"] = "voice_persona"
 
         log.info(
             "sunoapi.org create: title=%s, model=%s, duration=%s, "
-            "style_len=%s, lyrics_len=%s",
+            "style_len=%s, lyrics_len=%s, voice=%s",
             fields["title"][:40],
             payload["model"],
             payload["duration"],
             len(fields["style"]),
             len(fields["prompt"]),
+            "yes" if voice_id else "no",
         )
 
         last_error: Exception | None = None
@@ -112,31 +117,120 @@ class SunoApiOrgClient:
                 response.raise_for_status()
                 body = response.json()
                 if body.get("code") not in (None, 200):
+                    if voice_id:
+                        log.warning("sunoapi voice song rejected")
+                        raise ValueError(
+                            "Песня вашим голосом сейчас не запустилась. Ноту вернули."
+                        )
                     raise RuntimeError(
                         f"sunoapi.org error {body.get('code')}: {body.get('msg')}"
                     )
                 task_id = (body.get("data") or {}).get("taskId")
                 if not task_id:
-                    raise RuntimeError(f"sunoapi.org did not return taskId: {body}")
+                    if voice_id:
+                        raise RuntimeError("voice song has no task")
+                    raise RuntimeError("sunoapi.org did not return taskId")
                 log.info("sunoapi.org task created: %s", task_id)
                 return str(task_id)
             except requests.exceptions.Timeout as exc:
                 last_error = exc
-                log.warning("sunoapi.org create timeout (attempt %s/3)", attempt)
+                if voice_id:
+                    log.warning("sunoapi voice song timeout (attempt %s/3)", attempt)
+                else:
+                    log.warning("sunoapi.org create timeout (attempt %s/3)", attempt)
                 if attempt < 3:
                     time.sleep(2)
                     continue
             except requests.exceptions.RequestException as exc:
                 last_error = exc
-                log.warning("sunoapi.org create failed (attempt %s/3): %s", attempt, exc)
+                if voice_id:
+                    log.warning(
+                        "sunoapi voice song failed (attempt %s/3)", attempt
+                    )
+                else:
+                    log.warning(
+                        "sunoapi.org create failed (attempt %s/3): %s", attempt, exc
+                    )
                 if attempt < 3:
                     time.sleep(2)
                     continue
                 break
 
+        if voice_id:
+            log.warning("sunoapi voice song failed")
+            raise ValueError(
+                "Песня вашим голосом сейчас не запустилась. Ноту вернули."
+            )
         if last_error:
             raise last_error
         raise RuntimeError("sunoapi.org create failed")
+
+    def voice_validate(self, *, voice_url: str) -> str:
+        data = self._voice_json(
+            "POST",
+            "/voice/validate",
+            json={
+                "voiceUrl": voice_url,
+                "vocalStartS": 0,
+                "vocalEndS": 10,
+                "language": "ru",
+            },
+        )
+        return str(data.get("taskId") or "").strip()
+
+    def voice_validate_info(self, task_id: str) -> dict[str, Any]:
+        return self._voice_json(
+            "GET",
+            "/voice/validate-info",
+            params={"taskId": task_id},
+        )
+
+    def voice_generate(self, *, task_id: str, verify_url: str) -> str:
+        data = self._voice_json(
+            "POST",
+            "/voice/generate",
+            json={
+                "taskId": task_id,
+                "verifyUrl": verify_url,
+                "voiceName": "Мой голос",
+                "singerSkillLevel": "beginner",
+            },
+        )
+        return str(data.get("taskId") or "").strip()
+
+    def voice_record_info(self, task_id: str) -> dict[str, Any]:
+        return self._voice_json(
+            "GET",
+            "/voice/record-info",
+            params={"taskId": task_id},
+        )
+
+    def _voice_json(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: dict | None = None,
+        params: dict | None = None,
+    ) -> dict[str, Any]:
+        self._ensure_key()
+        response = requests.request(
+            method,
+            f"{SUNOAPI_ORG_BASE}{path}",
+            headers=self._headers,
+            json=json,
+            params=params,
+            timeout=25,
+        )
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict):
+            raise RuntimeError("voice response is empty")
+        if body.get("code") not in (None, 200):
+            log.warning("voice workshop rejected the step")
+            raise RuntimeError("voice workshop rejected the step")
+        data = body.get("data") or {}
+        return data if isinstance(data, dict) else {}
 
     def get_status(self, task_id: str) -> dict[str, Any]:
         self._ensure_key()

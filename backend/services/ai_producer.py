@@ -156,6 +156,7 @@ class AiProducer:
         artist_ref: str = "",
         vocal_hint: str = "",
         backing_vocal: bool = False,
+        use_own_voice: bool = False,
     ) -> str:
         if plan is None and production_id:
             stored = self._history.get_production(production_id)
@@ -202,6 +203,17 @@ class AiProducer:
             sung_lyrics_len(lyrics),
         )
 
+        plan.own_voice_id = ""
+        if use_own_voice:
+            from backend.services.voice_service import voice_id_for_song
+
+            plan.own_voice_id = voice_id_for_song(
+                user_id=getattr(self, "_current_user_id", None) or "",
+                instrumental=bool(plan.instrumental),
+                vocal=plan.vocal or "",
+            )
+            log.info("Music start voice=yes")
+
         task_ref = self._music.create_task(
             lyrics=lyrics,
             style=style,
@@ -244,6 +256,7 @@ class AiProducer:
         custom_description: str = "",
         lyrics_engine: str = "classic",
         own_lyrics: str = "",
+        use_own_voice: bool = False,
     ) -> CreateSongResponse:
         produced = self.produce(
             idea,
@@ -270,7 +283,9 @@ class AiProducer:
             artist_ref=artist_ref,
             vocal_hint=vocal_hint,
             backing_vocal=backing_vocal,
+            use_own_voice=use_own_voice,
         )
+        produced.plan.own_voice_id = ""
         return CreateSongResponse(
             success=True,
             production_id=produced.production_id,

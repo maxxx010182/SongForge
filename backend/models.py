@@ -81,6 +81,7 @@ class ProductionPlan(BaseModel):
     model_version: str = DEFAULT_MODEL_VERSION
     explanation_ru: str = ""
     optimized_idea: str = ""
+    own_voice_id: str = ""
 
 
 class ProduceResponse(BaseModel):
@@ -103,8 +104,10 @@ class MusicStartRequest(BaseModel):
     genre: str = ""
     mood: str = ""
     artist_ref: str = ""
+    instrumental: bool = False
     vocal_hint: str = ""
     backing_vocal: bool = False
+    use_own_voice: bool = False
 
 
 class TrackVariant(BaseModel):
@@ -140,6 +143,7 @@ class CreateSongRequest(BaseModel):
     custom_description: str = ""
     lyrics_engine: str = "classic"
     own_lyrics: str = ""
+    use_own_voice: bool = False
 
 
 class CreateSongResponse(BaseModel):

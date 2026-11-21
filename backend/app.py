@@ -89,6 +89,7 @@ from backend.services.history import HistoryService
 from backend.services.music_poll_service import MusicPollService
 from backend.services.rate_limit import limiter
 from backend.services.storage_service import StorageService
+from backend.services.voice_service import VoiceService
 from backend.services.payment_service import PaymentService
 from backend.services.profile_service import DisplayNameTakenError, ProfileService
 from backend.services.prompt_builder import PromptBuilder
@@ -137,6 +138,7 @@ cabinet = CabinetService()
 gift_service = GiftService()
 profile_service = ProfileService()
 generation_quota = GenerationQuotaService()
+voice_service = VoiceService()
 beta_guards = BetaGuards()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
@@ -157,7 +159,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.162", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.163", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -275,6 +277,46 @@ def _assert_generation_capacity(*, user: dict | None) -> None:
         count_user_generating=history.count_generating_for_user(user_id)
         if user_id
         else 0,
+    )
+
+
+def _assert_own_voice_request(req, user: dict | None) -> None:
+    """До списания ноты. Номер голоса берём из базы, не из запроса."""
+    if not getattr(req, "use_own_voice", False):
+        return
+    vocal = (getattr(req, "vocal_hint", None) or "").strip().lower()
+    instrumental = bool(getattr(req, "instrumental", False))
+    plan = getattr(req, "plan", None)
+    if plan is not None:
+        if plan.instrumental:
+            instrumental = True
+        if (plan.vocal or "").strip().lower() == "duet":
+            vocal = "duet"
+    try:
+        from backend.services.voice_service import voice_id_for_song
+
+        voice_id_for_song(
+            user_id=user["id"] if user else "",
+            instrumental=instrumental,
+            vocal=vocal,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def _assert_voice_upload_rate(request: Request, user_id: str) -> None:
+    ip = _client_ip(request) or "unknown"
+    _rate_or_429(
+        f"voice:{user_id}",
+        limit=8,
+        window_sec=3600,
+        detail="Слишком много записей голоса. Подождите и попробуйте снова.",
+    )
+    _rate_or_429(
+        f"voiceip:{ip}",
+        limit=12,
+        window_sec=3600,
+        detail="Слишком много записей голоса. Подождите и попробуйте снова.",
     )
 
 
@@ -2432,6 +2474,7 @@ async def create_song(
     user: dict | None = Depends(get_optional_user),
 ):
     _assert_gen_rate(request, "music")
+    _assert_own_voice_request(req, user)
     mode = ""
     paid_user_id: str | None = None
     balance: int | None = None
@@ -2467,6 +2510,7 @@ async def create_song(
                 custom_description=req.custom_description,
                 lyrics_engine=req.lyrics_engine,
                 own_lyrics=req.own_lyrics,
+                use_own_voice=req.use_own_voice,
             )
         )
         if mode == "paid" and result.production_id:
@@ -2511,6 +2555,7 @@ async def start_music(
     user: dict | None = Depends(get_optional_user),
 ):
     _assert_gen_rate(request, "music")
+    _assert_own_voice_request(req, user)
     production_id = (req.production_id or "").strip()
     if production_id:
         production_id = await run_in_threadpool(
@@ -2555,6 +2600,7 @@ async def start_music(
                 artist_ref=req.artist_ref,
                 vocal_hint=req.vocal_hint,
                 backing_vocal=req.backing_vocal,
+                use_own_voice=req.use_own_voice,
             )
         )
         if mode == "paid" and production_id:
@@ -2592,6 +2638,43 @@ async def start_music(
         ) from exc
     finally:
         producer.clear_actor()
+
+
+@app.get("/api/voice")
+async def own_voice_status(user: dict | None = Depends(get_optional_user)):
+    return await run_in_threadpool(lambda: voice_service.view(user))
+
+
+@app.post("/api/voice/sample")
+async def own_voice_sample(
+    request: Request,
+    audio: UploadFile = File(...),
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы сохранить голос.")
+    _assert_voice_upload_rate(request, user["id"])
+    data = await audio.read(8_000_001)
+    try:
+        return await run_in_threadpool(lambda: voice_service.save_sample(user, data))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/voice/phrase")
+async def own_voice_phrase(
+    request: Request,
+    audio: UploadFile = File(...),
+    user: dict | None = Depends(get_optional_user),
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы сохранить голос.")
+    _assert_voice_upload_rate(request, user["id"])
+    data = await audio.read(8_000_001)
+    try:
+        return await run_in_threadpool(lambda: voice_service.save_phrase(user, data))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _tracks_from_db_row(row) -> list[dict]:

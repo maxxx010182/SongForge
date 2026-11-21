@@ -1,5 +1,6 @@
 """Запас ApiPass, если sunoapi уже взял задачу и сломался."""
 
+import json
 import uuid
 
 from backend import settings as sf_settings
@@ -107,6 +108,41 @@ def test_no_handoff_when_already_on_apipass(monkeypatch):
     poll._queue.remove_poll = lambda **k: None
     assert poll.process_task(task_id) == "failed"
 
+    with get_connection() as conn:
+        conn.execute("DELETE FROM generations WHERE id = ?", (production_id,))
+
+
+def test_voice_song_does_not_move_to_apipass(monkeypatch):
+    init_db()
+    monkeypatch.setattr(sf_settings, "MUSIC_PROVIDER", "fallback_suno")
+    monkeypatch.setattr(sf_settings, "APIPASS_API_KEY", "test-key")
+    production_id = str(uuid.uuid4())
+    task_id = f"suno-{uuid.uuid4()}"
+    plan = json.dumps({"own_voice_id": "voice-secret"})
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO generations (
+                id, task_id, created_at, title, lyrics, style, plan_json,
+                status, music_provider, music_fallback
+            ) VALUES (?, ?, datetime('now'), 'Т', 'ля', 'pop', ?, 'generating', 'sunoapi', 0)
+            """,
+            (production_id, task_id, plan),
+        )
+
+    poll = MusicPollService()
+    poll._music.create_on = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("запас не должен петь чужим голосом")
+    )
+    poll._music.get_status = lambda task_id, provider=None: {
+        "state": "failed",
+        "fail_msg": "down",
+    }
+    poll._queue.remove_poll = lambda **kwargs: None
+    assert poll.process_task(task_id) == "failed"
+    row = HistoryService().get_by_id(production_id)
+    assert row["status"] == "failed"
+    assert int(row["music_fallback"] or 0) == 0
     with get_connection() as conn:
         conn.execute("DELETE FROM generations WHERE id = ?", (production_id,))
 

@@ -69,6 +69,24 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS user_voices (
+                user_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                sample_key TEXT NOT NULL DEFAULT '',
+                phrase_key TEXT NOT NULL DEFAULT '',
+                validate_task_id TEXT NOT NULL DEFAULT '',
+                generate_task_id TEXT NOT NULL DEFAULT '',
+                phrase_text TEXT NOT NULL DEFAULT '',
+                voice_id TEXT NOT NULL DEFAULT '',
+                fail_msg TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS auth_identities (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,

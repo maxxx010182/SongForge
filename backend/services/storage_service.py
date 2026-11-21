@@ -137,6 +137,26 @@ class StorageService:
         base = S3_ENDPOINT.rstrip("/")
         return f"{base}/{S3_BUCKET}/{key.lstrip('/')}"
 
+    def upload_bytes(self, *, key: str, data: bytes, content_type: str) -> str:
+        client = self._get_client()
+        client.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=data,
+            ContentType=content_type or "application/octet-stream",
+        )
+        log.info("S3 voice stored (%s bytes)", len(data))
+        return self.public_url(key)
+
+    def delete_key(self, key: str) -> None:
+        raw = (key or "").strip()
+        if not raw or not self.enabled():
+            return
+        try:
+            self._get_client().delete_object(Bucket=S3_BUCKET, Key=raw)
+        except Exception:
+            log.info("voice file was left in storage")
+
     def upload_from_url(self, *, key: str, source_url: str) -> str:
         client = self._get_client()
         response = requests.get(source_url, timeout=120)

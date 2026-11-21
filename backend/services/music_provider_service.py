@@ -78,6 +78,20 @@ class MusicProviderService:
         title: str,
         plan: ProductionPlan,
     ) -> MusicTaskRef:
+        if (plan.own_voice_id or "").strip():
+            if "sunoapi" not in self.configured_providers():
+                raise ValueError(
+                    "Песня вашим голосом сейчас не запустилась. Ноту вернули."
+                )
+            task_id = self._sunoapi.create_task(
+                lyrics=lyrics,
+                style=style,
+                title=title,
+                plan=plan,
+            )
+            log.info("Music provider sunoapi voice=yes")
+            return MusicTaskRef(task_id=task_id, provider="sunoapi")
+
         order = self._create_order()
         last_error: Exception | None = None
 

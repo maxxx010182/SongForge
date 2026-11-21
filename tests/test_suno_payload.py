@@ -67,6 +67,18 @@ def test_duration_from_lyrics_kids_and_instrumental_stay_four():
     )
 
 
+def test_own_voice_stays_out_of_the_shared_payload():
+    plan = ProductionPlan(own_voice_id="secret-voice", vocal="female", vocal_gender="f")
+    payload = build_suno_custom_payload(
+        lyrics="строка песни",
+        style="pop",
+        title="Песня",
+        plan=plan,
+    )
+    assert "personaId" not in payload
+    assert payload.get("vocalGender") == "f"
+
+
 def test_instrumental_payload_has_no_lyrics():
     plan = ProductionPlan(instrumental=True, duration_sec=360)
     payload = build_suno_custom_payload(

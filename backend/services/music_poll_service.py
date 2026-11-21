@@ -15,6 +15,16 @@ from backend.services.storage_service import StorageService
 from backend import settings as sf_settings
 
 
+def _plan_uses_own_voice(plan_json: str) -> bool:
+    if "own_voice_id" not in (plan_json or ""):
+        return False
+    try:
+        plan = ProductionPlan.model_validate(json.loads(plan_json or "{}"))
+    except Exception:
+        return False
+    return bool((plan.own_voice_id or "").strip())
+
+
 class MusicPollService:
     TERMINAL = {"success", "failed", "fail"}
 
@@ -140,6 +150,9 @@ class MusicPollService:
             return False
         provider = (production.get("music_provider") or "").strip().lower()
         if provider != "sunoapi":
+            return False
+        if _plan_uses_own_voice(production.get("plan_json") or ""):
+            log.info("Voice song stays on the main workshop")
             return False
         production_id = (production.get("id") or "").strip()
         if not production_id:
