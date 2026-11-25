@@ -80,10 +80,12 @@ def init_db() -> None:
                 voice_id TEXT NOT NULL DEFAULT '',
                 fail_msg TEXT NOT NULL DEFAULT '',
                 updated_at TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                consent_at TEXT NOT NULL DEFAULT ''
             )
             """
         )
+        _migrate_voice_columns(conn)
 
         conn.execute(
             """
@@ -373,6 +375,14 @@ def _migrate_user_library_columns(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_user_library_published ON user_library(published_at)"
     )
+
+
+def _migrate_voice_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(user_voices)")}
+    if "consent_at" not in existing:
+        conn.execute(
+            "ALTER TABLE user_voices ADD COLUMN consent_at TEXT NOT NULL DEFAULT ''"
+        )
 
 
 def _migrate_users_columns(conn: sqlite3.Connection) -> None:

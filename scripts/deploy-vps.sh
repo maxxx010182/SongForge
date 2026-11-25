@@ -7,7 +7,7 @@ set -e
 trap '' HUP
 
 DIR="${HOME}/SongForge"
-EXPECTED_VERSION="2.11.165"
+EXPECTED_VERSION="2.11.166"
 ARCHIVE_URL="https://codeload.github.com/maxxx010182/SongForge/tar.gz/main"
 
 strip_crlf() {

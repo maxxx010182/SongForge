@@ -102,14 +102,34 @@ def test_trial_cannot_save_or_sing():
         _cleanup(user["id"])
 
 
+def test_sample_without_consent_is_refused():
+    init_db()
+    user = _user(1)
+    storage = _Storage()
+    service = VoiceService(storage=storage, suno=_Suno())
+    try:
+        with pytest.raises(ValueError, match="согласие"):
+            service.save_sample(user, _wav())
+        assert storage.deleted == []
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM user_voices WHERE user_id = ?",
+                (user["id"],),
+            ).fetchone()
+        assert row is None
+    finally:
+        _cleanup(user["id"])
+
+
 def test_save_then_phrase_keeps_the_id_on_the_server():
     init_db()
     user = _user(1)
-    service = VoiceService(storage=_Storage(), suno=_Suno())
+    storage = _Storage()
+    service = VoiceService(storage=storage, suno=_Suno())
     from backend.services import voice_service as voice_module
 
     try:
-        first = service.save_sample(user, _wav())
+        first = service.save_sample(user, _wav(), consent=True)
         assert first["status"] == "waiting"
         assert "voice-secret" not in json.dumps(first)
         voice_module._last_poll.clear()
@@ -118,10 +138,25 @@ def test_save_then_phrase_keeps_the_id_on_the_server():
         assert phrase["phrase"] == "Раз два три"
         saved = service.save_phrase(user, _wav())
         assert saved["status"] == "saving"
+        assert storage.deleted == []
         voice_module._last_poll.clear()
         ready = service.view(user)
         assert ready["status"] == "ready"
         assert "voice-secret" not in json.dumps(ready)
+        assert len(storage.deleted) == 2
+        assert all(key.startswith("voices/") for key in storage.deleted)
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT sample_key, phrase_key, phrase_text, voice_id
+                FROM user_voices WHERE user_id = ?
+                """,
+                (user["id"],),
+            ).fetchone()
+        assert row["voice_id"] == "voice-secret"
+        assert row["sample_key"] == ""
+        assert row["phrase_key"] == ""
+        assert row["phrase_text"] == ""
         assert voice_id_for_song(user_id=user["id"], instrumental=False, vocal="auto") == "voice-secret"
         with pytest.raises(ValueError, match="один человек"):
             voice_id_for_song(user_id=user["id"], instrumental=False, vocal="duet")
@@ -154,6 +189,41 @@ def _voice_row(user_id: str, *, when: str, seen: str | None, sample: str) -> Non
             """,
             (str(uuid.uuid4()), when, user_id),
         )
+
+
+def test_failed_phrase_drops_our_files():
+    class _Fail(_Suno):
+        def voice_record_info(self, task_id: str) -> dict:
+            return {"status": "fail"}
+
+    init_db()
+    user = _user(1)
+    storage = _Storage()
+    service = VoiceService(storage=storage, suno=_Fail())
+    from backend.services import voice_service as voice_module
+
+    try:
+        service.save_sample(user, _wav(), consent=True)
+        voice_module._last_poll.clear()
+        assert service.view(user)["status"] == "phrase"
+        service.save_phrase(user, _wav())
+        voice_module._last_poll.clear()
+        failed = service.view(user)
+        assert failed["status"] == "failed"
+        assert len(storage.deleted) == 2
+        with get_connection() as conn:
+            row = conn.execute(
+                """
+                SELECT sample_key, phrase_key, voice_id
+                FROM user_voices WHERE user_id = ?
+                """,
+                (user["id"],),
+            ).fetchone()
+        assert row["sample_key"] == ""
+        assert row["phrase_key"] == ""
+        assert (row["voice_id"] or "") == ""
+    finally:
+        _cleanup(user["id"])
 
 
 def test_delete_removes_the_voice_and_keeps_the_song():
@@ -323,6 +393,10 @@ def test_voice_song_does_not_ask_the_reserve(monkeypatch):
 def test_page_keeps_voice_out_of_the_fast_mode():
     page = Path("index.html").read_text(encoding="utf-8")
     assert 'id="ownVoiceBlock"' in page
+    assert 'id="ownVoiceConsent"' in page
+    assert "Согласен записать голос для песен этого аккаунта" in page
+    assert "Свой файл мы не храним" in page
+    assert "Сохранён свой голос для песен" in page
     assert "payload.use_own_voice=false" in page
     assert "use_own_voice:wantOwnVoice()" in page
     assert "min-height:44px" in page

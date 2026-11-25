@@ -1,6 +1,7 @@
-"""Свой голос: одна запись на аккаунт, потом короткая фраза, потом песня.
+"""Свой голос: одна запись на аккаунт, потом короткая фраза, потом номер.
 
-Номер голоса наружу не отдаём. Ссылку на запись в журнал не пишем.
+Когда номер пришёл, наши файлы стираем. Дальше песня идёт по номеру.
+Номер наружу не отдаём. Ссылку на запись в журнал не пишем.
 Обычная песня этот модуль не вызывает.
 """
 
@@ -117,8 +118,12 @@ class VoiceService:
         with get_connection() as conn:
             conn.execute("DELETE FROM user_voices WHERE user_id = ?", (user_id,))
 
-    def save_sample(self, user: dict, data: bytes) -> dict[str, Any]:
+    def save_sample(self, user: dict, data: bytes, *, consent: bool = False) -> dict[str, Any]:
         self._require_past_trial(user)
+        if not consent:
+            raise ValueError(
+                "Сначала отметьте согласие: голос только для песен этого аккаунта."
+            )
         self._check_audio(data)
         user_id = user["id"]
         self._reject_if_busy(user_id)
@@ -152,8 +157,8 @@ class VoiceService:
                 INSERT INTO user_voices (
                     user_id, status, sample_key, phrase_key, validate_task_id,
                     generate_task_id, phrase_text, voice_id, fail_msg,
-                    updated_at, created_at
-                ) VALUES (?, 'validating', ?, '', ?, '', '', ?, '', ?, ?)
+                    updated_at, created_at, consent_at
+                ) VALUES (?, 'validating', ?, '', ?, '', '', ?, '', ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     status = 'validating',
                     sample_key = excluded.sample_key,
@@ -163,13 +168,15 @@ class VoiceService:
                     phrase_text = '',
                     voice_id = user_voices.voice_id,
                     fail_msg = '',
-                    updated_at = excluded.updated_at
+                    updated_at = excluded.updated_at,
+                    consent_at = excluded.consent_at
                 """,
                 (
                     user_id,
                     key,
                     task_id,
                     (previous or {}).get("voice_id") or "",
+                    now,
                     now,
                     now,
                 ),
@@ -327,7 +334,27 @@ class VoiceService:
                 """,
                 (voice_id[:120], utc_now(), user_id),
             )
+        self._drop_files(user_id)
         log.info("voice ready")
+
+    def _drop_files(self, user_id: str) -> None:
+        """Стереть наши файлы. Номер голоса и строку аккаунта не трогаем."""
+        row = self._row(user_id)
+        if not row:
+            return
+        for key in (row.get("sample_key"), row.get("phrase_key")):
+            raw = (key or "").strip()
+            if raw:
+                self._storage.delete_key(raw)
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE user_voices
+                SET sample_key = '', phrase_key = '', phrase_text = ''
+                WHERE user_id = ?
+                """,
+                (user_id,),
+            )
 
     def _mark_failed(self, user_id: str, message: str) -> None:
         row = self._row(user_id)
@@ -341,6 +368,7 @@ class VoiceService:
                     """,
                     (message[:200], utc_now(), user_id),
                 )
+            self._drop_files(user_id)
             log.info("voice replace failed, previous kept")
             return
         with get_connection() as conn:
@@ -352,6 +380,7 @@ class VoiceService:
                 """,
                 (message[:200], utc_now(), user_id),
             )
+        self._drop_files(user_id)
         log.info("voice failed")
 
     def _check_audio(self, data: bytes) -> None:

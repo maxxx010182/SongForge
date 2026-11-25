@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import requests
-from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi import Cookie, Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -159,7 +159,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.165", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.166", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -2653,14 +2653,18 @@ async def own_voice_status(user: dict | None = Depends(get_optional_user)):
 async def own_voice_sample(
     request: Request,
     audio: UploadFile = File(...),
+    consent: str = Form(""),
     user: dict | None = Depends(get_optional_user),
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы сохранить голос.")
     _assert_voice_upload_rate(request, user["id"])
     data = await audio.read(8_000_001)
+    agreed = (consent or "").strip().lower() in {"1", "true", "yes", "on"}
     try:
-        return await run_in_threadpool(lambda: voice_service.save_sample(user, data))
+        return await run_in_threadpool(
+            lambda: voice_service.save_sample(user, data, consent=agreed)
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
