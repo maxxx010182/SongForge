@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.163. Block 108 is done. Do not run it again. The short song was the person's own short lyric. Do not update the site. Block 107 waits until the owner says yes. Block 106 is done. Do not run it again. Block 105 is done. Do not run it again. Block 104 is done. Do not run it again. Block 103 is done. Do not run it again. Block 102 is done. Do not run it again. Block 101 is done. Do not run it again. Block 100 is done. Do not run it again. Do not run block 99. Block 98 is done. Do not run it again. Do not run block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 101, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
+Version: 2.11.163. Block 107 is the next step. The owner said yes on 25.11. Block 108 is done. Do not run it again. Block 106 is done. Do not run it again. Block 105 is done. Do not run it again. Block 104 is done. Do not run it again. Block 103 is done. Do not run it again. Block 102 is done. Do not run it again. Block 101 is done. Do not run it again. Block 100 is done. Do not run it again. Do not run block 99. Block 98 is done. Do not run it again. Do not run block 97. Block 96 is done. Do not run it again. Block 95 is done. Do not run it again. Block 94 is done. Do not run it again. Blocks 93 and 92 are done. Do not run them again. Do not run blocks 101, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, or 19. Do not paste the bot token into chat. Repo is public.
 
 === 108) WHY TODAY'S SONG IS SHORT ===
 # DONE 25.11.2026. Owner pasted the print. Do not run again.
@@ -13,8 +13,8 @@ Version: 2.11.163. Block 108 is done. Do not run it again. The short song was th
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-short-song.py?$(date +%s)" -o /tmp/check-short-song.py; /root/SongForge/venv/bin/python /tmp/check-short-song.py
 
 === 107) OWN VOICE IN EXPERT MODE ===
-# WAIT. Do not run until block 108 is back and the short song is understood.
-# 25.11 the owner returned. The live site is still 2.11.162.
+# 25.11 the owner said to update. The live site is still 2.11.162.
+# This also puts the new own-text button and the birthday example on the site.
 # One line. Skip lines that start with #.
 # Expert mode, after the free demo: a person saves a voice, then a song can sing with it.
 # The fast mode and the first demo stay the same. A voice song does not fall over to the reserve.
