@@ -1250,7 +1250,8 @@ def test_own_lyrics_stay_out_of_the_brief_and_the_recap():
         assert "женский" in recap
         _cb(bot, max_user_id, "confirm:ok")
         last = api.sent[-1]
-        assert "сгенерировать текст" in last["text"].lower()
+        assert "подготовить проект песни" in last["text"].lower()
+        assert "дописывать не будем" in last["text"].lower()
         assert "шур юр" not in last["text"].lower()
         urls = [btn.get("url") or "" for row in last["buttons"] for btn in row]
         assert any("open=expert" in url for url in urls)
