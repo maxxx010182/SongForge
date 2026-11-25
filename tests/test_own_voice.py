@@ -394,8 +394,10 @@ def test_page_keeps_voice_out_of_the_fast_mode():
     page = Path("index.html").read_text(encoding="utf-8")
     assert 'id="ownVoiceBlock"' in page
     assert 'id="ownVoiceConsent"' in page
-    assert "Согласен записать голос для песен этого аккаунта" in page
-    assert "Свой файл мы не храним" in page
+    assert "Даю согласие на обработку записи голоса" in page
+    assert "Я даю сервису «СоздайСвоюПесню»* (sozdaipesnu.ru)" in page
+    assert "* ИП Мошкин М.А." in page
+    assert 'href="/legal/privacy"' in page
     assert "Сохранён свой голос для песен" in page
     assert "payload.use_own_voice=false" in page
     assert "use_own_voice:wantOwnVoice()" in page

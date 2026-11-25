@@ -122,7 +122,7 @@ class VoiceService:
         self._require_past_trial(user)
         if not consent:
             raise ValueError(
-                "Сначала отметьте согласие: голос только для песен этого аккаунта."
+                "Сначала отметьте согласие на обработку записи голоса."
             )
         self._check_audio(data)
         user_id = user["id"]
