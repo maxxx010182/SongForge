@@ -61,6 +61,12 @@ def run_forever() -> None:
                     log.info("Storage copies saved: %s covers: %s", saved, covers)
             except Exception:
                 log.exception("storage copy pass failed")
+            try:
+                from backend.services.voice_service import VoiceService
+
+                VoiceService().expire_idle()
+            except Exception:
+                log.exception("voice expiry pass failed")
         time.sleep(WORKER_POLL_INTERVAL_SEC)
 
 

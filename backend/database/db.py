@@ -397,6 +397,8 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
         conn.execute(
             "ALTER TABLE users ADD COLUMN is_persona INTEGER NOT NULL DEFAULT 0"
         )
+    if "last_seen_at" not in existing:
+        conn.execute("ALTER TABLE users ADD COLUMN last_seen_at TEXT")
     if "theme" not in existing:
         conn.execute(
             "ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'classic'"

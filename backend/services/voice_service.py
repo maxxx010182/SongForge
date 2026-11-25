@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from backend.database.db import get_connection, init_db, utc_now
@@ -20,6 +20,8 @@ MIN_AUDIO_BYTES = 1_500
 MAX_AUDIO_BYTES = 8_000_000
 _BUSY_SEC = 20
 _POLL_GAP_SEC = 2.0
+VOICE_IDLE_DAYS = 14
+_VISIT_GAP = timedelta(hours=1)
 _last_poll: dict[str, float] = {}
 
 _FAIL = {"fail", "failed", "processing_validate_fail"}
@@ -53,6 +55,67 @@ class VoiceService:
             return _hidden()
         self._refresh(user["id"])
         return _public(self._row(user["id"]))
+
+    def note_visit(self, user_id: str) -> None:
+        """Заход на сайт продлевает срок голоса. Письма и гости сюда не попадают."""
+        if not (user_id or "").strip():
+            return
+        now = datetime.now(timezone.utc)
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT last_seen_at FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            if not row:
+                return
+            seen = _parse_time(row["last_seen_at"])
+            if seen and now - seen < _VISIT_GAP:
+                return
+            conn.execute(
+                "UPDATE users SET last_seen_at = ? WHERE id = ?",
+                (now.isoformat(), user_id),
+            )
+
+    def delete_saved(self, user: dict) -> dict[str, Any]:
+        """Стереть голос этого аккаунта. Уже сделанные песни не трогаем."""
+        if not user or not user.get("id"):
+            raise ValueError("Войдите в аккаунт, чтобы удалить голос.")
+        self._forget(user["id"])
+        log.info("voice deleted")
+        return _public(None)
+
+    def expire_idle(self) -> int:
+        """14 дней без входа: записи и номер голоса стираем. Песни остаются."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=VOICE_IDLE_DAYS)
+        with get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT v.user_id, v.updated_at, u.last_seen_at
+                FROM user_voices v
+                LEFT JOIN users u ON u.id = v.user_id
+                """
+            ).fetchall()
+        removed = 0
+        for row in rows:
+            seen = _parse_time(row["last_seen_at"]) or _parse_time(row["updated_at"])
+            if not seen or seen > cutoff:
+                continue
+            self._forget(row["user_id"])
+            removed += 1
+        if removed:
+            log.info("idle voices removed: %s", removed)
+        return removed
+
+    def _forget(self, user_id: str) -> None:
+        row = self._row(user_id)
+        if not row:
+            return
+        for key in (row.get("sample_key"), row.get("phrase_key")):
+            raw = (key or "").strip()
+            if raw:
+                self._storage.delete_key(raw)
+        with get_connection() as conn:
+            conn.execute("DELETE FROM user_voices WHERE user_id = ?", (user_id,))
 
     def save_sample(self, user: dict, data: bytes) -> dict[str, Any]:
         self._require_past_trial(user)
@@ -384,6 +447,19 @@ def _public(row: dict | None) -> dict[str, Any]:
         "message": message,
         "kept": kept,
     }
+
+
+def _parse_time(value: str | None) -> datetime | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _phrase_text(data: dict) -> str:

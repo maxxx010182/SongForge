@@ -3,6 +3,7 @@
 import json
 import struct
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,116 @@ def test_save_then_phrase_keeps_the_id_on_the_server():
         with pytest.raises(ValueError, match="без слов"):
             voice_id_for_song(user_id=user["id"], instrumental=True, vocal="female")
     finally:
+        _cleanup(user["id"])
+
+
+def _voice_row(user_id: str, *, when: str, seen: str | None, sample: str) -> None:
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO user_voices (
+                user_id, status, sample_key, phrase_key, validate_task_id,
+                generate_task_id, phrase_text, voice_id, fail_msg,
+                updated_at, created_at
+            ) VALUES (?, 'ready', ?, 'voices/phrase.wav', '', '', '', 'voice-secret', '', ?, ?)
+            """,
+            (user_id, sample, when, when),
+        )
+        conn.execute(
+            "UPDATE users SET last_seen_at = ? WHERE id = ?",
+            (seen, user_id),
+        )
+        conn.execute(
+            """
+            INSERT INTO generations (id, created_at, status, user_id, title, purchased)
+            VALUES (?, ?, 'success', ?, 'Старая песня', 1)
+            """,
+            (str(uuid.uuid4()), when, user_id),
+        )
+
+
+def test_delete_removes_the_voice_and_keeps_the_song():
+    init_db()
+    user = _user(1)
+    storage = _Storage()
+    service = VoiceService(storage=storage, suno=_Suno())
+    when = datetime.now(timezone.utc).isoformat()
+    try:
+        _voice_row(user["id"], when=when, seen=when, sample="voices/sample.wav")
+        result = service.delete_saved(user)
+        assert result["status"] == "empty"
+        assert "voice-secret" not in json.dumps(result)
+        assert storage.deleted == ["voices/sample.wav", "voices/phrase.wav"]
+        with pytest.raises(ValueError, match="сохраните"):
+            voice_id_for_song(user_id=user["id"], instrumental=False, vocal="female")
+        with get_connection() as conn:
+            song = conn.execute(
+                "SELECT title FROM generations WHERE user_id = ?",
+                (user["id"],),
+            ).fetchone()
+        assert song["title"] == "Старая песня"
+    finally:
+        with get_connection() as conn:
+            conn.execute("DELETE FROM generations WHERE user_id = ?", (user["id"],))
+        _cleanup(user["id"])
+
+
+def test_idle_voice_expires_after_fourteen_days_and_a_visit_keeps_it():
+    init_db()
+    old_user = _user(1)
+    fresh_user = _user(1)
+    quiet_user = _user(1)
+    storage = _Storage()
+    service = VoiceService(storage=storage, suno=_Suno())
+    old = (datetime.now(timezone.utc) - timedelta(days=15)).isoformat()
+    fresh = datetime.now(timezone.utc).isoformat()
+    try:
+        _voice_row(old_user["id"], when=old, seen=old, sample="voices/old.wav")
+        _voice_row(fresh_user["id"], when=old, seen=fresh, sample="voices/fresh.wav")
+        _voice_row(quiet_user["id"], when=fresh, seen=None, sample="voices/new.wav")
+        assert service.expire_idle() == 1
+        assert "voices/old.wav" in storage.deleted
+        assert "voices/fresh.wav" not in storage.deleted
+        assert "voices/new.wav" not in storage.deleted
+        with pytest.raises(ValueError, match="сохраните"):
+            voice_id_for_song(user_id=old_user["id"], instrumental=False, vocal="female")
+        assert (
+            voice_id_for_song(user_id=fresh_user["id"], instrumental=False, vocal="female")
+            == "voice-secret"
+        )
+        with get_connection() as conn:
+            song = conn.execute(
+                "SELECT COUNT(*) AS n FROM generations WHERE user_id = ?",
+                (old_user["id"],),
+            ).fetchone()
+        assert song["n"] == 1
+    finally:
+        with get_connection() as conn:
+            conn.execute(
+                "DELETE FROM generations WHERE user_id IN (?, ?, ?)",
+                (old_user["id"], fresh_user["id"], quiet_user["id"]),
+            )
+        _cleanup(old_user["id"])
+        _cleanup(fresh_user["id"])
+        _cleanup(quiet_user["id"])
+
+
+def test_visit_refreshes_the_voice_clock():
+    init_db()
+    user = _user(1)
+    service = VoiceService(storage=_Storage(), suno=_Suno())
+    old = (datetime.now(timezone.utc) - timedelta(days=20)).isoformat()
+    try:
+        _voice_row(user["id"], when=old, seen=old, sample="voices/stay.wav")
+        service.note_visit(user["id"])
+        assert service.expire_idle() == 0
+        assert (
+            voice_id_for_song(user_id=user["id"], instrumental=False, vocal="female")
+            == "voice-secret"
+        )
+    finally:
+        with get_connection() as conn:
+            conn.execute("DELETE FROM generations WHERE user_id = ?", (user["id"],))
         _cleanup(user["id"])
 
 

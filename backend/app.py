@@ -159,7 +159,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.164", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.165", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1554,6 +1554,10 @@ async def get_me(
             messenger_service.touch_site(user["id"], tz_name=tz)
         except Exception:
             pass
+        try:
+            voice_service.note_visit(user["id"])
+        except Exception:
+            pass
     else:
         remaining = 0
     handoff = messenger_service.get_handoff_for_user(user["id"]) if user else {}
@@ -2657,6 +2661,16 @@ async def own_voice_sample(
     data = await audio.read(8_000_001)
     try:
         return await run_in_threadpool(lambda: voice_service.save_sample(user, data))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/voice/delete")
+async def own_voice_delete(user: dict | None = Depends(get_optional_user)):
+    if not user:
+        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы удалить голос.")
+    try:
+        return await run_in_threadpool(lambda: voice_service.delete_saved(user))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
