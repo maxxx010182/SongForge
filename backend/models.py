@@ -23,6 +23,7 @@ class ProduceRequest(BaseModel):
     custom_description: str = ""
     lyrics_engine: str = "classic"
     own_lyrics: str = ""
+    reuse_saved: bool = False
 
 
 class MusicAnalysis(BaseModel):
@@ -92,6 +93,7 @@ class ProduceResponse(BaseModel):
     lyrics: str
     style: str
     message: str = ""
+    reused: bool = False
 
 
 class MusicStartRequest(BaseModel):

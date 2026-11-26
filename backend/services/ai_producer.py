@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from backend.logger import log
@@ -37,6 +38,7 @@ class AiProducer:
         custom_description: str = "",
         lyrics_engine: str = "classic",
         own_lyrics: str = "",
+        reuse_saved: bool = False,
     ) -> ProduceResponse:
         idea = idea.strip()
         own = (own_lyrics or "").strip()
@@ -45,6 +47,11 @@ class AiProducer:
             raise ValueError("Идея песни не может быть пустой")
         if custom_mode and not idea:
             idea = custom_description.strip()
+
+        if reuse_saved:
+            saved = self._saved_text(idea)
+            if saved is not None:
+                return saved
 
         plan, payload = self._builder.build(
             idea,
@@ -101,6 +108,32 @@ class AiProducer:
             lyrics=lyrics,
             style=style,
             message=self.PRODUCER_MESSAGE,
+        )
+
+    def _saved_text(self, idea: str) -> ProduceResponse | None:
+        row = self._history.latest_saved_text(
+            user_id=getattr(self, "_current_user_id", None),
+            guest_id=getattr(self, "_current_guest_id", None),
+            idea=idea,
+        )
+        if not row:
+            return None
+        plan = ProductionPlan.model_validate(json.loads(row["plan_json"] or "{}"))
+        plan.own_voice_id = ""
+        log.info(
+            "Production reused: id=%s len=%s",
+            row["id"],
+            len(row["lyrics"] or ""),
+        )
+        return ProduceResponse(
+            success=True,
+            production_id=row["id"],
+            plan=plan,
+            title=row["title"] or "",
+            lyrics=row["lyrics"] or "",
+            style=row["style"] or "",
+            message=self.PRODUCER_MESSAGE,
+            reused=True,
         )
 
     def resolve_production_for_repeat(self, production_id: str) -> str:

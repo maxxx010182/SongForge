@@ -1,7 +1,11 @@
 import json
+from datetime import datetime, timedelta, timezone
 
 from backend.database.db import dumps_json, get_connection, init_db, utc_now
 from backend.models import ProductionPlan, TrackVariant
+
+# Страница могла не дождаться ответа. Текст этого срока ещё можно показать без нового Кие.
+SAVED_TEXT_HOURS = 36
 
 
 class HistoryService:
@@ -246,6 +250,64 @@ class HistoryService:
                     production_id,
                 ),
             )
+
+    @staticmethod
+    def _same_idea(saved: str, asked: str) -> bool:
+        return " ".join((saved or "").split()) == " ".join((asked or "").split())
+
+    def latest_saved_text(
+        self,
+        *,
+        user_id: str | None,
+        guest_id: str | None,
+        idea: str,
+    ) -> dict | None:
+        """Готовый текст без музыки. Чужой аккаунт и уже запущенная песня не подходят."""
+        if not " ".join((idea or "").split()):
+            return None
+        if not (user_id or guest_id):
+            return None
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=SAVED_TEXT_HOURS)).isoformat()
+        with get_connection() as conn:
+            conn.row_factory = None
+            if user_id:
+                who = "user_id = ?"
+                who_value = user_id
+            else:
+                who = "guest_id = ? AND (user_id IS NULL OR user_id = '')"
+                who_value = guest_id
+            rows = conn.execute(
+                f"""
+                SELECT id, idea, optimized_idea, title, lyrics, style, plan_json
+                FROM generations
+                WHERE created_at >= ?
+                  AND status = 'planned'
+                  AND TRIM(COALESCE(task_id, '')) = ''
+                  AND LENGTH(TRIM(COALESCE(lyrics, ''))) > 0
+                  AND COALESCE(purchased, 0) = 0
+                  AND COALESCE(note_charged, 0) = 0
+                  AND {who}
+                ORDER BY created_at DESC
+                LIMIT 8
+                """,
+                (cutoff, who_value),
+            ).fetchall()
+        columns = (
+            "id",
+            "idea",
+            "optimized_idea",
+            "title",
+            "lyrics",
+            "style",
+            "plan_json",
+        )
+        for raw in rows:
+            row = dict(zip(columns, raw))
+            if self._same_idea(row["idea"], idea) or self._same_idea(
+                row["optimized_idea"], idea
+            ):
+                return row
+        return None
 
     def get_by_id(self, production_id: str) -> dict | None:
         with get_connection() as conn:

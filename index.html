@@ -2121,7 +2121,9 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     btn.innerHTML=writingTextHtml();
     document.getElementById('producerPlanBlock').classList.add('hidden');
     try{
-        var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});
+        var textPayload=buildSongPayload(idea);
+        if(!visibleSongText())textPayload.reuse_saved=true;
+        var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(textPayload)});
         if(res.ok){
             var data=await res.json();
             textCircleHeld=false;
@@ -2129,7 +2131,8 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
             currentGeneratedLyrics=data.lyrics||'';
             renderProducerPlan(data);
             rememberOwnSnap(idea,data);
-            incrementTextRegenCount();
+            if(data.reused)showToast('Текст уже был готов. Показываю его. Кие снова не вызываю.');
+            else incrementTextRegenCount();
         }else{
             var err=await res.json().catch(function(){return{};});
             if(res.status===403){handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.disabled=false;labelGenerateTextBtn(btn);updateStudioGenerateButtons();return;}
