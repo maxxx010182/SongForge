@@ -1,13 +1,10 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.172. Block 117 is the next step. It only reads. Do not update the site. Block 116 is done. Do not run it again.
+Version: 2.11.172. Block 117 is done. Do not run it again. The site is 2.11.172. No next server command. Block 116 is done. Do not run it again.
 
 === 117) RECENT SONG, KIE TRIED THREE TIMES ===
-# 26.11. A person made a song. Kie failed, failed, then succeeded. The result was not seen.
-# Read only. Does not change songs, money, or the database.
-# Does not print a name, a mail, a lyric, a title, a task number, or a key.
-# On the server, where the prompt is root@. One line. Skip lines that start with #.
-# Paste the whole print here. Do not update the site. Do not run block 116.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-recent-song.py?$(date +%s)" -o /tmp/check-recent-song.py; /root/SongForge/venv/bin/python /tmp/check-recent-song.py
+# DONE 26.11.2026. Owner pasted the print. The 18:38 song is saved, both files, no note. Do not run again.
+# The two Kie errors are the first text models on maintenance. The song was still made.
+# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-recent-song.py?$(date +%s)" -o /tmp/check-recent-song.py; /root/SongForge/venv/bin/python /tmp/check-recent-song.py
 
 === 116) POSTCARD TRIAL ===
 # DONE 26.11.2026. Owner pasted "Готово! v2.11.172". Health from outside is 2.11.172. Do not run again.
