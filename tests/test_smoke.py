@@ -118,11 +118,13 @@ def test_legal_pages_have_canonical():
         assert description in response.text
         assert response.text.count("<h1") == 1
         assert "14 (четырнадцати) дней" in response.text
-        assert "25 ноября 2026 г." in response.text
         assert "48 (сорока восьми) часов" not in response.text
         if path == "/legal/privacy":
-            assert "При записи своего голоса" in response.text
+            assert "26 ноября 2026 г." in response.text
+            assert "При записи своего голоса" not in response.text
             assert "Сервис генерации музыки" in response.text
+        else:
+            assert "25 ноября 2026 г." in response.text
 
 
 def test_landing_seo_marks():

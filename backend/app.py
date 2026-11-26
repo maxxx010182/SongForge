@@ -161,7 +161,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.170", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.171", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -283,43 +283,8 @@ def _assert_generation_capacity(*, user: dict | None) -> None:
 
 
 def _assert_own_voice_request(req, user: dict | None) -> None:
-    """До списания ноты. Номер голоса берём из базы, не из запроса."""
-    if not getattr(req, "use_own_voice", False):
-        return
-    vocal = (getattr(req, "vocal_hint", None) or "").strip().lower()
-    instrumental = bool(getattr(req, "instrumental", False))
-    plan = getattr(req, "plan", None)
-    if plan is not None:
-        if plan.instrumental:
-            instrumental = True
-        if (plan.vocal or "").strip().lower() == "duet":
-            vocal = "duet"
-    try:
-        from backend.services.voice_service import voice_id_for_song
-
-        voice_id_for_song(
-            user_id=user["id"] if user else "",
-            instrumental=instrumental,
-            vocal=vocal,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-def _assert_voice_upload_rate(request: Request, user_id: str) -> None:
-    ip = _client_ip(request) or "unknown"
-    _rate_or_429(
-        f"voice:{user_id}",
-        limit=8,
-        window_sec=3600,
-        detail="Слишком много записей голоса. Подождите и попробуйте снова.",
-    )
-    _rate_or_429(
-        f"voiceip:{ip}",
-        limit=12,
-        window_sec=3600,
-        detail="Слишком много записей голоса. Подождите и попробуйте снова.",
-    )
+    """Запись своего голоса выключена. Песня идёт обычным путём."""
+    return
 
 
 def _assert_gen_rate(request: Request, bucket: str = "gen") -> None:
@@ -2687,7 +2652,7 @@ async def start_music(
 
 @app.get("/api/voice")
 async def own_voice_status(user: dict | None = Depends(get_optional_user)):
-    return await run_in_threadpool(lambda: voice_service.view(user))
+    return {"show": False}
 
 
 @app.post("/api/voice/sample")
@@ -2697,27 +2662,12 @@ async def own_voice_sample(
     consent: str = Form(""),
     user: dict | None = Depends(get_optional_user),
 ):
-    if not user:
-        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы сохранить голос.")
-    _assert_voice_upload_rate(request, user["id"])
-    data = await audio.read(8_000_001)
-    agreed = (consent or "").strip().lower() in {"1", "true", "yes", "on"}
-    try:
-        return await run_in_threadpool(
-            lambda: voice_service.save_sample(user, data, consent=agreed)
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    raise HTTPException(status_code=404, detail="Эта возможность выключена.")
 
 
 @app.post("/api/voice/delete")
 async def own_voice_delete(user: dict | None = Depends(get_optional_user)):
-    if not user:
-        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы удалить голос.")
-    try:
-        return await run_in_threadpool(lambda: voice_service.delete_saved(user))
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    raise HTTPException(status_code=404, detail="Эта возможность выключена.")
 
 
 @app.post("/api/voice/phrase")
@@ -2726,14 +2676,7 @@ async def own_voice_phrase(
     audio: UploadFile = File(...),
     user: dict | None = Depends(get_optional_user),
 ):
-    if not user:
-        raise HTTPException(status_code=401, detail="Войдите в аккаунт, чтобы сохранить голос.")
-    _assert_voice_upload_rate(request, user["id"])
-    data = await audio.read(8_000_001)
-    try:
-        return await run_in_threadpool(lambda: voice_service.save_phrase(user, data))
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    raise HTTPException(status_code=404, detail="Эта возможность выключена.")
 
 
 def _tracks_from_db_row(row) -> list[dict]:

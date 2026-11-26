@@ -323,7 +323,7 @@ def test_shared_payload_has_no_persona_fields():
     assert "personaModel" not in payload
 
 
-def test_suno_client_adds_persona_only_for_a_saved_voice(monkeypatch):
+def test_suno_client_ignores_a_saved_voice(monkeypatch):
     monkeypatch.setattr(sunoapi_org_client, "SUNOAPI_ORG_API_KEY", "test-key")
     captured: list[dict] = []
 
@@ -363,11 +363,10 @@ def test_suno_client_adds_persona_only_for_a_saved_voice(monkeypatch):
         plan=ProductionPlan(vocal="female", vocal_gender="f"),
     )
     assert "personaId" not in captured[0]
-    assert captured[1]["personaId"] == "secret-voice"
-    assert captured[1]["personaModel"] == "voice_persona"
-    assert "vocalGender" not in captured[1]
-    assert "female" not in captured[1]["style"].lower()
-    assert "мужск" not in captured[1]["style"].lower()
+    assert "personaId" not in captured[1]
+    assert "personaModel" not in captured[1]
+    assert captured[1]["vocalGender"] == "f"
+    assert "female" in captured[1]["style"].lower()
     assert "Russian" in captured[1]["style"]
     assert "female" in captured[1]["prompt"]
     assert captured[2]["vocalGender"] == "f"
@@ -375,11 +374,12 @@ def test_suno_client_adds_persona_only_for_a_saved_voice(monkeypatch):
     assert "personaId" not in captured[2]
 
 
-def test_voice_song_does_not_ask_the_reserve(monkeypatch):
+def test_leftover_voice_id_uses_the_ordinary_path(monkeypatch):
     from backend.services import music_provider_service as music_module
 
     monkeypatch.setattr(music_module, "SUNOAPI_ORG_API_KEY", "test-key")
     monkeypatch.setattr(music_module, "APIPASS_API_KEY", "test-key")
+    monkeypatch.setattr(music_module, "MUSIC_PROVIDER", "fallback_suno")
     service = MusicProviderService()
     called: list[str] = []
     service._sunoapi.create_task = lambda **kwargs: called.append("suno") or "s1"
@@ -394,31 +394,31 @@ def test_voice_song_does_not_ask_the_reserve(monkeypatch):
     assert called == ["suno"]
 
     def _boom(**kwargs):
-        raise ValueError("Песня вашим голосом сейчас не запустилась. Ноту вернули.")
+        called.append("suno-fail")
+        raise RuntimeError("down")
 
     service._sunoapi.create_task = _boom
-    with pytest.raises(ValueError):
-        service.create_task(
-            lyrics="строка",
-            style="pop",
-            title="Своим",
-            plan=ProductionPlan(own_voice_id="secret-voice"),
-        )
-    assert called == ["suno"]
+    ref2 = service.create_task(
+        lyrics="строка",
+        style="pop",
+        title="Своим",
+        plan=ProductionPlan(own_voice_id="secret-voice"),
+    )
+    assert ref2.provider == "apipass"
+    assert called == ["suno", "suno-fail", "api"]
 
 
-def test_page_keeps_voice_out_of_the_fast_mode():
+def test_page_has_no_own_voice_shelf():
     page = Path("index.html").read_text(encoding="utf-8")
-    assert 'id="ownVoiceBlock"' in page
-    assert 'id="ownVoiceConsent"' in page
-    assert "Даю согласие на обработку записи голоса" in page
-    assert "Я даю сервису «СоздайСвоюПесню»* (sozdaipesnu.ru)" in page
-    assert "* ИП Мошкин М.А." in page
-    assert 'href="/legal/privacy"' in page
-    assert "Сохранён свой голос для песен" in page
-    assert "payload.use_own_voice=false" in page
-    assert "use_own_voice:wantOwnVoice()" in page
-    assert "min-height:44px" in page
+    privacy = Path("scripts/legal_html/privacy.html").read_text(encoding="utf-8")
+    assert 'id="ownVoiceBlock"' not in page
+    assert "Петь моим голосом" not in page
+    assert "Сохранён свой голос для песен" not in page
+    assert "wantOwnVoice" not in page
+    assert "Даю согласие на обработку записи голоса" not in page
+    assert "записи своего голоса" not in privacy
+    assert "идентификатор голоса" not in privacy.lower()
     assert "Пишем текст" in page
     assert "Текст уже на странице. Круг моделей не повторяю." in page
     assert "Песня ещё копируется" in page
+    assert 'id="ownLyricsCheckbox"' in page

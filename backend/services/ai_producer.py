@@ -272,15 +272,6 @@ class AiProducer:
         )
 
         plan.own_voice_id = ""
-        if use_own_voice:
-            from backend.services.voice_service import voice_id_for_song
-
-            plan.own_voice_id = voice_id_for_song(
-                user_id=getattr(self, "_current_user_id", None) or "",
-                instrumental=bool(plan.instrumental),
-                vocal=plan.vocal or "",
-            )
-            log.info("Music start voice=yes")
 
         task_ref = self._music.create_task(
             lyrics=lyrics,

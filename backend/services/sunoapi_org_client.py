@@ -100,7 +100,7 @@ class SunoApiOrgClient:
         )
         from backend.utils.suno_payload import clamp_suno_duration
 
-        voice_id = (plan.own_voice_id or "").strip()
+        voice_id = ""
         payload = {
             **fields,
             "duration": clamp_suno_duration(plan.duration_sec),

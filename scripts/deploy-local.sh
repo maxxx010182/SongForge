@@ -4,7 +4,7 @@ set -e
 
 DIR="${HOME}/SongForge"
 ARCHIVE="${1:-/tmp/songforge-update.tar.gz}"
-EXPECTED_VERSION="2.11.170"
+EXPECTED_VERSION="2.11.171"
 
 strip_crlf() {
   local f="$1"
