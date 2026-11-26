@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.172. Block 117 is done. Do not run it again. The site is 2.11.172. No next server command. The three Kie rows were the sound card, not the lyric. Block 116 is done. Do not run it again.
+Version: 2.11.172. Owner is asleep. No next server command. Do not update the site. Block 117 is done. Do not run it again. The site is 2.11.172. Block 116 is done. Do not run it again.
 
 === 117) RECENT SONG, KIE TRIED THREE TIMES ===
 # DONE 26.11.2026. Owner pasted the print. The 18:38 song is saved, both files, no note. Do not run again.
