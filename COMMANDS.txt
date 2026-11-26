@@ -1,15 +1,10 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.172. Block 116 is the next step. The site is still 2.11.171 until that block. Block 115 is done. Do not run it again.
+Version: 2.11.172. Block 116 is done. Do not run it again. The site is 2.11.172. No next server command. Block 115 is done. Do not run it again.
 
 === 116) POSTCARD TRIAL ===
-# 26.11. Code 2.11.172. The site is still 2.11.171 until this line.
-# A postcard can be drawn from a description. One credit is spent only if the picture is saved.
-# Song notes and the studio button stay as they are.
-# On the server, where the prompt is root@. One line. Skip lines that start with #.
-# The update prints health and "Готово! v2.11.172".
-# Paste the last lines here. Do not run a second health command.
-# Do not run block 115.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# DONE 26.11.2026. Owner pasted "Готово! v2.11.172". Health from outside is 2.11.172. Do not run again.
+# Next step is in the admin site, not on the server: grant 3 postcard credits.
+# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 115) REMOVE OWN VOICE ===
 # DONE 26.11.2026. The root@ window closed during the update. The site finished itself.
