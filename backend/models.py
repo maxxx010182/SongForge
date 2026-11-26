@@ -436,6 +436,10 @@ class AdminBalanceAdjustRequest(BaseModel):
     reason: str
 
 
+class PostcardDrawRequest(BaseModel):
+    prompt: str = ""
+
+
 class AdminGrantRequest(BaseModel):
     email: str
     role: str = "support"

@@ -325,7 +325,7 @@ class AdminService:
         with get_connection() as conn:
             users = conn.execute(
                 """
-                SELECT id, email, display_name, balance, created_at, trial_generations_used
+                SELECT id, email, display_name, balance, image_credits, created_at, trial_generations_used
                 FROM users
                 WHERE COALESCE(is_persona, 0) = 0
                 ORDER BY created_at DESC
@@ -409,6 +409,62 @@ class AdminService:
                 ip_address=ip,
             )
         return {"user_id": target_user_id, "balance": new_balance, "delta": delta}
+
+    def adjust_image_credits(
+        self,
+        *,
+        admin_id: str,
+        admin_role: str,
+        target_user_id: str,
+        delta: int,
+        reason: str,
+        ip: str = "",
+    ) -> dict:
+        """Кредиты открытки. Колонку нот не меняет."""
+        self.assert_permission(admin_role, "users:write")
+        if delta == 0:
+            raise ValueError("Укажите число")
+        if admin_role == "support" and abs(delta) > 20:
+            raise ValueError("Support: лимит изменения ±20 кредитов за раз")
+        if not reason.strip():
+            raise ValueError("Укажите причину")
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT id, email, balance, image_credits FROM users WHERE id = ?",
+                (target_user_id,),
+            ).fetchone()
+            if not row:
+                raise ValueError("Пользователь не найден")
+            new_credits = int(row["image_credits"] or 0) + delta
+            if new_credits < 0:
+                raise ValueError("Кредитов не может быть меньше нуля")
+            conn.execute(
+                "UPDATE users SET image_credits = ? WHERE id = ?",
+                (new_credits, target_user_id),
+            )
+            balance = int(row["balance"])
+            self._write_audit(
+                conn,
+                admin_user_id=admin_id,
+                action="users.image_credits_adjust",
+                target_type="user",
+                target_id=target_user_id,
+                details={
+                    "delta": delta,
+                    "credits_before": int(row["image_credits"] or 0),
+                    "credits_after": new_credits,
+                    "balance": balance,
+                    "reason": reason.strip(),
+                    "email": row["email"],
+                },
+                ip_address=ip,
+            )
+        return {
+            "user_id": target_user_id,
+            "image_credits": new_credits,
+            "balance": balance,
+            "delta": delta,
+        }
 
     def grant_admin(
         self,

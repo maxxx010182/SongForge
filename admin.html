@@ -116,7 +116,7 @@ pre{font-size:.72rem;overflow:auto;max-height:200px;background:#09090b;padding:1
         <input id="userQ" placeholder="имя, почта, номер бота или аккаунта" />
         <button class="btn" type="button" id="userSearch">Найти</button>
       </div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Имя</th><th>Нот</th><th>Пробная</th><th>Действия</th></tr></thead><tbody id="userBody"></tbody></table></div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Email</th><th>Имя</th><th>Нот</th><th>Кредиты</th><th>Пробная</th><th>Действия</th></tr></thead><tbody id="userBody"></tbody></table></div>
     </div>
     <div id="panelAdmins" class="panel sec">
       <h2>Администраторы</h2>
@@ -295,9 +295,15 @@ async function saveNotice(){
 }
 async function searchUsers(){var q=document.getElementById('userQ').value.trim();if(!q)return;var rows=await api('/api/admin/users/search?q='+encodeURIComponent(q));
   document.getElementById('userBody').innerHTML=rows.map(function(u){
-    return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-id="'+esc(u.id)+'" data-bal="'+u.balance+'" type="button">± ноты</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" class="muted">Не найдено</td></tr>';
+    return'<tr><td>'+esc(u.email)+'</td><td>'+esc(u.display_name)+'</td><td>'+u.balance+'</td><td>'+(u.image_credits||0)+'</td><td>'+(u.trial_generations_used?'да':'нет')+'</td><td><button class="btn" data-kind="notes" data-id="'+esc(u.id)+'" type="button">± ноты</button> <button class="btn" data-kind="cards" data-id="'+esc(u.id)+'" type="button">± кредиты</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" class="muted">Не найдено</td></tr>';
   document.querySelectorAll('#userBody button').forEach(function(btn){btn.onclick=function(){
+    if(btn.dataset.kind==='cards'){
+      var delta=prompt('Кредиты открытки (+3 или -1). Это не ноты:','3');if(delta==null)return;
+      var reason=prompt('Причина (обязательно):','проба');if(!reason)return;
+      api('/api/admin/users/'+btn.dataset.id+'/image-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta:parseInt(delta,10),reason:reason})}).then(function(){alert('Готово');searchUsers();}).catch(function(e){alert(e.message);});
+      return;
+    }
     var delta=prompt('Изменение баланса (+10 или -5):','10');if(delta==null)return;
     var reason=prompt('Причина (обязательно):','поддержка');if(!reason)return;
     api('/api/admin/users/'+btn.dataset.id+'/balance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delta:parseInt(delta,10),reason:reason})}).then(function(){alert('Готово');searchUsers();loadDash();}).catch(function(e){alert(e.message);});

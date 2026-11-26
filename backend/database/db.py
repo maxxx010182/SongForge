@@ -351,6 +351,27 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS image_cards (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                status TEXT NOT NULL,
+                task_id TEXT NOT NULL DEFAULT '',
+                image_url TEXT NOT NULL DEFAULT '',
+                credits_spent INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                finished_at TEXT NOT NULL DEFAULT ''
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_image_cards_user
+            ON image_cards(user_id, created_at)
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS owner_events (
                 id TEXT PRIMARY KEY,
                 kind TEXT NOT NULL,
@@ -436,6 +457,10 @@ def _migrate_users_columns(conn: sqlite3.Connection) -> None:
               AND display_name IS NOT NULL
               AND TRIM(display_name) != ''
             """
+        )
+    if "image_credits" not in existing:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN image_credits INTEGER NOT NULL DEFAULT 0"
         )
 
 

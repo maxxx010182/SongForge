@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Открытка — СоздайСвоюПесню</title>
-    <meta name="description" content="Открытка и картинка в студии СоздайСвоюПесню. Страница пока закрыта.">
+    <meta name="description" content="Открытка в студии СоздайСвоюПесню. Проба: картинка по описанию, песню не создаёт.">
     <meta name="robots" content="noindex,nofollow">
     <link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" sizes="180x180">
@@ -48,6 +48,7 @@
         .go{width:100%;min-height:52px;margin-top:16px;border:0;border-radius:1rem;background:var(--sf-accent);color:var(--sf-accent-on);font-weight:600;cursor:pointer}
         .note{color:var(--sf-muted);font-size:.8rem;margin:8px 0 0}
         .shelf{margin-top:22px;color:var(--sf-muted)}
+        .shelf img{width:100%;height:auto;border-radius:1rem;display:block;margin-top:12px}
         .msg{min-height:1.4em;margin-top:10px}
         .bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);border-top:1px solid var(--sf-line);padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));z-index:5}
         .bottom a{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:48px;justify-content:center;font-size:10px;color:var(--sf-muted)}
@@ -71,7 +72,7 @@
 
     <h1>Открытка</h1>
     <p class="lead">Картинка к песне или просто открытка. Песню эта страница не создаёт и ноту не тратит.</p>
-    <div class="lock" id="lockBanner" role="status">Закрыто. Рисовать пока нельзя. Когда откроем, здесь будет видно, сколько кредитов спишется, до нажатия кнопки.</div>
+    <div class="lock" id="lockBanner" role="status">Кредитов открытки нет. Это не ноты за песню.</div>
 
     <form class="panel" id="cardForm">
         <label class="field" for="prompt">Описание</label>
@@ -86,36 +87,36 @@
         <div class="field">Модель</div>
         <div class="choices" role="group" aria-label="Модель" id="models">
             <button type="button" data-model="nano" aria-pressed="true">Nano Banana 2.1</button>
-            <button type="button" data-model="gpt" aria-pressed="false">GPT Image 2.5</button>
+            <button type="button" data-model="gpt" disabled aria-pressed="false">GPT Image 2.5</button>
         </div>
 
         <div class="field">Форма</div>
         <div class="choices" role="group" aria-label="Форма" id="shapes">
-            <button type="button" data-shape="1:1" aria-pressed="false">Квадрат</button>
+            <button type="button" data-shape="1:1" disabled aria-pressed="false">Квадрат</button>
             <button type="button" data-shape="3:4" aria-pressed="true">Открытка</button>
-            <button type="button" data-shape="16:9" aria-pressed="false">Широкая</button>
+            <button type="button" data-shape="16:9" disabled aria-pressed="false">Широкая</button>
         </div>
 
         <div class="field">Размер</div>
         <div class="choices" role="group" aria-label="Размер" id="sizes">
             <button type="button" data-size="1K" data-credits="1" aria-pressed="true">Обычный</button>
-            <button type="button" data-size="2K" data-credits="1" aria-pressed="false">Чётче</button>
-            <button type="button" data-size="4K" data-credits="2" aria-pressed="false">Крупный</button>
+            <button type="button" data-size="2K" data-credits="1" disabled aria-pressed="false">Чётче</button>
+            <button type="button" data-size="4K" data-credits="2" disabled aria-pressed="false">Крупный</button>
         </div>
-        <p class="price" id="priceLine">На кнопке будет: <strong>1 кредит</strong>. Сейчас ничего не списывается. Это не нота за песню.</p>
+        <p class="price" id="priceLine">Спишется <strong>1 кредит</strong>, только если картинка сохранится. Это не нота за песню.</p>
 
-        <label class="field drop" for="photos">Свои фото, если хотите себя на открытке. До 10 штук, jpeg, png или webp. На сервер пока не уходят.
-            <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        <label class="field drop" for="photos">Свои фото в этой пробе не берём.
+            <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled>
         </label>
         <ul class="files" id="fileList"></ul>
         <p class="note" id="fileNote"></p>
 
         <button class="go" type="submit" id="drawBtn">Нарисовать</button>
         <p class="msg" id="drawMsg" role="status"></p>
-        <p class="note">Кредиты на кнопке — черновик цены. Купить их пока нельзя.</p>
+        <p class="note">Купить кредиты пока нельзя. Их выдают вручную. Песню эта кнопка не создаёт.</p>
     </form>
 
-    <p class="shelf">Готовых картинок пока нет. Они будут лежать здесь, не в фонотеке.</p>
+    <div class="shelf" id="cardShelf">Готовых картинок пока нет. Они будут лежать здесь, не в фонотеке.</div>
 </div>
 <nav class="bottom" aria-label="Разделы">
     <a href="/?view=create"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Студия</span></a>
@@ -151,9 +152,55 @@
         return group.querySelector('[aria-pressed="true"]');
     }
     function paintPrice(){
-        var size = selected(document.getElementById('sizes'));
-        var credits = size ? Number(size.getAttribute('data-credits') || '1') : 1;
-        priceLine.innerHTML = 'На кнопке будет: <strong>' + plural(credits, 'кредит', 'кредита', 'кредитов') + '</strong>. Сейчас ничего не списывается. Это не нота за песню.';
+        priceLine.innerHTML = 'Спишется <strong>1 кредит</strong>, только если картинка сохранится. Это не нота за песню.';
+    }
+    function renderCards(cards){
+        var shelf = document.getElementById('cardShelf');
+        var ready = (cards || []).filter(function(card){ return card.status === 'ready' && card.image_url; });
+        shelf.innerHTML = '';
+        if (!ready.length) {
+            shelf.textContent = 'Готовых картинок пока нет. Они будут лежать здесь, не в фонотеке.';
+            return;
+        }
+        ready.forEach(function(card){
+            var img = document.createElement('img');
+            img.src = card.image_url;
+            img.alt = 'Открытка';
+            shelf.appendChild(img);
+        });
+    }
+    var pollTimer = null;
+    function stopPoll(){
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+    function applyStatus(data){
+        if (!data) return false;
+        if (data.detail) document.getElementById('lockBanner').textContent = data.detail;
+        renderCards(data.cards || []);
+        var drawing = (data.cards || []).some(function(card){ return card.status === 'drawing'; });
+        document.getElementById('drawBtn').disabled = drawing;
+        if (!drawing) stopPoll();
+        return drawing;
+    }
+    function startPoll(){
+        if (pollTimer) return;
+        var tries = 0;
+        pollTimer = setInterval(function(){
+            tries += 1;
+            if (tries > 45) {
+                stopPoll();
+                msg.textContent = 'Откройте эту страницу ещё раз через минуту.';
+                document.getElementById('drawBtn').disabled = false;
+                return;
+            }
+            fetch('/api/otkrytka', {credentials: 'include'}).then(function(res){ return res.json(); }).then(function(data){
+                var drawing = applyStatus(data);
+                if (drawing) return;
+                var card = (data.cards || [])[0];
+                if (card && card.status === 'ready') msg.textContent = 'Картинка готова.';
+                else if (card && card.message) msg.textContent = card.message;
+            }).catch(function(){});
+        }, 4000);
     }
     function bindGroup(id){
         var group = document.getElementById(id);
@@ -196,19 +243,34 @@
 
     form.addEventListener('submit', function(event){
         event.preventDefault();
-        msg.textContent = 'Проверяем замок…';
+        var promptEl = document.getElementById('prompt');
+        var text = promptEl ? promptEl.value.trim() : '';
+        if (!text) { msg.textContent = 'Напишите, что нарисовать.'; return; }
+        msg.textContent = 'Рисуем. Это занимает около минуты.';
+        document.getElementById('drawBtn').disabled = true;
         fetch('/api/otkrytka', {
             method: 'POST',
             credentials: 'include',
             headers: {'Content-Type': 'application/json'},
-            body: '{}'
+            body: JSON.stringify({prompt: text})
         }).then(function(res){
-            return res.json().then(function(data){ return {ok: res.ok, data: data}; });
+            return res.json().then(function(data){ return {ok: res.ok, status: res.status, data: data}; });
         }).then(function(result){
-            var detail = (result.data && (result.data.detail || result.data.message)) || '';
-            msg.textContent = detail || 'Закрыто. Рисовать пока нельзя.';
+            var data = result.data || {};
+            if (!result.ok) {
+                var detail = data.detail;
+                msg.textContent = typeof detail === 'string' ? detail : 'Не получилось.';
+                document.getElementById('drawBtn').disabled = false;
+                return;
+            }
+            applyStatus(data);
+            var card = data.card;
+            if (card && card.status === 'drawing') startPoll();
+            else if (card && card.status === 'ready') msg.textContent = 'Картинка готова.';
+            else if (card && card.message) msg.textContent = card.message;
         }).catch(function(){
-            msg.textContent = 'Закрыто. Рисовать пока нельзя.';
+            msg.textContent = 'Связь оборвалась. Проверяю, не готова ли картинка.';
+            startPoll();
         });
     });
 
@@ -218,7 +280,8 @@
     }).catch(function(){});
 
     fetch('/api/otkrytka', {credentials: 'include'}).then(function(res){ return res.json(); }).then(function(data){
-        if (data && data.detail) document.getElementById('lockBanner').textContent = data.detail + ' Когда откроем, цену будет видно до кнопки.';
+        var drawing = applyStatus(data);
+        if (drawing) startPoll();
     }).catch(function(){});
 })();
 </script>

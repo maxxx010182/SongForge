@@ -45,6 +45,7 @@ from backend.models import (
     PublicTrackResponse,
     StyleRequest,
     AdminBalanceAdjustRequest,
+    PostcardDrawRequest,
     AdminDashboardResponse,
     AdminGrantRequest,
     AdminCreatePersonasRequest,
@@ -68,6 +69,7 @@ from backend.models import (
     UserInfo,
 )
 from backend.services.admin_service import AdminService
+from backend.services.image_card_service import ImageCardError, ImageCardService
 from backend.services.gift_service import GiftService, OCCASION_DEFAULTS
 from backend.services import site_notice as site_notice_service
 from backend.services.demo_claim import UNCLAIMED_HOURS
@@ -145,6 +147,7 @@ beta_guards = BetaGuards()
 audio_access = AudioAccessService()
 payment_service = PaymentService()
 admin_service = AdminService()
+image_cards = ImageCardService()
 showcase_admin = ShowcaseAdminService()
 job_queue = JobQueue()
 music_poll_service = MusicPollService()
@@ -161,7 +164,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.171", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.172", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -532,18 +535,27 @@ async def otkrytka_page():
 
 
 @app.get("/api/otkrytka")
-async def otkrytka_status():
-    from backend.services.image_gate import status
-
-    return status()
+def otkrytka_status(user: dict | None = Depends(get_optional_user)):
+    return image_cards.status_for(user)
 
 
 @app.post("/api/otkrytka")
-async def otkrytka_create():
-    """Замок. Тело запроса не читаем и никуда не отправляем."""
-    from backend.services.image_gate import refuse
-
-    raise HTTPException(status_code=403, detail=refuse())
+def otkrytka_create(
+    req: PostcardDrawRequest,
+    request: Request,
+    user: dict | None = Depends(get_optional_user),
+):
+    who = user["id"] if user else (_client_ip(request) or "unknown")
+    _rate_or_429(
+        f"card:{who}",
+        limit=6,
+        window_sec=60,
+        detail="Слишком часто. Подождите минуту.",
+    )
+    try:
+        return image_cards.draw(user=user, prompt=req.prompt)
+    except ImageCardError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.detail) from exc
 
 
 def _public_site_base(request: Request) -> str:
@@ -1094,6 +1106,29 @@ async def admin_adjust_balance(
 ):
     try:
         result = admin_service.adjust_balance(
+            admin_id=admin_user["admin_id"],
+            admin_role=admin_user["admin_role"],
+            target_user_id=user_id,
+            delta=int(req.delta),
+            reason=req.reason,
+            ip=_client_ip(request),
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"success": True, **result}
+
+
+@app.post("/api/admin/users/{user_id}/image-credits")
+def admin_adjust_image_credits(
+    user_id: str,
+    req: AdminBalanceAdjustRequest,
+    request: Request,
+    admin_user: dict = Depends(require_admin_user),
+):
+    try:
+        result = admin_service.adjust_image_credits(
             admin_id=admin_user["admin_id"],
             admin_role=admin_user["admin_role"],
             target_user_id=user_id,
