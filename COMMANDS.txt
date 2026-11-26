@@ -1,7 +1,8 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.170. Block 114 is the next step. Owner said block 113 is done. The Готово line for 113 was not pasted. Do not run block 113 again. Do not ask for a second health check. The update prints health.
+Version: 2.11.170. Block 114 is done. The site is 2.11.170. Do not run block 114 again. Do not run block 113 again. No new block. The owner opens the site and presses the text button once if the words are missing.
 
 === 114) PAGE WAITS FOR THE SAVED TEXT ===
+# DONE 26.11.2026. Owner pasted "Готово! v2.11.170" and health 2.11.170. Do not run again.
 # 26.11. Code 2.11.170.
 # If the reply drops, the page keeps "Пишем текст" and asks for the saved text.
 # It does not show an error while that text can still arrive. It does not call Kie again.
