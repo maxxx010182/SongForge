@@ -1,15 +1,13 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.171. Block 115 is the next step. The site is still 2.11.170 until that block. Block 114 is done. Do not run it again. Do not run block 113 again.
+Version: 2.11.171. Block 115 is done. Do not run it again. The site is 2.11.171. No next server command. Block 114 is done. Do not run it again.
 
 === 115) REMOVE OWN VOICE ===
-# 26.11. Code 2.11.171. The site is still 2.11.170 until this line.
+# DONE 26.11.2026. The root@ window closed during the update. The site finished itself.
+# Health from outside: ok, version 2.11.171, generating 0. Do not run again.
+# 26.11. Code and site 2.11.171.
 # The own-voice shelf is gone from the page, the cabinet, and the privacy text.
 # New songs do not send a voice number. Finished songs stay.
-# On the server, where the prompt is root@. One line. Skip lines that start with #.
-# The update prints health and "Готово! v2.11.171".
-# Paste the last lines here. Do not run a second health command.
-# Do not run blocks 111, 112, 113, or 114.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
+# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 114) PAGE WAITS FOR THE SAVED TEXT ===
 
