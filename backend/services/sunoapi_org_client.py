@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -27,6 +28,22 @@ _FAIL_STATES = {
     "failed",
     "fail",
 }
+_GENDER_WORD = re.compile(
+    r"\b(?:male|female|man|woman|boy|girl|мужск\w*|женск\w*)\b",
+    re.IGNORECASE,
+)
+
+
+def style_without_gender(style: str) -> str:
+    """Пол в строке звучания забивает сохранённый голос. Язык песни оставляем."""
+    text = _GENDER_WORD.sub(" ", style or "")
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"\s*,\s*", ", ", text)
+    text = re.sub(r"(?:,\s*){2,}", ", ", text)
+    text = text.strip(" ,")
+    if text:
+        return text
+    return "sung in Russian, native Russian vocals"
 
 
 class SunoApiOrgClient:
@@ -91,6 +108,8 @@ class SunoApiOrgClient:
             "callBackUrl": self._callback_url(),
         }
         if voice_id:
+            payload.pop("vocalGender", None)
+            payload["style"] = style_without_gender(str(payload.get("style") or ""))
             payload["personaId"] = voice_id
             payload["personaModel"] = "voice_persona"
 

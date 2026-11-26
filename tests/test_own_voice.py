@@ -347,15 +347,32 @@ def test_suno_client_adds_persona_only_for_a_saved_voice(monkeypatch):
         plan=ProductionPlan(),
     )
     client.create_task(
-        lyrics="строка",
-        style="pop",
+        lyrics="строка про female, слова не трогать",
+        style="female pop, мужской вокал, sung in Russian, native Russian vocals",
         title="Своим",
-        plan=ProductionPlan(own_voice_id="secret-voice"),
+        plan=ProductionPlan(
+            own_voice_id="secret-voice",
+            vocal="female",
+            vocal_gender="f",
+        ),
+    )
+    client.create_task(
+        lyrics="строка",
+        style="female pop",
+        title="Обычная",
+        plan=ProductionPlan(vocal="female", vocal_gender="f"),
     )
     assert "personaId" not in captured[0]
     assert captured[1]["personaId"] == "secret-voice"
     assert captured[1]["personaModel"] == "voice_persona"
-    assert captured[0]["prompt"] == captured[1]["prompt"]
+    assert "vocalGender" not in captured[1]
+    assert "female" not in captured[1]["style"].lower()
+    assert "мужск" not in captured[1]["style"].lower()
+    assert "Russian" in captured[1]["style"]
+    assert "female" in captured[1]["prompt"]
+    assert captured[2]["vocalGender"] == "f"
+    assert "female" in captured[2]["style"]
+    assert "personaId" not in captured[2]
 
 
 def test_voice_song_does_not_ask_the_reserve(monkeypatch):
@@ -402,3 +419,6 @@ def test_page_keeps_voice_out_of_the_fast_mode():
     assert "payload.use_own_voice=false" in page
     assert "use_own_voice:wantOwnVoice()" in page
     assert "min-height:44px" in page
+    assert "Пишем текст" in page
+    assert "Текст уже на странице. Круг моделей не повторяю." in page
+    assert "Песня ещё копируется" in page

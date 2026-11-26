@@ -159,7 +159,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.167", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.168", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
