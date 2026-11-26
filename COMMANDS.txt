@@ -1,9 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.172. Block 117 is done. Do not run it again. The site is 2.11.172. No next server command. Block 116 is done. Do not run it again.
+Version: 2.11.172. Block 117 is done. Do not run it again. The site is 2.11.172. No next server command. The three Kie rows were the sound card, not the lyric. Block 116 is done. Do not run it again.
 
 === 117) RECENT SONG, KIE TRIED THREE TIMES ===
 # DONE 26.11.2026. Owner pasted the print. The 18:38 song is saved, both files, no note. Do not run again.
-# The two Kie errors are the first text models on maintenance. The song was still made.
+# Later the owner pasted the Kie rows. Two Gemini calls returned Kie's own internal error. GPT returned the sound card only. No lyric letter followed. Do not run again.
 # curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-recent-song.py?$(date +%s)" -o /tmp/check-recent-song.py; /root/SongForge/venv/bin/python /tmp/check-recent-song.py
 
 === 116) POSTCARD TRIAL ===
