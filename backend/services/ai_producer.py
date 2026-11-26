@@ -136,6 +136,41 @@ class AiProducer:
             reused=True,
         )
 
+    def lookup_saved_text(
+        self,
+        *,
+        user_id: str | None,
+        guest_id: str | None,
+        idea: str,
+        newer_than_id: str = "",
+    ) -> ProduceResponse | None:
+        """Только чтение. Кие не вызывается и чужой запрос не перебивается."""
+        row = self._history.latest_saved_text(
+            user_id=user_id,
+            guest_id=guest_id,
+            idea=idea,
+            newer_than_id=newer_than_id,
+        )
+        if not row:
+            return None
+        plan = ProductionPlan.model_validate(json.loads(row["plan_json"] or "{}"))
+        plan.own_voice_id = ""
+        log.info(
+            "Saved text shown: id=%s len=%s",
+            row["id"],
+            len(row["lyrics"] or ""),
+        )
+        return ProduceResponse(
+            success=True,
+            production_id=row["id"],
+            plan=plan,
+            title=row["title"] or "",
+            lyrics=row["lyrics"] or "",
+            style=row["style"] or "",
+            message=self.PRODUCER_MESSAGE,
+            reused=True,
+        )
+
     def resolve_production_for_repeat(self, production_id: str) -> str:
         """Новая генерация — новый production_id, если предыдущая уже в фонотеке."""
         if not production_id:

@@ -9,16 +9,26 @@ from backend.models import ProductionPlan
 from backend.services.ai_producer import AiProducer
 
 
-def _insert(user_id: str, production_id: str, idea: str, *, task_id: str = "") -> None:
+def _insert(
+    user_id: str,
+    production_id: str,
+    idea: str,
+    *,
+    task_id: str = "",
+    created_at: str | None = None,
+    make_user: bool = True,
+) -> None:
     plan = ProductionPlan(own_voice_id="secret-voice")
+    when = created_at or utc_now()
     with get_connection() as conn:
-        conn.execute(
-            """
-            INSERT INTO users (id, email, display_name, balance, created_at, trial_generations_used)
-            VALUES (?, ?, ?, 1, ?, 1)
-            """,
-            (user_id, f"{user_id}@example.com", user_id[:12], utc_now()),
-        )
+        if make_user:
+            conn.execute(
+                """
+                INSERT INTO users (id, email, display_name, balance, created_at, trial_generations_used)
+                VALUES (?, ?, ?, 1, ?, 1)
+                """,
+                (user_id, f"{user_id}@example.com", user_id[:12], utc_now()),
+            )
         conn.execute(
             """
             INSERT INTO generations (
@@ -28,7 +38,7 @@ def _insert(user_id: str, production_id: str, idea: str, *, task_id: str = "") -
             """,
             (
                 production_id,
-                utc_now(),
+                when,
                 idea,
                 idea,
                 "куплет уже написан " * 20,
@@ -109,3 +119,66 @@ def test_page_asks_to_reuse_only_when_the_text_is_hidden():
     page = Path("index.html").read_text(encoding="utf-8")
     assert "if(!visibleSongText())textPayload.reuse_saved=true" in page
     assert "Текст уже был готов. Показываю его. Кие снова не вызываю." in page
+
+
+def test_lookup_shows_only_a_newer_text_and_does_not_call_kie():
+    from datetime import datetime, timedelta, timezone
+
+    init_db()
+    user_id = str(uuid.uuid4())
+    older_id = str(uuid.uuid4())
+    newer_id = str(uuid.uuid4())
+    idea = "песня про тихий вечер"
+    base = datetime.now(timezone.utc) - timedelta(minutes=10)
+    _insert(user_id, older_id, idea, created_at=base.isoformat())
+    _insert(
+        user_id,
+        newer_id,
+        idea,
+        created_at=(base + timedelta(minutes=5)).isoformat(),
+        make_user=False,
+    )
+    producer = AiProducer()
+    producer._builder.build = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("Кие звать не нужно")
+    )
+    try:
+        picked = producer.lookup_saved_text(
+            user_id=user_id,
+            guest_id=None,
+            idea=idea,
+            newer_than_id=older_id,
+        )
+        assert picked is not None
+        assert picked.production_id == newer_id
+        assert picked.plan.own_voice_id == ""
+        assert (
+            producer.lookup_saved_text(
+                user_id=user_id,
+                guest_id=None,
+                idea=idea,
+                newer_than_id=newer_id,
+            )
+            is None
+        )
+        assert (
+            producer.lookup_saved_text(
+                user_id=user_id,
+                guest_id=None,
+                idea=idea,
+                newer_than_id="нет-такой-строки",
+            )
+            is None
+        )
+    finally:
+        _cleanup(user_id)
+
+
+def test_page_waits_for_saved_text_after_a_dropped_reply():
+    page = Path("index.html").read_text(encoding="utf-8")
+    assert "/api/produce/saved" in page
+    assert "SAVED_TEXT_WAIT_MS=150000" in page
+    recover = page.find("await recoverDroppedText")
+    alert = page.find("Ошибка связи с сервером. Проверьте интернет и попробуйте снова.")
+    assert recover != -1 and alert != -1 and recover < alert
+    assert "Текст готов." in page

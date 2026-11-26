@@ -26,6 +26,11 @@ class ProduceRequest(BaseModel):
     reuse_saved: bool = False
 
 
+class SavedTextRequest(BaseModel):
+    idea: str = ""
+    except_id: str = ""
+
+
 class MusicAnalysis(BaseModel):
     genre: str = "Pop"
     subgenre: str = "Modern Pop"
@@ -92,6 +97,18 @@ class ProduceResponse(BaseModel):
     title: str
     lyrics: str
     style: str
+    message: str = ""
+    reused: bool = False
+
+
+class SavedTextResponse(BaseModel):
+    ready: bool = False
+    success: bool = False
+    production_id: str = ""
+    plan: Optional[ProductionPlan] = None
+    title: str = ""
+    lyrics: str = ""
+    style: str = ""
     message: str = ""
     reused: bool = False
 

@@ -2094,6 +2094,17 @@ document.getElementById('modeExpertCard').addEventListener('keydown',function(e)
 document.getElementById('styleModePresetsBtn').addEventListener('click',function(){setExpertStyleMode('presets');});
 document.getElementById('styleModeCustomBtn').addEventListener('click',function(){setExpertStyleMode('custom');});
 
+var SAVED_TEXT_WAIT_MS=150000;
+var SAVED_TEXT_EVERY_MS=5000;
+var SAVED_TEXT_DROP_MS=8000;
+function sleepMs(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
+function textReplyDropped(res){if(!res)return true;if(res.status===408||res.status===502||res.status===503||res.status===504)return true;var type=res.headers&&res.headers.get?(res.headers.get('content-type')||''):'';return type.indexOf('application/json')<0;}
+async function askSavedText(idea,exceptId){try{var res=await fetch('/api/produce/saved',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:idea||'',except_id:exceptId||''})});if(!res.ok)return null;var data=await res.json();if(data&&data.ready&&data.plan&&(data.lyrics||'').trim())return data;return null;}catch(e){return null;}}
+async function recoverDroppedText(idea,exceptId,started,dropped){var longWait=!!dropped&&Date.now()-(started||0)>=SAVED_TEXT_DROP_MS;var until=Date.now()+(longWait?SAVED_TEXT_WAIT_MS:0);while(true){var found=await askSavedText(idea,exceptId);if(found)return found;if(Date.now()>=until)return null;var step=Math.min(SAVED_TEXT_EVERY_MS,until-Date.now());if(step>0)await sleepMs(step);}}
+function showPreparedText(data,idea){textCircleHeld=false;currentProduction=data;currentGeneratedLyrics=data.lyrics||'';renderProducerPlan(data);rememberOwnSnap(idea,data);if(instrumentalMode){document.getElementById('lyricsBlock').classList.add('hidden');document.getElementById('step3Block').classList.remove('hidden');}else{document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;document.getElementById('lyricsBlock').classList.remove('hidden');document.getElementById('step3Block').classList.remove('hidden');}}
+function paintRegenText(data,idea){var ownNowEl=document.getElementById('ownLyricsInput');var ownNow=ownNowEl?ownNowEl.value.trim():'';if(ownLyricsOpen()&&ownNow&&ownNow===ownSnap.text){var keptWords=shownOwnLyrics();if(keptWords.trim())data.lyrics=keptWords;}if(ownLyricsOpen())data.style=styleWithBrief(data.style||'',idea);currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentIdea=idea;renderProducerPlan(data);rememberOwnSnap(idea,data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;}
+function showRecoveredText(data,idea,started,paint){paint(data,idea);if(Date.now()-started>=SAVED_TEXT_DROP_MS)incrementTextRegenCount();showToast('Текст готов.');}
+
 document.getElementById('generateTextBtn').addEventListener('click',async function(){
     if(!blockSongGenerationIfNeeded())return;
     if(textCircleHeld){textCircleHeld=false;if(revealHeldText()){showToast('Текст уже на странице. Круг моделей не повторяю.');return;}}
@@ -2120,49 +2131,37 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     btn.disabled=true;
     btn.innerHTML=writingTextHtml();
     document.getElementById('producerPlanBlock').classList.add('hidden');
+    var started=Date.now();
+    var exceptId=visibleSongText()&&currentProduction&&currentProduction.production_id?currentProduction.production_id:'';
     try{
         var textPayload=buildSongPayload(idea);
         if(!visibleSongText())textPayload.reuse_saved=true;
         var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(textPayload)});
         if(res.ok){
             var data=await res.json();
-            textCircleHeld=false;
-            currentProduction=data;
-            currentGeneratedLyrics=data.lyrics||'';
-            renderProducerPlan(data);
-            rememberOwnSnap(idea,data);
+            showPreparedText(data,idea);
             if(data.reused)showToast('Текст уже был готов. Показываю его. Кие снова не вызываю.');
             else incrementTextRegenCount();
-        }else{
+        }else if(res.status===403){
             var err=await res.json().catch(function(){return{};});
-            if(res.status===403){handleGuestLimitError((err&&err.detail)||'',{noThrow:true});btn.disabled=false;labelGenerateTextBtn(btn);updateStudioGenerateButtons();return;}
-            keepTextAfterDrop();
-            alert((err&&err.detail)||'Не удалось подготовить текст и план стиля. Попробуйте ещё раз.');
-            btn.disabled=false;
-            labelGenerateTextBtn(btn);
-            updateStudioGenerateButtons();
-            return;
+            handleGuestLimitError((err&&err.detail)||'',{noThrow:true});
+        }else{
+            var dropped=textReplyDropped(res);
+            var errBody=dropped?null:await res.json().catch(function(){return{};});
+            var picked=await recoverDroppedText(idea,exceptId,started,dropped);
+            if(picked)showRecoveredText(picked,idea,started,showPreparedText);
+            else{keepTextAfterDrop();alert((errBody&&errBody.detail)||'Не удалось подготовить текст и план стиля. Попробуйте ещё раз.');}
         }
     }catch(e){
-        if(e&&e.message==='forbidden'){btn.disabled=false;labelGenerateTextBtn(btn);updateStudioGenerateButtons();return;}
-        keepTextAfterDrop();
-        alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');
-        btn.disabled=false;
-        labelGenerateTextBtn(btn);
-        updateStudioGenerateButtons();
-        return;
+        if(!(e&&e.message==='forbidden')){
+            var pickedDrop=await recoverDroppedText(idea,exceptId,started,true);
+            if(pickedDrop)showRecoveredText(pickedDrop,idea,started,showPreparedText);
+            else{keepTextAfterDrop();alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}
+        }
     }
     btn.disabled=false;
     labelGenerateTextBtn(btn);
-    if(instrumentalMode){
-        document.getElementById('lyricsBlock').classList.add('hidden');
-        document.getElementById('step3Block').classList.remove('hidden');
-    }else{
-        document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;
-        document.getElementById('lyricsEditor').value=currentGeneratedLyrics;
-        document.getElementById('lyricsBlock').classList.remove('hidden');
-        document.getElementById('step3Block').classList.remove('hidden');
-    }
+    updateStudioGenerateButtons();
 });
 
 document.getElementById('regenLyricsBtn').addEventListener('click',async function(){if(!blockSongGenerationIfNeeded())return;var liveIdea=(document.getElementById('ideaInput').value||'').trim();var idea=ownLyricsOpen()?liveIdea:(liveIdea||currentIdea);if(ownLyricsOpen()){var ownEl=document.getElementById('ownLyricsInput');if(!ownEl||!ownEl.value.trim()){alert('Вставьте свой текст или снимите галочку');return;}if(ownLyricsTooShort()){alert('В своём тексте мало слов. Нужно хотя бы 80 знаков, или снимите галочку.');return;}if(ownBriefMissing()){alert('Напишите в верхнем окне, какая это песня, или выберите жанр.');return;}}else if(!idea)return;
@@ -2177,7 +2176,7 @@ document.getElementById('regenLyricsBtn').addEventListener('click',async functio
         showToast('Это уже 3-я перегенерация. Максимум можно сделать 4 раза. После этого текст можно будет только править вручную.');
     }
 
-    textCircleHeld=false;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML=writingTextHtml();btn.disabled=true;try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();var ownNowEl=document.getElementById('ownLyricsInput');var ownNow=ownNowEl?ownNowEl.value.trim():'';if(ownLyricsOpen()&&ownNow&&ownNow===ownSnap.text){var keptWords=shownOwnLyrics();if(keptWords.trim())data.lyrics=keptWords;}if(ownLyricsOpen())data.style=styleWithBrief(data.style||'',idea);currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentIdea=idea;renderProducerPlan(data);rememberOwnSnap(idea,data);document.getElementById('lyricsDisplay').textContent=currentGeneratedLyrics;document.getElementById('lyricsEditor').value=currentGeneratedLyrics;incrementTextRegenCount();}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});syncOwnLyricsPanel();updateStudioGenerateButtons();return;}else{var err2=await res.json().catch(function(){return{};});alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){syncOwnLyricsPanel();updateStudioGenerateButtons();return;}alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}syncOwnLyricsPanel();btn.disabled=false;});
+    textCircleHeld=false;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML=writingTextHtml();btn.disabled=true;var started=Date.now();var exceptId=currentProduction&&currentProduction.production_id?currentProduction.production_id:'';try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();paintRegenText(data,idea);incrementTextRegenCount();}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});syncOwnLyricsPanel();updateStudioGenerateButtons();return;}else{var dropped=textReplyDropped(res);var err2=dropped?null:await res.json().catch(function(){return{};});var picked=await recoverDroppedText(idea,exceptId,started,dropped);if(picked)showRecoveredText(picked,idea,started,paintRegenText);else alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){syncOwnLyricsPanel();updateStudioGenerateButtons();return;}var pickedDrop=await recoverDroppedText(idea,exceptId,started,true);if(pickedDrop)showRecoveredText(pickedDrop,idea,started,paintRegenText);else alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}syncOwnLyricsPanel();btn.disabled=false;});
 
 document.getElementById('editLyricsBtn').addEventListener('click',function(){var disp=document.getElementById('lyricsDisplay'),ed=document.getElementById('lyricsEditor'),btn=document.getElementById('editLyricsBtn');if(ed.classList.contains('hidden')){disp.classList.add('hidden');ed.classList.remove('hidden');btn.innerHTML='<i class="fa-regular fa-floppy-disk mr-1"></i>Сохранить';}else{currentGeneratedLyrics=ed.value;disp.textContent=currentGeneratedLyrics;disp.classList.remove('hidden');ed.classList.add('hidden');btn.innerHTML='<i class="fa-regular fa-pen-to-square mr-1"></i>Редактировать';}});
 

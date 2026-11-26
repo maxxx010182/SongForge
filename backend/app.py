@@ -37,6 +37,8 @@ from backend.models import (
     PaymentPackage,
     ProduceRequest,
     ProduceResponse,
+    SavedTextRequest,
+    SavedTextResponse,
     PurchaseResponse,
     ProfileUpdateRequest,
     ProfileUpdateResponse,
@@ -159,7 +161,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="SongForge", version="2.11.169", lifespan=lifespan)
+app = FastAPI(title="SongForge", version="2.11.170", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -2469,6 +2471,44 @@ async def produce_song(
         raise HTTPException(status_code=500, detail="AI-продюсер временно недоступен") from exc
     finally:
         producer.clear_actor()
+
+
+@app.post("/api/produce/saved", response_model=SavedTextResponse)
+async def produce_saved_text(
+    req: SavedTextRequest,
+    request: Request,
+    guest_id: str = Depends(get_guest_id),
+    user: dict | None = Depends(get_optional_user),
+):
+    """Страница спрашивает готовый текст. Новый круг Кие отсюда не стартует."""
+    ip = _client_ip(request) or "unknown"
+    _rate_or_429(
+        f"saved:{ip}",
+        limit=20,
+        window_sec=60,
+        detail="Слишком много запросов. Подождите немного.",
+    )
+    found = await run_in_threadpool(
+        lambda: producer.lookup_saved_text(
+            user_id=user["id"] if user else None,
+            guest_id=None if user else guest_id,
+            idea=req.idea,
+            newer_than_id=(req.except_id or "").strip(),
+        )
+    )
+    if found is None:
+        return SavedTextResponse(ready=False)
+    return SavedTextResponse(
+        ready=True,
+        success=True,
+        production_id=found.production_id,
+        plan=found.plan,
+        title=found.title,
+        lyrics=found.lyrics,
+        style=found.style,
+        message=found.message,
+        reused=True,
+    )
 
 
 @app.post("/api/create-song", response_model=CreateSongResponse)

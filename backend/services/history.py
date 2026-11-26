@@ -261,6 +261,7 @@ class HistoryService:
         user_id: str | None,
         guest_id: str | None,
         idea: str,
+        newer_than_id: str = "",
     ) -> dict | None:
         """Готовый текст без музыки. Чужой аккаунт и уже запущенная песня не подходят."""
         if not " ".join((idea or "").split()):
@@ -278,7 +279,7 @@ class HistoryService:
                 who_value = guest_id
             rows = conn.execute(
                 f"""
-                SELECT id, idea, optimized_idea, title, lyrics, style, plan_json
+                SELECT id, idea, optimized_idea, title, lyrics, style, plan_json, created_at
                 FROM generations
                 WHERE created_at >= ?
                   AND status = 'planned'
@@ -292,6 +293,15 @@ class HistoryService:
                 """,
                 (cutoff, who_value),
             ).fetchall()
+            floor = ""
+            if newer_than_id:
+                stamp = conn.execute(
+                    "SELECT created_at FROM generations WHERE id = ?",
+                    (newer_than_id,),
+                ).fetchone()
+                if not stamp or not stamp[0]:
+                    return None
+                floor = stamp[0]
         columns = (
             "id",
             "idea",
@@ -300,9 +310,12 @@ class HistoryService:
             "lyrics",
             "style",
             "plan_json",
+            "created_at",
         )
         for raw in rows:
             row = dict(zip(columns, raw))
+            if floor and (row["created_at"] or "") <= floor:
+                continue
             if self._same_idea(row["idea"], idea) or self._same_idea(
                 row["optimized_idea"], idea
             ):
