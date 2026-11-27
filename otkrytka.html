@@ -50,10 +50,20 @@
         .shelf{margin-top:22px;color:var(--sf-muted)}
         .shelf img{width:100%;height:auto;border-radius:1rem;display:block;margin-top:12px}
         .msg{min-height:1.4em;margin-top:10px}
+        .wait{display:none;margin-top:14px}
+        .wait.is-on{display:block}
+        .wait-bar{height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+        .wait-bar i{display:block;height:100%;width:40%;border-radius:999px;background:linear-gradient(90deg,var(--sf-accent),#f97316);animation:card-wait 2.2s ease-in-out infinite}
+        .wait-line{margin:12px 0 0;min-height:1.4em;font-weight:600}
+        .wait .note{margin-top:4px}
+        @keyframes card-wait{0%{transform:translateX(0)}50%{transform:translateX(150%)}100%{transform:translateX(0)}}
         .bottom{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);border-top:1px solid var(--sf-line);padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));z-index:5}
         .bottom a{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:48px;justify-content:center;font-size:10px;color:var(--sf-muted)}
         @media (min-width:900px){.bottom{display:none}.wrap{padding-bottom:48px}}
-        @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+        @media (prefers-reduced-motion:reduce){
+            *{scroll-behavior:auto}
+            .wait-bar i{animation:none;width:100%}
+        }
     </style>
 </head>
 <body>
@@ -112,6 +122,11 @@
         <p class="note" id="fileNote"></p>
 
         <button class="go" type="submit" id="drawBtn">Нарисовать</button>
+        <div class="wait" id="drawWait" aria-hidden="true">
+            <div class="wait-bar" aria-hidden="true"><i></i></div>
+            <p class="wait-line" id="drawWaitLine" role="status">Смотрим, что вы описали</p>
+            <p class="note">Обычно около минуты.</p>
+        </div>
         <p class="msg" id="drawMsg" role="status"></p>
         <p class="note">Купить кредиты пока нельзя. Их выдают вручную. Песню эта кнопка не создаёт.</p>
     </form>
@@ -170,8 +185,38 @@
         });
     }
     var pollTimer = null;
+    var phraseTimer = null;
+    var phraseIdx = 0;
+    var waitPhrases = [
+        'Смотрим, что вы описали',
+        'Собираем цвет и свет',
+        'Расставляем героев на открытке',
+        'Выравниваем края картинки',
+        'Кладём открытку на полку'
+    ];
     function stopPoll(){
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+    function paintPhrase(){
+        var line = document.getElementById('drawWaitLine');
+        if (line) line.textContent = waitPhrases[phraseIdx];
+    }
+    function showWait(){
+        var box = document.getElementById('drawWait');
+        if (box) { box.classList.add('is-on'); box.setAttribute('aria-hidden', 'false'); }
+        msg.textContent = '';
+        if (phraseTimer) return;
+        phraseIdx = 0;
+        paintPhrase();
+        phraseTimer = setInterval(function(){
+            phraseIdx = (phraseIdx + 1) % waitPhrases.length;
+            paintPhrase();
+        }, 7000);
+    }
+    function hideWait(){
+        var box = document.getElementById('drawWait');
+        if (box) { box.classList.remove('is-on'); box.setAttribute('aria-hidden', 'true'); }
+        if (phraseTimer) { clearInterval(phraseTimer); phraseTimer = null; }
     }
     function applyStatus(data){
         if (!data) return false;
@@ -179,7 +224,8 @@
         renderCards(data.cards || []);
         var drawing = (data.cards || []).some(function(card){ return card.status === 'drawing'; });
         document.getElementById('drawBtn').disabled = drawing;
-        if (!drawing) stopPoll();
+        if (drawing) showWait();
+        else { hideWait(); stopPoll(); }
         return drawing;
     }
     function startPoll(){
@@ -189,6 +235,7 @@
             tries += 1;
             if (tries > 45) {
                 stopPoll();
+                hideWait();
                 msg.textContent = 'Откройте эту страницу ещё раз через минуту.';
                 document.getElementById('drawBtn').disabled = false;
                 return;
@@ -246,7 +293,7 @@
         var promptEl = document.getElementById('prompt');
         var text = promptEl ? promptEl.value.trim() : '';
         if (!text) { msg.textContent = 'Напишите, что нарисовать.'; return; }
-        msg.textContent = 'Рисуем. Это занимает около минуты.';
+        showWait();
         document.getElementById('drawBtn').disabled = true;
         fetch('/api/otkrytka', {
             method: 'POST',
@@ -258,6 +305,7 @@
         }).then(function(result){
             var data = result.data || {};
             if (!result.ok) {
+                hideWait();
                 var detail = data.detail;
                 msg.textContent = typeof detail === 'string' ? detail : 'Не получилось.';
                 document.getElementById('drawBtn').disabled = false;
