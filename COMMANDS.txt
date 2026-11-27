@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.172. Owner is back. No next server command. Do not update the site. He looks at one card on /otkrytka himself. Block 117 is done. Do not run it again. The site is 2.11.172. Block 116 is done. Do not run it again.
+Version: 2.11.172. The first card appeared. No next server command. Do not update the site until the owner says yes to a waiting bar. Block 117 is done. Do not run it again. Block 116 is done. Do not run it again.
 
 === 117) RECENT SONG, KIE TRIED THREE TIMES ===
 # DONE 26.11.2026. Owner pasted the print. The 18:38 song is saved, both files, no note. Do not run again.
