@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. The site does not answer. Reboot the server from the host panel first. Do not run block 118. After the root window works, run block 119 only.
+Version: 2.11.173. The site opens from a phone without VPN. Do not reboot. Do not run block 118 or 119.
 
 === 119) IS THE SITE AWAKE ===
 # 27.11. Run only after the root window shows a prompt again. Paste the whole print.
