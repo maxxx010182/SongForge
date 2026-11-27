@@ -1,8 +1,8 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. Site is still 2.11.172 until block 118. Block 117 is done. Do not run it again. Block 116 is done. Do not run it again.
+Version: 2.11.173. Site is still 2.11.172. Do not run block 118 yet. The owner is choosing the card look first. Block 117 is done. Do not run it again. Block 116 is done. Do not run it again.
 
 === 118) CARD WAITING LINES ===
-# 27.11. Postcard page: a moving bar and short lines while the picture is drawn. No seconds. Songs and price stay.
+# HOLD 27.11. Do not run until the card look is in this same update. A moving bar and short lines, no seconds. Songs and price stay.
 curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 117) RECENT SONG, KIE TRIED THREE TIMES ===
