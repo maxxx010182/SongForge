@@ -1,12 +1,12 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. Site answers 2.11.172. Owner is at the root@ prompt. Paste block 120 only. Read only. Paste the whole print back. Do not reboot. Do not run block 118 or 119.
+Version: 2.11.173. Site answers 2.11.172. Block 120 is done. Do not run it again. No server command now. Do not reboot. Do not run block 118 or 119.
 
 LOCAL, not a server line. Paste into Happ, button Browse, file-name box:
 C:\Windows\System32\OpenSSH\ssh.exe
 
 === 120) TWO RECENT SONG PATHS ===
-# 28.11. Read only. Last two people. No names, no lyrics. Paste the whole print.
-curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-two-leaves.py?$(date +%s)" -o /tmp/check-two-leaves.py; /root/SongForge/venv/bin/python /tmp/check-two-leaves.py
+# DONE 28.11.2026. Owner pasted the print. First: 81 chars, shop code 400, no audio. Second: instrumental, 0 chars, both files 3:58. Do not run again.
+# curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-two-leaves.py?$(date +%s)" -o /tmp/check-two-leaves.py; /root/SongForge/venv/bin/python /tmp/check-two-leaves.py
 
 === 119) IS THE SITE AWAKE ===
 # 27.11. Run only after the root window shows a prompt again. Paste the whole print.
