@@ -1,5 +1,9 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. The site opens from a phone without VPN. Do not reboot. Do not run block 118 or 119.
+Version: 2.11.173. Next line is block 120. Read only. Do not reboot. Do not run block 118 or 119.
+
+=== 120) TWO RECENT SONG PATHS ===
+# 28.11. Read only. Last two people. No names, no lyrics. Paste the whole print.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/check-two-leaves.py?$(date +%s)" -o /tmp/check-two-leaves.py; /root/SongForge/venv/bin/python /tmp/check-two-leaves.py
 
 === 119) IS THE SITE AWAKE ===
 # 27.11. Run only after the root window shows a prompt again. Paste the whole print.
