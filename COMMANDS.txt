@@ -1,5 +1,5 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. Next line is block 120. Read only. Do not reboot. Do not run block 118 or 119.
+Version: 2.11.173. Site answers 2.11.172. SSH closes before the password. Turn Happ off, then ssh once. Do not reboot. Block 120 only after the root@ prompt. Do not run block 118 or 119.
 
 === 120) TWO RECENT SONG PATHS ===
 # 28.11. Read only. Last two people. No names, no lyrics. Paste the whole print.
