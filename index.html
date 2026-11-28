@@ -557,8 +557,9 @@
                 </div>
                 <div class="mt-4 flex flex-wrap gap-6">
                     <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="backingVocalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Бэк-вокал</span></label>
-                    <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" id="instrumentalCheckbox" class="w-4 h-4 accent-yellow-400"><span>Инструментал (без вокала)</span></label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" id="instrumentalCheckbox" class="w-5 h-5 accent-yellow-400"><span>Инструментал (без вокала)</span></label>
                 </div>
+                <p id="instrumentalLiveNote" class="hidden mt-3 text-base leading-relaxed text-amber-200">Галочка «Инструментал» включена. В песне не будет слов и пения.</p>
                 <div class="mt-4">
                     <label class="block text-xs text-zinc-400 mb-2">🎵 Референс звучания</label>
                     <input id="artistRef" type="text" class="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white/90 outline-none focus:border-yellow-400/50 transition" placeholder="В духе Зиверт или Басты — без копирования мелодии">
@@ -1033,6 +1034,16 @@
     <a data-nav="explore" class="rounded-2xl"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[10px] sm:text-[11px]">МузПлощадка</span></a>
     <a data-nav="profile" class="rounded-2xl"><i class="fa-regular fa-user text-xl"></i><span class="text-[10px] sm:text-[11px]">Кабинет</span></a>
     <a data-nav="payment" class="rounded-2xl"><i class="fa-regular fa-gem text-xl"></i><span class="text-[10px] sm:text-[11px]">Пакеты</span></a>
+</div>
+
+<!-- Модалка: песня без слов -->
+<div id="instrumentalConfirmModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-[9999] p-4" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))" role="dialog" aria-modal="true" aria-labelledby="instrumentalConfirmTitle">
+    <div class="bg-zinc-900 rounded-3xl max-w-md w-full p-6 sm:p-8 text-center border border-yellow-400/40">
+        <div id="instrumentalConfirmTitle" class="text-2xl font-bold mb-3 leading-snug">Песня будет без слов</div>
+        <p class="text-lg text-zinc-100 mb-6 leading-relaxed">Сейчас включена галочка «Инструментал». Голос петь не будет, только музыка. Если нужны слова, вернитесь и снимите галочку.</p>
+        <button type="button" id="instrumentalConfirmNo" class="w-full upgrade-btn py-4 rounded-2xl text-lg mb-3">Вернуться, нужны слова</button>
+        <button type="button" id="instrumentalConfirmYes" class="w-full bg-white/10 hover:bg-white/20 py-4 rounded-2xl text-base text-zinc-200">Создать без слов</button>
+    </div>
 </div>
 
 <!-- Модалка: ошибка генерации -->
@@ -1793,9 +1804,43 @@ markSongCreationStart();
 
 genApiPhase='preparing';showGenerating();setGeneratingStatus('Продюсер анализирует идею...','Подбираем оптимальные параметры генерации');var res;try{res=await fetch('/api/create-song',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),...fetchOpts});}catch(e){hideGenerating(function(){showGenerationError('Пропало соединение с интернетом. Проверьте сеть и попробуйте снова.');},{success:false,hideExpertSteps:!!opts.hideExpertSteps});throw e;}if(!res.ok){var err=await res.json().catch(function(){return{}});var msg=(err&&err.detail)||'Не удалось создать песню';if(res.status===403){hideGenerating(null,{success:false,hideExpertSteps:!!opts.hideExpertSteps});handleGuestLimitError(msg,{noThrow:true});await fetchMe();throw new Error(msg);}hideGenerating(function(){showGenerationError(msg);},{success:false,hideExpertSteps:!!opts.hideExpertSteps});await fetchMe();throw new Error(msg);}var data=await res.json();currentGenerationMode=data.generation_mode||'';applyServerBalance(data.balance);currentProduction=data;currentGeneratedLyrics=data.lyrics||'';currentTaskId=data.task_id||'';await fetchMe();genApiPhase='polling';setGeneratingStatus('Создаём твой лучший трек...','Обычно примерно 3–5 минут. Не закрывайте страницу.');var result=await finalizeMusicPoll(currentTaskId,function(st,n){var hint=st.progress_hint||'Создаём твой лучший трек...';if(hint==='Готово!')hint='Финальная обработка...';setGeneratingStatus(hint,pollTickSub(n));});if(!result.ok){hideGenerating(function(){showGenerationError(result.error||'Не удалось создать песню',{timeout:/Превышено время/i.test(result.error||'')});},{success:false,hideExpertSteps:!!opts.hideExpertSteps});throw new Error(result.error||'Не удалось создать песню');}var tracks=result.data.tracks;var prodId=data.production_id||result.data.production_id;var flags=resolveResultFlags(result.data,{generation_mode:data.generation_mode});var purchased=flags.purchased;var prepaid=flags.prepaid;var urls=tracksToListenUrls(tracks,prodId,purchased,prepaid);if(urls.length<1){hideGenerating(function(){showGenerationError('Аудио не получено. Попробуйте ещё раз.');},{success:false,hideExpertSteps:!!opts.hideExpertSteps});throw new Error('Аудио не получено');}if(urls.length===1)urls.push(urls[0]);hideGenerating(function(){showResultModal({title:data.title,production_id:prodId,showLyrics:!!opts.showLyrics,purchased:purchased,prepaid:prepaid},urls,tracks);},{success:true,hideExpertSteps:!!opts.hideExpertSteps});}
 
-async function createSongWithProducer(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Опиши идею для песни');return;}if(!blockSongGenerationIfNeeded())return;var btn=document.getElementById('createSongBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Продюсер работает...';currentIdea=idea;document.getElementById('lyricsBlock').classList.add('hidden');document.getElementById('step3Block').classList.add('hidden');document.getElementById('producerPlanBlock').classList.add('hidden');var payload=buildSongPayload(idea);payload.style_mode='presets';payload.custom_description='';payload.genre='';payload.mood='';payload.own_lyrics='';payload.use_own_voice=false;try{await runMusicGeneration(payload,btn,'',{hideExpertSteps:true,showLyrics:false});}catch(e){console.error(e);}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером';}
+var instrumentalConfirmed=false;
+function confirmInstrumentalIfNeeded(){
+  if(!instrumentalMode)return Promise.resolve(true);
+  if(instrumentalConfirmed)return Promise.resolve(true);
+  return new Promise(function(resolve){
+    var modal=document.getElementById('instrumentalConfirmModal');
+    var yes=document.getElementById('instrumentalConfirmYes');
+    var no=document.getElementById('instrumentalConfirmNo');
+    if(!modal||!yes||!no){resolve(false);return;}
+    function finish(ok){
+      modal.classList.add('hidden');
+      yes.removeEventListener('click',onYes);
+      no.removeEventListener('click',onNo);
+      document.removeEventListener('keydown',onKey);
+      if(ok)instrumentalConfirmed=true;
+      resolve(!!ok);
+    }
+    function onYes(){finish(true);}
+    function onNo(){
+      var box=document.getElementById('instrumentalCheckbox');
+      if(box)box.checked=false;
+      instrumentalMode=false;
+      instrumentalConfirmed=false;
+      if(typeof updateIdeaFieldUI==='function')updateIdeaFieldUI();
+      finish(false);
+    }
+    function onKey(e){if(e.key==='Escape')onNo();}
+    yes.addEventListener('click',onYes);
+    no.addEventListener('click',onNo);
+    document.addEventListener('keydown',onKey);
+    modal.classList.remove('hidden');
+    no.focus();
+  });
+}
+async function createSongWithProducer(){var idea=document.getElementById('ideaInput').value.trim();if(!idea){alert('Опиши идею для песни');return;}if(!blockSongGenerationIfNeeded())return;if(!(await confirmInstrumentalIfNeeded()))return;var btn=document.getElementById('createSongBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Продюсер работает...';currentIdea=idea;document.getElementById('lyricsBlock').classList.add('hidden');document.getElementById('step3Block').classList.add('hidden');document.getElementById('producerPlanBlock').classList.add('hidden');var payload=buildSongPayload(idea);payload.style_mode='presets';payload.custom_description='';payload.genre='';payload.mood='';payload.own_lyrics='';payload.use_own_voice=false;try{await runMusicGeneration(payload,btn,'',{hideExpertSteps:true,showLyrics:false});}catch(e){console.error(e);}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню с AI-продюсером';}
 
-async function createSongExpert(){var liveIdea=(document.getElementById('ideaInput').value||'').trim();var idea=ownLyricsOpen()?liveIdea:(currentIdea||liveIdea);if(!instrumentalMode&&!currentGeneratedLyrics){alert(ownLyricsOpen()?'Сначала нажмите «Подготовить проект песни».':'Сначала сгенерируйте текст в Расширенном режиме');return;}if(!blockSongGenerationIfNeeded())return;var btn=document.getElementById('createDemoBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Создаём песню...';if(instrumentalMode&&!currentProduction){try{await runMusicGeneration(buildSongPayload(idea),btn,'',{hideExpertSteps:false,showLyrics:false});}catch(e){console.error(e);}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';return;}genApiPhase='preparing';showGenerating();try{var preparedOwn=null;if(ownLyricsOpen()){preparedOwn=await ensureOwnSongPrepared();if(!preparedOwn){hideGenerating(null,{success:false});btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';updateStudioGenerateButtons();return;}idea=preparedOwn.idea!=null?preparedOwn.idea:idea;currentIdea=idea;}var ed=document.getElementById('lyricsEditor');var lyrics=preparedOwn?preparedOwn.lyrics:(instrumentalMode?'':(ed&&!ed.classList.contains('hidden')?ed.value:(document.getElementById('lyricsDisplay')&&document.getElementById('lyricsDisplay').textContent)||currentGeneratedLyrics));if(!instrumentalMode&&lyrics){currentGeneratedLyrics=lyrics;if(currentProduction)currentProduction.lyrics=lyrics;}var style=preparedOwn?preparedOwn.style:((currentProduction&&currentProduction.style)||await buildStylePrompt());setGeneratingStatus('Продюсер анализирует идею...','Подбираем оптимальные параметры генерации');setGeneratingStatus('Создаём твой лучший трек...','Готовим 2 варианта песни');
+async function createSongExpert(){var liveIdea=(document.getElementById('ideaInput').value||'').trim();var idea=ownLyricsOpen()?liveIdea:(currentIdea||liveIdea);if(!instrumentalMode&&!currentGeneratedLyrics){alert(ownLyricsOpen()?'Сначала нажмите «Подготовить проект песни».':'Сначала сгенерируйте текст в Расширенном режиме');return;}if(!blockSongGenerationIfNeeded())return;if(!(await confirmInstrumentalIfNeeded()))return;var btn=document.getElementById('createDemoBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-pulse mr-2"></i> Создаём песню...';if(instrumentalMode&&!currentProduction){try{await runMusicGeneration(buildSongPayload(idea),btn,'',{hideExpertSteps:false,showLyrics:false});}catch(e){console.error(e);}btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';return;}genApiPhase='preparing';showGenerating();try{var preparedOwn=null;if(ownLyricsOpen()){preparedOwn=await ensureOwnSongPrepared();if(!preparedOwn){hideGenerating(null,{success:false});btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-wand-magic-sparkles"></i> Создать песню';updateStudioGenerateButtons();return;}idea=preparedOwn.idea!=null?preparedOwn.idea:idea;currentIdea=idea;}var ed=document.getElementById('lyricsEditor');var lyrics=preparedOwn?preparedOwn.lyrics:(instrumentalMode?'':(ed&&!ed.classList.contains('hidden')?ed.value:(document.getElementById('lyricsDisplay')&&document.getElementById('lyricsDisplay').textContent)||currentGeneratedLyrics));if(!instrumentalMode&&lyrics){currentGeneratedLyrics=lyrics;if(currentProduction)currentProduction.lyrics=lyrics;}var style=preparedOwn?preparedOwn.style:((currentProduction&&currentProduction.style)||await buildStylePrompt());setGeneratingStatus('Продюсер анализирует идею...','Подбираем оптимальные параметры генерации');setGeneratingStatus('Создаём твой лучший трек...','Готовим 2 варианта песни');
 
 // Проверка cooldown на создание песни (аналогичная защита для расширенного режима)
 if (!canStartNewSong()) {
@@ -1946,7 +1991,7 @@ document.getElementById('playerStop').addEventListener('click',stopAudio);
 document.getElementById('miniPlayerPlayPause').addEventListener('click',togglePlayerPlayPause);
 document.getElementById('miniPlayerStop').addEventListener('click',stopAudio);
 
-function updateIdeaFieldUI(){var inp=document.getElementById('ideaInput');var hint=document.getElementById('ideaInputHint');if(inp){if(instrumentalMode)inp.placeholder=IDEA_PLACEHOLDER_INSTR;else if(studioMode==='expert')inp.placeholder=IDEA_PLACEHOLDER_EXPERT;else inp.placeholder=IDEA_PLACEHOLDER_PRODUCER;}if(hint){if(instrumentalMode)hint.textContent=IDEA_HINT_INSTR;else if(ownLyricsOpen())hint.textContent='Напишите, какая это песня: жанр, темп, настроение. Слова — в окне ниже.';else hint.textContent=studioMode==='expert'?IDEA_HINT_EXPERT:IDEA_HINT_PRODUCER;}syncOwnLyricsPanel();}
+function updateIdeaFieldUI(){var inp=document.getElementById('ideaInput');var hint=document.getElementById('ideaInputHint');if(inp){if(instrumentalMode)inp.placeholder=IDEA_PLACEHOLDER_INSTR;else if(studioMode==='expert')inp.placeholder=IDEA_PLACEHOLDER_EXPERT;else inp.placeholder=IDEA_PLACEHOLDER_PRODUCER;}if(hint){if(instrumentalMode)hint.textContent=IDEA_HINT_INSTR;else if(ownLyricsOpen())hint.textContent='Напишите, какая это песня: жанр, темп, настроение. Слова — в окне ниже.';else hint.textContent=studioMode==='expert'?IDEA_HINT_EXPERT:IDEA_HINT_PRODUCER;}var note=document.getElementById('instrumentalLiveNote');if(note)note.classList.toggle('hidden',!instrumentalMode);syncOwnLyricsPanel();}
 
 function clearStudioFields(){try{var idea=document.getElementById('ideaInput');if(idea)idea.value='';var lyrics=document.getElementById('lyricsEditor');if(lyrics)lyrics.value='';var custom=document.getElementById('customDescriptionInput');if(custom)custom.value='';var artist=document.getElementById('artistRef');if(artist)artist.value='';var ownBox=document.getElementById('ownLyricsCheckbox');if(ownBox)ownBox.checked=false;var ownTextEl=document.getElementById('ownLyricsInput');if(ownTextEl)ownTextEl.value='';genreTouched=false;moodTouched=false;ownSnap={text:'',idea:'',custom:'',genre:'',mood:'',vocal:'',backing:false,artist:'',prepared:''};currentIdea='';currentGeneratedLyrics='';sessionStorage.removeItem('pendingStudioState');resetTextRegenCount();syncOwnLyricsPanel();}catch(e){}}
 function initChips(){
@@ -1977,7 +2022,7 @@ function initChips(){
 
   document.getElementById('backingVocalCheckbox').addEventListener('change',function(e){backingVocal=e.target.checked;});
   var instr=document.getElementById('instrumentalCheckbox');
-  if(instr){instr.addEventListener('change',function(e){instrumentalMode=e.target.checked;updateIdeaFieldUI();});}
+  if(instr){instr.addEventListener('change',function(e){instrumentalMode=e.target.checked;if(!instrumentalMode)instrumentalConfirmed=false;updateIdeaFieldUI();});}
   var ownBox=document.getElementById('ownLyricsCheckbox');
   if(ownBox){ownBox.addEventListener('change',function(){updateIdeaFieldUI();updateStudioGenerateButtons();});}
   var ownInput=document.getElementById('ownLyricsInput');
@@ -2030,6 +2075,7 @@ document.getElementById('generateTextBtn').addEventListener('click',async functi
     if (currentCount === 2) {
         showToast('Это уже 3-я перегенерация. Максимум можно сделать 4 раза. После этого текст можно будет только править вручную.');
     }
+    if(!(await confirmInstrumentalIfNeeded()))return;
 
     var btn=document.getElementById('generateTextBtn');
     btn.disabled=true;
@@ -2079,6 +2125,7 @@ document.getElementById('regenLyricsBtn').addEventListener('click',async functio
     if (currentCount === 2) {
         showToast('Это уже 3-я перегенерация. Максимум можно сделать 4 раза. После этого текст можно будет только править вручную.');
     }
+    if(!(await confirmInstrumentalIfNeeded()))return;
 
     textCircleHeld=false;var btn=document.getElementById('regenLyricsBtn');btn.innerHTML=writingTextHtml();btn.disabled=true;var started=Date.now();var exceptId=currentProduction&&currentProduction.production_id?currentProduction.production_id:'';try{var res=await fetch('/api/produce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildSongPayload(idea))});if(res.ok){var data=await res.json();paintRegenText(data,idea);incrementTextRegenCount();}else if(res.status===403){var err=await res.json().catch(function(){return{};});handleGuestLimitError((err&&err.detail)||'',{noThrow:true});syncOwnLyricsPanel();updateStudioGenerateButtons();return;}else{var dropped=textReplyDropped(res);var err2=dropped?null:await res.json().catch(function(){return{};});var picked=await recoverDroppedText(idea,exceptId,started,dropped);if(picked)showRecoveredText(picked,idea,started,paintRegenText);else alert((err2&&err2.detail)||'Не удалось обновить текст. Попробуйте ещё раз.');}}catch(e){if(e&&e.message==='forbidden'){syncOwnLyricsPanel();updateStudioGenerateButtons();return;}var pickedDrop=await recoverDroppedText(idea,exceptId,started,true);if(pickedDrop)showRecoveredText(pickedDrop,idea,started,paintRegenText);else alert('Ошибка связи с сервером. Проверьте интернет и попробуйте снова.');}syncOwnLyricsPanel();btn.disabled=false;});
 

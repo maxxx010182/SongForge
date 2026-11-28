@@ -1,8 +1,12 @@
 SongForge -- SERVER COMMANDS (copy ONE line at a time)
-Version: 2.11.173. Site answers 2.11.172. Block 120 is done. Do not run it again. No server command now. Do not reboot. Do not run block 118 or 119.
+Version: 2.11.174. Site answers 2.11.172. Next line is block 121. It also publishes the postcard wait bar already in the code. Do not open /otkrytka. Do not reboot. Do not run block 118, 119, or 120.
 
 LOCAL, not a server line. Paste into Happ, button Browse, file-name box:
 C:\Windows\System32\OpenSSH\ssh.exe
+
+=== 121) ASK BEFORE A SONG WITHOUT WORDS ===
+# 28.11. If the instrumental box is on, the page asks before it starts. Songs, notes, and price stay.
+curl -fsSL "https://raw.githubusercontent.com/maxxx010182/SongForge/main/scripts/update-now.sh?$(date +%s)" | bash
 
 === 120) TWO RECENT SONG PATHS ===
 # DONE 28.11.2026. Owner pasted the print. First: 81 chars, shop code 400, no audio. Second: instrumental, 0 chars, both files 3:58. Do not run again.
